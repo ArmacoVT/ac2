@@ -1,0 +1,13 @@
+<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Theater">
+<style>.tw{transform-box:fill-box;transform-origin:center;animation:tw 3s ease-in-out infinite}@keyframes tw{0%,100%{opacity:.4}50%{opacity:1}}</style>
+<rect x="120" y="22" width="160" height="12" rx="6" fill="#9c424c"/>
+<path d="M124 34 q12 50 0 96 q22 -8 26 -96 Z" fill="#9c424c"/>
+<path d="M276 34 q-12 50 0 96 q-22 -8 -26 -96 Z" fill="#9c424c"/>
+<polygon points="200,34 168,130 232,130" fill="#d99a2b" opacity=".55"/>
+<g fill="none" stroke="#6b3a5b" stroke-width="3.5" stroke-linecap="round">
+<path d="M188 70 c14 -4 22 2 22 16 c0 14 -8 22 -16 22 c-9 0 -14 -10 -14 -22 c0 -10 2 -14 8 -16 Z" fill="#fffaf0"/>
+<path d="M192 84 q3 -3 6 0 M196 98 q-3 4 -8 1"/></g>
+<path class="tw" d="M120 50 l3 6 6 1 -4 5 1 6 -6 -3 -6 3 1 -6 -4 -5 6 -1 Z" fill="#d99a2b"/>
+<path class="tw" style="animation-delay:1s" d="M286 64 l2 5 5 1 -4 4 1 5 -4 -2 -5 2 1 -5 -4 -4 5 -1 Z" fill="#2f6b63"/>
+<path d="M40 134 H360" stroke="#3a2c23" stroke-width="2" opacity=".3"/>
+</svg>

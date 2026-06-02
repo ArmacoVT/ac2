@@ -1,0 +1,11 @@
+<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Culture">
+<style>.b{transform-box:fill-box;transform-origin:center;animation:b 6s ease-in-out infinite}@keyframes b{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}</style>
+<rect x="150" y="26" width="110" height="74" rx="4" fill="#fffaf0" stroke="#6b3a5b" stroke-width="4"/>
+<path d="M156 94 l26 -36 16 20 16 -22 24 38 Z" fill="#2f6b63"/>
+<circle cx="172" cy="48" r="8" fill="#d99a2b"/>
+<path d="M150 100 h110" stroke="#6b3a5b" stroke-width="4"/>
+<g class="b"><rect x="78" y="104" width="28" height="24" rx="3" fill="#9c424c"/>
+<path d="M92 104 q-18 -14 -12 -38 M92 104 q18 -14 12 -38 M92 104 v-34" stroke="#6f7a39" stroke-width="4" fill="none" stroke-linecap="round"/></g>
+<g fill="#c8643c"><circle cx="300" cy="50" r="5"/><circle cx="320" cy="90" r="4"/><circle cx="290" cy="110" r="4"/></g>
+<path d="M40 132 H360" stroke="#3a2c23" stroke-width="2" opacity=".3"/>
+</svg>

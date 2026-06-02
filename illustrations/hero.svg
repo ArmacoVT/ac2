@@ -1,0 +1,58 @@
+<svg viewBox="0 0 420 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Декоративен колаж">
+  <defs><style>
+    .f1{transform-box:fill-box;transform-origin:center;animation:fa 7s ease-in-out infinite}
+    .f2{transform-box:fill-box;transform-origin:center;animation:fb 8.5s ease-in-out infinite}
+    .f3{transform-box:fill-box;transform-origin:center;animation:fa 6s ease-in-out infinite 1s}
+    .sp{transform-box:fill-box;transform-origin:center;animation:spin 24s linear infinite}
+    .tw{transform-box:fill-box;transform-origin:center;animation:tw 3s ease-in-out infinite}
+    @keyframes fa{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+    @keyframes fb{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes tw{0%,100%{opacity:.3}50%{opacity:1}}
+  </style></defs>
+
+  <!-- свободни органични петна (асиметрично) -->
+  <path d="M20 150 q-16 -44 28 -50 q40 -4 40 30 q0 40 -40 42 q-36 2 -28 -22 Z" fill="#2f6b63" opacity=".92"/>
+  <path class="f2" d="M360 30 q26 -10 34 16 q8 26 -20 30 q-26 4 -30 -18 q-4 -20 16 -28 Z" fill="#6b3a5b" opacity=".9"/>
+  <path d="M372 168 q26 -8 30 16 q2 22 -24 22 q-24 0 -22 -22 q2 -16 16 -16 Z" fill="#9c424c" opacity=".9"/>
+
+  <!-- слънце с въртящи се лъчи (горе вляво от центъра) -->
+  <g class="sp" opacity=".85"><g stroke="#d99a2b" stroke-width="4" stroke-linecap="round">
+    <line x1="120" y1="42" x2="120" y2="26"/><line x1="120" y1="74" x2="120" y2="90"/>
+    <line x1="104" y1="58" x2="88" y2="58"/><line x1="136" y1="58" x2="152" y2="58"/>
+    <line x1="108" y1="46" x2="98" y2="36"/><line x1="132" y1="70" x2="142" y2="80"/>
+    <line x1="132" y1="46" x2="142" y2="36"/><line x1="108" y1="70" x2="98" y2="80"/>
+  </g></g>
+  <circle class="f1" cx="120" cy="58" r="15" fill="#d99a2b"/>
+
+  <!-- малка арка вдясно (не централна) -->
+  <path d="M250 150 V108 a34 34 0 0 1 68 0 V150" fill="none" stroke="#c8643c" stroke-width="5" stroke-linecap="round"/>
+  <circle class="f3" cx="284" cy="120" r="9" fill="#9c424c"/>
+
+  <!-- чаша / бокал в средата -->
+  <g class="f1"><path d="M196 150 c-9 0 -16 -10 -16 -24 h32 c0 14 -7 24 -16 24 Z" fill="#b5532f"/>
+    <path d="M196 150 v14" stroke="#9c6b4a" stroke-width="3"/><path d="M188 164 h16" stroke="#9c6b4a" stroke-width="3" stroke-linecap="round"/></g>
+
+  <!-- листо/клонка -->
+  <g class="f2"><path d="M70 150 q-14 -10 -18 -28 q16 2 18 26" fill="#6f7a39"/>
+    <path d="M70 150 q14 -10 18 -28 q-16 2 -18 26" fill="#2f6b63"/></g>
+
+  <!-- нота -->
+  <g class="f3"><line x1="344" y1="120" x2="344" y2="86" stroke="#6f7a39" stroke-width="4"/><ellipse cx="338" cy="120" rx="8" ry="6" fill="#6f7a39"/></g>
+
+  <!-- полумесец вляво долу -->
+  <path class="f2" d="M44 60 a14 14 0 1 1 -5 -27 a11 11 0 0 0 5 27 Z" fill="#bf8a2e"/>
+
+  <!-- звезди -->
+  <path class="tw" d="M210 44 l3 7 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1 Z" fill="#c8643c"/>
+  <path class="tw" style="animation-delay:1.2s" d="M300 60 l2 5 5 1 -4 4 1 5 -4 -2 -5 2 1 -5 -4 -4 5 -1 Z" fill="#2f6b63"/>
+
+  <!-- вълничка -->
+  <path d="M150 176 q18 -14 36 0 q18 14 36 0" fill="none" stroke="#bf8a2e" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- разпръснати точки -->
+  <g fill="#c8643c"><circle cx="240" cy="70" r="4"/><circle cx="90" cy="120" r="4"/><circle cx="400" cy="100" r="4"/></g>
+  <g fill="#6b3a5b"><circle cx="170" cy="60" r="3.5"/><circle cx="330" cy="150" r="4"/></g>
+
+  <path d="M20 180 H400" stroke="#3a2c23" stroke-width="2" stroke-linecap="round" opacity=".3"/>
+</svg>

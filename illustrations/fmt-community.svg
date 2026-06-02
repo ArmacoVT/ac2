@@ -1,0 +1,14 @@
+<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Community">
+<style>.s{transform-box:fill-box;transform-origin:center;animation:s 7s ease-in-out infinite}@keyframes s{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}</style>
+<circle class="s" cx="320" cy="48" r="16" fill="#d99a2b"/>
+<g fill="none" stroke="#9c6b4a" stroke-width="4" stroke-linejoin="round">
+<path d="M70 110 V78 l22 -20 22 20 V110"/>
+<path d="M150 110 V70 l26 -22 26 22 V110"/>
+<path d="M236 110 V78 l22 -20 22 20 V110"/></g>
+<g fill="#9c424c"><circle cx="92" cy="92" r="4"/></g>
+<g fill="#2f6b63"><circle cx="176" cy="86" r="5"/></g>
+<g fill="#6b3a5b"><circle cx="258" cy="92" r="4"/></g>
+<g fill="#6f7a39"><circle cx="120" cy="124" r="6"/><circle cx="150" cy="124" r="6"/><circle cx="180" cy="124" r="6"/></g>
+<g fill="#c8643c"><circle cx="60" cy="50" r="4"/><circle cx="350" cy="100" r="4"/></g>
+<path d="M40 138 H360" stroke="#3a2c23" stroke-width="2" opacity=".3"/>
+</svg>

@@ -1,0 +1,11 @@
+<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Music">
+<style>.n{transform-box:fill-box;transform-origin:center;animation:n 4s ease-in-out infinite}@keyframes n{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}</style>
+<g fill="none" stroke="#6f7a39" stroke-width="4" stroke-linecap="round">
+<path d="M50 96 q30 -34 60 0 q30 34 60 0 q30 -34 60 0 q30 34 60 0"/>
+<path d="M50 116 q30 -24 60 0 q30 24 60 0 q30 -24 60 0 q30 24 60 0" opacity=".5"/></g>
+<g class="n"><line x1="250" y1="92" x2="250" y2="46" stroke="#2f6b63" stroke-width="4"/><ellipse cx="244" cy="92" rx="9" ry="7" fill="#2f6b63"/><path d="M250 46 q12 4 12 16" stroke="#2f6b63" stroke-width="4" fill="none"/></g>
+<g class="n" style="animation-delay:1s"><line x1="300" y1="80" x2="300" y2="40" stroke="#b5532f" stroke-width="4"/><ellipse cx="294" cy="80" rx="8" ry="6" fill="#b5532f"/></g>
+<path d="M120 50 a14 14 0 1 1 -5 -27 a11 11 0 0 0 5 27 Z" fill="#6b3a5b"/>
+<g fill="#d99a2b"><circle cx="160" cy="40" r="4"/><circle cx="340" cy="60" r="5"/></g>
+<path d="M40 134 H360" stroke="#3a2c23" stroke-width="2" opacity=".3"/>
+</svg>
