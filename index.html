@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f6efe2" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<title>American College Arcus Club</title>
+<link rel="icon" href="favicon.svg" />
+<link rel="manifest" href="manifest.json" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    /* Топла редакторска палитра (палитра A) */
+    --bg:#f6efe2; --surface:#fffaf0; --surface2:#f7edda;
+    --gold:#c8643c; --gold-bright:#d77a4f; --gold-soft:#b07a4a;
+    --cream:#3a2c23; --text:#5a4a3c; --mid:#8a6f5c; --muted:#a8927c;
+    --line:rgba(58,44,35,0.16); --line-soft:rgba(58,44,35,0.07);
+    --oncolor:#fdf3e3; --medallion:#2e231b;
+    --serif:'Cormorant Garamond',Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  #app{max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:80px;}
+  .topbar{position:sticky;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;
+    padding:14px 18px;background:rgba(246,239,226,0.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  .topbar .mark{font-family:var(--serif);color:var(--gold);font-size:18px;letter-spacing:2px;display:flex;align-items:center;gap:8px;cursor:pointer;}
+  .topbar .mark img{width:32px;height:32px;background:var(--medallion);border-radius:50%;padding:6px;object-fit:contain;}
+  .pill{border:none;border-radius:20px;padding:7px 14px;color:var(--gold);font-size:13px;letter-spacing:1px;cursor:pointer;background:var(--bg);
+    box-shadow:3px 3px 7px #d9cdb6,-3px -3px 7px #fffdf4;}
+  .pill:active{box-shadow:inset 2px 2px 5px #d9cdb6,inset -2px -2px 5px #fffdf4;transform:scale(.98);}
+  .back{color:var(--gold);font-size:22px;cursor:pointer;line-height:1;padding-right:6px;}
+  .hero{text-align:center;padding:34px 20px 10px;}
+  .hero .ac2{width:92px;height:92px;margin:0 auto 14px;display:block;background:var(--medallion);border-radius:50%;padding:20px;object-fit:contain;}
+  .hero h1{font-family:var(--serif);color:var(--cream);font-size:34px;font-weight:500;letter-spacing:2px;line-height:1.1;}
+  .hero p{color:var(--mid);font-size:14px;margin-top:14px;line-height:1.55;padding:0 12px;}
+  .hero-illu{display:block;width:min(360px,86%);margin:18px auto 0;}
+  .sec-title{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;padding:24px 20px 2px;}
+  .sec-sub{color:var(--muted);font-size:13px;padding:0 20px 10px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px;}
+  .grid{gap:16px;}
+  .fcard{display:flex;flex-direction:column;min-height:178px;border-radius:22px;padding:16px;
+    cursor:pointer;background:var(--bg);box-shadow:8px 8px 16px #d9cdb6,-8px -8px 16px #fffdf4;
+    transition:box-shadow .25s,transform .2s;animation:fadeIn .45s ease both;}
+  .fcard:active{box-shadow:inset 6px 6px 12px #d9cdb6,inset -6px -6px 12px #fffdf4;transform:scale(.99);}
+  .fcard .top{display:flex;justify-content:space-between;align-items:flex-start;}
+  .fcard .well{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
+    background:var(--bg);box-shadow:inset 3px 3px 6px #d9cdb6,inset -3px -3px 6px #fffdf4;}
+  .fcard .well svg{width:26px;height:26px;}
+  .fcard .ac2{font-family:var(--serif);font-size:17px;opacity:.85;}
+  .fcard .body{margin-top:auto;}
+  .fcard .lab{font-size:10px;letter-spacing:2px;text-transform:uppercase;}
+  .fcard h3{font-family:var(--serif);color:var(--cream);font-size:25px;font-weight:500;line-height:1;margin-top:3px;}
+  .fcard .body span{color:var(--mid);font-size:11px;margin-top:4px;display:block;}
+  .fcard .evbadge{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:var(--text);
+    background:var(--bg);padding:5px 11px;border-radius:12px;box-shadow:3px 3px 7px #d9cdb6,-3px -3px 7px #fffdf4;}
+  .fcard .evdot{width:8px;height:8px;border-radius:50%;animation:evp 1.8s ease-in-out infinite;}
+  @keyframes evp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
+  .grid .fcard:nth-child(2){animation-delay:.05s}.grid .fcard:nth-child(3){animation-delay:.1s}
+  .grid .fcard:nth-child(4){animation-delay:.15s}.grid .fcard:nth-child(5){animation-delay:.2s}
+  .grid .fcard:nth-child(6){animation-delay:.25s}.grid .fcard:nth-child(7){animation-delay:.3s}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .tile{background:var(--bg);border-radius:16px;padding:18px;text-align:center;cursor:pointer;
+    box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;transition:box-shadow .2s,transform .15s;}
+  .tile:active{box-shadow:inset 5px 5px 10px #d9cdb6,inset -5px -5px 10px #fffdf4;transform:scale(.99);}
+  .tile .ic{width:54px;height:54px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;
+    background:var(--bg);box-shadow:inset 3px 3px 6px #d9cdb6,inset -3px -3px 6px #fffdf4;}
+  .tile .ic svg{width:27px;height:27px;}
+  .pill svg{width:17px;height:17px;display:block;}
+  .tile .lb{color:var(--text);font-size:14px;margin-top:7px;}
+  .contact{margin:32px 20px 0;border-top:1px solid var(--line-soft);padding:22px 0;text-align:center;color:var(--mid);font-size:14px;line-height:1.9;}
+  .contact .tag{color:var(--gold);letter-spacing:2px;margin-bottom:8px;font-size:13px;}
+  .page{padding:16px;}
+  .banner{height:175px;border-radius:16px;border:1px solid var(--line);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .banner .ov{position:absolute;inset:0;background:rgba(26,20,16,.25);}
+  .banner img{width:78px;height:78px;position:relative;}
+  .banner h2{position:relative;font-family:var(--serif);color:var(--oncolor);font-size:26px;letter-spacing:2px;margin-top:6px;font-weight:500;}
+  .fbanner{background:var(--bg);border-radius:18px;padding:12px 12px 6px;text-align:center;box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;}
+  .fbanner img{width:100%;max-width:360px;display:block;margin:0 auto;}
+  .fbanner h2{font-family:var(--serif);font-size:25px;letter-spacing:1px;font-weight:500;margin:2px 0 8px;}
+  .bul{display:flex;gap:11px;padding:7px 4px;}
+  .bul .d{color:var(--gold-soft);font-size:10px;margin-top:6px;}
+  .bul .x{color:var(--text);font-size:16px;line-height:1.4;}
+  .btn{display:block;width:100%;background:var(--gold);color:#fff7ea;border:none;border-radius:14px;padding:15px;
+    font-size:16px;font-weight:600;letter-spacing:1px;cursor:pointer;font-family:inherit;text-align:center;
+    box-shadow:6px 6px 14px #d9cdb6,-6px -6px 14px #fffdf4;transition:box-shadow .2s,transform .12s;}
+  .btn:active{box-shadow:inset 4px 4px 9px rgba(120,45,20,.35),inset -2px -2px 6px rgba(255,255,255,.15);transform:scale(.99);}
+  .btn-ghost{background:var(--bg);color:var(--gold);box-shadow:6px 6px 14px #d9cdb6,-6px -6px 14px #fffdf4;margin-top:11px;}
+  label{display:block;color:var(--mid);font-size:13px;margin:0 0 6px;}
+  input,select,textarea{width:100%;background:var(--bg);border:none;border-radius:12px;
+    padding:14px;color:var(--cream);font-size:16px;font-family:inherit;margin-bottom:14px;
+    box-shadow:inset 4px 4px 8px #d9cdb6,inset -4px -4px 8px #fffdf4;}
+  input:focus,select:focus,textarea:focus{outline:none;box-shadow:inset 5px 5px 10px #d9cdb6,inset -5px -5px 10px #fffdf4;}
+  .ev{background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;}
+  .ev .t{color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase;}
+  .ev h3{color:var(--cream);font-size:17px;font-weight:500;margin-top:6px;line-height:1.3;}
+  .ev .m{color:var(--muted);font-size:13px;margin-top:6px;}
+  .ev .row{display:flex;gap:9px;margin-top:13px;}
+  .ev .suggest{display:flex;align-items:center;gap:11px;margin-top:13px;padding:11px 13px;border-radius:13px;cursor:pointer;
+    background:var(--bg);box-shadow:inset 3px 3px 6px #d9cdb6,inset -3px -3px 6px #fffdf4;}
+  .ev .suggest .si{color:#2f6b63;display:flex;flex:none;}
+  .ev .suggest .si svg{width:24px;height:24px;}
+  .ev .suggest b{display:block;color:var(--cream);font-size:13px;font-weight:500;}
+  .ev .suggest small{color:var(--muted);font-size:11px;}
+  .ev .suggest .ar{margin-left:auto;color:var(--gold);font-size:20px;}
+  .ev .bookform{display:none;margin-top:12px;}
+  .ev .bookform.open{display:block;animation:fadeIn .25s ease;}
+  .ev .bookform label{margin-bottom:6px;}
+  .ev .bookform .bookrow{display:flex;gap:9px;align-items:center;}
+  .ev .bookform .bookrow input{margin:0;width:90px;}
+  .ev .bookform .bookrow .btn{margin:0;width:auto;padding:12px 20px;font-size:14px;}
+  .ev .bookform small{display:block;color:var(--muted);font-size:11px;margin-top:7px;}
+  .chip{border:none;border-radius:20px;padding:8px 15px;font-size:13px;color:var(--gold);background:var(--bg);cursor:pointer;
+    box-shadow:4px 4px 9px #d9cdb6,-4px -4px 9px #fffdf4;}
+  .chip.on{background:var(--gold);color:#fff7ea;font-weight:600;box-shadow:inset 3px 3px 6px rgba(120,45,20,.3),inset -2px -2px 5px rgba(255,255,255,.2);}
+  .chip.ghost{box-shadow:none;color:var(--mid);background:transparent;}
+  .mcard{background:var(--bg);border-radius:16px;margin-bottom:14px;overflow:hidden;box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;}
+  .panel{background:var(--bg);border-radius:18px;box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;}
+  .mhead{display:flex;justify-content:space-between;align-items:center;padding:17px;cursor:pointer;}
+  .mhead h3{font-family:var(--serif);color:var(--cream);font-size:20px;font-weight:500;letter-spacing:1px;}
+  .mhead .tg{color:var(--gold);font-size:12px;letter-spacing:1px;margin-top:3px;}
+  .mhead .cv{color:var(--gold);font-size:26px;font-weight:300;}
+  .mbody{padding:0 17px 17px;}
+  .mbody p{color:var(--text);font-size:14px;line-height:1.5;margin-bottom:13px;}
+  .mbody .bl{color:var(--gold-soft);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+  .selrow{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+  .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--bg);
+    color:var(--cream);padding:12px 22px;border-radius:24px;font-size:14px;z-index:60;opacity:0;transition:opacity .3s;pointer-events:none;
+    box-shadow:6px 6px 14px #d9cdb6,-6px -6px 14px #fffdf4;}
+  .toast.show{opacity:1;}
+  .tabbar{position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;display:flex;
+    background:#f1e8d6;box-shadow:0 -6px 16px rgba(58,44,35,.1);}
+  .tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 13px;color:var(--muted);font-size:10px;text-decoration:none;cursor:pointer;transition:color .2s;}
+  .tabbar a .ti{display:flex;align-items:center;justify-content:center;}
+  .tabbar a .ti svg{width:23px;height:23px;}
+  .tabbar a.active{color:var(--gold);}
+  .tabbar a.active .ti{background:#f1e8d6;border-radius:50%;box-shadow:3px 3px 6px #d3c6ad,-3px -3px 6px #fff;padding:7px;margin-top:-2px;}
+  @keyframes ac2In{from{opacity:0;transform:scale(.7);}to{opacity:1;transform:scale(1);}}
+  @keyframes ringDraw{from{opacity:0;transform:scale(.55);}to{opacity:1;transform:scale(1);}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(200,100,60,0);}50%{box-shadow:0 0 26px 3px rgba(200,100,60,.22);}}
+  .gate{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:34px 26px;text-align:center;}
+  .gate .ring{width:132px;height:132px;background:var(--medallion);border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;animation:ringDraw 1.2s cubic-bezier(.2,.7,.2,1) both,glow 3.4s ease 1.2s infinite;}
+  .gate .ring img{width:86px;height:64px;object-fit:contain;animation:ac2In 1.2s ease .15s both;}
+  .gate h1{font-family:var(--serif);color:var(--cream);font-size:30px;font-weight:500;letter-spacing:2px;margin-top:24px;line-height:1.15;animation:fadeUp .8s ease .55s both;}
+  .gate .sub{color:var(--mid);font-size:13px;letter-spacing:2px;text-transform:uppercase;margin-top:12px;animation:fadeUp .8s ease .75s both;}
+  .gate .form{width:100%;max-width:330px;margin-top:30px;animation:fadeUp .9s ease 1.05s both;}
+  .gate.ready .ring,.gate.ready .ring img,.gate.ready h1,.gate.ready .sub,.gate.ready .form{animation:none;}
+  .gate.ready .ring{box-shadow:0 0 22px 1px rgba(200,100,60,.16);}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<nav class="tabbar" id="tabbar"></nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="db.js"></script>
+<script>
+const T={
+  bg:{home:'Начало',events:'Събития',reserve:'Резервация',membership:'Членство',signin:'Вход',profile:'Профил',
+    formats:'Формати',formatsSub:'Седемте формата на клуба. Докосни карта.',quick:'Бързи действия',
+    includes:'Какво включва',enquiry:'Запитване / резервация',seeEvents:'Виж събития',
+    program:'Подбрана програма от вечери, прожекции и разговори.',save:'＋ Запази',saved:'✓ Запазено',reserve2:'Резервирай',
+    memIntro:'Членството е чрез персонална покана и внимателно разглеждане на всяко предложение.',benefits:'Основни предимства',
+    resTitle:'Запитване за резервация',format:'Формат',place:'Място / зала',date:'Дата',time:'Час',party:'Брой места',note:'Бележка (по желание)',send:'Изпрати запитване',
+    seats:'места',loginTitle:'Вход в клуба',email:'Имейл',pass:'Парола',enter:'Влез',noAcc:'Нямаш профил? Регистрирай се',
+    signupTitle:'Нов профил',uname:'Потребителско име',memCat:'Категория членство',create:'Създай профил',haveAcc:'Вече имаш профил? Влез',
+    savedToast:'Запазено в профила',resToast:'Запитването е изпратено',loginToast:'Влязохте успешно',
+    myEvents:'Моите събития',myRes:'Моите резервации',noEvents:'Все още няма запазени събития.',noRes:'Няма резервации.',signout:'Изход',
+    allow:'Места за запазване',signinSave:'Влез, за да запазваш събития',tierLocked:'Не е достъпно за твоето членство',locked:'🔒 Заключено',access:'Достъп според членството',memb:'Твоето членство',
+    live:'На живо',noLiveTitle:'Няма активно излъчване в момента',noLiveSub:'Тук ще се появи live stream, когато започне представление.',nextUp:'Следващо събитие',watch:'▶ Гледай на живо',liveLockedMsg:'Това излъчване не е достъпно за твоето членство.',openExt:'Отвори в нов прозорец',liveTag:'НА ЖИВО',
+    forgot:'Забравена парола?',enterEmail:'Въведи имейла си',resetSent:'Изпратихме линк за нова парола на имейла ти',changePass:'Смени парола',newPassPrompt:'Нова парола (поне 6 знака):',passChanged:'Паролата е сменена',passShort:'Твърде кратка парола',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими'},
+  en:{home:'Home',events:'Events',reserve:'Reserve',membership:'Membership',signin:'Sign in',profile:'Profile',
+    formats:'Formats',formatsSub:'The seven formats of the club. Tap a card.',quick:'Quick actions',
+    includes:'What it includes',enquiry:'Enquiry / reservation',seeEvents:'See events',
+    program:'A selected programme of dinners, screenings and conversations.',save:'＋ Save',saved:'✓ Saved',reserve2:'Reserve',
+    memIntro:'Membership is by personal invitation and careful review of each proposal.',benefits:'Key benefits',
+    resTitle:'Reservation enquiry',format:'Format',place:'Place / room',date:'Date',time:'Time',party:'Party size',note:'Note (optional)',send:'Send request',
+    seats:'seats',loginTitle:'Sign in',email:'Email',pass:'Password',enter:'Sign in',noAcc:"No account? Sign up",
+    signupTitle:'Create account',uname:'Username',memCat:'Membership category',create:'Sign up',haveAcc:'Already have an account? Sign in',
+    savedToast:'Saved to profile',resToast:'Request sent',loginToast:'Signed in',
+    myEvents:'My saved events',myRes:'My reservations',noEvents:'No saved events yet.',noRes:'No reservations.',signout:'Sign out',
+    allow:'Seats you can book',signinSave:'Sign in to save events',tierLocked:'Not available for your membership',locked:'🔒 Locked',access:'Access by membership',memb:'Your membership',
+    live:'Live',noLiveTitle:'No live stream right now',noLiveSub:'A live stream will appear here when a performance starts.',nextUp:'Next event',watch:'▶ Watch live',liveLockedMsg:'This stream is not available for your membership.',openExt:'Open in new window',liveTag:'LIVE',
+    forgot:'Forgot password?',enterEmail:'Enter your email',resetSent:'We sent a password reset link to your email',changePass:'Change password',newPassPrompt:'New password (min 6 chars):',passChanged:'Password changed',passShort:'Password too short',inviteOnly:'Access is by club invitation only.',demoOnlyLive:'Available after Supabase is connected',ticket:'Reserve a ticket',tableSuggest:'Reserve a table at AC² Table',afterEvent:'After the event',ticketToast:'Request sent',fav:'Favorites'}
+};
+const FORMATS=[
+ {id:'culture',t:'AC² Culture',c:'#6b3a5b',img:'cards/logo-culture.webp',b:{bg:['музика','изложби','литература','камерни театрални формати','срещи с артисти и лектори'],en:['music','exhibitions','literature','chamber theatre formats','meetings with artists and lecturers']}},
+ {id:'cinema',t:'AC² Cinema',c:'#b5532f',img:'cards/logo-cinema.webp',b:{bg:['филмови вечери','прожекции','дискусии','тематични и семейни формати'],en:['film evenings','screenings','discussions','thematic and family formats']}},
+ {id:'table',t:'AC² Table',c:'#2f6b63',img:'cards/logo-table.webp',b:{bg:['вечери','разговори','гастрономически събития','частни резервации','по-лични срещи около масата'],en:['dinners','conversations','gastronomic events','private reservations','more personal encounters at the table']}},
+ {id:'music',t:'AC² Music',c:'#6f7a39',img:'cards/logo-music.webp',b:{bg:['камерни концерти','музикални вечери','солови изпълнения','гост-музиканти'],en:['chamber concerts','musical evenings','solo performances','guest musicians']}},
+ {id:'conversation',t:'AC² Conversation',c:'#bf8a2e',img:'cards/logo-conversation.webp',b:{bg:['разговори с гости','образователни теми','професионални срещи','малки формати с внимателно подбрана публика'],en:['conversations with guests','educational topics','professional meetings','small formats with a carefully selected audience']}},
+ {id:'community',t:'AC² Community',c:'#9c6b4a',img:'cards/logo-community.webp',b:{bg:['семейни поводи','alumni събития','училищно-свързани формати','дискретни срещи в по-лична среда'],en:['family occasions','alumni gatherings','school-related formats','discreet meetings in a more personal setting']}},
+ {id:'theater',t:'AC² Theater',c:'#9c424c',img:'cards/logo-theater.webp',b:{bg:['камерни постановки','сценични четения','гост-актьори','формати с подбран артистичен характер'],en:['chamber productions','staged readings','guest actors','formats of selected artistic character']}}
+];
+// Събитията идват от общия слой db.js (Supabase когато е свързан, иначе демо).
+let EVENTS=[];
+const MEMBERSHIP_LIST=['founder','founding','club','alumni','corporate'];
+let previewAs=null; // за преглед „как изглежда за дадено членство"
+const curMembership=()=>previewAs||(user&&user.membership)||'guest';
+// Видимост: 'all' = всички членове, иначе списък с категории
+const canAccess=ev=>ev.aud==='all'||(Array.isArray(ev.aud)&&ev.aud.includes(curMembership()));
+function evMeta(e){const d=e.date?new Date(e.date+'T00:00:00'):null;const ds=d?d.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{day:'numeric',month:'long'}):'';const t=e.time?(e.time+(e.ends?('–'+e.ends):'')):'';return [ds,t,e.place].filter(Boolean).join(' · ');}
+// събитие, което приключва до 22:30 → предлагаме маса в ресторанта (AC² Table)
+function endsEarly(e){return e.ends && e.format!=='table' && e.ends<='22:30';}
+function audNames(aud){if(aud==='all'||(Array.isArray(aud)&&aud.length>=MEMBERSHIP_LIST.length))return lang==='bg'?'Всички членове':'All members';if(!Array.isArray(aud)||!aud.length)return '—';return aud.map(a=>MEMBERS.find(m=>m.id===a)?.t||a).join(', ');}
+const MEMBERS=[
+ {id:'founder',t:'Founder',seats:8,tag:{bg:'Основателски статус',en:'Founding status'},
+  d:{bg:'Founder е основателският статус в American College Arcus Club — свързан с хората, които стоят зад създаването, посоката и първоначалната култура на клуба.',en:'Founder is the founding status of the club — for the people behind its creation, direction and original culture.'},
+  bn:{bg:['Основателски статус в клуба','Участие във формирането на клубната култура','Роля в подбора на нови членове','Дългосрочен ангажимент към ценностите на клуба'],en:['Founding status in the club','Shaping the club culture and first traditions','A role in selecting new members','Long-term commitment to the club values']}},
+ {id:'founding',t:'Founding Member',seats:6,tag:{bg:'Първият поканен кръг',en:'The first invited circle'},
+  d:{bg:'Специална покана към ограничен кръг хора, които ще бъдат сред първите членове на клуба — усещане за ранна принадлежност.',en:'A special invitation to a limited circle who will be among the first members — an early sense of belonging.'},
+  bn:{bg:['Принадлежност към първия поканен кръг','Участие във формирането на традициите','Възможност за предложения на нови членове','Приоритетен достъп до събития','Номерирана Founding Member карта'],en:['Belonging to the first invited circle','Shaping the first traditions','The ability to propose new members','Priority access to events','A numbered Founding Member card']}},
+ {id:'club',t:'Club Member',seats:4,tag:{bg:'Основната клубна категория',en:'The core club category'},
+  d:{bg:'Основната членска категория — за хората, които желаят да бъдат активна част от клубния живот, неговата програма и общност.',en:'The core membership category — for those who wish to be an active part of club life, its programme and community.'},
+  bn:{bg:['Достъп до клубната програма и събития','Покани за културни и гастрономически формати','Приоритет при резервации','5% членска преференция в AC² Table','Персонализирана Club Member карта'],en:['Access to the programme and events','Invitations to cultural and gastronomic formats','Priority for reservations','5% member preference at AC² Table','A personalised Club Member card']}},
+ {id:'alumni',t:'Alumni Member',seats:3,tag:{bg:'Връзка с училищната общност',en:'Link to the school community'},
+  d:{bg:'Специална категория за хората с лична връзка към общността на Американски Колеж Аркус — възпитаници, родители, учители.',en:'A special category for those with a personal connection to the American College Arcus community.'},
+  bn:{bg:['Достъп до избрани клубни събития','Покани за училищно-свързани събития','Участие в AC² Cinema и AC² Culture','3% членска преференция в AC² Table','Персонализирана Alumni карта'],en:['Access to selected club events','Invitations to school-related events','Participation in AC² Cinema and Culture','3% member preference at AC² Table','A personalised Alumni card']}},
+ {id:'corporate',t:'Corporate Member',seats:5,tag:{bg:'Присъствие на партньори',en:'Presence for partners'},
+  d:{bg:'Категория за компании и организации, които споделят ценностите на клуба — култура, образование, качество и смислено общуване.',en:'A category for companies and organisations that share the club values.'},
+  bn:{bg:['Членство за компании и организации','Достъп за до 5 представители','Покани за професионални формати','Дискретни срещи в уединена зона','Персонализирана Corporate карта'],en:['Membership for companies and organisations','Access for up to 5 representatives','Invitations to professional formats','Discreet meetings in a secluded area','A personalised Corporate card']}}
+];
+const AC2='cards/logo-ac2.webp';
+// Единен набор линейни икони (в стила на мотивите)
+const ICN={
+  home:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg>`,
+  events:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M4 9h16M8 3v4M16 3v4"/><circle cx="9" cy="13" r="1.1" fill="currentColor" stroke="none"/><circle cx="13" cy="13" r="1.1" fill="currentColor" stroke="none"/></svg>`,
+  live:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z" fill="currentColor" stroke="none"/></svg>`,
+  reserve:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7M9 3v7M7.5 10v11M7.5 3v3"/><path d="M17 3c-1.7 0-2.8 2-2.8 5.2 0 2.5 1.2 3.6 2.8 3.6V3zM17 3v18"/></svg>`,
+  membership:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.3 6.6L21 12l-6.7 2.4L12 21l-2.3-6.6L3 12l6.7-2.4z"/></svg>`,
+  profile:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>`
+};
+
+let lang=localStorage.getItem('lang')||'bg';
+let saved=[];
+let user=null;
+let RES=[];
+let loginMode='login';
+const app=document.getElementById('app');
+const tr=k=>T[lang][k];
+const tx=o=>o[lang];
+const esc=s=>(''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function go(h){location.hash=h;}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1900);}
+function toggleLang(){lang=lang==='bg'?'en':'bg';localStorage.setItem('lang',lang);document.documentElement.lang=lang;route();}
+function topbar(title){
+  const left=title?`<span class="back" onclick="history.back()">‹</span>`:'';
+  const center=title?`<span style="color:var(--cream);font-size:14px;letter-spacing:1px;">${title}</span>`:
+    `<span class="mark" onclick="go('')"><img src="${AC2}" alt="AC²"/>Arcus Club</span>`;
+  return `<div class="topbar">
+    <div style="display:flex;align-items:center;gap:6px;">${left}${center}</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="pill" onclick="toggleLang()">${lang==='bg'?'EN':'BG'}</button>
+      <button class="pill" onclick="go(user?'profile':'login')">${user?ICN.profile:tr('signin')}</button>
+    </div></div>`;
+}
+
+function home(){
+  const SIZE={culture:'wide',cinema:'tall',theater:'wide'};
+  const MOTIF={
+    culture:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M40 26 C33 20 22 20 15 23 V57 C22 54 33 54 40 59"/><path d="M40 26 C47 20 58 20 65 23 V57 C58 54 47 54 40 59"/><path d="M40 26 V59"/></g></svg>`,
+    cinema:`<svg viewBox="0 0 80 80"><rect x="22" y="15" width="36" height="50" rx="5" fill="none" stroke="currentColor" stroke-width="4"/><g fill="currentColor"><rect x="26" y="20" width="6" height="6" rx="1.5"/><rect x="48" y="20" width="6" height="6" rx="1.5"/><rect x="26" y="37" width="6" height="6" rx="1.5"/><rect x="48" y="37" width="6" height="6" rx="1.5"/></g></svg>`,
+    table:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M30 18 h18 c0 14 -9 19 -9 19 c0 0 -9 -5 -9 -19 Z"/><path d="M39 37 v17"/><path d="M31 56 h16"/></g></svg>`,
+    music:`<svg viewBox="0 0 80 80"><g stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"><path d="M34 52 V20 l18 -5 V44"/><path d="M34 20 l18 -5"/></g><g fill="currentColor"><ellipse cx="28" cy="53" rx="7.5" ry="6" transform="rotate(-18 28 53)"/><ellipse cx="46" cy="48" rx="7.5" ry="6" transform="rotate(-18 46 48)"/></g></svg>`,
+    conversation:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"><path d="M14 22 h30 a4 4 0 0 1 4 4 v14 a4 4 0 0 1 -4 4 H26 l-9 8 v-8 h-3 a4 4 0 0 1 -4 -4 V26 a4 4 0 0 1 4 -4 Z"/><path d="M54 38 h12 a4 4 0 0 1 4 4 v10 a4 4 0 0 1 -4 4 h-2 v6 l-7 -6 h-3 a4 4 0 0 1 -4 -4 V42 a4 4 0 0 1 4 -4 Z"/></g></svg>`,
+    community:`<svg viewBox="0 0 80 80"><g fill="currentColor"><circle cx="28" cy="30" r="6.5"/><circle cx="52" cy="30" r="6.5"/><circle cx="40" cy="25" r="7"/></g><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M16 58 q9 -17 24 -17 q15 0 24 17"/></g></svg>`,
+    theater:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 24 c14 -4 22 2 22 16 c0 14 -8 22 -16 22 c-9 0 -14 -10 -14 -24 c0 -8 2 -12 8 -14 Z"/><path d="M24 38 q3 -3 6 0 M30 50 q-4 4 -9 1"/><path d="M62 24 c-14 -4 -22 2 -22 16 c0 14 8 22 16 22 c9 0 14 -10 14 -24 c0 -8 -2 -12 -8 -14 Z"/><path d="M56 38 q-3 -3 -6 0 M50 52 q4 4 9 1"/></g></svg>`
+  };
+  let cards=FORMATS.map(f=>{
+    const n=EVENTS.filter(e=>e.format===f.id&&canAccess(e)).length;
+    const badge=n?`<div class="evbadge"><span class="evdot" style="background:${f.c}"></span>${n} ${n===1?(lang==='bg'?'събитие':'event'):(lang==='bg'?'събития':'events')}</div>`:'';
+    return `<div class="fcard" onclick="go('format/${f.id}')">
+    <div class="top"><div class="well" style="color:${f.c}">${MOTIF[f.id]||''}</div><div class="ac2" style="color:${f.c}">AC²</div></div>
+    <div class="body"><div class="lab" style="color:${f.c}">${lang==='bg'?'Формат':'Format'}</div>
+      <h3>${f.t.replace('AC² ','')}</h3><span>${tx(f.b).slice(0,2).join(' · ')}</span>${badge}</div>
+    </div>`;
+  }).join('');
+  const anyLive=EVENTS.some(e=>e.is_live&&e.stream_url&&canAccess(e));
+  const liveLabel=anyLive?(lang==='bg'?'● На живо':'● Live'):tr('live');
+  const quick=[['events','events',tr('events'),'#2f6b63'],['live','live',liveLabel,'#b5532f'],['reserve','reserve',tr('reserve'),'#bf8a2e'],['membership','membership',tr('membership'),'#6b3a5b']];
+  let tiles=quick.map(q=>`<div class="tile" onclick="go('${q[0]}')"><div class="ic" style="color:${q[3]}">${ICN[q[1]]}</div><div class="lb">${q[2]}</div></div>`).join('');
+  return topbar('')+`
+    <div class="hero"><img class="ac2" src="${AC2}" alt="AC²"/>
+      <h1>American College<br>Arcus Club</h1>
+      <img class="hero-illu" src="illustrations/hero.svg" alt="" />
+      </div>
+    <div class="sec-title">${tr('formats')}</div><div class="sec-sub">${tr('formatsSub')}</div>
+    <div class="grid">${cards}</div>
+    <div class="sec-title">${tr('quick')}</div>
+    <div class="grid" style="margin-top:4px;">${tiles}</div>
+    <div class="contact"><div class="tag">${lang==='bg'?'Култура · Общност · Споделени стандарти':'Culture · Community · Shared Standards'}</div>
+      info@arcusclub.bg<br>+359 (0) 000 000<br>${lang==='bg'?'София, България':'Sofia, Bulgaria'}</div>`;
+}
+function formatPage(id){
+  const f=FORMATS.find(x=>x.id===id); if(!f)return home();
+  let bul=tx(f.b).map(b=>`<div class="bul"><span class="d">◆</span><span class="x">${b}</span></div>`).join('');
+  const fevents=EVENTS.filter(e=>e.format===f.id&&canAccess(e));
+  const prog=fevents.length?fevents.map(eventCard).join(''):`<p style="color:var(--muted);font-style:italic;">${lang==='bg'?'Все още няма обявени събития.':'No events announced yet.'}</p>`;
+  return topbar(f.t)+`<div class="page">
+    <div class="fbanner" style="border-color:${f.c}33"><img src="illustrations/fmt-${f.id}.svg" alt=""/><h2 style="color:${f.c}">${f.t}</h2></div>
+    <div class="sec-title" style="padding:18px 4px 6px;">${tr('includes')}</div>${bul}
+    <div class="sec-title" style="padding:20px 4px 8px;">${lang==='bg'?'Програма':'Programme'}</div>${prog}
+    </div>`;
+}
+function eventCard(e){
+  const on=saved.includes(e.id);
+  const fav=`<button class="chip ${on?'on':''}" onclick="event.stopPropagation();toggleSave('${e.id}')">${on?'♥':'♡'} ${tr('fav')}</button>`;
+  const book=`<button class="chip" onclick="event.stopPropagation();toggleBook('${e.id}')">${tr('ticket')}</button>`;
+  const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):1;
+  const form=`<div class="bookform" id="bk_${e.id}">
+    <label>${tr('party')}</label>
+    <div class="bookrow"><input id="bp_${e.id}" type="number" min="1" max="${seats}" value="2"/>
+      <button class="btn" onclick="event.stopPropagation();confirmBook('${e.id}')">${tr('send')}</button></div>
+    <small>${lang==='bg'?'до':'up to'} ${seats} ${tr('seats')} · ${lang==='bg'?'според членството':'per your membership'}</small></div>`;
+  const suggest=endsEarly(e)?`<div class="suggest" onclick="event.stopPropagation();go('reserve?f=table')">
+    <span class="si">${ICN.reserve}</span><div><b>${tr('tableSuggest')}</b><small>${tr('afterEvent')} · ${e.ends}</small></div><span class="ar">›</span></div>`:'';
+  return `<div class="ev"><div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>
+    <div class="row">${fav}${book}</div>${form}${suggest}</div>`;
+}
+function events(){
+  const mine=EVENTS.filter(canAccess);
+  const list=mine.length?mine.map(eventCard).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noEvents')}</p>`;
+  return topbar(tr('events'))+`<div class="page"><p style="color:var(--mid);font-size:14px;margin-bottom:14px;">${tr('program')}</p>${list}</div>`;
+}
+function setPreview(id){previewAs=id||null;route();}
+function toggleBook(id){
+  if(!user){needLogin();return;}
+  const f=document.getElementById('bk_'+id); if(f)f.classList.toggle('open');
+}
+async function confirmBook(id){
+  if(!user){needLogin();return;}
+  const e=EVENTS.find(x=>x.id===id); if(!e)return;
+  const inp=document.getElementById('bp_'+id); const n=parseInt((inp&&inp.value)||'1',10);
+  const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
+  if(n<1){toast(tr('party'));return;}
+  if(n>seats){toast((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
+  await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:e.time,party:n,note:'Билет / ticket'});
+  const f=document.getElementById('bk_'+id); if(f)f.classList.remove('open');
+  toast(tr('ticketToast'));
+}
+function streamEmbed(u){
+  if(!u)return '';
+  let m;
+  if((m=u.match(/(?:youtube\.com\/.*[?&]v=|youtu\.be\/|youtube\.com\/live\/)([\w-]{6,})/)))return 'https://www.youtube.com/embed/'+m[1]+'?autoplay=1';
+  if((m=u.match(/vimeo\.com\/(\d+)/)))return 'https://player.vimeo.com/video/'+m[1]+'?autoplay=1';
+  return u;
+}
+function liveView(){
+  const liveOnes=EVENTS.filter(e=>e.is_live&&e.stream_url&&canAccess(e));
+  let body;
+  if(liveOnes.length){
+    body=liveOnes.map(e=>`<div class="ev" style="border-color:#d98b6e;">
+      <div class="t" style="color:#d98b6e;">● ${tr('liveTag')} · ${e.format}</div>
+      <h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>
+      <div style="position:relative;padding-top:56.25%;margin-top:12px;border-radius:10px;overflow:hidden;background:#000;">
+        <iframe src="${esc(streamEmbed(e.stream_url))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen
+          style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>
+      <div class="row" style="margin-top:10px;"><a class="chip ghost" href="${esc(e.stream_url)}" target="_blank" rel="noopener">${tr('openExt')}</a></div>
+    </div>`).join('');
+  }else{
+    const up=EVENTS.filter(canAccess).filter(e=>e.date).sort((a,b)=>a.date<b.date?-1:1)[0];
+    body=`<div class="ev" style="text-align:center;padding:32px 18px;">
+      <div style="font-size:34px;margin-bottom:8px;color:var(--gold-soft);">▶</div>
+      <h3 style="font-size:18px;">${tr('noLiveTitle')}</h3>
+      <div class="m" style="margin-top:6px;">${tr('noLiveSub')}</div></div>`;
+    if(up)body+=`<div class="sec-title" style="padding:14px 0 8px;">${tr('nextUp')}</div>
+      <div class="ev"><div class="t">${up.format}</div><h3>${esc(up.title)}</h3><div class="m">${evMeta(up)}</div></div>`;
+  }
+  return topbar(tr('live'))+`<div class="page">${body}</div>`;
+}
+function needLogin(){toast(tr('signinSave'));setTimeout(()=>go('login'),800);}
+async function toggleSave(id){
+  if(!user){needLogin();return;}
+  const ev=EVENTS.find(e=>e.id===id);
+  if(ev&&!canAccess(ev)){toast(tr('tierLocked'));return;}
+  const now=await DB.toggleSaved(id);
+  if(now)toast(tr('savedToast'));
+  saved=await DB.listSaved();route();
+}
+function membership(){
+  let list=MEMBERS.map((m,i)=>`<div class="mcard">
+    <div class="mhead" onclick="toggleMem(${i})">
+      <div><h3>${m.t}</h3><div class="tg">${tx(m.tag)}</div></div>
+      <div style="text-align:right;display:flex;align-items:center;gap:12px;">
+        <div><div style="color:var(--text);font-size:17px;">${m.seats}</div><div style="color:var(--muted);font-size:9px;">${tr('seats')}</div></div>
+        <span class="cv" id="cv${i}">${i===0?'−':'+'}</span></div></div>
+    <div class="mbody" id="mb${i}" style="display:${i===0?'block':'none'}">
+      <p>${tx(m.d)}</p><div class="bl">${tr('benefits')}</div>
+      ${tx(m.bn).map(b=>`<div class="bul"><span class="d">◆</span><span class="x" style="font-size:14px;">${b}</span></div>`).join('')}</div></div>`).join('');
+  return topbar(tr('membership'))+`<div class="page"><p style="color:var(--mid);font-size:14px;line-height:1.5;margin-bottom:14px;">${tr('memIntro')}</p>${list}</div>`;
+}
+function toggleMem(i){const b=document.getElementById('mb'+i),c=document.getElementById('cv'+i);
+  const open=b.style.display==='block';b.style.display=open?'none':'block';c.textContent=open?'+':'−';}
+function reserve(q){
+  const pre=new URLSearchParams(q).get('f')||'table';
+  const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):4;
+  let sel=FORMATS.map(f=>`<button type="button" class="chip ${f.id===pre?'on':''}" onclick="selFmt(this)" data-f="${f.id}">${f.t.replace('AC² ','')}</button>`).join('');
+  const memInfo=user?`<p style="color:var(--muted);font-size:12px;margin:6px 0 16px;">${tr('memb')}: ${MEMBERS.find(m=>m.id===user.membership)?.t||'Guest'} · ${lang==='bg'?'до':'up to'} ${seats} ${tr('seats')}</p>`
+    :`<div class="ev" style="border-color:var(--gold-soft);margin:10px 0 16px;"><h3 style="font-size:15px;">${tr('signinSave')}</h3><div class="row"><button class="chip on" onclick="go('login')">${tr('signin')}</button></div></div>`;
+  return topbar(tr('reserve'))+`<div class="page">
+    <h2 style="font-family:var(--serif);color:var(--cream);font-size:24px;font-weight:500;">${tr('resTitle')}</h2>
+    ${memInfo}
+    <label>${tr('format')}</label><div class="selrow" id="fmtsel">${sel}</div>
+    <label>${tr('place')}</label><input id="r_place" placeholder="Trapezna"/>
+    <label>${tr('date')}</label><input id="r_date" type="date"/>
+    <label>${tr('time')}</label><input id="r_time" placeholder="19:30"/>
+    <label>${tr('party')}</label><input id="r_party" type="number" value="2" min="1" max="${seats}"/>
+    <label>${tr('note')}</label><textarea id="r_note" rows="2"></textarea>
+    <button class="btn" onclick="sendRes(${seats})">${tr('send')}</button></div>`;
+}
+let pickedFmt=null;
+function selFmt(b){document.querySelectorAll('#fmtsel .chip').forEach(c=>c.classList.remove('on'));b.classList.add('on');pickedFmt=b.dataset.f;}
+async function sendRes(seats){
+  if(!user){needLogin();return;}
+  const n=parseInt(document.getElementById('r_party').value||'0',10);
+  if(n<1){toast(tr('party'));return;}
+  if(n>seats){toast((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
+  const fmt=pickedFmt||document.querySelector('#fmtsel .chip.on')?.dataset.f||'table';
+  await DB.addReservation({fmt,place:document.getElementById('r_place').value,date:document.getElementById('r_date').value,
+    time:document.getElementById('r_time').value,party:n,note:document.getElementById('r_note').value});
+  toast(tr('resToast'));setTimeout(()=>go('profile'),700);
+}
+let entered=false;
+function gate(){
+  const live=DB.live;
+  const su=loginMode==='signup';
+  const memChips=MEMBERS.concat([{id:'guest',t:'Guest'}]).map(m=>`<button type="button" class="chip ${pickedMem===m.id?'on':''}" onclick="pickMem(this)" data-m="${m.id}">${m.t}</button>`).join('');
+  const fields=live
+    ? `<input id="l_email" type="email" autocapitalize="none" autocomplete="username" placeholder="${tr('email')}" onkeydown="if(event.key==='Enter')doAuth()"/>
+       <input id="l_pass" type="password" autocomplete="current-password" placeholder="${tr('pass')}" onkeydown="if(event.key==='Enter')doAuth()"/>
+       <button class="btn" onclick="doAuth()">${tr('enter')}</button>
+       <div style="margin-top:14px;"><a style="color:var(--gold);font-size:13px;cursor:pointer;" onclick="doForgot()">${tr('forgot')}</a></div>
+       <div style="margin-top:10px;color:var(--muted);font-size:12px;">${tr('inviteOnly')}</div>`
+    : `<input id="l_user" autocapitalize="none" autocomplete="username" placeholder="${tr('uname')}" onkeydown="if(event.key==='Enter')doAuth()"/>
+       <input id="l_pass" type="password" autocomplete="current-password" placeholder="${tr('pass')}" onkeydown="if(event.key==='Enter')doAuth()"/>
+       <button class="btn" onclick="doAuth()">${tr('enter')}</button>
+       <div style="margin-top:14px;color:var(--muted);font-size:12px;">${lang==='bg'?'Демо достъп':'Demo access'}: <span style="color:var(--gold);">admin / admin</span></div>`;
+  return `<div class="gate${entered?' ready':''}">
+    <div style="position:absolute;top:16px;right:16px;"><button class="pill" onclick="toggleLang()">${lang==='bg'?'EN':'BG'}</button></div>
+    <div class="ring"><img src="${AC2}" alt="AC²"/></div>
+    <h1>American College<br>Arcus Club</h1>
+    <div class="sub">${su?tr('signupTitle'):(lang==='bg'?'Вход за членове':'Members’ entrance')}</div>
+    <div class="form">${fields}</div></div>`;
+}
+let pickedMem='guest';
+function pickMem(b){document.querySelectorAll('#memsel .chip').forEach(c=>c.classList.remove('on'));b.classList.add('on');pickedMem=b.dataset.m;}
+function switchMode(){loginMode=loginMode==='login'?'signup':'login';route();}
+async function doAuth(){
+  if(DB.live){
+    const email=(document.getElementById('l_email').value||'').trim();
+    const pass=document.getElementById('l_pass').value||'';
+    if(!email||!pass){toast(tr('email'));return;}
+    if(loginMode==='signup'){
+      const uname=(document.getElementById('l_user').value||'').trim();
+      const {error}=await DB.signUp(email,pass,uname,pickedMem);
+      if(error){toast(error.message);return;}
+    }else{
+      const {error}=await DB.signIn(email,pass);
+      if(error){toast((lang==='bg'?'Грешка: ':'Error: ')+error.message);return;}
+    }
+  }else{
+    const u=document.getElementById('l_user').value,p=document.getElementById('l_pass').value;
+    if(!DB.demoLogin(u,p)){toast(lang==='bg'?'Грешно име или парола':'Wrong username or password');return;}
+  }
+  user=await DB.getUser();
+  if(!user){toast(lang==='bg'?'Потвърди имейла си и влез':'Confirm your email, then sign in');return;}
+  saved=await DB.listSaved();EVENTS=await DB.listEvents();
+  toast(tr('loginToast'));location.hash='';route();
+}
+async function doForgot(){
+  if(!DB.live){toast(tr('demoOnlyLive'));return;}
+  const email=(document.getElementById('l_email')?.value||'').trim();
+  if(!email){toast(tr('enterEmail'));return;}
+  const {error}=await DB.resetPassword(email);
+  if(error){toast(error.message);return;}
+  toast(tr('resetSent'));
+}
+async function changePass(){
+  if(!DB.live){toast(tr('demoOnlyLive'));return;}
+  const p=prompt(tr('newPassPrompt'));
+  if(p===null)return;
+  if((p||'').length<6){toast(tr('passShort'));return;}
+  const {error}=await DB.updatePassword(p);
+  if(error){toast(error.message);return;}
+  toast(tr('passChanged'));
+}
+function profile(){
+  if(!user)return gate();
+  const m=MEMBERS.find(x=>x.id===user.membership);
+  const seats=m?m.seats:1;
+  const sev=saved.map(id=>EVENTS.find(e=>e.id===id)).filter(Boolean);
+  const res=RES;
+  return topbar(tr('profile'))+`<div class="page">
+    <div class="panel" style="padding:22px;text-align:center;">
+      <div style="color:var(--cream);font-size:22px;font-family:var(--serif);">${esc(user.username||user.email)}</div>
+      <div style="display:inline-block;margin-top:8px;border:1px solid var(--gold);border-radius:20px;padding:5px 16px;color:var(--gold);font-size:13px;letter-spacing:2px;text-transform:uppercase;">${m?m.t:'Guest'}</div>
+      <div style="color:var(--mid);font-size:13px;margin-top:12px;">${tr('allow')}: <b style="color:var(--text);">${seats}</b></div>
+      <div style="color:var(--mid);font-size:12px;margin-top:6px;">${EVENTS.filter(canAccess).length} ${lang==='bg'?'налични събития':'available events'}</div></div>
+    <div class="sec-title" style="padding:24px 0 8px;">${tr('myEvents')}</div>
+    ${sev.length?sev.map(e=>`<div class="ev" style="margin-bottom:8px;"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m">${evMeta(e)}</div></div>`).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noEvents')}</p>`}
+    <div class="sec-title" style="padding:22px 0 8px;">${tr('myRes')}</div>
+    ${res.length?res.map(r=>`<div class="ev" style="margin-bottom:8px;"><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}</h3><div class="m">${esc(r.date||'')} — ${r.status}</div></div>`).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noRes')}</p>`}
+    ${DB.live?`<button class="btn btn-ghost" style="margin-top:26px;" onclick="changePass()">${tr('changePass')}</button>`:''}
+    <button class="btn btn-ghost" style="margin-top:12px;" onclick="signout()">${tr('signout')}</button></div>`;
+}
+async function signout(){await DB.signOut();user=null;saved=[];RES=[];go('');}
+function tabbar(active){
+  const items=[['','home',tr('home')],['events','events',tr('events')],['live','live',tr('live')],['reserve','reserve',tr('reserve')],['membership','membership',tr('membership')],[user?'profile':'login','profile',user?tr('profile'):tr('signin')]];
+  document.getElementById('tabbar').innerHTML=items.map(i=>`<a onclick="go('${i[0]}')" class="${active===(i[0]||'home')?'active':''}"><span class="ti">${ICN[i[1]]}</span>${i[2]}</a>`).join('');
+}
+async function route(){
+  const tb=document.getElementById('tabbar');
+  if(!user){
+    app.innerHTML=gate();window.scrollTo(0,0);tb.style.display='none';entered=true;return;
+  }
+  tb.style.display='flex';
+  const raw=location.hash.replace(/^#/,'');
+  const [path,q]=raw.split('?');
+  if(path!=='events')previewAs=null;
+  const parts=path.split('/');
+  if(['','home','events','profile','live'].includes(path)||parts[0]==='format'){ try{EVENTS=await DB.listEvents();saved=await DB.listSaved();}catch(e){} }
+  if(path==='profile'){ try{RES=await DB.listReservations();}catch(e){RES=[];} }
+  let html,active='home';
+  if(path===''||path==='home'){html=home();active='home';}
+  else if(parts[0]==='format'){html=formatPage(parts[1]);active='home';}
+  else if(path==='events'){html=events();active='events';}
+  else if(path==='live'){html=liveView();active='live';}
+  else if(path==='reserve'){html=reserve(q||'');active='reserve';}
+  else if(path==='membership'){html=membership();active='membership';}
+  else if(path==='profile'){html=profile();active='profile';}
+  else{html=home();}
+  app.innerHTML=html;window.scrollTo(0,0);tabbar(active);
+}
+window.addEventListener('hashchange',()=>{loginMode='login';route();});
+document.documentElement.lang=lang;
+DB.onRecovery(async ()=>{
+  const p=prompt(tr('newPassPrompt'));
+  if(p&&p.length>=6){const {error}=await DB.updatePassword(p);toast(error?error.message:tr('passChanged'));}
+});
+(async function(){
+  try{ user=await DB.getUser(); if(user){saved=await DB.listSaved();EVENTS=await DB.listEvents();} }catch(e){}
+  route();
+})();
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+</body>
+</html>

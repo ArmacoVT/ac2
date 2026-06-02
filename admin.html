@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#f6efe2" />
+<title>Arcus Club · Админ панел</title>
+<link rel="icon" href="favicon.svg" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--bg:#f6efe2;--surface:#fffaf0;--gold:#c8643c;--gold-soft:#b07a4a;--cream:#3a2c23;--text:#5a4a3c;
+    --mid:#8a6f5c;--muted:#a8927c;--line:rgba(58,44,35,0.16);--ok:#4f7a43;--warn:#b5532f;--serif:'Cormorant Garamond',Georgia,serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  .wrap{max-width:760px;margin:0 auto;padding:0 16px 60px;}
+  .top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;
+    padding:14px 0;background:rgba(246,239,226,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin-bottom:18px;}
+  .top .b{font-family:var(--serif);color:var(--gold);font-size:19px;letter-spacing:1px;}
+  .top .b small{color:var(--mid);font-size:12px;letter-spacing:0;}
+  .tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .tab{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:22px;padding:8px 16px;font-size:14px;cursor:pointer;font-family:inherit;}
+  .tab.on{background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:600;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;}
+  h2{font-family:var(--serif);color:var(--cream);font-weight:500;font-size:22px;margin-bottom:12px;}
+  h3{color:var(--cream);font-size:16px;font-weight:500;}
+  label{display:block;color:var(--mid);font-size:13px;margin:10px 0 5px;}
+  input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:11px;color:var(--cream);font-size:15px;font-family:inherit;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold-soft);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .btn{background:var(--gold);color:var(--bg);border:none;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--gold);}
+  .btn.sm{padding:7px 13px;font-size:13px;border-radius:18px;}
+  .btn.ok{background:var(--ok);color:#fff;}
+  .btn.no{background:transparent;border:1px solid var(--warn);color:#d98b6e;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .ck{border:1px solid var(--line);border-radius:20px;padding:7px 13px;font-size:13px;cursor:pointer;user-select:none;}
+  .ck.on{background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:600;}
+  .pill{display:inline-block;font-size:11px;letter-spacing:1px;border:1px solid var(--gold);color:var(--gold);border-radius:14px;padding:2px 9px;}
+  .pill.audAll{border-color:var(--ok);color:#3f6235;}
+  .muted{color:var(--muted);font-size:13px;}
+  .badge{font-size:11px;border-radius:12px;padding:2px 10px;border:1px solid var(--line);color:var(--mid);}
+  .badge.live{border-color:var(--ok);color:#3f6235;}
+  .gate{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;}
+  .gate .ring{width:120px;height:120px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .gate .ring span{font-family:var(--serif);color:var(--gold);font-size:38px;}
+  .gate h1{font-family:var(--serif);color:var(--cream);font-size:26px;font-weight:500;margin-top:20px;}
+  .gate .f{width:100%;max-width:300px;margin-top:24px;}
+  .gate input{margin-bottom:11px;}
+  .empty{color:var(--muted);font-style:italic;padding:8px 0;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;color:var(--mid);font-weight:500;padding:8px;border-bottom:1px solid var(--line);}
+  td{padding:8px;border-bottom:1px solid var(--line);color:var(--text);}
+</style>
+</head>
+<body>
+<div id="root" style="padding:40px;text-align:center;color:var(--muted);">Зареждане…</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="db.js"></script>
+<script>
+const MEMBERS=[{id:'founder',t:'Founder'},{id:'founding',t:'Founding Member'},{id:'club',t:'Club Member'},{id:'alumni',t:'Alumni Member'},{id:'corporate',t:'Corporate Member'}];
+const FORMATS=['culture','cinema','table','music','conversation','community','theater'];
+const memName=id=>(MEMBERS.find(m=>m.id===id)||{t:id}).t;
+const esc=s=>(''+(s??'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+
+let tab='events', editId=null, draftAud=['all'], admin=false;
+let EVENTS=[], RES=[];
+const root=document.getElementById('root');
+
+async function boot(){
+  if(DB.live){ const u=await DB.getUser(); admin=!!(u&&u.role==='admin'); }
+  else { admin=localStorage.getItem('acac_admin')==='1'; }
+  if(admin) await refresh();
+  render();
+}
+async function refresh(){
+  try{ EVENTS=await DB.listEvents(); }catch(e){ EVENTS=[]; }
+  try{ RES=await DB.listReservations(); }catch(e){ RES=[]; }
+}
+
+function render(){
+  if(!admin){gate();return;}
+  const badge=DB.live?`<span class="badge live">Свързан Supabase</span>`:`<span class="badge">Демо режим</span>`;
+  let h=`<div class="wrap">
+    <div class="top"><div class="b">AC² · Админ панел<br><small>American College Arcus Club</small></div>
+      <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
+    <div class="tabs">
+      <button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>
+      <button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации</button>
+      <button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>
+    </div>`;
+  if(tab==='events')h+=eventsView();
+  else if(tab==='res')h+=resView();
+  else h+=membersView();
+  h+=`</div>`;
+  root.innerHTML=h;
+}
+async function setTab(t){tab=t;editId=null;await refresh();render();}
+
+function audLabel(aud){
+  if(aud==='all')return `<span class="pill audAll">Всички членове</span>`;
+  if(!Array.isArray(aud)||!aud.length)return `<span class="pill">никой</span>`;
+  return aud.map(a=>`<span class="pill">${memName(a)}</span>`).join(' ');
+}
+function eventsView(){
+  let list=EVENTS.map(e=>{
+    const liveBadge=e.is_live?'<span class="pill" style="border-color:#d98b6e;color:#d98b6e;">● НА ЖИВО</span>':(e.stream_url?'<span class="pill">стрийм готов</span>':'');
+    const liveBtn=e.stream_url
+      ? (e.is_live?`<button class="btn no sm" onclick="toggleLive('${e.id}',false)">Спри стрийма</button>`
+                  :`<button class="btn ok sm" onclick="toggleLive('${e.id}',true)">Пусни на живо</button>`)
+      : '';
+    return `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+      <div><h3>${esc(e.title)} ${liveBadge}</h3>
+        <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${esc(e.date)} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места</div>
+        <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)}</div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        ${liveBtn}
+        <button class="btn ghost sm" onclick="editEvent('${e.id}')">Редактирай</button>
+        <button class="btn no sm" onclick="delEvent('${e.id}')">Изтрий</button></div>
+    </div></div>`;}).join('')||`<p class="empty">Няма събития. Добави първото.</p>`;
+  return `<h2>Събития</h2>${formView()}${list}`;
+}
+function formView(){
+  const e=editId?EVENTS.find(x=>x.id===editId):null;
+  const allOn=draftAud.includes('all');
+  let memCk=`<div class="ck ${allOn?'on':''}" onclick="toggleAud('all')">✓ Всички членове</div>`+
+    MEMBERS.map(m=>`<div class="ck ${(!allOn&&draftAud.includes(m.id))?'on':''}" onclick="toggleAud('${m.id}')">${m.t}</div>`).join('');
+  let fmtOpts=FORMATS.map(f=>`<option value="${f}" ${e&&e.format===f?'selected':''}>${f}</option>`).join('');
+  return `<div class="card" style="border-color:var(--gold-soft);">
+    <h3>${e?'Редакция на събитие':'Ново събитие'}</h3>
+    <label>Заглавие</label><input id="f_title" value="${esc(e?e.title:'')}" placeholder="Напр. Гастрономическа вечер"/>
+    <div class="row2"><div><label>Формат</label><select id="f_format">${fmtOpts}</select></div>
+      <div><label>Място / зала</label><input id="f_place" value="${esc(e?e.place:'')}"/></div></div>
+    <div class="row2"><div><label>Начало (час)</label><input id="f_time" value="${esc(e?e.time:'')}" placeholder="19:30"/></div>
+      <div><label>Край (час)</label><input id="f_ends" value="${esc(e?e.ends:'')}" placeholder="22:00"/></div></div>
+    <div class="row2"><div><label>Дата</label><input id="f_date" type="date" value="${esc(e?e.date:'')}"/></div>
+      <div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}"/></div></div>
+    <label>Линк за live stream (по желание — YouTube, Vimeo или друг)</label>
+    <input id="f_stream" value="${esc(e?e.stream_url:'')}" placeholder="https://www.youtube.com/watch?v=..."/>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:12px;cursor:pointer;">
+      <input type="checkbox" id="f_live" ${e&&e.is_live?'checked':''} style="width:auto;"/> На живо сега (стриймът е активен)</label>
+    <label>Видимо за (кой може да го вижда / гледа / запазва)</label>
+    <div class="chips">${memCk}</div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn" onclick="saveEvent()">${e?'Запази промените':'Добави събитие'}</button>
+      ${e?`<button class="btn ghost" onclick="cancelEdit()">Откажи</button>`:''}
+    </div></div>`;
+}
+function toggleAud(id){
+  if(id==='all'){draftAud=['all'];}
+  else{draftAud=draftAud.filter(x=>x!=='all');
+    if(draftAud.includes(id))draftAud=draftAud.filter(x=>x!==id); else draftAud.push(id);
+    if(!draftAud.length)draftAud=['all'];}
+  render();
+}
+function editEvent(id){editId=id;tab='events';const e=EVENTS.find(x=>x.id===id);draftAud=e.aud==='all'?['all']:e.aud.slice();render();window.scrollTo(0,0);}
+function cancelEdit(){editId=null;draftAud=['all'];render();}
+async function delEvent(id){if(!confirm('Да изтрия ли събитието?'))return;await DB.deleteEvent(id);await refresh();render();}
+async function toggleLive(id,on){await DB.setLive(id,on);await refresh();render();}
+async function saveEvent(){
+  const title=document.getElementById('f_title').value.trim();
+  if(!title){alert('Въведи заглавие');return;}
+  const obj={title,format:document.getElementById('f_format').value,place:document.getElementById('f_place').value.trim(),
+    date:document.getElementById('f_date').value,time:document.getElementById('f_time').value.trim(),ends:document.getElementById('f_ends').value.trim(),
+    capacity:parseInt(document.getElementById('f_cap').value||'0',10),
+    stream_url:document.getElementById('f_stream').value.trim(),
+    is_live:document.getElementById('f_live').checked,
+    aud:draftAud.includes('all')?'all':draftAud.slice()};
+  if(editId)await DB.updateEvent(editId,obj); else await DB.addEvent(obj);
+  editId=null;draftAud=['all'];await refresh();render();window.scrollTo(0,0);
+}
+
+function resView(){
+  if(!RES.length)return `<h2>Резервации</h2><p class="empty">Все още няма запитвания за резервация.</p>`;
+  let rows=RES.map(r=>{
+    const st=r.status||'requested';
+    const badge=st==='confirmed'?'<span class="pill audAll">потвърдена</span>':st==='declined'?'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>':'<span class="pill">чакаща</span>';
+    return `<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+      <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
+        <div class="muted" style="margin-top:3px;">${esc(r.who||'член')} · ${esc(memName(r.membership||'guest'))} · ${esc(r.fmt||'')} · ${esc(r.date||'')} ${esc(r.time||'')}</div>
+        ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
+        <div style="margin-top:7px;">${badge}</div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Потвърди</button>
+        <button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button></div>
+    </div></div>`;}).join('');
+  return `<h2>Резервации</h2>${rows}`;
+}
+async function setRes(id,st){await DB.setReservationStatus(id,st);await refresh();render();}
+
+function membersView(){
+  let rows=MEMBERS.map(m=>{
+    const cnt=EVENTS.filter(e=>e.aud==='all'||(Array.isArray(e.aud)&&e.aud.includes(m.id))).length;
+    return `<tr><td>${m.t}</td><td>${cnt} / ${EVENTS.length}</td></tr>`;}).join('');
+  let memOpts=MEMBERS.map(m=>`<option value="${m.id}">${m.t}</option>`).join('');
+  const inviteCard=DB.live
+    ? `<div class="card" style="border-color:var(--gold-soft);">
+        <h3>Покани член</h3>
+        <p class="muted" style="margin:6px 0 8px;">Изпраща имейл с покана; човекът сам си задава парола.</p>
+        <label>Имейл</label><input id="iv_email" type="email" placeholder="name@example.com"/>
+        <div class="row2"><div><label>Име (по желание)</label><input id="iv_user"/></div>
+          <div><label>Категория</label><select id="iv_mem">${memOpts}</select></div></div>
+        <button class="btn" style="margin-top:14px;" onclick="doInvite()">Изпрати покана</button></div>`
+    : `<div class="card"><h3>Покани член</h3><p class="muted" style="margin-top:6px;">Налично след свързване на Supabase и качване на функцията <code>invite-member</code> (виж ADMIN-README).</p></div>`;
+  return `<h2>Членове и видимост</h2>
+    ${inviteCard}
+    <div class="card"><p class="muted" style="margin-bottom:12px;">Колко от текущите събития вижда всяка категория според зададената видимост.</p>
+    <table><thead><tr><th>Категория</th><th>Вижда събития</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="card"><p class="muted">Категорията/ролята на всеки член се сменя и в Supabase → Table Editor → profiles.</p></div>`;
+}
+async function doInvite(){
+  const email=document.getElementById('iv_email').value.trim();
+  if(!email){alert('Въведи имейл');return;}
+  const username=document.getElementById('iv_user').value.trim();
+  const membership=document.getElementById('iv_mem').value;
+  const btnEmail=email;
+  const {error}=await DB.inviteMember(email,username,membership);
+  if(error){alert('Грешка: '+error.message);return;}
+  alert('Поканата е изпратена на '+btnEmail);
+  document.getElementById('iv_email').value='';document.getElementById('iv_user').value='';
+}
+
+function gate(){
+  const live=DB.live;
+  root.innerHTML=`<div class="gate">
+    <div class="ring"><span>AC²</span></div>
+    <h1>Админ панел</h1>
+    <div class="f">
+      <input id="a_user" placeholder="${live?'Имейл':'Потребителско име'}" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <input id="a_pass" type="password" placeholder="Парола" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <button class="btn" style="width:100%;" onclick="doLogin()">Вход</button>
+      <div class="muted" style="margin-top:12px;">${live?'Вход с админ акаунт (role=admin)':'Демо достъп: <span style="color:var(--gold);">admin / admin</span>'}</div>
+    </div></div>`;
+}
+async function doLogin(){
+  const u=document.getElementById('a_user').value;
+  const p=document.getElementById('a_pass').value;
+  if(DB.live){
+    const {error}=await DB.signIn(u,p);
+    if(error){alert('Грешен вход: '+error.message);return;}
+    const me=await DB.getUser();
+    if(!me||me.role!=='admin'){alert('Този акаунт няма админ права.');await DB.signOut();return;}
+    admin=true;await refresh();render();
+  }else{
+    if((u||'').trim().toLowerCase()!=='admin'||(p||'').trim()!=='admin'){alert('Грешно име или парола');return;}
+    admin=true;localStorage.setItem('acac_admin','1');await refresh();render();
+  }
+}
+async function logout(){
+  if(DB.live)await DB.signOut(); else localStorage.removeItem('acac_admin');
+  admin=false;render();
+}
+boot();
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+</body>
+</html>

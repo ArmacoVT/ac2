@@ -1,0 +1,3 @@
+# Деплой в Netlify: завлачи цялата папка arcus-club-web в app.netlify.com
+[build]
+  publish = "."
