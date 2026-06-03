@@ -158,9 +158,13 @@
       if (!LIVE) return { error: { message: 'demo' } };
       const { data, error } = await sb.functions.invoke('invite-member',
         { body: { email: (email || '').trim(), username: (username || '').trim(), membership: membership || 'guest' } });
-      if (error) return { error };
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
       if (data && data.error) return { error: { message: data.error } };
-      return { error: null };
+      return { error: null, password: data && data.password };
     },
 
     MEMBERSHIPS: MEM
