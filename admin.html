@@ -190,6 +190,10 @@ function resView(){
 async function setRes(id,st){
   const r=await DB.setReservationStatus(id,st);
   if(r&&r.error){alert('Грешка при промяна на статуса: '+r.error.message);return;}
+  if(st==='confirmed'||st==='declined'){
+    const n=await DB.notifyReservation(id,st);
+    if(n&&n.error){alert('Статусът е сменен, но имейлът до члена не тръгна: '+n.error.message);}
+  }
   await refresh();render();
 }
 

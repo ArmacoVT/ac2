@@ -170,6 +170,19 @@
       if (data && data.error) return { error: { message: data.error } };
       return { error: null, password: data && data.password };
     },
+    // имейл до члена при одобрена/отказана резервация (само админ)
+    async notifyReservation(id, status) {
+      if (!LIVE) return { error: null };
+      const { data, error } = await sb.functions.invoke('notify-reservation',
+        { body: { reservation_id: id, status } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null };
+    },
     // нова временна парола за съществуващ член (само админ)
     async adminResetPassword(email) {
       if (!LIVE) return { error: { message: 'demo' } };
