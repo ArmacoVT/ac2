@@ -112,7 +112,7 @@ function eventsView(){
     return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
       <div><h3>${esc(e.title)} ${liveBadge}</h3>
-        <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${esc(e.date)} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места</div>
+        <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места</div>
         <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${liveBtn}
@@ -134,7 +134,7 @@ function formView(){
       <div><label>Място / зала</label><input id="f_place" value="${esc(e?e.place:'')}"/></div></div>
     <div class="row2"><div><label>Начало (час)</label><input id="f_time" value="${esc(e?e.time:'')}" placeholder="19:30"/></div>
       <div><label>Край (час)</label><input id="f_ends" value="${esc(e?e.ends:'')}" placeholder="22:00"/></div></div>
-    <div class="row2"><div><label>Дата</label><input id="f_date" type="date" value="${esc(e?e.date:'')}"/></div>
+    <div class="row2"><div><label>Дата</label><input id="f_date" readonly placeholder="дд.мм.гггг" value="${e&&e.date?isoToBg(e.date):''}" data-iso="${esc(e?(e.date||''):'')}" onclick="openCal()" style="cursor:pointer;"/></div>
       <div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}"/></div></div>
     <label>Линк за live stream (по желание — YouTube, Vimeo или друг)</label>
     <input id="f_stream" value="${esc(e?e.stream_url:'')}" placeholder="https://www.youtube.com/watch?v=..."/>
@@ -147,12 +147,88 @@ function formView(){
       ${e?`<button class="btn ghost" onclick="cancelEdit()">Откажи</button>`:''}
     </div></div>`;
 }
+// запазва/връща въведеното във формата (за да не се губи при преначертаване)
+function grabForm(){
+  const g=id=>{const el=document.getElementById(id);return el?el.value:null;};
+  const live=document.getElementById('f_live');
+  const date=document.getElementById('f_date');
+  return {title:g('f_title'),format:g('f_format'),place:g('f_place'),time:g('f_time'),ends:g('f_ends'),
+    dateIso:date?(date.dataset.iso||''):'',cap:g('f_cap'),stream:g('f_stream'),live:live?live.checked:false};
+}
+function putForm(v){
+  if(!v)return;
+  const s=(id,val)=>{const el=document.getElementById(id);if(el&&val!=null)el.value=val;};
+  s('f_title',v.title);s('f_format',v.format);s('f_place',v.place);s('f_time',v.time);s('f_ends',v.ends);
+  s('f_cap',v.cap);s('f_stream',v.stream);
+  const date=document.getElementById('f_date');
+  if(date){date.dataset.iso=v.dateIso||'';date.value=v.dateIso?isoToBg(v.dateIso):'';}
+  const live=document.getElementById('f_live');if(live)live.checked=!!v.live;
+}
 function toggleAud(id){
+  const v=grabForm();
   if(id==='all'){draftAud=['all'];}
   else{draftAud=draftAud.filter(x=>x!=='all');
     if(draftAud.includes(id))draftAud=draftAud.filter(x=>x!==id); else draftAud.push(id);
     if(!draftAud.length)draftAud=['all'];}
   render();
+  putForm(v);
+}
+
+// ---------- европейски календар (понеделник = първи ден) ----------
+function isoToBg(iso){if(!iso)return'';const p=iso.split('-');return p[2]+'.'+p[1]+'.'+p[0];}
+let calM=null;
+function openCal(){
+  const inp=document.getElementById('f_date');
+  const base=inp.dataset.iso?new Date(inp.dataset.iso+'T00:00:00'):new Date();
+  calM={y:base.getFullYear(),m:base.getMonth()};
+  drawCal();
+}
+function calNav(d){calM.m+=d;if(calM.m<0){calM.m=11;calM.y--;}if(calM.m>11){calM.m=0;calM.y++;}drawCal();}
+function drawCal(){
+  closeCal();
+  const inp=document.getElementById('f_date');if(!inp)return;
+  const months=['януари','февруари','март','април','май','юни','юли','август','септември','октомври','ноември','декември'];
+  const wd=['пн','вт','ср','чт','пт','сб','нд'];
+  const first=new Date(calM.y,calM.m,1);
+  const off=(first.getDay()+6)%7; // понеделник първи
+  const dim=new Date(calM.y,calM.m+1,0).getDate();
+  const t=new Date();
+  const tIso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  const sel=inp.dataset.iso||'';
+  let cells=wd.map((w,i)=>`<div style="font-size:11px;color:${i>4?'#c08a6e':'#9a8f7a'};text-align:center;padding:4px 0;">${w}</div>`).join('');
+  for(let i=0;i<off;i++)cells+='<div></div>';
+  for(let d=1;d<=dim;d++){
+    const iso=calM.y+'-'+String(calM.m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const st=iso===sel?'background:#c46a4a;color:#fffdf4;':(iso===tIso?'box-shadow:inset 0 0 0 1px #c46a4a;color:#c46a4a;':'');
+    cells+=`<div onclick="pickDate('${iso}')" style="text-align:center;padding:7px 0;border-radius:9px;cursor:pointer;font-size:13px;${st}">${d}</div>`;
+  }
+  const pop=document.createElement('div');pop.id='acac-cal';
+  pop.style.cssText='position:absolute;z-index:999;background:#fffaf0;border:1px solid #e6d9bd;border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.14);padding:12px;width:266px;';
+  pop.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <button type="button" onclick="calNav(-1)" style="border:0;background:none;cursor:pointer;font-size:17px;padding:4px 12px;">‹</button>
+      <b style="font-size:13px;">${months[calM.m]} ${calM.y}</b>
+      <button type="button" onclick="calNav(1)" style="border:0;background:none;cursor:pointer;font-size:17px;padding:4px 12px;">›</button></div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">${cells}</div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;">
+      <button type="button" onclick="pickDate('${tIso}')" style="border:0;background:none;cursor:pointer;color:#c46a4a;font-size:12px;">Днес</button>
+      <button type="button" onclick="pickDate('')" style="border:0;background:none;cursor:pointer;color:#9a8f7a;font-size:12px;">Изчисти</button></div>`;
+  const r=inp.getBoundingClientRect();
+  pop.style.left=(r.left+window.scrollX)+'px';pop.style.top=(r.bottom+window.scrollY+6)+'px';
+  document.body.appendChild(pop);
+  setTimeout(()=>{document.addEventListener('mousedown',calOutside);},0);
+}
+function calOutside(ev){
+  const p=document.getElementById('acac-cal');
+  if(p&&!p.contains(ev.target)&&ev.target.id!=='f_date')closeCal();
+}
+function closeCal(){
+  const p=document.getElementById('acac-cal');
+  if(p){p.remove();document.removeEventListener('mousedown',calOutside);}
+}
+function pickDate(iso){
+  const inp=document.getElementById('f_date');
+  if(inp){inp.dataset.iso=iso;inp.value=iso?isoToBg(iso):'';}
+  closeCal();
 }
 function editEvent(id){editId=id;tab='events';const e=EVENTS.find(x=>x.id===id);draftAud=e.aud==='all'?['all']:e.aud.slice();render();window.scrollTo(0,0);}
 function cancelEdit(){editId=null;draftAud=['all'];render();}
@@ -162,7 +238,7 @@ async function saveEvent(){
   const title=document.getElementById('f_title').value.trim();
   if(!title){alert('Въведи заглавие');return;}
   const obj={title,format:document.getElementById('f_format').value,place:document.getElementById('f_place').value.trim(),
-    date:document.getElementById('f_date').value,time:document.getElementById('f_time').value.trim(),ends:document.getElementById('f_ends').value.trim(),
+    date:document.getElementById('f_date').dataset.iso||'',time:document.getElementById('f_time').value.trim(),ends:document.getElementById('f_ends').value.trim(),
     capacity:parseInt(document.getElementById('f_cap').value||'0',10),
     stream_url:document.getElementById('f_stream').value.trim(),
     is_live:document.getElementById('f_live').checked,
@@ -179,7 +255,7 @@ function resView(){
     const badge=st==='confirmed'?'<span class="pill audAll">потвърдена</span>':st==='declined'?'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>':'<span class="pill">чакаща</span>';
     return `<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
-        <div class="muted" style="margin-top:3px;">${esc(r.who||'член')} · ${esc(memName(r.membership||'guest'))} · ${esc(r.fmt||'')} · ${esc(r.date||'')} ${esc(r.time||'')}</div>
+        <div class="muted" style="margin-top:3px;">${esc(r.who||'член')} · ${esc(memName(r.membership||'guest'))} · ${esc(r.fmt||'')} · ${isoToBg(r.date||'')} ${esc(r.time||'')}</div>
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
         <div style="margin-top:7px;">${badge}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">

@@ -547,7 +547,8 @@ function profile(){
     ${res.length?res.map(r=>{
       const SL={requested:lang==='bg'?'чакаща':'pending',confirmed:lang==='bg'?'одобрена':'approved',declined:lang==='bg'?'отказана':'declined',cancelled:lang==='bg'?'отменена':'cancelled'};
       const SC={confirmed:'#4f7a43',declined:'#b5532f'};
-      return `<div class="ev" style="margin-bottom:8px;"><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}</h3><div class="m">${esc(r.date||'')} — <b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div></div>`;}).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noRes')}</p>`}
+      const dEu=r.date?r.date.split('-').reverse().join('.'):'';
+      return `<div class="ev" style="margin-bottom:8px;"><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}</h3><div class="m">${dEu} — <b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div></div>`;}).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noRes')}</p>`}
     ${DB.live?`<button class="btn btn-ghost" style="margin-top:26px;" onclick="changePass()">${tr('changePass')}</button>`:''}
     <button class="btn btn-ghost" style="margin-top:12px;" onclick="signout()">${tr('signout')}</button></div>`;
 }
