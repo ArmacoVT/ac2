@@ -114,8 +114,9 @@
         place: o.place, date: o.date || null, time: o.time, party_size: o.party || 1, note: o.note, status: 'requested' });
     },
     async setReservationStatus(id, status) {
-      if (!LIVE) { let r = jget(K.res, []); r = r.map(x => x.id === id ? { ...x, status } : x); jset(K.res, r); return; }
-      await sb.from('reservations').update({ status }).eq('id', id);
+      if (!LIVE) { let r = jget(K.res, []); r = r.map(x => x.id === id ? { ...x, status } : x); jset(K.res, r); return { error: null }; }
+      const { error } = await sb.from('reservations').update({ status }).eq('id', id);
+      return { error };
     },
 
     // ---------- ЗАПАЗЕНИ СЪБИТИЯ ----------
@@ -158,6 +159,19 @@
       if (!LIVE) return { error: { message: 'demo' } };
       const { data, error } = await sb.functions.invoke('invite-member',
         { body: { email: (email || '').trim(), username: (username || '').trim(), membership: membership || 'guest' } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, password: data && data.password };
+    },
+    // нова временна парола за съществуващ член (само админ)
+    async adminResetPassword(email) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await sb.functions.invoke('invite-member',
+        { body: { action: 'reset', email: (email || '').trim() } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}

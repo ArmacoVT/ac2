@@ -187,7 +187,11 @@ function resView(){
     </div></div>`;}).join('');
   return `<h2>Резервации</h2>${rows}`;
 }
-async function setRes(id,st){await DB.setReservationStatus(id,st);await refresh();render();}
+async function setRes(id,st){
+  const r=await DB.setReservationStatus(id,st);
+  if(r&&r.error){alert('Грешка при промяна на статуса: '+r.error.message);return;}
+  await refresh();render();
+}
 
 function membersView(){
   let rows=MEMBERS.map(m=>{
@@ -203,11 +207,27 @@ function membersView(){
           <div><label>Категория</label><select id="iv_mem">${memOpts}</select></div></div>
         <button class="btn" style="margin-top:14px;" onclick="doInvite()">Изпрати покана</button></div>`
     : `<div class="card"><h3>Покани член</h3><p class="muted" style="margin-top:6px;">Налично след свързване на Supabase и качване на функцията <code>invite-member</code> (виж ADMIN-README).</p></div>`;
+  const resetCard=DB.live
+    ? `<div class="card">
+        <h3>Нова парола на член</h3>
+        <p class="muted" style="margin:6px 0 8px;">Ако член е забравил паролата си — генерира нова временна, която му давате.</p>
+        <label>Имейл на члена</label><input id="rp_email" type="email" placeholder="name@example.com"/>
+        <button class="btn ghost" style="margin-top:10px;" onclick="doReset()">Генерирай нова парола</button></div>`
+    : '';
   return `<h2>Членове и видимост</h2>
     ${inviteCard}
+    ${resetCard}
     <div class="card"><p class="muted" style="margin-bottom:12px;">Колко от текущите събития вижда всяка категория според зададената видимост.</p>
     <table><thead><tr><th>Категория</th><th>Вижда събития</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="card"><p class="muted">Категорията/ролята на всеки член се сменя и в Supabase → Table Editor → profiles.</p></div>`;
+}
+async function doReset(){
+  const email=document.getElementById('rp_email').value.trim();
+  if(!email){alert('Въведи имейл');return;}
+  const {error,password}=await DB.adminResetPassword(email);
+  if(error){alert('Грешка: '+error.message);return;}
+  alert('Нова временна парола за '+email+':\n\n'+password+'\n\nДайте я на члена — после може да я смени от профила си.');
+  document.getElementById('rp_email').value='';
 }
 async function doInvite(){
   const email=document.getElementById('iv_email').value.trim();
