@@ -602,17 +602,19 @@ window.addEventListener('touchend',e=>{
   if((t.clientX-swX)>70&&Math.abs(t.clientY-swY)<70)history.back();
   swX=null;
 },{passive:true});
-DB.onRecovery(async ()=>{
-  const p=await askNewPassword();
-  if(p){const {error}=await DB.updatePassword(p);toast(error?error.message:tr('passChanged'));}
-});
+// едно общо прозорче за първа/нова парола — пази се да не се покаже два пъти
+let pwPrompted=false;
+async function promptInitialPassword(){
+  if(pwPrompted)return; pwPrompted=true;
+  const isInvite=DB.urlType==='invite';
+  const p=await askNewPassword(isInvite?tr('setPassTitle'):tr('newPassTitle'));
+  if(p){const r=await DB.updatePassword(p);toast(r&&r.error?r.error.message:(isInvite?tr('passSet'):tr('passChanged')));}
+}
+DB.onRecovery(promptInitialPassword);
 (async function(){
   try{ user=await DB.getUser(); if(user){saved=await DB.listSaved();EVENTS=await DB.listEvents();} }catch(e){}
   // дошъл от имейл-покана → задава си парола веднага (с потвърждение)
-  if(user&&DB.urlType==='invite'){
-    const p=await askNewPassword(tr('setPassTitle'));
-    if(p){const r=await DB.updatePassword(p);toast(r&&r.error?r.error.message:tr('passSet'));}
-  }
+  if(user&&(DB.urlType==='invite'||DB.urlType==='recovery')) await promptInitialPassword();
   route();
   // известие в приложението при одобрена/отказана резервация
   if(user){try{
