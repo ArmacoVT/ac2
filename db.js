@@ -81,16 +81,18 @@
     // всички събития (за админ панела — без филтър по членство; в live разчита на admin RLS)
     async listAllEvents() { return this.listEvents(); },
     async addEvent(o) {
-      if (!LIVE) { const e = seedDemo(); o.id = 'e' + Date.now(); e.unshift(o); jset(K.ev, e); return; }
-      await sb.from('events').insert({ title: o.title, format: o.format, place: o.place, date: o.date || null,
+      if (!LIVE) { const e = seedDemo(); o.id = 'e' + Date.now(); e.unshift(o); jset(K.ev, e); return { error: null }; }
+      const { error } = await sb.from('events').insert({ title: o.title, format: o.format, place: o.place, date: o.date || null,
         time: o.time, ends: o.ends || null, capacity: o.capacity || 0, audience: toAudience(o.aud),
         stream_url: o.stream_url || null, is_live: !!o.is_live });
+      return { error };
     },
     async updateEvent(id, o) {
-      if (!LIVE) { let e = seedDemo().map(x => x.id === id ? { ...x, ...o } : x); jset(K.ev, e); return; }
-      await sb.from('events').update({ title: o.title, format: o.format, place: o.place, date: o.date || null,
+      if (!LIVE) { let e = seedDemo().map(x => x.id === id ? { ...x, ...o } : x); jset(K.ev, e); return { error: null }; }
+      const { error } = await sb.from('events').update({ title: o.title, format: o.format, place: o.place, date: o.date || null,
         time: o.time, ends: o.ends || null, capacity: o.capacity || 0, audience: toAudience(o.aud),
         stream_url: o.stream_url || null, is_live: !!o.is_live }).eq('id', id);
+      return { error };
     },
     // бърз превключвател „на живо"
     async setLive(id, on) {

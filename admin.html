@@ -167,7 +167,8 @@ async function saveEvent(){
     stream_url:document.getElementById('f_stream').value.trim(),
     is_live:document.getElementById('f_live').checked,
     aud:draftAud.includes('all')?'all':draftAud.slice()};
-  if(editId)await DB.updateEvent(editId,obj); else await DB.addEvent(obj);
+  const r=editId?await DB.updateEvent(editId,obj):await DB.addEvent(obj);
+  if(r&&r.error){alert('Събитието не се записа: '+r.error.message);return;}
   editId=null;draftAud=['all'];await refresh();render();window.scrollTo(0,0);
 }
 
