@@ -4,6 +4,8 @@
 //  И двата файла (index.html, admin.html) ползват този слой.
 // ============================================================
 (function () {
+  // запомняме типа на линка (invite/recovery) преди Supabase да изчисти адреса
+  const URLTYPE = (location.hash.match(/[#&]type=(\w+)/) || [])[1] || '';
   const CFG = window.ACAC_CONFIG || {};
   const LIVE = !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY &&
     !/PASTE/.test(CFG.SUPABASE_URL) && !/PASTE/.test(CFG.SUPABASE_ANON_KEY));
@@ -35,6 +37,7 @@
 
   const DB = {
     live: LIVE,
+    urlType: URLTYPE,
 
     // ---------- AUTH (член) ----------
     async getUser() {

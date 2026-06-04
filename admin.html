@@ -201,7 +201,7 @@ function membersView(){
   const inviteCard=DB.live
     ? `<div class="card" style="border-color:var(--gold-soft);">
         <h3>Покани член</h3>
-        <p class="muted" style="margin:6px 0 8px;">Създава акаунт и показва временна парола, която давате на члена (той може да я смени после).</p>
+        <p class="muted" style="margin:6px 0 8px;">Изпраща имейл с покана; човекът сам си задава парола от линка.</p>
         <label>Имейл</label><input id="iv_email" type="email" placeholder="name@example.com"/>
         <div class="row2"><div><label>Име (по желание)</label><input id="iv_user"/></div>
           <div><label>Категория</label><select id="iv_mem">${memOpts}</select></div></div>
@@ -236,7 +236,9 @@ async function doInvite(){
   const membership=document.getElementById('iv_mem').value;
   const {error,password}=await DB.inviteMember(email,username,membership);
   if(error){alert('Грешка: '+error.message);return;}
-  alert('Акаунтът е създаден!\n\nИмейл: '+email+'\nВременна парола: '+password+'\n\nДайте тези данни на члена — влиза с тях и може да си смени паролата от профила.');
+  alert(password
+    ?('Акаунтът е създаден!\n\nИмейл: '+email+'\nВременна парола: '+password)
+    :('Поканата е изпратена на '+email+'.\nЧовекът ще получи имейл с линк, от който сам си задава парола и влиза.'));
   document.getElementById('iv_email').value='';document.getElementById('iv_user').value='';
 }
 

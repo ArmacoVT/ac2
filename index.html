@@ -152,6 +152,11 @@
   .gate .form{width:100%;max-width:330px;margin-top:30px;animation:fadeUp .9s ease 1.05s both;}
   .gate.ready .ring,.gate.ready .ring img,.gate.ready h1,.gate.ready .sub,.gate.ready .form{animation:none;}
   .gate.ready .ring{box-shadow:0 0 22px 1px rgba(200,100,60,.16);}
+  .pwov{position:fixed;inset:0;background:rgba(58,44,35,.38);display:flex;align-items:center;justify-content:center;z-index:99;}
+  .pwcard{background:var(--bg);border-radius:22px;padding:22px;width:min(90%,340px);
+    box-shadow:9px 9px 18px #d9cdb6,-9px -9px 18px #fffdf4;}
+  .pwcard h3{font-family:var(--serif);color:var(--cream);font-size:21px;font-weight:500;margin-bottom:14px;text-align:center;}
+  .pwcard .pwerr{color:#b5532f;font-size:12px;min-height:16px;margin:2px 0 8px;text-align:center;}
 </style>
 </head>
 <body>
@@ -176,7 +181,8 @@ const T={
     myEvents:'Моите събития',myRes:'Моите резервации',noEvents:'Все още няма запазени събития.',noRes:'Няма резервации.',signout:'Изход',
     allow:'Места за запазване',signinSave:'Влез, за да запазваш събития',tierLocked:'Не е достъпно за твоето членство',locked:'🔒 Заключено',access:'Достъп според членството',memb:'Твоето членство',
     live:'На живо',noLiveTitle:'Няма активно излъчване в момента',noLiveSub:'Тук ще се появи live stream, когато започне представление.',nextUp:'Следващо събитие',watch:'▶ Гледай на живо',liveLockedMsg:'Това излъчване не е достъпно за твоето членство.',openExt:'Отвори в нов прозорец',liveTag:'НА ЖИВО',
-    forgot:'Забравена парола?',enterEmail:'Въведи имейла си',resetSent:'Изпратихме линк за нова парола на имейла ти',changePass:'Смени парола',newPassPrompt:'Нова парола (поне 6 знака):',passChanged:'Паролата е сменена',passShort:'Твърде кратка парола',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими'},
+    forgot:'Забравена парола?',enterEmail:'Въведи имейла си',resetSent:'Изпратихме линк за нова парола на имейла ти',changePass:'Смени парола',newPassPrompt:'Нова парола (поне 6 знака):',passChanged:'Паролата е сменена',passShort:'Твърде кратка парола',
+    newPassTitle:'Нова парола',passConfirm:'Потвърди паролата',passMismatch:'Паролите не съвпадат',pwSave:'Запази',cancelBtn:'Отказ',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими'},
   en:{home:'Home',events:'Events',reserve:'Reserve',membership:'Membership',signin:'Sign in',profile:'Profile',
     formats:'Formats',formatsSub:'The seven formats of the club. Tap a card.',quick:'Quick actions',
     includes:'What it includes',enquiry:'Enquiry / reservation',seeEvents:'See events',
@@ -189,7 +195,8 @@ const T={
     myEvents:'My saved events',myRes:'My reservations',noEvents:'No saved events yet.',noRes:'No reservations.',signout:'Sign out',
     allow:'Seats you can book',signinSave:'Sign in to save events',tierLocked:'Not available for your membership',locked:'🔒 Locked',access:'Access by membership',memb:'Your membership',
     live:'Live',noLiveTitle:'No live stream right now',noLiveSub:'A live stream will appear here when a performance starts.',nextUp:'Next event',watch:'▶ Watch live',liveLockedMsg:'This stream is not available for your membership.',openExt:'Open in new window',liveTag:'LIVE',
-    forgot:'Forgot password?',enterEmail:'Enter your email',resetSent:'We sent a password reset link to your email',changePass:'Change password',newPassPrompt:'New password (min 6 chars):',passChanged:'Password changed',passShort:'Password too short',inviteOnly:'Access is by club invitation only.',demoOnlyLive:'Available after Supabase is connected',ticket:'Reserve a ticket',tableSuggest:'Reserve a table at AC² Table',afterEvent:'After the event',ticketToast:'Request sent',fav:'Favorites'}
+    forgot:'Forgot password?',enterEmail:'Enter your email',resetSent:'We sent a password reset link to your email',changePass:'Change password',newPassPrompt:'New password (min 6 chars):',passChanged:'Password changed',passShort:'Password too short',
+    newPassTitle:'New password',passConfirm:'Confirm password',passMismatch:'Passwords do not match',pwSave:'Save',cancelBtn:'Cancel',inviteOnly:'Access is by club invitation only.',demoOnlyLive:'Available after Supabase is connected',ticket:'Reserve a ticket',tableSuggest:'Reserve a table at AC² Table',afterEvent:'After the event',ticketToast:'Request sent',fav:'Favorites'}
 };
 const FORMATS=[
  {id:'culture',t:'AC² Culture',c:'#6b3a5b',img:'cards/logo-culture.webp',b:{bg:['музика','изложби','литература','камерни театрални формати','срещи с артисти и лектори'],en:['music','exhibitions','literature','chamber theatre formats','meetings with artists and lecturers']}},
@@ -483,11 +490,29 @@ async function doForgot(){
   if(error){toast(error.message);return;}
   toast(tr('resetSent'));
 }
+function askNewPassword(){
+  return new Promise(res=>{
+    const ov=document.createElement('div');ov.className='pwov';
+    ov.innerHTML=`<div class="pwcard"><h3>${tr('newPassTitle')}</h3>
+      <input id="pw1" type="password" placeholder="${tr('pass')}" autocomplete="new-password"/>
+      <input id="pw2" type="password" placeholder="${tr('passConfirm')}" autocomplete="new-password"/>
+      <div class="pwerr" id="pwerr"></div>
+      <button class="btn" id="pwok">${tr('pwSave')}</button>
+      <button class="btn btn-ghost" id="pwcancel">${tr('cancelBtn')}</button></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('#pwok').onclick=()=>{
+      const a=ov.querySelector('#pw1').value,b=ov.querySelector('#pw2').value,err=ov.querySelector('#pwerr');
+      if(a.length<6){err.textContent=tr('passShort');return;}
+      if(a!==b){err.textContent=tr('passMismatch');return;}
+      ov.remove();res(a);
+    };
+    ov.querySelector('#pwcancel').onclick=()=>{ov.remove();res(null);};
+  });
+}
 async function changePass(){
   if(!DB.live){toast(tr('demoOnlyLive'));return;}
-  const p=prompt(tr('newPassPrompt'));
-  if(p===null)return;
-  if((p||'').length<6){toast(tr('passShort'));return;}
+  const p=await askNewPassword();
+  if(!p)return;
   const {error}=await DB.updatePassword(p);
   if(error){toast(error.message);return;}
   toast(tr('passChanged'));
@@ -562,4 +587,33 @@ window.addEventListener('touchstart',e=>{
 window.addEventListener('touchend',e=>{
   if(swX===null)return;
   const t=e.changedTouches[0];
-  if((t.clientX-swX)>70&&Math.abs(t.clientY-swY)<70)history.bac
+  if((t.clientX-swX)>70&&Math.abs(t.clientY-swY)<70)history.back();
+  swX=null;
+},{passive:true});
+DB.onRecovery(async ()=>{
+  const p=await askNewPassword();
+  if(p){const {error}=await DB.updatePassword(p);toast(error?error.message:tr('passChanged'));}
+});
+(async function(){
+  try{ user=await DB.getUser(); if(user){saved=await DB.listSaved();EVENTS=await DB.listEvents();} }catch(e){}
+  // дошъл от имейл-покана → задава си парола веднага (с потвърждение)
+  if(user&&DB.urlType==='invite'){
+    const p=await askNewPassword();
+    if(p){const r=await DB.updatePassword(p);toast(r&&r.error?r.error.message:tr('passChanged'));}
+  }
+  route();
+  // известие в приложението при одобрена/отказана резервация
+  if(user){try{
+    RES=await DB.listReservations();
+    const seen=JSON.parse(localStorage.getItem('acac_seen_res')||'{}');
+    let changed=null;
+    RES.forEach(r=>{ if(seen[r.id]&&seen[r.id]!==r.status&&(r.status==='confirmed'||r.status==='declined'))changed=r; seen[r.id]=r.status; });
+    localStorage.setItem('acac_seen_res',JSON.stringify(seen));
+    if(changed){const ok=changed.status==='confirmed';
+      setTimeout(()=>toast(ok?(lang==='bg'?'✓ Резервацията ви е одобрена':'✓ Your reservation was approved'):(lang==='bg'?'Резервацията ви е отказана':'Your reservation was declined')),900);}
+  }catch(e){}}
+})();
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+</body>
+</html>
