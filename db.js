@@ -173,7 +173,7 @@
     // имейл до члена при одобрена/отказана резервация (само админ)
     async notifyReservation(id, status) {
       if (!LIVE) return { error: null };
-      const { data, error } = await sb.functions.invoke('notify-reservation',
+      const { data, error } = await sb.functions.invoke('reservation-status',
         { body: { reservation_id: id, status } });
       if (error) {
         let msg = error.message;
