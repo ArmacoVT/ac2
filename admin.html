@@ -187,12 +187,23 @@ function resView(){
     </div></div>`;}).join('');
   return `<h2>Резервации</h2>${rows}`;
 }
+function toast(msg,bad){
+  let t=document.getElementById('acac-toast');
+  if(!t){t=document.createElement('div');t.id='acac-toast';
+    t.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);padding:12px 20px;border-radius:14px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:9999;opacity:0;transition:opacity .25s;max-width:90%;text-align:center;color:#fffdf4;';
+    document.body.appendChild(t);}
+  t.style.background=bad?'#b05b3f':'#3f6b5e';
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._h);t._h=setTimeout(()=>{t.style.opacity='0';},3500);
+}
 async function setRes(id,st){
   const r=await DB.setReservationStatus(id,st);
   if(r&&r.error){alert('Грешка при промяна на статуса: '+r.error.message);return;}
   if(st==='confirmed'||st==='declined'){
+    toast('Изпращане на имейл до члена…');
     const n=await DB.notifyReservation(id,st);
-    if(n&&n.error){alert('Статусът е сменен, но имейлът до члена не тръгна: '+n.error.message);}
+    if(n&&n.error){toast('Статусът е сменен, но имейлът не тръгна: '+n.error.message,true);}
+    else{toast(st==='confirmed'?'Резервацията е одобрена · имейлът до члена е изпратен ✓':'Резервацията е отказана · имейлът до члена е изпратен ✓');}
   }
   await refresh();render();
 }
