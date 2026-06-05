@@ -102,6 +102,16 @@ function audLabel(aud){
   if(!Array.isArray(aud)||!aud.length)return `<span class="pill">никой</span>`;
   return aud.map(a=>`<span class="pill">${memName(a)}</span>`).join(' ');
 }
+// заети места за събитие: потвърдените резервации (и отделно чакащите)
+function seatsTaken(evId){return RES.filter(r=>r.event_id===evId&&r.status==='confirmed').reduce((s,r)=>s+(r.party||1),0);}
+function seatsPending(evId){return RES.filter(r=>r.event_id===evId&&(!r.status||r.status==='requested')).reduce((s,r)=>s+(r.party||1),0);}
+function seatsInfo(e){
+  if(!e.capacity)return '';
+  const taken=seatsTaken(e.id), left=e.capacity-taken, pend=seatsPending(e.id);
+  const col=left<=0?'#b5532f':(left<=Math.ceil(e.capacity*0.2)?'#bf8a2e':'#4f7a43');
+  return `<span class="pill" style="border-color:${col};color:${col};">${left<=0?'няма места':'остават '+left+' от '+e.capacity}</span>`+
+    (pend?` <span class="pill">${pend} чакащи</span>`:'');
+}
 function eventsView(){
   let list=EVENTS.map(e=>{
     const liveBadge=e.is_live?'<span class="pill" style="border-color:#d98b6e;color:#d98b6e;">● НА ЖИВО</span>':(e.stream_url?'<span class="pill">стрийм готов</span>':'');
@@ -113,6 +123,7 @@ function eventsView(){
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
       <div><h3>${esc(e.title)} ${liveBadge}</h3>
         <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места</div>
+        <div style="margin-top:6px;">${seatsInfo(e)}</div>
         <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${liveBtn}
@@ -248,21 +259,51 @@ async function saveEvent(){
   editId=null;draftAud=['all'];await refresh();render();window.scrollTo(0,0);
 }
 
+let resFilter='all';
+function setResFilter(id){resFilter=id;render();}
 function resView(){
   if(!RES.length)return `<h2>Резервации</h2><p class="empty">Все още няма запитвания за резервация.</p>`;
-  let rows=RES.map(r=>{
+  // групиране по събитие
+  const groups={};
+  RES.forEach(r=>{const k=r.event_id||'other';(groups[k]=groups[k]||[]).push(r);});
+  const pend=list=>list.filter(r=>!r.status||r.status==='requested').length;
+  const cnt=n=>n?` <span style="display:inline-block;background:#b5532f;color:#fffdf4;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${n}</span>`:'';
+  let chips=`<button class="tab ${resFilter==='all'?'on':''}" onclick="setResFilter('all')">Всички${cnt(pend(RES))}</button>`;
+  EVENTS.forEach(e=>{
+    if(!groups[e.id])return;
+    const t=e.title.length>22?e.title.slice(0,22)+'…':e.title;
+    chips+=`<button class="tab ${resFilter===e.id?'on':''}" onclick="setResFilter('${e.id}')">${esc(t)}${cnt(pend(groups[e.id]))}</button>`;
+  });
+  if(groups.other)chips+=`<button class="tab ${resFilter==='other'?'on':''}" onclick="setResFilter('other')">Общи запитвания${cnt(pend(groups.other))}</button>`;
+  // ако избраният таб вече няма заявки — връщаме се на „Всички"
+  if(resFilter!=='all'&&!groups[resFilter])resFilter='all';
+  const shown=resFilter==='all'?RES:groups[resFilter]||[];
+  // заглавна карта при избрано събитие
+  let head='';
+  if(resFilter!=='all'&&resFilter!=='other'){
+    const e=EVENTS.find(x=>x.id===resFilter);
+    if(e)head=`<div class="card" style="border-color:var(--gold-soft);"><h3>${esc(e.title)}</h3>
+      <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)} ${esc(e.time||'')} · ${esc(e.place||'')} · капацитет ${e.capacity||0}</div>
+      <div style="margin-top:6px;">${seatsInfo(e)}</div></div>`;
+  }
+  let rows=shown.map(r=>{
     const st=r.status||'requested';
     const badge=st==='confirmed'?'<span class="pill audAll">потвърдена</span>':st==='declined'?'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>':'<span class="pill">чакаща</span>';
+    const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null;
+    const cap=ev&&ev.capacity?` ${seatsInfo(ev)}`:'';
     return `<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
         <div class="muted" style="margin-top:3px;">${esc(r.who||'член')} · ${esc(memName(r.membership||'guest'))} · ${esc(r.fmt||'')} · ${isoToBg(r.date||'')} ${esc(r.time||'')}</div>
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
-        <div style="margin-top:7px;">${badge}</div></div>
+        <div style="margin-top:7px;">${badge}${cap}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Потвърди</button>
         <button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button></div>
     </div></div>`;}).join('');
-  return `<h2>Резервации</h2>${rows}`;
+  if(!rows)rows=`<p class="empty">Няма заявки в този раздел.</p>`;
+  return `<h2>Резервации</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px;">${chips}</div>
+    ${head}${rows}`;
 }
 function toast(msg,bad){
   let t=document.getElementById('acac-toast');
