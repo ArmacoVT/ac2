@@ -69,6 +69,17 @@
   .tile .ic svg{width:27px;height:27px;}
   .pill svg{width:17px;height:17px;display:block;}
   .tile .lb{color:var(--text);font-size:14px;margin-top:7px;}
+  .livedot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0301e;margin-right:6px;vertical-align:middle;
+    box-shadow:0 0 0 0 rgba(224,48,30,.6);animation:heartbeat 1.4s ease-in-out infinite;}
+  @keyframes heartbeat{
+    0%{transform:scale(1);box-shadow:0 0 0 0 rgba(224,48,30,.55);}
+    18%{transform:scale(1.35);}
+    32%{transform:scale(1);}
+    46%{transform:scale(1.25);}
+    60%{transform:scale(1);box-shadow:0 0 0 9px rgba(224,48,30,0);}
+    100%{transform:scale(1);box-shadow:0 0 0 0 rgba(224,48,30,0);}
+  }
+  @media (prefers-reduced-motion:reduce){.livedot{animation:none;}}
   .contact{margin:32px 20px 0;border-top:1px solid var(--line-soft);padding:22px 0;text-align:center;color:var(--mid);font-size:14px;line-height:1.9;}
   .contact .tag{color:var(--gold);letter-spacing:2px;margin-bottom:8px;font-size:13px;}
   .page{padding:16px;}
@@ -296,7 +307,7 @@ function home(){
     </div>`;
   }).join('');
   const anyLive=EVENTS.some(e=>e.is_live&&e.stream_url&&canAccess(e));
-  const liveLabel=anyLive?(lang==='bg'?'● На живо':'● Live'):tr('live');
+  const liveLabel=anyLive?`<span class="livedot"></span>${lang==='bg'?'На живо':'Live'}`:tr('live');
   const quick=[['events','events',tr('events'),'#2f6b63'],['live','live',liveLabel,'#b5532f'],['reserve','reserve',tr('reserve'),'#bf8a2e'],['membership','membership',tr('membership'),'#6b3a5b']];
   let tiles=quick.map(q=>`<div class="tile" onclick="go('${q[0]}')"><div class="ic" style="color:${q[3]}">${ICN[q[1]]}</div><div class="lb">${q[2]}</div></div>`).join('');
   return topbar('')+`
