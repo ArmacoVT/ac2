@@ -129,6 +129,13 @@
   .ev .bookform .bookrow input{margin:0;width:90px;}
   .ev .bookform .bookrow .btn{margin:0;width:auto;padding:12px 20px;font-size:14px;}
   .ev .bookform small{display:block;color:var(--muted);font-size:11px;margin-top:7px;}
+  .ev .tableopt{margin-top:12px;padding:12px;border-radius:13px;background:var(--surface2);}
+  .ev .tcheck{display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0;}
+  .ev .tcheck input{width:auto;margin:2px 0 0;box-shadow:none;}
+  .ev .tcheck span{color:var(--text);font-size:14px;line-height:1.4;}
+  .ev .tcheck small{color:var(--muted);font-size:11px;}
+  .ev .tablebox{display:none;margin-top:10px;}
+  .ev .tablebox input{margin-bottom:0;}
   .chip{border:none;border-radius:20px;padding:8px 15px;font-size:13px;color:var(--gold);background:var(--bg);cursor:pointer;
     box-shadow:4px 4px 9px #d9cdb6,-4px -4px 9px #fffdf4;}
   .chip.on{background:var(--gold);color:#fff7ea;font-weight:600;box-shadow:inset 3px 3px 6px rgba(120,45,20,.3),inset -2px -2px 5px rgba(255,255,255,.2);}
@@ -204,7 +211,7 @@ const T={
     newPassTitle:'Нова парола',passConfirm:'Потвърди паролата',passMismatch:'Паролите не съвпадат',pwSave:'Запази',cancelBtn:'Отказ',
     setPassTitle:'Задай своята парола',passSet:'Паролата е създадена успешно. Добре дошъл!',
     currentPass:'Текуща парола',wrongCurrent:'Грешна текуща парола',checking:'Проверка…',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими',
-    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода'},
+    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души'},
   en:{home:'Home',events:'Events',reserve:'Reserve',membership:'Membership',signin:'Sign in',profile:'Profile',
     formats:'Formats',formatsSub:'The seven formats of the club. Tap a card.',quick:'Quick actions',
     includes:'What it includes',enquiry:'Enquiry / reservation',seeEvents:'See events',
@@ -221,7 +228,7 @@ const T={
     newPassTitle:'New password',passConfirm:'Confirm password',passMismatch:'Passwords do not match',pwSave:'Save',cancelBtn:'Cancel',
     setPassTitle:'Set your password',passSet:'Password created successfully. Welcome!',
     currentPass:'Current password',wrongCurrent:'Wrong current password',checking:'Checking…',inviteOnly:'Access is by club invitation only.',demoOnlyLive:'Available after Supabase is connected',ticket:'Reserve a ticket',tableSuggest:'Reserve a table at AC² Table',afterEvent:'After the event',ticketToast:'Request sent',fav:'Favorites',
-    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion'}
+    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion',alreadyBooked:'You already have a request for this event',booked:'Ticket requested',addTable:'Also reserve a table after the event',tableParty:'Table for how many'}
 };
 const FORMATS=[
  {id:'culture',t:'AC² Culture',c:'#6b3a5b',img:'cards/logo-culture.webp',b:{bg:['музика','изложби','литература','камерни театрални формати','срещи с артисти и лектори'],en:['music','exhibitions','literature','chamber theatre formats','meetings with artists and lecturers']}},
@@ -248,7 +255,8 @@ let previewAs=null; // за преглед „как изглежда за да�
 const curMembership=()=>previewAs||(user&&user.membership)||'guest';
 // Видимост: 'all' = всички членове, иначе списък с категории
 const canAccess=ev=>ev.aud==='all'||(Array.isArray(ev.aud)&&ev.aud.includes(curMembership()));
-function evMeta(e){const d=e.date?new Date(e.date+'T00:00:00'):null;const ds=d?d.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{day:'numeric',month:'long'}):'';const t=e.time?(e.time+(e.ends?('–'+e.ends):'')):'';return [ds,t,e.place].filter(Boolean).join(' · ');}
+function fmtDay(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{day:'numeric',month:'long'});}
+function evMeta(e){const ds=e.end_date&&e.end_date!==e.date?(fmtDay(e.date)+' – '+fmtDay(e.end_date)):fmtDay(e.date);const t=e.time?(e.time+(e.ends?('–'+e.ends):'')):'';return [ds,t,e.place].filter(Boolean).join(' · ');}
 // събитие, което приключва до 22:30 → предлагаме маса в ресторанта (AC² Table)
 function endsEarly(e){return e.ends && e.format!=='table' && e.ends<='22:30';}
 function audNames(aud){if(aud==='all'||(Array.isArray(aud)&&aud.length>=MEMBERSHIP_LIST.length))return lang==='bg'?'Всички членове':'All members';if(!Array.isArray(aud)||!aud.length)return '—';return aud.map(a=>MEMBERS.find(m=>m.id===a)?.t||a).join(', ');}
@@ -351,20 +359,31 @@ function formatPage(id){
     <div class="sec-title" style="padding:20px 4px 8px;">${lang==='bg'?'Програма':'Programme'}</div>${prog}
     </div>`;
 }
+// има ли вече активна заявка (чакаща или одобрена) за това събитие
+const hasBooking=id=>RES.some(r=>r.event_id===id&&(!r.status||r.status==='requested'||r.status==='confirmed'));
 function eventCard(e){
   const on=saved.includes(e.id);
   const fav=`<button class="chip ${on?'on':''}" onclick="event.stopPropagation();toggleSave('${e.id}')">${on?'♥':'♡'} ${tr('fav')}</button>`;
-  const book=`<button class="chip" onclick="event.stopPropagation();toggleBook('${e.id}')">${tr('ticket')}</button>`;
+  const booked=user&&hasBooking(e.id);
+  const book=booked?`<button class="chip on" onclick="event.stopPropagation();toast(tr('alreadyBooked'))">✓ ${tr('booked')}</button>`
+    :`<button class="chip" onclick="event.stopPropagation();toggleBook('${e.id}')">${tr('ticket')}</button>`;
   const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):1;
-  const form=`<div class="bookform" id="bk_${e.id}">
+  const tableOpt=endsEarly(e)?`<div class="tableopt">
+      <label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" id="tb_${e.id}" onchange="toggleTableOpt('${e.id}')"/>
+        <span>${tr('addTable')} <small>· ${tr('afterEvent')} · ${e.ends}</small></span></label>
+      <div class="tablebox" id="tbx_${e.id}"><label>${tr('tableParty')}</label>
+        <input id="tbp_${e.id}" type="number" min="1" value="2"/></div></div>`:'';
+  const form=booked?'':`<div class="bookform" id="bk_${e.id}">
     <label>${tr('party')}</label>
-    <div class="bookrow"><input id="bp_${e.id}" type="number" min="1" max="${seats}" value="2"/>
-      <button class="btn" onclick="event.stopPropagation();confirmBook('${e.id}')">${tr('send')}</button></div>
-    <small>${lang==='bg'?'до':'up to'} ${seats} ${tr('seats')} · ${lang==='bg'?'според членството':'per your membership'}</small></div>`;
-  const suggest=endsEarly(e)?`<div class="suggest" onclick="event.stopPropagation();go('reserve?v=restaurant')">
-    <span class="si">${ICN.reserve}</span><div><b>${tr('tableSuggest')}</b><small>${tr('afterEvent')} · ${e.ends}</small></div><span class="ar">›</span></div>`:'';
+    <input id="bp_${e.id}" type="number" min="1" max="${seats}" value="2"/>
+    ${tableOpt}
+    <button class="btn" style="margin-top:12px;" onclick="event.stopPropagation();confirmBook('${e.id}')">${tr('send')}</button></div>`;
   return `<div class="ev"><div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>
-    <div class="row">${fav}${book}</div>${form}${suggest}</div>`;
+    <div class="row">${fav}${book}</div>${form}</div>`;
+}
+function toggleTableOpt(id){
+  const box=document.getElementById('tbx_'+id),ck=document.getElementById('tb_'+id);
+  if(box)box.style.display=ck&&ck.checked?'block':'none';
 }
 function events(){
   const mine=EVENTS.filter(canAccess);
@@ -383,9 +402,22 @@ async function confirmBook(id){
   const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
   if(n<1){toast(tr('party'));return;}
   if(n>seats){toast((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
-  await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:e.time,party:n,note:'Билет / ticket'});
+  // искаме ли и маса след събитието?
+  const wantTable=endsEarly(e)&&document.getElementById('tb_'+id)?.checked;
+  const tp=parseInt(document.getElementById('tbp_'+id)?.value||'2',10);
+  // само една активна заявка на член за събитие
+  try{RES=await DB.listReservations();}catch(err){}
+  if(hasBooking(id)){toast(tr('alreadyBooked'));route();return;}
+  const r=await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:e.time,party:n,note:'Билет / ticket'});
+  if(r&&r.error){toast(/duplicate|unique/i.test(r.error.message)?tr('alreadyBooked'):r.error.message);return;}
+  if(wantTable){
+    await DB.addReservation({fmt:'restaurant',place:venueLabel('restaurant'),date:e.date,time:e.ends||e.time,party:tp>0?tp:2,
+      note:(lang==='bg'?'Маса след събитие: ':'Table after event: ')+e.title,
+      res_name:user.username||user.email,email:user.email,phone:''});
+  }
   const f=document.getElementById('bk_'+id); if(f)f.classList.remove('open');
-  toast(tr('ticketToast'));
+  try{RES=await DB.listReservations();}catch(err){}
+  toast(wantTable?(lang==='bg'?'Билетът и масата са заявени':'Ticket and table requested'):tr('ticketToast'));route();
 }
 function streamEmbed(u){
   if(!u)return '';
@@ -443,9 +475,7 @@ function membership(){
   let list=ms.map((m,i)=>`<div class="mcard" ${m.id===mine?'style="border-color:var(--gold-soft);"':''}>
     <div class="mhead" onclick="toggleMem(${i})">
       <div><h3>${m.t}${m.id===mine?` <span style="font-size:10px;letter-spacing:1px;color:var(--gold);border:1px solid var(--gold);border-radius:12px;padding:2px 8px;vertical-align:middle;white-space:nowrap;">${tr('memb')}</span>`:''}</h3><div class="tg">${tx(m.tag)}</div></div>
-      <div style="text-align:right;display:flex;align-items:center;gap:12px;">
-        <div><div style="color:var(--text);font-size:17px;">${m.seats}</div><div style="color:var(--muted);font-size:9px;">${tr('seats')}</div></div>
-        <span class="cv" id="cv${i}">${i===0?'−':'+'}</span></div></div>
+      <span class="cv" id="cv${i}">${i===0?'−':'+'}</span></div>
     <div class="mbody" id="mb${i}" style="display:${i===0?'block':'none'}">
       <p>${tx(m.d)}</p><div class="bl">${tr('benefits')}</div>
       ${tx(m.bn).map(b=>`<div class="bul"><span class="d">◆</span><span class="x" style="font-size:14px;">${b}</span></div>`).join('')}</div></div>`).join('');
@@ -458,14 +488,14 @@ function reserve(q){
   const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):4;
   let vsel=VENUES.map(v=>`<button type="button" class="chip ${v.id===preV?'on':''}" onclick="selVenue(this)" data-v="${v.id}">${tx(v.t)}</button>`).join('');
   pickedVenue=preV||null;
-  const memInfo=user?`<p style="color:var(--muted);font-size:12px;margin:6px 0 16px;">${tr('memb')}: ${MEMBERS.find(m=>m.id===user.membership)?.t||'Guest'} · ${lang==='bg'?'до':'up to'} ${seats} ${tr('seats')}</p>`
+  const memInfo=user?`<p style="color:var(--muted);font-size:12px;margin:6px 0 16px;">${tr('memb')}: ${MEMBERS.find(m=>m.id===user.membership)?.t||'Guest'}</p>`
     :`<div class="ev" style="border-color:var(--gold-soft);margin:10px 0 16px;"><h3 style="font-size:15px;">${tr('signinSave')}</h3><div class="row"><button class="chip on" onclick="go('login')">${tr('signin')}</button></div></div>`;
   return topbar(tr('reserve'))+`<div class="page">
     <h2 style="font-family:var(--serif);color:var(--cream);font-size:24px;font-weight:500;">${tr('resTitle')}</h2>
     ${memInfo}
     <label>${tr('resName')} *</label><input id="r_name" value="${user?esc(user.username||''):''}"/>
     <label>${tr('placeChoose')} *</label><div class="selrow" id="vensel">${vsel}</div>
-    <label>${tr('date')} *</label><input id="r_date" type="date"/>
+    <label>${tr('date')} *</label><input id="r_date" readonly placeholder="дд.мм.гггг" data-iso="" onclick="openResCal()" style="cursor:pointer;"/>
     <label>${tr('time')} *</label><input id="r_time" placeholder="19:30"/>
     <label>${tr('party')} *</label><input id="r_party" type="number" value="2" min="1" max="${seats}"/>
     <label>${tr('contactEmail')} *</label><input id="r_email" type="email" autocapitalize="none" value="${user?esc(user.email||''):''}"/>
@@ -475,6 +505,51 @@ function reserve(q){
 }
 let pickedVenue=null;
 function selVenue(b){document.querySelectorAll('#vensel .chip').forEach(c=>c.classList.remove('on'));b.classList.add('on');pickedVenue=b.dataset.v;}
+// европейски календар за формата за резервация (понеделник = първи ден)
+function isoToEu(iso){if(!iso)return'';const p=iso.split('-');return p[2]+'.'+p[1]+'.'+p[0];}
+let rcalM=null;
+function openResCal(){
+  const inp=document.getElementById('r_date');
+  const base=inp.dataset.iso?new Date(inp.dataset.iso+'T00:00:00'):new Date();
+  rcalM={y:base.getFullYear(),m:base.getMonth()};drawResCal();
+}
+function resCalNav(d){rcalM.m+=d;if(rcalM.m<0){rcalM.m=11;rcalM.y--;}if(rcalM.m>11){rcalM.m=0;rcalM.y++;}drawResCal();}
+function drawResCal(){
+  closeResCal();
+  const inp=document.getElementById('r_date');if(!inp)return;
+  const months=lang==='bg'?['януари','февруари','март','април','май','юни','юли','август','септември','октомври','ноември','декември']
+    :['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const wd=lang==='bg'?['пн','вт','ср','чт','пт','сб','нд']:['Mo','Tu','We','Th','Fr','Sa','Su'];
+  const first=new Date(rcalM.y,rcalM.m,1);
+  const off=(first.getDay()+6)%7;
+  const dim=new Date(rcalM.y,rcalM.m+1,0).getDate();
+  const t=new Date();
+  const tIso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  const sel=inp.dataset.iso||'';
+  let cells=wd.map((w,i)=>`<div style="font-size:11px;color:${i>4?'#b5532f':'var(--muted)'};text-align:center;padding:4px 0;">${w}</div>`).join('');
+  for(let i=0;i<off;i++)cells+='<div></div>';
+  for(let d=1;d<=dim;d++){
+    const iso=rcalM.y+'-'+String(rcalM.m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const st=iso===sel?'background:#b5532f;color:#fffdf4;':(iso===tIso?'box-shadow:inset 0 0 0 1px #b5532f;color:#b5532f;':'color:var(--text);');
+    cells+=`<div onclick="pickResDate('${iso}')" style="text-align:center;padding:8px 0;border-radius:9px;cursor:pointer;font-size:13px;${st}">${d}</div>`;
+  }
+  const pop=document.createElement('div');pop.id='res-cal';
+  pop.style.cssText='position:absolute;z-index:9999;background:var(--surface);border:1px solid var(--line-soft);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.22);padding:12px;width:268px;';
+  pop.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <button type="button" onclick="resCalNav(-1)" style="border:0;background:none;cursor:pointer;font-size:18px;padding:4px 12px;color:var(--text);">‹</button>
+      <b style="font-size:13px;color:var(--text);">${months[rcalM.m]} ${rcalM.y}</b>
+      <button type="button" onclick="resCalNav(1)" style="border:0;background:none;cursor:pointer;font-size:18px;padding:4px 12px;color:var(--text);">›</button></div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">${cells}</div>
+    <div style="text-align:center;margin-top:8px;">
+      <button type="button" onclick="pickResDate('${tIso}')" style="border:0;background:none;cursor:pointer;color:#b5532f;font-size:12px;">${lang==='bg'?'Днес':'Today'}</button></div>`;
+  const r=inp.getBoundingClientRect();
+  pop.style.left=(r.left+window.scrollX)+'px';pop.style.top=(r.bottom+window.scrollY+6)+'px';
+  document.body.appendChild(pop);
+  setTimeout(()=>document.addEventListener('mousedown',resCalOutside),0);
+}
+function resCalOutside(ev){const p=document.getElementById('res-cal');if(p&&!p.contains(ev.target)&&ev.target.id!=='r_date')closeResCal();}
+function closeResCal(){const p=document.getElementById('res-cal');if(p){p.remove();document.removeEventListener('mousedown',resCalOutside);}}
+function pickResDate(iso){const inp=document.getElementById('r_date');if(inp){inp.dataset.iso=iso;inp.value=iso?isoToEu(iso):'';}closeResCal();}
 async function sendRes(seats){
   if(!user){needLogin();return;}
   const name=(document.getElementById('r_name').value||'').trim();
@@ -483,7 +558,7 @@ async function sendRes(seats){
   const phone=(document.getElementById('r_phone').value||'').trim();
   const note=(document.getElementById('r_note').value||'').trim();
   const n=parseInt(document.getElementById('r_party').value||'0',10);
-  const rdate=(document.getElementById('r_date').value||'').trim();
+  const rdate=(document.getElementById('r_date').dataset.iso||'').trim();
   const rtime=(document.getElementById('r_time').value||'').trim();
   if(!name){toast(tr('reqName'));return;}
   if(!venue){toast(tr('reqVenue'));return;}
@@ -597,8 +672,7 @@ function profile(){
     <div class="panel" style="padding:22px;text-align:center;">
       <div style="color:var(--cream);font-size:22px;font-family:var(--serif);">${esc(user.username||user.email)}</div>
       <div style="display:inline-block;margin-top:8px;border:1px solid var(--gold);border-radius:20px;padding:5px 16px;color:var(--gold);font-size:13px;letter-spacing:2px;text-transform:uppercase;">${m?m.t:'Guest'}</div>
-      <div style="color:var(--mid);font-size:13px;margin-top:12px;">${tr('allow')}: <b style="color:var(--text);">${seats}</b></div>
-      <div style="color:var(--mid);font-size:12px;margin-top:6px;">${EVENTS.filter(canAccess).length} ${lang==='bg'?'налични събития':'available events'}</div></div>
+      <div style="color:var(--mid);font-size:12px;margin-top:12px;">${EVENTS.filter(canAccess).length} ${lang==='bg'?'налични събития':'available events'}</div></div>
     <div class="ev" onclick="go('membership')" style="margin-top:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><h3 style="font-size:15px;">${tr('membership')}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Категории и предимства':'Categories and benefits'}</div></div>
       <span style="color:var(--muted);font-size:20px;">›</span></div>
@@ -655,7 +729,7 @@ async function route(){
   if(path!=='events')previewAs=null;
   const parts=path.split('/');
   if(['','home','events','profile','live'].includes(path)||parts[0]==='format'){ try{EVENTS=await DB.listEvents();saved=await DB.listSaved();}catch(e){} }
-  if(['','home','profile'].includes(path)){ try{RES=await DB.listReservations();}catch(e){RES=[];} }
+  if(['','home','profile','events'].includes(path)||parts[0]==='format'){ try{RES=await DB.listReservations();}catch(e){RES=[];} }
   let html,active='home';
   if(path===''||path==='home'){html=home();active='home';}
   else if(parts[0]==='format'){html=formatPage(parts[1]);active='home';}

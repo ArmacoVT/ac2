@@ -123,7 +123,7 @@ function eventsView(){
     return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
       <div><h3>${esc(e.title)} ${liveBadge}</h3>
-        <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места</div>
+        <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)}${e.end_date?' – '+isoToBg(e.end_date):''} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места</div>
         <div style="margin-top:6px;">${seatsInfo(e)}</div>
         <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
@@ -146,10 +146,11 @@ function formView(){
     <label>Заглавие</label><input id="f_title" value="${esc(e?e.title:'')}" placeholder="Напр. Гастрономическа вечер"/>
     <div class="row2"><div><label>Формат</label><select id="f_format">${fmtOpts}</select></div>
       <div><label>Място / зала</label><select id="f_place">${venOpts}</select></div></div>
+    <div class="row2"><div><label>Начална дата</label><input id="f_date" readonly placeholder="дд.мм.гггг" value="${e&&e.date?isoToBg(e.date):''}" data-iso="${esc(e?(e.date||''):'')}" onclick="openCal('f_date')" style="cursor:pointer;"/></div>
+      <div><label>Крайна дата (по желание)</label><input id="f_end_date" readonly placeholder="дд.мм.гггг" value="${e&&e.end_date?isoToBg(e.end_date):''}" data-iso="${esc(e?(e.end_date||''):'')}" onclick="openCal('f_end_date')" style="cursor:pointer;"/></div></div>
     <div class="row2"><div><label>Начало (час)</label><input id="f_time" value="${esc(e?e.time:'')}" placeholder="19:30"/></div>
       <div><label>Край (час)</label><input id="f_ends" value="${esc(e?e.ends:'')}" placeholder="22:00"/></div></div>
-    <div class="row2"><div><label>Дата</label><input id="f_date" readonly placeholder="дд.мм.гггг" value="${e&&e.date?isoToBg(e.date):''}" data-iso="${esc(e?(e.date||''):'')}" onclick="openCal()" style="cursor:pointer;"/></div>
-      <div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}"/></div></div>
+    <div class="row2"><div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}"/></div><div></div></div>
     <label>Линк за live stream (по желание — YouTube, Vimeo или друг)</label>
     <input id="f_stream" value="${esc(e?e.stream_url:'')}" placeholder="https://www.youtube.com/watch?v=..."/>
     <label style="display:flex;align-items:center;gap:10px;margin-top:12px;cursor:pointer;">
@@ -166,8 +167,9 @@ function grabForm(){
   const g=id=>{const el=document.getElementById(id);return el?el.value:null;};
   const live=document.getElementById('f_live');
   const date=document.getElementById('f_date');
+  const ed=document.getElementById('f_end_date');
   return {title:g('f_title'),format:g('f_format'),place:g('f_place'),time:g('f_time'),ends:g('f_ends'),
-    dateIso:date?(date.dataset.iso||''):'',cap:g('f_cap'),stream:g('f_stream'),live:live?live.checked:false};
+    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),stream:g('f_stream'),live:live?live.checked:false};
 }
 function putForm(v){
   if(!v)return;
@@ -176,6 +178,8 @@ function putForm(v){
   s('f_cap',v.cap);s('f_stream',v.stream);
   const date=document.getElementById('f_date');
   if(date){date.dataset.iso=v.dateIso||'';date.value=v.dateIso?isoToBg(v.dateIso):'';}
+  const ed=document.getElementById('f_end_date');
+  if(ed){ed.dataset.iso=v.endDateIso||'';ed.value=v.endDateIso?isoToBg(v.endDateIso):'';}
   const live=document.getElementById('f_live');if(live)live.checked=!!v.live;
 }
 function toggleAud(id){
@@ -190,9 +194,10 @@ function toggleAud(id){
 
 // ---------- европейски календар (понеделник = първи ден) ----------
 function isoToBg(iso){if(!iso)return'';const p=iso.split('-');return p[2]+'.'+p[1]+'.'+p[0];}
-let calM=null;
-function openCal(){
-  const inp=document.getElementById('f_date');
+let calM=null,calTarget='f_date';
+function openCal(field){
+  calTarget=field||'f_date';
+  const inp=document.getElementById(calTarget);
   const base=inp.dataset.iso?new Date(inp.dataset.iso+'T00:00:00'):new Date();
   calM={y:base.getFullYear(),m:base.getMonth()};
   drawCal();
@@ -200,7 +205,7 @@ function openCal(){
 function calNav(d){calM.m+=d;if(calM.m<0){calM.m=11;calM.y--;}if(calM.m>11){calM.m=0;calM.y++;}drawCal();}
 function drawCal(){
   closeCal();
-  const inp=document.getElementById('f_date');if(!inp)return;
+  const inp=document.getElementById(calTarget);if(!inp)return;
   const months=['януари','февруари','март','април','май','юни','юли','август','септември','октомври','ноември','декември'];
   const wd=['пн','вт','ср','чт','пт','сб','нд'];
   const first=new Date(calM.y,calM.m,1);
@@ -233,14 +238,14 @@ function drawCal(){
 }
 function calOutside(ev){
   const p=document.getElementById('acac-cal');
-  if(p&&!p.contains(ev.target)&&ev.target.id!=='f_date')closeCal();
+  if(p&&!p.contains(ev.target)&&ev.target.id!==calTarget)closeCal();
 }
 function closeCal(){
   const p=document.getElementById('acac-cal');
   if(p){p.remove();document.removeEventListener('mousedown',calOutside);}
 }
 function pickDate(iso){
-  const inp=document.getElementById('f_date');
+  const inp=document.getElementById(calTarget);
   if(inp){inp.dataset.iso=iso;inp.value=iso?isoToBg(iso):'';}
   closeCal();
 }
@@ -251,8 +256,11 @@ async function toggleLive(id,on){await DB.setLive(id,on);await refresh();render(
 async function saveEvent(){
   const title=document.getElementById('f_title').value.trim();
   if(!title){alert('Въведи заглавие');return;}
+  const dIso=document.getElementById('f_date').dataset.iso||'';
+  const edIso=document.getElementById('f_end_date').dataset.iso||'';
+  if(edIso&&dIso&&edIso<dIso){alert('Крайната дата е преди началната');return;}
   const obj={title,format:document.getElementById('f_format').value,place:document.getElementById('f_place').value.trim(),
-    date:document.getElementById('f_date').dataset.iso||'',time:document.getElementById('f_time').value.trim(),ends:document.getElementById('f_ends').value.trim(),
+    date:dIso,end_date:edIso,time:document.getElementById('f_time').value.trim(),ends:document.getElementById('f_ends').value.trim(),
     capacity:parseInt(document.getElementById('f_cap').value||'0',10),
     stream_url:document.getElementById('f_stream').value.trim(),
     is_live:document.getElementById('f_live').checked,

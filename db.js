@@ -75,7 +75,7 @@
       if (!LIVE) return seedDemo();
       const { data } = await sb.from('events').select('*').order('date', { ascending: true });
       return (data || []).map(e => ({ id: e.id, title: e.title, format: e.format, place: e.place,
-        date: e.date, time: e.time, ends: e.ends || '', capacity: e.capacity, aud: toAud(e.audience),
+        date: e.date, end_date: e.end_date || '', time: e.time, ends: e.ends || '', capacity: e.capacity, aud: toAud(e.audience),
         stream_url: e.stream_url || '', is_live: !!e.is_live }));
     },
     // всички събития (за админ панела — без филтър по членство; в live разчита на admin RLS)
@@ -83,14 +83,14 @@
     async addEvent(o) {
       if (!LIVE) { const e = seedDemo(); o.id = 'e' + Date.now(); e.unshift(o); jset(K.ev, e); return { error: null }; }
       const { error } = await sb.from('events').insert({ title: o.title, format: o.format, place: o.place, date: o.date || null,
-        time: o.time, ends: o.ends || null, capacity: o.capacity || 0, audience: toAudience(o.aud),
+        end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0, audience: toAudience(o.aud),
         stream_url: o.stream_url || null, is_live: !!o.is_live });
       return { error };
     },
     async updateEvent(id, o) {
       if (!LIVE) { let e = seedDemo().map(x => x.id === id ? { ...x, ...o } : x); jset(K.ev, e); return { error: null }; }
       const { error } = await sb.from('events').update({ title: o.title, format: o.format, place: o.place, date: o.date || null,
-        time: o.time, ends: o.ends || null, capacity: o.capacity || 0, audience: toAudience(o.aud),
+        end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0, audience: toAudience(o.aud),
         stream_url: o.stream_url || null, is_live: !!o.is_live }).eq('id', id);
       return { error };
     },
@@ -113,12 +113,19 @@
         name: r.res_name || '', email: r.contact_email || '', phone: r.contact_phone || '' }));
     },
     async addReservation(o) {
-      if (!LIVE) { const r = jget(K.res, []); o.id = 'r' + Date.now(); o.status = 'requested'; r.unshift(o); jset(K.res, r); return; }
+      if (!LIVE) { const r = jget(K.res, []); o.id = 'r' + Date.now(); o.status = 'requested'; r.unshift(o); jset(K.res, r); return { error: null }; }
       const u = await this.getUser();
-      await sb.from('reservations').insert({ user_id: u.id, event_id: o.event_id || null,
+      // една активна заявка на член за дадено събитие
+      if (o.event_id) {
+        const { data: ex } = await sb.from('reservations').select('id,status').eq('user_id', u.id).eq('event_id', o.event_id);
+        if ((ex || []).some(x => x.status !== 'declined' && x.status !== 'cancelled'))
+          return { error: { message: 'duplicate' } };
+      }
+      const { error } = await sb.from('reservations').insert({ user_id: u.id, event_id: o.event_id || null,
         who: u.username || u.email, membership: u.membership, format: o.fmt,
         place: o.place, date: o.date || null, time: o.time, party_size: o.party || 1, note: o.note, status: 'requested',
         res_name: o.res_name || null, contact_email: o.email || null, contact_phone: o.phone || null });
+      return { error };
     },
     async setReservationStatus(id, status) {
       if (!LIVE) { let r = jget(K.res, []); r = r.map(x => x.id === id ? { ...x, status } : x); jset(K.res, r); return { error: null }; }
