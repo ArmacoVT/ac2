@@ -136,8 +136,9 @@
     transition:transform .35s cubic-bezier(.2,.7,.2,1),opacity .35s;}
   .tabbar.mini{transform:translateX(-50%) scale(.86) translateY(8px);opacity:.8;}
   .tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 7px;color:var(--muted);font-size:9.5px;text-decoration:none;cursor:pointer;transition:color .2s;}
-  .tabbar a .ti{display:flex;align-items:center;justify-content:center;}
+  .tabbar a .ti{display:flex;align-items:center;justify-content:center;position:relative;}
   .tabbar a .ti svg{width:23px;height:23px;}
+  .nb{position:absolute;top:-7px;right:-11px;background:#b5532f;color:#fffdf4;font-size:10px;line-height:1;font-weight:700;padding:3px 5px;border-radius:10px;min-width:9px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.25);}
   .tabbar a.active{color:var(--gold);}
   .tabbar a.active .ti{background:#f1e8d6;border-radius:50%;box-shadow:3px 3px 6px #d3c6ad,-3px -3px 6px #fff;padding:7px;margin-top:-2px;}
   @keyframes ac2In{from{opacity:0;transform:scale(.7);}to{opacity:1;transform:scale(1);}}
@@ -397,9 +398,13 @@ async function toggleSave(id){
   saved=await DB.listSaved();route();
 }
 function membership(){
-  let list=MEMBERS.map((m,i)=>`<div class="mcard">
+  const mine=(user&&user.membership)||'guest';
+  // Founder се вижда само от founder членове; твоята категория е първа и отбелязана
+  let ms=MEMBERS.filter(m=>m.id!=='founder'||mine==='founder');
+  ms=ms.filter(m=>m.id===mine).concat(ms.filter(m=>m.id!==mine));
+  let list=ms.map((m,i)=>`<div class="mcard" ${m.id===mine?'style="border-color:var(--gold-soft);"':''}>
     <div class="mhead" onclick="toggleMem(${i})">
-      <div><h3>${m.t}</h3><div class="tg">${tx(m.tag)}</div></div>
+      <div><h3>${m.t}${m.id===mine?` <span style="font-size:10px;letter-spacing:1px;color:var(--gold);border:1px solid var(--gold);border-radius:12px;padding:2px 8px;vertical-align:middle;white-space:nowrap;">${tr('memb')}</span>`:''}</h3><div class="tg">${tx(m.tag)}</div></div>
       <div style="text-align:right;display:flex;align-items:center;gap:12px;">
         <div><div style="color:var(--text);font-size:17px;">${m.seats}</div><div style="color:var(--muted);font-size:9px;">${tr('seats')}</div></div>
         <span class="cv" id="cv${i}">${i===0?'−':'+'}</span></div></div>
@@ -541,6 +546,9 @@ function profile(){
       <div style="display:inline-block;margin-top:8px;border:1px solid var(--gold);border-radius:20px;padding:5px 16px;color:var(--gold);font-size:13px;letter-spacing:2px;text-transform:uppercase;">${m?m.t:'Guest'}</div>
       <div style="color:var(--mid);font-size:13px;margin-top:12px;">${tr('allow')}: <b style="color:var(--text);">${seats}</b></div>
       <div style="color:var(--mid);font-size:12px;margin-top:6px;">${EVENTS.filter(canAccess).length} ${lang==='bg'?'налични събития':'available events'}</div></div>
+    <div class="ev" onclick="go('membership')" style="margin-top:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+      <div><h3 style="font-size:15px;">${tr('membership')}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Категории и предимства':'Categories and benefits'}</div></div>
+      <span style="color:var(--muted);font-size:20px;">›</span></div>
     <div class="sec-title" style="padding:24px 0 8px;">${tr('myEvents')}</div>
     ${sev.length?sev.map(e=>`<div class="ev" style="margin-bottom:8px;"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m">${evMeta(e)}</div></div>`).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noEvents')}</p>`}
     <div class="sec-title" style="padding:22px 0 8px;">${tr('myRes')}</div>
@@ -553,9 +561,35 @@ function profile(){
     <button class="btn btn-ghost" style="margin-top:12px;" onclick="signout()">${tr('signout')}</button></div>`;
 }
 async function signout(){await DB.signOut();user=null;saved=[];RES=[];go('');}
+// брой нови известия (резервации с променен статус, които още не са видени)
+function notifCount(){
+  try{
+    const seen=JSON.parse(localStorage.getItem('acac_seen_res')||'{}');
+    return RES.filter(r=>(r.status==='confirmed'||r.status==='declined')&&seen[r.id]!==r.status).length;
+  }catch(e){return 0;}
+}
+// отбелязва всичко като видяно (при отваряне на профила)
+function markResSeen(){
+  try{
+    const seen=JSON.parse(localStorage.getItem('acac_seen_res')||'{}');
+    RES.forEach(r=>{seen[r.id]=r.status;});
+    localStorage.setItem('acac_seen_res',JSON.stringify(seen));
+  }catch(e){}
+  appBadge();
+}
+// число върху иконата на приложението (където се поддържа — инсталирано PWA)
+function appBadge(){
+  const n=notifCount();
+  try{
+    if('setAppBadge' in navigator){ if(n)navigator.setAppBadge(n); else navigator.clearAppBadge(); }
+  }catch(e){}
+  return n;
+}
 function tabbar(active){
-  const items=[['','home',tr('home')],['events','events',tr('events')],['live','live',tr('live')],['reserve','reserve',tr('reserve')],['membership','membership',tr('membership')],[user?'profile':'login','profile',user?tr('profile'):tr('signin')]];
-  document.getElementById('tabbar').innerHTML=items.map(i=>`<a onclick="go('${i[0]}')" class="${active===(i[0]||'home')?'active':''}"><span class="ti">${ICN[i[1]]}</span>${i[2]}</a>`).join('');
+  const n=appBadge();
+  const nb=n?`<span class="nb">${n}</span>`:'';
+  const items=[['','home',tr('home'),''],['events','events',tr('events'),''],['live','live',tr('live'),''],['reserve','reserve',tr('reserve'),''],[user?'profile':'login','profile',user?tr('profile'):tr('signin'),nb]];
+  document.getElementById('tabbar').innerHTML=items.map(i=>`<a onclick="go('${i[0]}')" class="${active===(i[0]||'home')?'active':''}"><span class="ti">${ICN[i[1]]}${i[3]||''}</span>${i[2]}</a>`).join('');
 }
 async function route(){
   const tb=document.getElementById('tabbar');
@@ -568,7 +602,7 @@ async function route(){
   if(path!=='events')previewAs=null;
   const parts=path.split('/');
   if(['','home','events','profile','live'].includes(path)||parts[0]==='format'){ try{EVENTS=await DB.listEvents();saved=await DB.listSaved();}catch(e){} }
-  if(path==='profile'){ try{RES=await DB.listReservations();}catch(e){RES=[];} }
+  if(['','home','profile'].includes(path)){ try{RES=await DB.listReservations();}catch(e){RES=[];} }
   let html,active='home';
   if(path===''||path==='home'){html=home();active='home';}
   else if(parts[0]==='format'){html=formatPage(parts[1]);active='home';}
@@ -578,7 +612,9 @@ async function route(){
   else if(path==='membership'){html=membership();active='membership';}
   else if(path==='profile'){html=profile();active='profile';}
   else{html=home();}
-  app.innerHTML=html;window.scrollTo(0,0);tabbar(active);
+  app.innerHTML=html;window.scrollTo(0,0);
+  if(path==='profile')markResSeen();
+  tabbar(active);
 }
 window.addEventListener('hashchange',()=>{loginMode='login';route();});
 document.documentElement.lang=lang;
@@ -617,15 +653,15 @@ DB.onRecovery(promptInitialPassword);
   // дошъл от имейл-покана → задава си парола веднага (с потвърждение)
   if(user&&(DB.urlType==='invite'||DB.urlType==='recovery')) await promptInitialPassword();
   route();
-  // известие в приложението при одобрена/отказана резервация
+  // известие в приложението при одобрена/отказана резервация (вижда се, докато не се отвори профилът)
   if(user){try{
     RES=await DB.listReservations();
-    const seen=JSON.parse(localStorage.getItem('acac_seen_res')||'{}');
-    let changed=null;
-    RES.forEach(r=>{ if(seen[r.id]&&seen[r.id]!==r.status&&(r.status==='confirmed'||r.status==='declined'))changed=r; seen[r.id]=r.status; });
-    localStorage.setItem('acac_seen_res',JSON.stringify(seen));
-    if(changed){const ok=changed.status==='confirmed';
-      setTimeout(()=>toast(ok?(lang==='bg'?'✓ Резервацията ви е одобрена':'✓ Your reservation was approved'):(lang==='bg'?'Резервацията ви е отказана':'Your reservation was declined')),900);}
+    const p0=location.hash.replace(/^#/,'').split('?')[0];
+    tabbar(p0===''?'home':(p0.split('/')[0]==='format'?'home':p0));
+    const n=notifCount();
+    if(n&&p0!=='profile'){
+      setTimeout(()=>toast(lang==='bg'?'Имате новост по резервация — вижте профила си':'You have a reservation update — check your profile'),900);
+    }
   }catch(e){}}
 })();
 </script>
