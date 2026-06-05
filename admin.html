@@ -312,7 +312,8 @@ function resView(){
         <div style="margin-top:7px;">${badge}${cap}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Потвърди</button>
-        <button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button></div>
+        <button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button>
+        <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button></div>
     </div></div>`;}).join('');
   if(!rows)rows=`<p class="empty">Няма заявки в този раздел.</p>`;
   return `<h2>Резервации</h2>
@@ -327,6 +328,13 @@ function toast(msg,bad){
   t.style.background=bad?'#b05b3f':'#3f6b5e';
   t.textContent=msg;t.style.opacity='1';
   clearTimeout(t._h);t._h=setTimeout(()=>{t.style.opacity='0';},3500);
+}
+async function delRes(id){
+  if(!confirm('Да изтрия ли тази резервация? Действието е необратимо.'))return;
+  const r=await DB.deleteReservation(id);
+  if(r&&r.error){alert('Грешка при изтриване: '+r.error.message);return;}
+  toast('Резервацията е изтрита');
+  await refresh();render();
 }
 async function setRes(id,st){
   const r=await DB.setReservationStatus(id,st);

@@ -37,6 +37,7 @@
   .hero p{color:var(--mid);font-size:14px;margin-top:14px;line-height:1.55;padding:0 12px;}
   .hero-illu{display:block;width:min(360px,86%);margin:18px auto 0;}
   .sec-title{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;padding:24px 20px 2px;}
+  .resday{color:var(--mid);font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:capitalize;margin:14px 0 8px;padding-left:2px;border-left:3px solid var(--gold-soft);padding:2px 0 2px 10px;}
   .sec-sub{color:var(--muted);font-size:13px;padding:0 20px 10px;}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px;}
   .grid{gap:16px;}
@@ -683,25 +684,36 @@ function profile(){
     ${DB.live?`<button class="btn btn-ghost" style="margin-top:26px;" onclick="changePass()">${tr('changePass')}</button>`:''}
     <button class="btn btn-ghost" style="margin-top:12px;" onclick="signout()">${tr('signout')}</button></div>`;
 }
-// карта за една резервация (dim=true за изминалите)
+// карта за една резервация (dim=true за изминалите; датата е в заглавието на групата)
 function resCard(r,dim){
   const SL={requested:lang==='bg'?'чакаща':'pending',confirmed:lang==='bg'?'одобрена':'approved',declined:lang==='bg'?'отказана':'declined',cancelled:lang==='bg'?'отменена':'cancelled'};
   const SC={confirmed:'#4f7a43',declined:'#b5532f'};
-  const dEu=r.date?r.date.split('-').reverse().join('.'):'';
-  const tm=r.time?(' · '+r.time):'';
-  return `<div class="ev" style="margin-bottom:8px;${dim?'opacity:.6;':''}"><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}</h3><div class="m">${dEu}${tm} — <b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div></div>`;
+  const tm=r.time?(r.time+' · '):'';
+  return `<div class="ev" style="margin-bottom:8px;${dim?'opacity:.6;':''}"><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}</h3><div class="m">${tm}<b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div></div>`;
 }
-// предстоящи + изминали, само последната заявка за всяко събитие
+// заглавие на дата: „петък, 6 юни 2026"
+function resDayLabel(iso){
+  if(!iso)return lang==='bg'?'Без дата':'No date';
+  const d=new Date(iso+'T00:00:00');
+  return d.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+// групиране по дата (списъкът вече е подреден по дата)
+function resGroups(list,dim){
+  const groups=[],idx={};
+  list.forEach(r=>{const k=r.date||'';if(idx[k]==null){idx[k]=groups.length;groups.push({k,items:[]});}groups[idx[k]].items.push(r);});
+  return groups.map(g=>`<div class="resday">${esc(resDayLabel(g.k))}</div>${g.items.map(r=>resCard(r,dim)).join('')}`).join('');
+}
+// предстоящи + изминали, групирани по дата
 function resSections(res){
   if(!res.length)return `<p style="color:var(--muted);font-style:italic;">${tr('noRes')}</p>`;
   const t=new Date();
   const todayIso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
   const upcoming=res.filter(r=>!r.date||r.date>=todayIso).sort((a,b)=>((a.date||'9999-99-99')<(b.date||'9999-99-99'))?-1:1);
   const past=res.filter(r=>r.date&&r.date<todayIso).sort((a,b)=>a.date<b.date?1:-1);
-  let h=upcoming.length?upcoming.map(r=>resCard(r,false)).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noUpcomingRes')}</p>`;
+  let h=upcoming.length?resGroups(upcoming,false):`<p style="color:var(--muted);font-style:italic;">${tr('noUpcomingRes')}</p>`;
   if(past.length){
     h+=`<button class="btn btn-ghost" style="margin-top:10px;" onclick="togglePast(this)">${tr('pastRes')} (${past.length}) ▾</button>
-      <div id="pastres" style="display:none;margin-top:10px;">${past.map(r=>resCard(r,true)).join('')}</div>`;
+      <div id="pastres" style="display:none;margin-top:10px;">${resGroups(past,true)}</div>`;
   }
   return h;
 }

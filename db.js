@@ -100,7 +100,13 @@
       await sb.from('events').update({ is_live: !!on }).eq('id', id);
     },
     async deleteEvent(id) {
-      if (!LIVE) { jset(K.ev, seedDemo().filter(x => x.id !== id)); return; }
+      if (!LIVE) {
+        jset(K.ev, seedDemo().filter(x => x.id !== id));
+        jset(K.res, jget(K.res, []).filter(r => r.event_id !== id));
+        return;
+      }
+      // първо махаме резервациите за това събитие, после самото събитие
+      await sb.from('reservations').delete().eq('event_id', id);
       await sb.from('events').delete().eq('id', id);
     },
 
@@ -130,6 +136,11 @@
     async setReservationStatus(id, status) {
       if (!LIVE) { let r = jget(K.res, []); r = r.map(x => x.id === id ? { ...x, status } : x); jset(K.res, r); return { error: null }; }
       const { error } = await sb.from('reservations').update({ status }).eq('id', id);
+      return { error };
+    },
+    async deleteReservation(id) {
+      if (!LIVE) { jset(K.res, jget(K.res, []).filter(x => x.id !== id)); return { error: null }; }
+      const { error } = await sb.from('reservations').delete().eq('id', id);
       return { error };
     },
 
