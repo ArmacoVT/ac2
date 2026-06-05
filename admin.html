@@ -113,6 +113,42 @@ function seatsInfo(e){
   return `<span class="pill" style="border-color:${col};color:${col};">${left<=0?'няма места':'остават '+left+' от '+e.capacity}</span>`+
     (pend?` <span class="pill">${pend} чакащи</span>`:'');
 }
+// маси след събитието (свързани чрез table_event_id)
+function tableTaken(evId){return RES.filter(r=>r.table_event_id===evId&&r.status==='confirmed').reduce((s,r)=>s+(r.party||1),0);}
+function tableInfo(e){
+  if(!e.table_capacity)return '';
+  const taken=tableTaken(e.id), left=e.table_capacity-taken;
+  const col=left<=0?'#b5532f':(left<=Math.ceil(e.table_capacity*0.2)?'#bf8a2e':'#4f7a43');
+  return `<span class="pill" style="border-color:${col};color:${col};">🍽 ${left<=0?'няма маси':'маси: остават '+left+' от '+e.table_capacity}</span>`;
+}
+// разгъващ се списък „кой е запазил" за дадено събитие (билети + маси)
+function eventResList(e){
+  const tickets=RES.filter(r=>r.event_id===e.id);
+  const tables=RES.filter(r=>r.table_event_id===e.id);
+  const all=tickets.concat(tables);
+  if(!all.length)return '';
+  const stTxt={confirmed:'одобрена',declined:'отказана'};
+  const stCol={confirmed:'#4f7a43',declined:'#b5532f'};
+  const row=(r,isTable)=>{
+    const st=r.status||'requested';
+    const nm=r.name||r.who||'член';
+    const contact=[r.email,r.phone].filter(Boolean).map(esc).join(' · ');
+    return `<div style="padding:8px 0;border-top:1px solid var(--line-soft);">
+      <div><b>${esc(nm)}</b> · ${r.party||1} ${isTable?'на маса':'места'}${isTable?' 🍽':''}
+        <span style="color:${stCol[st]||'var(--muted)'};font-size:12px;"> · ${stTxt[st]||'чакаща'}</span></div>
+      ${contact?`<div class="muted" style="font-size:12px;">${contact}</div>`:''}
+      ${r.note&&isTable?`<div class="muted" style="font-size:12px;">„${esc(r.note)}"</div>`:''}</div>`;
+  };
+  const body=tickets.map(r=>row(r,false)).join('')+tables.map(r=>row(r,true)).join('');
+  return `<button class="btn ghost sm" style="margin-top:10px;" onclick="toggleEvRes('${e.id}')" id="evrb_${e.id}">Запазили (${all.length}) ▾</button>
+    <div id="evr_${e.id}" style="display:none;margin-top:4px;">${body}</div>`;
+}
+function toggleEvRes(id){
+  const d=document.getElementById('evr_'+id),b=document.getElementById('evrb_'+id);
+  if(!d)return;const open=d.style.display!=='none';
+  d.style.display=open?'none':'block';
+  if(b)b.textContent=b.textContent.replace(open?'▴':'▾',open?'▾':'▴');
+}
 function eventsView(){
   let list=EVENTS.map(e=>{
     const liveBadge=e.is_live?'<span class="pill" style="border-color:#d98b6e;color:#d98b6e;">● НА ЖИВО</span>':(e.stream_url?'<span class="pill">стрийм готов</span>':'');
@@ -124,13 +160,13 @@ function eventsView(){
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
       <div><h3>${esc(e.title)} ${liveBadge}</h3>
         <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)}${e.end_date?' – '+isoToBg(e.end_date):''} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места</div>
-        <div style="margin-top:6px;">${seatsInfo(e)}</div>
+        <div style="margin-top:6px;">${seatsInfo(e)} ${tableInfo(e)}</div>
         <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${liveBtn}
         <button class="btn ghost sm" onclick="editEvent('${e.id}')">Редактирай</button>
         <button class="btn no sm" onclick="delEvent('${e.id}')">Изтрий</button></div>
-    </div></div>`;}).join('')||`<p class="empty">Няма събития. Добави първото.</p>`;
+    </div>${eventResList(e)}</div>`;}).join('')||`<p class="empty">Няма събития. Добави първото.</p>`;
   return `<h2>Събития</h2>${formView()}${list}`;
 }
 function formView(){
@@ -150,7 +186,8 @@ function formView(){
       <div><label>Крайна дата (по желание)</label><input id="f_end_date" readonly placeholder="дд.мм.гггг" value="${e&&e.end_date?isoToBg(e.end_date):''}" data-iso="${esc(e?(e.end_date||''):'')}" onclick="openCal('f_end_date')" style="cursor:pointer;"/></div></div>
     <div class="row2"><div><label>Начало (час)</label><input id="f_time" value="${esc(e?e.time:'')}" placeholder="19:30"/></div>
       <div><label>Край (час)</label><input id="f_ends" value="${esc(e?e.ends:'')}" placeholder="22:00"/></div></div>
-    <div class="row2"><div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}"/></div><div></div></div>
+    <div class="row2"><div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}"/></div>
+      <div><label>Места на маса след събитието</label><input id="f_tcap" type="number" min="0" value="${e&&e.table_capacity?e.table_capacity:''}" placeholder="по желание"/></div></div>
     <label>Линк за live stream (по желание — YouTube, Vimeo или друг)</label>
     <input id="f_stream" value="${esc(e?e.stream_url:'')}" placeholder="https://www.youtube.com/watch?v=..."/>
     <label style="display:flex;align-items:center;gap:10px;margin-top:12px;cursor:pointer;">
@@ -169,13 +206,13 @@ function grabForm(){
   const date=document.getElementById('f_date');
   const ed=document.getElementById('f_end_date');
   return {title:g('f_title'),format:g('f_format'),place:g('f_place'),time:g('f_time'),ends:g('f_ends'),
-    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),stream:g('f_stream'),live:live?live.checked:false};
+    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),stream:g('f_stream'),live:live?live.checked:false};
 }
 function putForm(v){
   if(!v)return;
   const s=(id,val)=>{const el=document.getElementById(id);if(el&&val!=null)el.value=val;};
   s('f_title',v.title);s('f_format',v.format);s('f_place',v.place);s('f_time',v.time);s('f_ends',v.ends);
-  s('f_cap',v.cap);s('f_stream',v.stream);
+  s('f_cap',v.cap);s('f_tcap',v.tcap);s('f_stream',v.stream);
   const date=document.getElementById('f_date');
   if(date){date.dataset.iso=v.dateIso||'';date.value=v.dateIso?isoToBg(v.dateIso):'';}
   const ed=document.getElementById('f_end_date');
@@ -262,6 +299,7 @@ async function saveEvent(){
   const obj={title,format:document.getElementById('f_format').value,place:document.getElementById('f_place').value.trim(),
     date:dIso,end_date:edIso,time:document.getElementById('f_time').value.trim(),ends:document.getElementById('f_ends').value.trim(),
     capacity:parseInt(document.getElementById('f_cap').value||'0',10),
+    table_capacity:parseInt(document.getElementById('f_tcap').value||'0',10),
     stream_url:document.getElementById('f_stream').value.trim(),
     is_live:document.getElementById('f_live').checked,
     aud:draftAud.includes('all')?'all':draftAud.slice()};

@@ -414,6 +414,7 @@ async function confirmBook(id){
   if(r&&r.error){toast(/duplicate|unique/i.test(r.error.message)?tr('alreadyBooked'):r.error.message);return;}
   if(wantTable){
     await DB.addReservation({fmt:'restaurant',place:venueLabel('restaurant'),date:e.date,time:e.ends||e.time,party:tp>0?tp:2,
+      table_event_id:e.id,
       note:(lang==='bg'?'Маса след събитие: ':'Table after event: ')+e.title,
       res_name:user.username||user.email,email:user.email,phone:''});
   }

@@ -75,7 +75,8 @@
       if (!LIVE) return seedDemo();
       const { data } = await sb.from('events').select('*').order('date', { ascending: true });
       return (data || []).map(e => ({ id: e.id, title: e.title, format: e.format, place: e.place,
-        date: e.date, end_date: e.end_date || '', time: e.time, ends: e.ends || '', capacity: e.capacity, aud: toAud(e.audience),
+        date: e.date, end_date: e.end_date || '', time: e.time, ends: e.ends || '', capacity: e.capacity,
+        table_capacity: e.table_capacity || 0, aud: toAud(e.audience),
         stream_url: e.stream_url || '', is_live: !!e.is_live }));
     },
     // всички събития (за админ панела — без филтър по членство; в live разчита на admin RLS)
@@ -83,14 +84,16 @@
     async addEvent(o) {
       if (!LIVE) { const e = seedDemo(); o.id = 'e' + Date.now(); e.unshift(o); jset(K.ev, e); return { error: null }; }
       const { error } = await sb.from('events').insert({ title: o.title, format: o.format, place: o.place, date: o.date || null,
-        end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0, audience: toAudience(o.aud),
+        end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0,
+        table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
         stream_url: o.stream_url || null, is_live: !!o.is_live });
       return { error };
     },
     async updateEvent(id, o) {
       if (!LIVE) { let e = seedDemo().map(x => x.id === id ? { ...x, ...o } : x); jset(K.ev, e); return { error: null }; }
       const { error } = await sb.from('events').update({ title: o.title, format: o.format, place: o.place, date: o.date || null,
-        end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0, audience: toAudience(o.aud),
+        end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0,
+        table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
         stream_url: o.stream_url || null, is_live: !!o.is_live }).eq('id', id);
       return { error };
     },
@@ -102,11 +105,12 @@
     async deleteEvent(id) {
       if (!LIVE) {
         jset(K.ev, seedDemo().filter(x => x.id !== id));
-        jset(K.res, jget(K.res, []).filter(r => r.event_id !== id));
+        jset(K.res, jget(K.res, []).filter(r => r.event_id !== id && r.table_event_id !== id));
         return;
       }
-      // първо махаме резервациите за това събитие, после самото събитие
+      // първо махаме резервациите (билети + маси) за това събитие, после самото събитие
       await sb.from('reservations').delete().eq('event_id', id);
+      await sb.from('reservations').delete().eq('table_event_id', id);
       await sb.from('events').delete().eq('id', id);
     },
 
@@ -114,7 +118,8 @@
     async listReservations() {
       if (!LIVE) return jget(K.res, []);
       const { data } = await sb.from('reservations').select('*').order('created_at', { ascending: false });
-      return (data || []).map(r => ({ id: r.id, event_id: r.event_id || null, who: r.who || '', membership: r.membership || '', fmt: r.format,
+      return (data || []).map(r => ({ id: r.id, event_id: r.event_id || null, table_event_id: r.table_event_id || null,
+        who: r.who || '', membership: r.membership || '', fmt: r.format,
         place: r.place, date: r.date, time: r.time, party: r.party_size, note: r.note, status: r.status,
         name: r.res_name || '', email: r.contact_email || '', phone: r.contact_phone || '' }));
     },
@@ -128,6 +133,7 @@
           return { error: { message: 'duplicate' } };
       }
       const { error } = await sb.from('reservations').insert({ user_id: u.id, event_id: o.event_id || null,
+        table_event_id: o.table_event_id || null,
         who: u.username || u.email, membership: u.membership, format: o.fmt,
         place: o.place, date: o.date || null, time: o.time, party_size: o.party || 1, note: o.note, status: 'requested',
         res_name: o.res_name || null, contact_email: o.email || null, contact_phone: o.phone || null });
