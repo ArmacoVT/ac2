@@ -211,7 +211,7 @@ const T={
     newPassTitle:'Нова парола',passConfirm:'Потвърди паролата',passMismatch:'Паролите не съвпадат',pwSave:'Запази',cancelBtn:'Отказ',
     setPassTitle:'Задай своята парола',passSet:'Паролата е създадена успешно. Добре дошъл!',
     currentPass:'Текуща парола',wrongCurrent:'Грешна текуща парола',checking:'Проверка…',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими',
-    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души'},
+    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души',pastRes:'Изминали',noUpcomingRes:'Няма предстоящи резервации.'},
   en:{home:'Home',events:'Events',reserve:'Reserve',membership:'Membership',signin:'Sign in',profile:'Profile',
     formats:'Formats',formatsSub:'The seven formats of the club. Tap a card.',quick:'Quick actions',
     includes:'What it includes',enquiry:'Enquiry / reservation',seeEvents:'See events',
@@ -228,7 +228,7 @@ const T={
     newPassTitle:'New password',passConfirm:'Confirm password',passMismatch:'Passwords do not match',pwSave:'Save',cancelBtn:'Cancel',
     setPassTitle:'Set your password',passSet:'Password created successfully. Welcome!',
     currentPass:'Current password',wrongCurrent:'Wrong current password',checking:'Checking…',inviteOnly:'Access is by club invitation only.',demoOnlyLive:'Available after Supabase is connected',ticket:'Reserve a ticket',tableSuggest:'Reserve a table at AC² Table',afterEvent:'After the event',ticketToast:'Request sent',fav:'Favorites',
-    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion',alreadyBooked:'You already have a request for this event',booked:'Ticket requested',addTable:'Also reserve a table after the event',tableParty:'Table for how many'}
+    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion',alreadyBooked:'You already have a request for this event',booked:'Ticket requested',addTable:'Also reserve a table after the event',tableParty:'Table for how many',pastRes:'Past',noUpcomingRes:'No upcoming reservations.'}
 };
 const FORMATS=[
  {id:'culture',t:'AC² Culture',c:'#6b3a5b',img:'cards/logo-culture.webp',b:{bg:['музика','изложби','литература','камерни театрални формати','срещи с артисти и лектори'],en:['music','exhibitions','literature','chamber theatre formats','meetings with artists and lecturers']}},
@@ -679,13 +679,40 @@ function profile(){
     <div class="sec-title" style="padding:24px 0 8px;">${tr('myEvents')}</div>
     ${sev.length?sev.map(e=>`<div class="ev" style="margin-bottom:8px;"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m">${evMeta(e)}</div></div>`).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noEvents')}</p>`}
     <div class="sec-title" style="padding:22px 0 8px;">${tr('myRes')}</div>
-    ${res.length?res.map(r=>{
-      const SL={requested:lang==='bg'?'чакаща':'pending',confirmed:lang==='bg'?'одобрена':'approved',declined:lang==='bg'?'отказана':'declined',cancelled:lang==='bg'?'отменена':'cancelled'};
-      const SC={confirmed:'#4f7a43',declined:'#b5532f'};
-      const dEu=r.date?r.date.split('-').reverse().join('.'):'';
-      return `<div class="ev" style="margin-bottom:8px;"><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}</h3><div class="m">${dEu} — <b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div></div>`;}).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noRes')}</p>`}
+    ${resSections(res)}
     ${DB.live?`<button class="btn btn-ghost" style="margin-top:26px;" onclick="changePass()">${tr('changePass')}</button>`:''}
     <button class="btn btn-ghost" style="margin-top:12px;" onclick="signout()">${tr('signout')}</button></div>`;
+}
+// карта за една резервация (dim=true за изминалите)
+function resCard(r,dim){
+  const SL={requested:lang==='bg'?'чакаща':'pending',confirmed:lang==='bg'?'одобрена':'approved',declined:lang==='bg'?'отказана':'declined',cancelled:lang==='bg'?'отменена':'cancelled'};
+  const SC={confirmed:'#4f7a43',declined:'#b5532f'};
+  const dEu=r.date?r.date.split('-').reverse().join('.'):'';
+  const tm=r.time?(' · '+r.time):'';
+  return `<div class="ev" style="margin-bottom:8px;${dim?'opacity:.6;':''}"><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}</h3><div class="m">${dEu}${tm} — <b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div></div>`;
+}
+// предстоящи + изминали, само последната заявка за всяко събитие
+function resSections(res){
+  if(!res.length)return `<p style="color:var(--muted);font-style:italic;">${tr('noRes')}</p>`;
+  // RES идва най-новото първо → за всяко събитие пазим само първото срещнато
+  const seenEv={},dedup=[];
+  res.forEach(r=>{ if(r.event_id){ if(seenEv[r.event_id])return; seenEv[r.event_id]=1; } dedup.push(r); });
+  const t=new Date();
+  const todayIso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  const upcoming=dedup.filter(r=>!r.date||r.date>=todayIso).sort((a,b)=>((a.date||'9999-99-99')<(b.date||'9999-99-99'))?-1:1);
+  const past=dedup.filter(r=>r.date&&r.date<todayIso).sort((a,b)=>a.date<b.date?1:-1);
+  let h=upcoming.length?upcoming.map(r=>resCard(r,false)).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noUpcomingRes')}</p>`;
+  if(past.length){
+    h+=`<button class="btn btn-ghost" style="margin-top:10px;" onclick="togglePast(this)">${tr('pastRes')} (${past.length}) ▾</button>
+      <div id="pastres" style="display:none;margin-top:10px;">${past.map(r=>resCard(r,true)).join('')}</div>`;
+  }
+  return h;
+}
+function togglePast(btn){
+  const d=document.getElementById('pastres');if(!d)return;
+  const open=d.style.display!=='none';
+  d.style.display=open?'none':'block';
+  if(btn)btn.innerHTML=btn.innerHTML.replace(open?'▴':'▾',open?'▾':'▴');
 }
 async function signout(){await DB.signOut();user=null;saved=[];RES=[];go('');}
 // брой нови известия (резервации с променен статус, които още не са видени)
