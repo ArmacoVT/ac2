@@ -694,13 +694,10 @@ function resCard(r,dim){
 // предстоящи + изминали, само последната заявка за всяко събитие
 function resSections(res){
   if(!res.length)return `<p style="color:var(--muted);font-style:italic;">${tr('noRes')}</p>`;
-  // RES идва най-новото първо → за всяко събитие пазим само първото срещнато
-  const seenEv={},dedup=[];
-  res.forEach(r=>{ if(r.event_id){ if(seenEv[r.event_id])return; seenEv[r.event_id]=1; } dedup.push(r); });
   const t=new Date();
   const todayIso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
-  const upcoming=dedup.filter(r=>!r.date||r.date>=todayIso).sort((a,b)=>((a.date||'9999-99-99')<(b.date||'9999-99-99'))?-1:1);
-  const past=dedup.filter(r=>r.date&&r.date<todayIso).sort((a,b)=>a.date<b.date?1:-1);
+  const upcoming=res.filter(r=>!r.date||r.date>=todayIso).sort((a,b)=>((a.date||'9999-99-99')<(b.date||'9999-99-99'))?-1:1);
+  const past=res.filter(r=>r.date&&r.date<todayIso).sort((a,b)=>a.date<b.date?1:-1);
   let h=upcoming.length?upcoming.map(r=>resCard(r,false)).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noUpcomingRes')}</p>`;
   if(past.length){
     h+=`<button class="btn btn-ghost" style="margin-top:10px;" onclick="togglePast(this)">${tr('pastRes')} (${past.length}) ▾</button>
