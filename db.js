@@ -109,14 +109,16 @@
       if (!LIVE) return jget(K.res, []);
       const { data } = await sb.from('reservations').select('*').order('created_at', { ascending: false });
       return (data || []).map(r => ({ id: r.id, event_id: r.event_id || null, who: r.who || '', membership: r.membership || '', fmt: r.format,
-        place: r.place, date: r.date, time: r.time, party: r.party_size, note: r.note, status: r.status }));
+        place: r.place, date: r.date, time: r.time, party: r.party_size, note: r.note, status: r.status,
+        name: r.res_name || '', email: r.contact_email || '', phone: r.contact_phone || '' }));
     },
     async addReservation(o) {
       if (!LIVE) { const r = jget(K.res, []); o.id = 'r' + Date.now(); o.status = 'requested'; r.unshift(o); jset(K.res, r); return; }
       const u = await this.getUser();
       await sb.from('reservations').insert({ user_id: u.id, event_id: o.event_id || null,
         who: u.username || u.email, membership: u.membership, format: o.fmt,
-        place: o.place, date: o.date || null, time: o.time, party_size: o.party || 1, note: o.note, status: 'requested' });
+        place: o.place, date: o.date || null, time: o.time, party_size: o.party || 1, note: o.note, status: 'requested',
+        res_name: o.res_name || null, contact_email: o.email || null, contact_phone: o.phone || null });
     },
     async setReservationStatus(id, status) {
       if (!LIVE) { let r = jget(K.res, []); r = r.map(x => x.id === id ? { ...x, status } : x); jset(K.res, r); return { error: null }; }

@@ -80,6 +80,13 @@
     100%{transform:scale(1);box-shadow:0 0 0 0 rgba(224,48,30,0);}
   }
   @media (prefers-reduced-motion:reduce){.livedot{animation:none;}}
+  .liveposter{position:relative;padding-top:56.25%;margin-top:12px;border-radius:10px;overflow:hidden;cursor:pointer;
+    background:radial-gradient(circle at 50% 42%,#3a3330,#1a1614);}
+  .liveposter .playbtn{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);width:62px;height:62px;border-radius:50%;
+    background:rgba(224,48,30,.92);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;padding-left:4px;
+    box-shadow:0 6px 18px rgba(0,0,0,.4);transition:transform .15s;}
+  .liveposter:active .playbtn{transform:translate(-50%,-50%) scale(.93);}
+  .liveposter .pl{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#f6efe2;font-size:13px;letter-spacing:.4px;}
   .contact{margin:32px 20px 0;border-top:1px solid var(--line-soft);padding:22px 0;text-align:center;color:var(--mid);font-size:14px;line-height:1.9;}
   .contact .tag{color:var(--gold);letter-spacing:2px;margin-bottom:8px;font-size:13px;}
   .page{padding:16px;}
@@ -196,7 +203,8 @@ const T={
     forgot:'Забравена парола?',enterEmail:'Въведи имейла си',resetSent:'Изпратихме линк за нова парола на имейла ти',changePass:'Смени парола',newPassPrompt:'Нова парола (поне 6 знака):',passChanged:'Паролата е сменена',passShort:'Твърде кратка парола',
     newPassTitle:'Нова парола',passConfirm:'Потвърди паролата',passMismatch:'Паролите не съвпадат',pwSave:'Запази',cancelBtn:'Отказ',
     setPassTitle:'Задай своята парола',passSet:'Паролата е създадена успешно. Добре дошъл!',
-    currentPass:'Текуща парола',wrongCurrent:'Грешна текуща парола',checking:'Проверка…',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими'},
+    currentPass:'Текуща парола',wrongCurrent:'Грешна текуща парола',checking:'Проверка…',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими',
+    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода'},
   en:{home:'Home',events:'Events',reserve:'Reserve',membership:'Membership',signin:'Sign in',profile:'Profile',
     formats:'Formats',formatsSub:'The seven formats of the club. Tap a card.',quick:'Quick actions',
     includes:'What it includes',enquiry:'Enquiry / reservation',seeEvents:'See events',
@@ -212,7 +220,8 @@ const T={
     forgot:'Forgot password?',enterEmail:'Enter your email',resetSent:'We sent a password reset link to your email',changePass:'Change password',newPassPrompt:'New password (min 6 chars):',passChanged:'Password changed',passShort:'Password too short',
     newPassTitle:'New password',passConfirm:'Confirm password',passMismatch:'Passwords do not match',pwSave:'Save',cancelBtn:'Cancel',
     setPassTitle:'Set your password',passSet:'Password created successfully. Welcome!',
-    currentPass:'Current password',wrongCurrent:'Wrong current password',checking:'Checking…',inviteOnly:'Access is by club invitation only.',demoOnlyLive:'Available after Supabase is connected',ticket:'Reserve a ticket',tableSuggest:'Reserve a table at AC² Table',afterEvent:'After the event',ticketToast:'Request sent',fav:'Favorites'}
+    currentPass:'Current password',wrongCurrent:'Wrong current password',checking:'Checking…',inviteOnly:'Access is by club invitation only.',demoOnlyLive:'Available after Supabase is connected',ticket:'Reserve a ticket',tableSuggest:'Reserve a table at AC² Table',afterEvent:'After the event',ticketToast:'Request sent',fav:'Favorites',
+    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion'}
 };
 const FORMATS=[
  {id:'culture',t:'AC² Culture',c:'#6b3a5b',img:'cards/logo-culture.webp',b:{bg:['музика','изложби','литература','камерни театрални формати','срещи с артисти и лектори'],en:['music','exhibitions','literature','chamber theatre formats','meetings with artists and lecturers']}},
@@ -226,6 +235,15 @@ const FORMATS=[
 // Събитията идват от общия слой db.js (Supabase когато е свързан, иначе демо).
 let EVENTS=[];
 const MEMBERSHIP_LIST=['founder','founding','club','alumni','corporate'];
+// зали/места в клуба (общи за приложението и админ панела)
+const VENUES=[
+ {id:'restaurant',t:{bg:'Ресторант',en:'Restaurant'}},
+ {id:'chamber',t:{bg:'Камерна зала',en:'Chamber hall'}},
+ {id:'online',t:{bg:'Онлайн',en:'Online'}},
+ {id:'foyer',t:{bg:'Изложбено фоайе',en:'Exhibition foyer'}},
+ {id:'vip',t:{bg:'VIP зала',en:'VIP hall'}}
+];
+const venueLabel=id=>{const v=VENUES.find(x=>x.id===id);return v?tx(v.t):id;};
 let previewAs=null; // за преглед „как изглежда за дадено членство"
 const curMembership=()=>previewAs||(user&&user.membership)||'guest';
 // Видимост: 'all' = всички членове, иначе списък с категории
@@ -343,7 +361,7 @@ function eventCard(e){
     <div class="bookrow"><input id="bp_${e.id}" type="number" min="1" max="${seats}" value="2"/>
       <button class="btn" onclick="event.stopPropagation();confirmBook('${e.id}')">${tr('send')}</button></div>
     <small>${lang==='bg'?'до':'up to'} ${seats} ${tr('seats')} · ${lang==='bg'?'според членството':'per your membership'}</small></div>`;
-  const suggest=endsEarly(e)?`<div class="suggest" onclick="event.stopPropagation();go('reserve?f=table')">
+  const suggest=endsEarly(e)?`<div class="suggest" onclick="event.stopPropagation();go('reserve?v=restaurant')">
     <span class="si">${ICN.reserve}</span><div><b>${tr('tableSuggest')}</b><small>${tr('afterEvent')} · ${e.ends}</small></div><span class="ar">›</span></div>`:'';
   return `<div class="ev"><div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>
     <div class="row">${fav}${book}</div>${form}${suggest}</div>`;
@@ -383,9 +401,11 @@ function liveView(){
     body=liveOnes.map(e=>`<div class="ev" style="border-color:#d98b6e;">
       <div class="t" style="color:#d98b6e;">● ${tr('liveTag')} · ${e.format}</div>
       <h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>
-      <div style="position:relative;padding-top:56.25%;margin-top:12px;border-radius:10px;overflow:hidden;background:#000;">
-        <iframe src="${esc(streamEmbed(e.stream_url))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen
-          style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>
+      <div class="livewrap" id="lw_${e.id}">
+        <div class="liveposter" onclick="playLive('${e.id}')">
+          <div class="playbtn">▶</div>
+          <div class="pl">${lang==='bg'?'Докосни, за да гледаш':'Tap to watch'}</div>
+        </div></div>
       <div class="row" style="margin-top:10px;"><a class="chip ghost" href="${esc(e.stream_url)}" target="_blank" rel="noopener">${tr('openExt')}</a></div>
     </div>`).join('');
   }else{
@@ -397,7 +417,14 @@ function liveView(){
     if(up)body+=`<div class="sec-title" style="padding:14px 0 8px;">${tr('nextUp')}</div>
       <div class="ev"><div class="t">${up.format}</div><h3>${esc(up.title)}</h3><div class="m">${evMeta(up)}</div></div>`;
   }
-  return topbar(tr('live'))+`<div class="page">${body}</div>`;
+  return topbar(tr('live'))+`<div class="page">${liveOnes.length>1?`<p style="color:var(--mid);font-size:13px;margin-bottom:12px;">${lang==='bg'?'Има няколко излъчвания — докосни това, което искаш да гледаш.':'Several streams are live — tap the one you want to watch.'}</p>`:''}${body}</div>`;
+}
+function playLive(id){
+  const e=EVENTS.find(x=>x.id===id); if(!e)return;
+  const w=document.getElementById('lw_'+id); if(!w)return;
+  w.innerHTML=`<div style="position:relative;padding-top:56.25%;margin-top:12px;border-radius:10px;overflow:hidden;background:#000;">
+    <iframe src="${esc(streamEmbed(e.stream_url))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen
+      style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>`;
 }
 function needLogin(){toast(tr('signinSave'));setTimeout(()=>go('login'),800);}
 async function toggleSave(id){
@@ -427,32 +454,47 @@ function membership(){
 function toggleMem(i){const b=document.getElementById('mb'+i),c=document.getElementById('cv'+i);
   const open=b.style.display==='block';b.style.display=open?'none':'block';c.textContent=open?'+':'−';}
 function reserve(q){
-  const pre=new URLSearchParams(q).get('f')||'table';
+  const preV=new URLSearchParams(q).get('v')||'';
   const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):4;
-  let sel=FORMATS.map(f=>`<button type="button" class="chip ${f.id===pre?'on':''}" onclick="selFmt(this)" data-f="${f.id}">${f.t.replace('AC² ','')}</button>`).join('');
+  let vsel=VENUES.map(v=>`<button type="button" class="chip ${v.id===preV?'on':''}" onclick="selVenue(this)" data-v="${v.id}">${tx(v.t)}</button>`).join('');
+  pickedVenue=preV||null;
   const memInfo=user?`<p style="color:var(--muted);font-size:12px;margin:6px 0 16px;">${tr('memb')}: ${MEMBERS.find(m=>m.id===user.membership)?.t||'Guest'} · ${lang==='bg'?'до':'up to'} ${seats} ${tr('seats')}</p>`
     :`<div class="ev" style="border-color:var(--gold-soft);margin:10px 0 16px;"><h3 style="font-size:15px;">${tr('signinSave')}</h3><div class="row"><button class="chip on" onclick="go('login')">${tr('signin')}</button></div></div>`;
   return topbar(tr('reserve'))+`<div class="page">
     <h2 style="font-family:var(--serif);color:var(--cream);font-size:24px;font-weight:500;">${tr('resTitle')}</h2>
     ${memInfo}
-    <label>${tr('format')}</label><div class="selrow" id="fmtsel">${sel}</div>
-    <label>${tr('place')}</label><input id="r_place" placeholder="Trapezna"/>
-    <label>${tr('date')}</label><input id="r_date" type="date"/>
-    <label>${tr('time')}</label><input id="r_time" placeholder="19:30"/>
-    <label>${tr('party')}</label><input id="r_party" type="number" value="2" min="1" max="${seats}"/>
-    <label>${tr('note')}</label><textarea id="r_note" rows="2"></textarea>
+    <label>${tr('resName')} *</label><input id="r_name" value="${user?esc(user.username||''):''}"/>
+    <label>${tr('placeChoose')} *</label><div class="selrow" id="vensel">${vsel}</div>
+    <label>${tr('date')} *</label><input id="r_date" type="date"/>
+    <label>${tr('time')} *</label><input id="r_time" placeholder="19:30"/>
+    <label>${tr('party')} *</label><input id="r_party" type="number" value="2" min="1" max="${seats}"/>
+    <label>${tr('contactEmail')} *</label><input id="r_email" type="email" autocapitalize="none" value="${user?esc(user.email||''):''}"/>
+    <label>${tr('contactPhone')} *</label><input id="r_phone" type="tel" placeholder="+359 ..."/>
+    <label>${tr('note')} *</label><textarea id="r_note" rows="3" placeholder="${tr('notePlaceholder')}"></textarea>
     <button class="btn" onclick="sendRes(${seats})">${tr('send')}</button></div>`;
 }
-let pickedFmt=null;
-function selFmt(b){document.querySelectorAll('#fmtsel .chip').forEach(c=>c.classList.remove('on'));b.classList.add('on');pickedFmt=b.dataset.f;}
+let pickedVenue=null;
+function selVenue(b){document.querySelectorAll('#vensel .chip').forEach(c=>c.classList.remove('on'));b.classList.add('on');pickedVenue=b.dataset.v;}
 async function sendRes(seats){
   if(!user){needLogin();return;}
+  const name=(document.getElementById('r_name').value||'').trim();
+  const venue=pickedVenue||document.querySelector('#vensel .chip.on')?.dataset.v||'';
+  const email=(document.getElementById('r_email').value||'').trim();
+  const phone=(document.getElementById('r_phone').value||'').trim();
+  const note=(document.getElementById('r_note').value||'').trim();
   const n=parseInt(document.getElementById('r_party').value||'0',10);
+  const rdate=(document.getElementById('r_date').value||'').trim();
+  const rtime=(document.getElementById('r_time').value||'').trim();
+  if(!name){toast(tr('reqName'));return;}
+  if(!venue){toast(tr('reqVenue'));return;}
+  if(!rdate){toast(lang==='bg'?'Изберете дата':'Choose a date');return;}
+  if(!rtime){toast(lang==='bg'?'Въведете час':'Enter a time');return;}
   if(n<1){toast(tr('party'));return;}
   if(n>seats){toast((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
-  const fmt=pickedFmt||document.querySelector('#fmtsel .chip.on')?.dataset.f||'table';
-  await DB.addReservation({fmt,place:document.getElementById('r_place').value,date:document.getElementById('r_date').value,
-    time:document.getElementById('r_time').value,party:n,note:document.getElementById('r_note').value});
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast(tr('reqEmail'));return;}
+  if(!phone){toast(tr('reqPhone'));return;}
+  if(!note){toast(tr('reqNote'));return;}
+  await DB.addReservation({fmt:venue,place:venueLabel(venue),date:rdate,time:rtime,party:n,note,res_name:name,email,phone});
   toast(tr('resToast'));setTimeout(()=>go('profile'),700);
 }
 let entered=false;

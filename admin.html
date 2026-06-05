@@ -60,6 +60,7 @@
 <script>
 const MEMBERS=[{id:'founder',t:'Founder'},{id:'founding',t:'Founding Member'},{id:'club',t:'Club Member'},{id:'alumni',t:'Alumni Member'},{id:'corporate',t:'Corporate Member'}];
 const FORMATS=['culture','cinema','table','music','conversation','community','theater'];
+const VENUES=['Ресторант','Камерна зала','Онлайн','Изложбено фоайе','VIP зала'];
 const memName=id=>(MEMBERS.find(m=>m.id===id)||{t:id}).t;
 const esc=s=>(''+(s??'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 
@@ -138,11 +139,13 @@ function formView(){
   let memCk=`<div class="ck ${allOn?'on':''}" onclick="toggleAud('all')">✓ Всички членове</div>`+
     MEMBERS.map(m=>`<div class="ck ${(!allOn&&draftAud.includes(m.id))?'on':''}" onclick="toggleAud('${m.id}')">${m.t}</div>`).join('');
   let fmtOpts=FORMATS.map(f=>`<option value="${f}" ${e&&e.format===f?'selected':''}>${f}</option>`).join('');
+  let venOpts=VENUES.map(v=>`<option ${e&&e.place===v?'selected':''}>${v}</option>`).join('');
+  if(e&&e.place&&!VENUES.includes(e.place))venOpts=`<option selected>${esc(e.place)}</option>`+venOpts;
   return `<div class="card" style="border-color:var(--gold-soft);">
     <h3>${e?'Редакция на събитие':'Ново събитие'}</h3>
     <label>Заглавие</label><input id="f_title" value="${esc(e?e.title:'')}" placeholder="Напр. Гастрономическа вечер"/>
     <div class="row2"><div><label>Формат</label><select id="f_format">${fmtOpts}</select></div>
-      <div><label>Място / зала</label><input id="f_place" value="${esc(e?e.place:'')}"/></div></div>
+      <div><label>Място / зала</label><select id="f_place">${venOpts}</select></div></div>
     <div class="row2"><div><label>Начало (час)</label><input id="f_time" value="${esc(e?e.time:'')}" placeholder="19:30"/></div>
       <div><label>Край (час)</label><input id="f_ends" value="${esc(e?e.ends:'')}" placeholder="22:00"/></div></div>
     <div class="row2"><div><label>Дата</label><input id="f_date" readonly placeholder="дд.мм.гггг" value="${e&&e.date?isoToBg(e.date):''}" data-iso="${esc(e?(e.date||''):'')}" onclick="openCal()" style="cursor:pointer;"/></div>
@@ -291,9 +294,12 @@ function resView(){
     const badge=st==='confirmed'?'<span class="pill audAll">потвърдена</span>':st==='declined'?'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>':'<span class="pill">чакаща</span>';
     const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null;
     const cap=ev&&ev.capacity?` ${seatsInfo(ev)}`:'';
+    const nm=r.name||r.who||'член';
+    const contact=[r.email,r.phone].filter(Boolean).map(esc).join(' · ');
     return `<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
-        <div class="muted" style="margin-top:3px;">${esc(r.who||'член')} · ${esc(memName(r.membership||'guest'))} · ${esc(r.fmt||'')} · ${isoToBg(r.date||'')} ${esc(r.time||'')}</div>
+        <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}</div>
+        ${contact?`<div class="muted" style="margin-top:3px;">${contact}</div>`:''}
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
         <div style="margin-top:7px;">${badge}${cap}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
