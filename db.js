@@ -49,6 +49,7 @@
       return { id: s.user.id, email: s.user.email, username: prof ? prof.username : s.user.email,
         full_name: prof ? (prof.full_name || '') : '',
         phone: prof ? (prof.phone || '') : '',
+        phone_recheck: prof ? !!prof.phone_recheck : false,
         fav_formats: prof && Array.isArray(prof.fav_formats) ? prof.fav_formats : [],
         membership_until: prof ? (prof.membership_until || '') : '',
         company_id: prof ? (prof.company_id || '') : '',
@@ -74,7 +75,7 @@
       if (!LIVE) { const u = jget(K.user, null) || {}; u.phone = phone; jset(K.user, u); return { error: null }; }
       const { data } = await sb.auth.getSession();
       const s = data.session; if (!s) return { error: { message: 'no session' } };
-      const { error } = await sb.from('profiles').update({ phone: (phone || '').trim() }).eq('id', s.user.id);
+      const { error } = await sb.from('profiles').update({ phone: (phone || '').trim(), phone_recheck: false }).eq('id', s.user.id);
       return { error };
     },
     // качване на снимка/видео за събитие в Supabase Storage (bucket: event-media)
@@ -246,6 +247,18 @@
     async adminSetPhone(id, phone) {
       if (!LIVE) return { error: { message: 'demo' } };
       const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'set_phone', id, phone } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null };
+    },
+    // искане за нов телефон (само админ) — членът ще бъде подканен при следващо влизане
+    async adminRequestPhone(id) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'request_phone', id } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}

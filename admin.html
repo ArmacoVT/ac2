@@ -77,8 +77,10 @@ async function boot(){
 async function refresh(){
   try{ EVENTS=await DB.listEvents(); }catch(e){ EVENTS=[]; }
   try{ RES=await DB.listReservations(); }catch(e){ RES=[]; }
+  try{ APPS=await DB.listApplications(); }catch(e){ APPS=APPS||[]; }
 }
 
+function tabBadge(n){return n?` <span style="background:#b5532f;color:#fffdf4;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${n}</span>`:'';}
 function render(){
   if(!admin){gate();return;}
   const badge=DB.live?`<span class="badge live">Свързан Supabase</span>`:`<span class="badge">Демо режим</span>`;
@@ -87,9 +89,9 @@ function render(){
       <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
     <div class="tabs">
       <button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>
-      <button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации</button>
+      <button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации${tabBadge(RES.filter(r=>!r.status||r.status==='requested').length)}</button>
       <button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>
-      <button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури</button>
+      <button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge((APPS||[]).filter(a=>(a.status||'new')==='new').length)}</button>
       <button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>
       <button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>
     </div>`;
@@ -117,7 +119,6 @@ function animateCounts(){
 let PEOPLE=null,APPS=null;
 async function setTab(t){tab=t;editId=null;await refresh();render();
   if(t==='people'){PEOPLE=null;render();PEOPLE=await DB.listMembers();render();}
-  if(t==='apps'){APPS=null;render();APPS=await DB.listApplications();render();}
 }
 
 function audLabel(aud){
@@ -415,16 +416,18 @@ function resView(){
     const cap=ev&&ev.capacity?` ${seatsInfo(ev)}`:'';
     const nm=r.name||r.who||'член';
     const contact=[r.email,r.phone].filter(Boolean).map(esc).join(' · ');
-    return `<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+    const acts=st==='requested'
+      ? `<button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Потвърди</button>
+         <button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button>
+         <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`
+      : `<button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`;
+    return `<div class="card" id="rescard_${r.id}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
         <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}</div>
         ${contact?`<div class="muted" style="margin-top:3px;">${contact}</div>`:''}
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
-        <div style="margin-top:7px;">${badge}${cap}</div></div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Потвърди</button>
-        <button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button>
-        <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button></div>
+        <div style="margin-top:7px;" id="resbadge_${r.id}">${badge}${cap}</div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;" id="resact_${r.id}">${acts}</div>
     </div></div>`;}).join('');
   if(!rows)rows=`<p class="empty">Няма заявки в този раздел.</p>`;
   return `<h2>Резервации</h2>
@@ -444,19 +447,24 @@ async function delRes(id){
   if(!confirm('Да изтрия ли тази резервация? Действието е необратимо.'))return;
   const r=await DB.deleteReservation(id);
   if(r&&r.error){alert('Грешка при изтриване: '+r.error.message);return;}
+  RES=RES.filter(x=>x.id!==id);
+  const c=document.getElementById('rescard_'+id);if(c)c.remove();
   toast('Резервацията е изтрита');
-  await refresh();render();
 }
 async function setRes(id,st){
   const r=await DB.setReservationStatus(id,st);
   if(r&&r.error){alert('Грешка при промяна на статуса: '+r.error.message);return;}
+  // обновяваме само картата — без пречертаване, без скок
+  const rr=RES.find(x=>x.id===id);if(rr)rr.status=st;
+  const badge=st==='confirmed'?'<span class="pill audAll">потвърдена</span>':'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>';
+  const be=document.getElementById('resbadge_'+id);if(be)be.innerHTML=badge;
+  const ae=document.getElementById('resact_'+id);if(ae)ae.innerHTML=`<button class="btn ghost sm" onclick="delRes('${id}')">Изтрий</button>`;
   if(st==='confirmed'||st==='declined'){
     toast('Изпращане на имейл до члена…');
     const n=await DB.notifyReservation(id,st);
     if(n&&n.error){toast('Статусът е сменен, но имейлът не тръгна: '+n.error.message,true);}
     else{toast(st==='confirmed'?'Резервацията е одобрена · имейлът до члена е изпратен ✓':'Резервацията е отказана · имейлът до члена е изпратен ✓');}
   }
-  await refresh();render();
 }
 
 function statsView(){
@@ -517,15 +525,17 @@ function appsView(){
     if(a.alumni_relation)lines.push('Връзка с колежа: '+esc(a.alumni_relation));
     if(isCorp){const c=[a.corp_bulstat&&('БУЛСТАТ '+a.corp_bulstat),a.corp_size&&(a.corp_size+' служители'),a.corp_activity].filter(Boolean).map(esc).join(' · ');if(c)lines.push(c);}
     if(a.type==='nomination'&&a.proposer_email)lines.push('Предложен от: '+esc(a.proposer_email));
-    return `<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+    const acts=st==='new'
+      ? `<button class="btn ok sm" onclick="approveApp('${a.id}','${esc(a.email||'')}','${esc(a.membership||'guest')}','${esc(a.name||'')}')">Одобри и покани</button>
+         <button class="btn no sm" onclick="setApp('${a.id}','declined')">Откажи</button>
+         <button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button>`
+      : `<button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button>`;
+    return `<div class="card" id="appcard_${a.id}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(a.name||'—')} <span class="muted" style="font-weight:400;">· ${esc(memName2(a.membership))}${a.type==='nomination'?' · предложение':''}</span></h3>
         ${lines.map(l=>`<div class="muted" style="margin-top:3px;">${l}</div>`).join('')}
         ${a.about?`<div class="muted" style="margin-top:5px;">„${esc(a.about)}"</div>`:''}
-        <div style="margin-top:7px;">${badge}</div></div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <button class="btn ok sm" onclick="approveApp('${a.id}','${esc(a.email||'')}','${esc(a.membership||'guest')}','${esc(a.name||'')}')">Одобри и покани</button>
-        <button class="btn no sm" onclick="setApp('${a.id}','declined')">Откажи</button>
-        <button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button></div>
+        <div style="margin-top:7px;" id="appbadge_${a.id}">${badge}</div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;" id="appact_${a.id}">${acts}</div>
     </div></div>`;
   };
   const news=APPS.filter(a=>(a.status||'new')==='new');
@@ -535,27 +545,34 @@ function appsView(){
   if(done.length)h+=`<h3 style="margin-top:18px;">Обработени</h3>${done.map(row).join('')}`;
   return h;
 }
+function appMark(id,status){
+  const a=(APPS||[]).find(x=>x.id===id);if(a)a.status=status;
+  const badge=status==='approved'?'<span class="pill audAll">одобрена</span>':'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>';
+  const be=document.getElementById('appbadge_'+id);if(be)be.innerHTML=badge;
+  const ae=document.getElementById('appact_'+id);if(ae)ae.innerHTML=`<button class="btn ghost sm" onclick="delApp('${id}')">Изтрий</button>`;
+}
 async function approveApp(id,email,membership,name){
   if(!email){alert('Кандидатурата няма имейл');return;}
   if(!confirm('Да поканя ли '+email+' като член ('+( (MEMBERS.find(m=>m.id===membership)||{t:membership}).t )+')?'))return;
   const {error}=await DB.inviteMember(email,name,membership,'');
   if(error){alert('Грешка при поканата: '+error.message);return;}
   await DB.setApplicationStatus(id,'approved');
+  appMark(id,'approved');
   toast('Поканата е изпратена и кандидатурата е одобрена');
-  APPS=await DB.listApplications();render();
 }
 async function setApp(id,status){
   const r=await DB.setApplicationStatus(id,status);
   if(r&&r.error){alert('Грешка: '+r.error.message);return;}
+  appMark(id,status);
   toast(status==='declined'?'Кандидатурата е отказана':'Готово');
-  APPS=await DB.listApplications();render();
 }
 async function delApp(id){
   if(!confirm('Да изтрия ли тази кандидатура?'))return;
   const r=await DB.deleteApplication(id);
   if(r&&r.error){alert('Грешка: '+r.error.message);return;}
+  APPS=(APPS||[]).filter(x=>x.id!==id);
+  const c=document.getElementById('appcard_'+id);if(c)c.remove();
   toast('Изтрита');
-  APPS=await DB.listApplications();render();
 }
 function peopleView(){
   if(PEOPLE===null)return `<h2>Членове</h2><p class="empty">Зареждане…</p>`;
@@ -596,7 +613,8 @@ function peopleView(){
       </div>
       <div class="row2" style="margin-top:8px;align-items:center;">
         <div><label style="margin-bottom:4px;">Телефон</label><input id="phf_${p.id}" value="${esc(p.phone||'')}" placeholder="+359 ..."/></div>
-        <div><button class="btn ghost sm" onclick="savePhone('${p.id}')">Запази телефона</button></div>
+        <div style="display:flex;flex-direction:column;gap:6px;"><button class="btn ghost sm" onclick="savePhone('${p.id}')">Запази телефона</button>
+          <button class="btn ghost sm" onclick="requestPhone('${p.id}','${esc(nm)}')">Поискай нов телефон</button></div>
       </div>
       ${p.role==='admin'?'':`<button class="btn no sm" style="margin-top:8px;" onclick="deletePerson('${p.id}','${esc(nm)}',${(p.company_id&&p.company_id===p.id)?PEOPLE.filter(x=>x.company_id===p.id&&x.id!==p.id).length:0})">Изтрий члена</button>`}</div>`;
   };
@@ -667,6 +685,12 @@ async function savePhone(id){
   if(error){alert('Грешка: '+error.message);return;}
   toast('Телефонът е обновен');
   PEOPLE=await DB.listMembers();render();
+}
+async function requestPhone(id,name){
+  if(!confirm('Да поискам ли нов телефон от „'+name+'"? Ще му излезе подкана при следващо влизане.'))return;
+  const {error}=await DB.adminRequestPhone(id);
+  if(error){alert('Грешка: '+error.message);return;}
+  toast('Поискан е нов телефон от члена');
 }
 async function changeMembership(email,id){
   const sel=document.getElementById('mch_'+id); if(!sel)return;

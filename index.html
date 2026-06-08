@@ -676,7 +676,7 @@ function appForm(mode){
     <label>${bg?'Имейл':'Email'} *</label><input id="ap_email" type="email" autocapitalize="none"/>
     <label>${bg?'Телефон':'Phone'} *</label><input id="ap_phone" type="tel" placeholder="+359 ..."/>
     <div id="ap_profBox"><label>${bg?'Професия':'Profession'}</label><input id="ap_prof"/></div>
-    <div id="ap_alumniBox" style="display:none;"><label>${bg?'Връзка с Американски колеж Аркус':'Connection to American College Arcus'}</label>
+    <div id="ap_alumniBox" style="display:none;"><label>${bg?'Връзка с Американски колеж Аркус':'Connection to American College Arcus'} *</label>
       <div class="selrow" id="ap_alumniChips">${(bg?['Родител на настоящ ученик','Родител на възпитаник','Възпитаник','Учител / служител / партньор','Приятел на Arcus общността','Поканен от настоящ член']:['Parent of a current student','Parent of an alumnus','Alumnus','Teacher / staff / partner','Friend of the Arcus community','Invited by a current member']).map(o=>`<button type="button" class="chip" data-v="${o}" onclick="chipToggle(this)">${o}</button>`).join('')}</div>
       <input id="ap_alumniOther" placeholder="${bg?'Друго (по желание)':'Other (optional)'}"/></div>
     <div id="ap_corpBox" style="display:none;">
@@ -717,6 +717,7 @@ async function submitApp(nominate){
     const parts=[];document.querySelectorAll('#ap_alumniChips .chip.on').forEach(c=>parts.push(c.dataset.v));
     const other=v('ap_alumniOther'); if(other)parts.push(other);
     alumni=parts.join(', ');
+    if(!alumni){toast(lang==='bg'?'Изберете връзка с колежа':'Select your connection to the college');return;}
   }
   const r=await DB.submitApplication({nominate,membership:m,name,email,phone,about,
     profession:v('ap_prof'),interests:v('ap_interests'),alumni_relation:alumni,
@@ -1148,11 +1149,13 @@ async function editPhone(){
   if(r&&r.error){toast(r.error.message);return;}
   user.phone=v;toast(lang==='bg'?'Телефонът е запазен':'Phone saved');route();
 }
-// иска телефон, ако липсва (задължителен)
+// иска телефон, ако липсва или админ е поискал нов (задължителен)
 async function ensurePhone(){
-  if(!user||user.phone||!membershipActive())return;
+  if(!user||!membershipActive())return;
+  if(user.phone&&!user.phone_recheck)return;
+  // празно поле (без стария номер), за да въведе нов
   const v=await askPhone('',true);
-  if(v){await DB.updateProfilePhone(v);user.phone=v;}
+  if(v){await DB.updateProfilePhone(v);user.phone=v;user.phone_recheck=false;}
 }
 // нотификация, когато се отвори записването за събитие (фазов достъп)
 function checkUnlocks(){
@@ -1308,8 +1311,8 @@ DB.onRecovery(promptInitialPassword);
   // дошъл от имейл-покана → задава си парола веднага (с потвърждение)
   if(user&&(DB.urlType==='invite'||DB.urlType==='recovery')) await promptInitialPassword();
   route(); // рисува веднага (skeleton при нужда), данните идват на фон
-  // телефонът е задължителен — искаме го, ако липсва
-  if(user&&!user.phone&&membershipActive()){await ensurePhone();route();}
+  // телефонът е задължителен — искаме го, ако липсва или админ е поискал нов
+  if(user&&(!user.phone||user.phone_recheck)&&membershipActive()){await ensurePhone();route();}
   // ако сесията е изтекла, но има запазени данни → предлагаме Face ID веднага
   if(!user&&bioEnabled()){setTimeout(bioLogin,400);}
   // известие в приложението при одобрена/отказана резервация (вижда се, докато не се отвори профилът)
