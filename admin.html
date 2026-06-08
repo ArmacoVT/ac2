@@ -596,6 +596,26 @@ function peopleView(){
       </div>
       ${p.role==='admin'?'':`<button class="btn no sm" style="margin-top:8px;" onclick="deletePerson('${p.id}','${esc(nm)}',${(p.company_id&&p.company_id===p.id)?PEOPLE.filter(x=>x.company_id===p.id&&x.id!==p.id).length:0})">Изтрий члена</button>`}</div>`;
   };
+  // за корпоративните: основен профил + вложени под-профили
+  const corpBlock=list=>{
+    const owners=list.filter(p=>!p.company_id||p.company_id===p.id);
+    const subsBy={};list.forEach(p=>{if(p.company_id&&p.company_id!==p.id){(subsBy[p.company_id]=subsBy[p.company_id]||[]).push(p);}});
+    let h='';
+    owners.forEach(o=>{
+      const subs=subsBy[o.id]||[];
+      const sid='co_'+o.id;
+      h+=personRow(o);
+      if(subs.length){
+        h+=`<button class="btn ghost sm" style="margin:0 0 6px 14px;" onclick="toggleCo('${sid}',this)">Профили към фирмата (${subs.length}) ▾</button>
+          <div id="${sid}" style="display:none;padding-left:14px;border-left:2px solid var(--gold-soft);margin-bottom:6px;">${subs.map(personRow).join('')}</div>`;
+      }
+    });
+    // под-профили без намерен собственик (за всеки случай)
+    const ownerIds=owners.map(o=>o.id);
+    const orphans=list.filter(p=>p.company_id&&p.company_id!==p.id&&!ownerIds.includes(p.company_id));
+    h+=orphans.map(personRow).join('');
+    return h;
+  };
   let html='<h2>Членове</h2>';
   cats.forEach((c,ci)=>{
     const list=PEOPLE.filter(p=>p.membership===c.id);
@@ -604,7 +624,7 @@ function peopleView(){
     html+=`<div class="card" style="border-color:var(--gold-soft);cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-top:10px;" onclick="togglePG('${id}')">
         <h3>${esc(c.t)} <span class="muted" style="font-weight:400;">· ${list.length}</span></h3>
         <span id="pa_${id}" style="color:var(--gold);">отвори ▾</span></div>
-      <div id="${id}" style="display:none;">${list.map(personRow).join('')}</div>`;
+      <div id="${id}" style="display:none;">${c.id==='corporate'?corpBlock(list):list.map(personRow).join('')}</div>`;
   });
   return html;
 }
@@ -613,6 +633,12 @@ function togglePG(id){
   if(!d)return;const open=d.style.display!=='none';
   d.style.display=open?'none':'block';
   if(a)a.textContent=open?'отвори ▾':'затвори ▴';
+}
+function toggleCo(id,btn){
+  const d=document.getElementById(id);if(!d)return;
+  const open=d.style.display!=='none';
+  d.style.display=open?'none':'block';
+  if(btn)btn.textContent=btn.textContent.replace(open?'▴':'▾',open?'▾':'▴');
 }
 async function renewPerson(email,fieldId){
   const f=document.getElementById(fieldId);
