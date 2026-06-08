@@ -49,6 +49,7 @@
       return { id: s.user.id, email: s.user.email, username: prof ? prof.username : s.user.email,
         full_name: prof ? (prof.full_name || '') : '',
         fav_formats: prof && Array.isArray(prof.fav_formats) ? prof.fav_formats : [],
+        membership_until: prof ? (prof.membership_until || '') : '',
         membership: prof ? prof.membership : 'guest', role: prof ? prof.role : 'member' };
     },
     async updateFavFormats(list) {
@@ -219,17 +220,30 @@
     },
 
     // ---------- ПОКАНИ (само админ; през Edge Function) ----------
-    async inviteMember(email, username, membership) {
+    async inviteMember(email, username, membership, validFrom) {
       if (!LIVE) return { error: { message: 'demo' } };
       const { data, error } = await sb.functions.invoke('invite-member',
-        { body: { email: (email || '').trim(), username: (username || '').trim(), membership: membership || 'guest' } });
+        { body: { email: (email || '').trim(), username: (username || '').trim(), membership: membership || 'guest', valid_from: validFrom || null } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
         return { error: { message: msg } };
       }
       if (data && data.error) return { error: { message: data.error } };
-      return { error: null, password: data && data.password };
+      return { error: null, password: data && data.password, until: data && data.until };
+    },
+    // подновяване на членство (само админ) — удължава с 1 година от дадена дата
+    async renewMembership(email, validFrom) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await sb.functions.invoke('invite-member',
+        { body: { action: 'renew', email: (email || '').trim(), valid_from: validFrom || null } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, until: data && data.until };
     },
     // имейл до члена при одобрена/отказана резервация (само админ)
     async notifyReservation(id, status) {

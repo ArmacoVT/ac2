@@ -506,6 +506,8 @@ function membersView(){
         <label>Имейл</label><input id="iv_email" type="email" placeholder="name@example.com"/>
         <div class="row2"><div><label>Име (по желание)</label><input id="iv_user"/></div>
           <div><label>Категория</label><select id="iv_mem">${memOpts}</select></div></div>
+        <label>Членство валидно от (1 година напред)</label>
+        <input id="iv_from" readonly placeholder="дд.мм.гггг (по подразбиране днес)" data-iso="" onclick="openCal('iv_from')" style="cursor:pointer;"/>
         <button class="btn" style="margin-top:14px;" onclick="doInvite()">Изпрати покана</button></div>`
     : `<div class="card"><h3>Покани член</h3><p class="muted" style="margin-top:6px;">Налично след свързване на Supabase и качване на функцията <code>invite-member</code> (виж ADMIN-README).</p></div>`;
   const resetCard=DB.live
@@ -515,8 +517,18 @@ function membersView(){
         <label>Имейл на члена</label><input id="rp_email" type="email" placeholder="name@example.com"/>
         <button class="btn ghost" style="margin-top:10px;" onclick="doReset()">Генерирай нова парола</button></div>`
     : '';
+  const renewCard=DB.live
+    ? `<div class="card" style="border-color:var(--gold-soft);">
+        <h3>Поднови членство</h3>
+        <p class="muted" style="margin:6px 0 8px;">Удължава членството с 1 година от избраната дата (по подразбиране днес).</p>
+        <label>Имейл на члена</label><input id="rn_email" type="email" placeholder="name@example.com"/>
+        <label>Валидно от</label>
+        <input id="rn_from" readonly placeholder="дд.мм.гггг (по подразбиране днес)" data-iso="" onclick="openCal('rn_from')" style="cursor:pointer;"/>
+        <button class="btn" style="margin-top:12px;" onclick="doRenew()">Поднови с 1 година</button></div>`
+    : '';
   return `<h2>Членове и видимост</h2>
     ${inviteCard}
+    ${renewCard}
     ${resetCard}
     <div class="card"><p class="muted" style="margin-bottom:12px;">Колко от текущите събития вижда всяка категория според зададената видимост.</p>
     <table><thead><tr><th>Категория</th><th>Вижда събития</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -535,12 +547,24 @@ async function doInvite(){
   if(!email){alert('Въведи имейл');return;}
   const username=document.getElementById('iv_user').value.trim();
   const membership=document.getElementById('iv_mem').value;
-  const {error,password}=await DB.inviteMember(email,username,membership);
+  const validFrom=document.getElementById('iv_from').dataset.iso||'';
+  const {error,password,until}=await DB.inviteMember(email,username,membership,validFrom);
   if(error){alert('Грешка: '+error.message);return;}
-  alert(password
+  const untilTxt=until?'\nЧленство валидно до: '+isoToBg(until):'';
+  alert((password
     ?('Акаунтът е създаден!\n\nИмейл: '+email+'\nВременна парола: '+password)
-    :('Поканата е изпратена на '+email+'.\nЧовекът ще получи имейл с линк, от който сам си задава парола и влиза.'));
+    :('Поканата е изпратена на '+email+'.\nЧовекът ще получи имейл с линк, от който сам си задава парола и влиза.'))+untilTxt);
   document.getElementById('iv_email').value='';document.getElementById('iv_user').value='';
+}
+async function doRenew(){
+  const email=document.getElementById('rn_email').value.trim();
+  if(!email){alert('Въведи имейл');return;}
+  const validFrom=document.getElementById('rn_from').dataset.iso||'';
+  const {error,until}=await DB.renewMembership(email,validFrom);
+  if(error){alert('Грешка: '+error.message);return;}
+  alert('Членството на '+email+' е подновено.\nВалидно до: '+(until?isoToBg(until):'—'));
+  document.getElementById('rn_email').value='';
+  const f=document.getElementById('rn_from');if(f){f.dataset.iso='';f.value='';}
 }
 
 function gate(){
