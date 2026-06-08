@@ -173,6 +173,9 @@
   .ev .row .chip{flex:1 1 auto;text-align:center;}
   .chip.on{background:var(--gold);color:#fff7ea;font-weight:600;box-shadow:inset 3px 3px 6px rgba(120,45,20,.3),inset -2px -2px 5px rgba(255,255,255,.2);}
   .chip.ghost{box-shadow:none;color:var(--mid);background:transparent;}
+  .chip.locked{color:var(--mid);background:var(--surface2);font-size:12px;cursor:default;display:inline-flex;align-items:center;
+    box-shadow:inset 2px 2px 5px #e0d4bd,inset -2px -2px 5px #fffdf4;}
+  .chip.locked svg{color:var(--gold);}
   .mcard{background:var(--bg);border-radius:16px;margin-bottom:14px;overflow:hidden;box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;}
   .panel{background:var(--bg);border-radius:18px;box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;}
   .mhead{display:flex;justify-content:space-between;align-items:center;padding:17px;cursor:pointer;}
@@ -447,8 +450,9 @@ function eventCard(e,i){
   const lockISO=(!past&&!booked&&user)?bookOpenISO(e):'';
   const locked=lockISO&&lockISO>todayISO();
   const lockEu=locked?lockISO.split('-').reverse().join('.'):'';
+  const lockSvg=`<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><rect x="5" y="10.5" width="14" height="9.5" rx="2.4"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>`;
   const book=past?'':(booked?`<button class="chip on${popCls}" onclick="event.stopPropagation();toast(tr('alreadyBooked'))">✓ ${tr('booked')}</button>`
-    :locked?`<button class="chip" style="opacity:.75;" onclick="event.stopPropagation();toast(tr('bookFrom')+' '+'${lockEu}')">🔒 ${tr('bookFrom')} ${lockEu}</button>`
+    :locked?`<button class="chip locked" onclick="event.stopPropagation();toast(tr('bookFrom')+' '+'${lockEu}')">${lockSvg}${tr('bookFrom')} ${lockEu}</button>`
     :`<button class="chip" onclick="event.stopPropagation();toggleBook('${e.id}')">${tr('ticket')}</button>`);
   const delay=`animation-delay:${((i||0)%8)*0.05}s;`;
   const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):1;

@@ -233,8 +233,8 @@ function formView(){
 }
 // приоритетно записване: „от дата" за всяко избрано ниво (празно = веднага)
 function bwSection(e){
-  if(draftAud.includes('all'))return '';
-  const list=draftAud.filter(id=>id!=='all');
+  // при „всички членове" фазите важат за всички нива; иначе само за избраните
+  const list=draftAud.includes('all')?MEMBERS.map(m=>m.id):draftAud.filter(id=>id!=='all');
   if(!list.length)return '';
   const rows=list.map(id=>{
     const mem=MEMBERS.find(m=>m.id===id);
