@@ -232,6 +232,13 @@
       if (data && data.error) return { error: { message: data.error } };
       return { error: null, password: data && data.password, until: data && data.until };
     },
+    // списък с всички членове (само админ)
+    async listMembers() {
+      if (!LIVE) return [];
+      const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'members' } });
+      if (error || !data || data.error) return [];
+      return data.members || [];
+    },
     // подновяване на членство (само админ) — удължава с 1 година от дадена дата
     async renewMembership(email, validFrom) {
       if (!LIVE) return { error: { message: 'demo' } };

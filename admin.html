@@ -88,11 +88,13 @@ function render(){
     <div class="tabs">
       <button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>
       <button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации</button>
+      <button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>
       <button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>
       <button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>
     </div>`;
   if(tab==='events')h+=eventsView();
   else if(tab==='res')h+=resView();
+  else if(tab==='people')h+=peopleView();
   else if(tab==='stats')h+=statsView();
   else h+=membersView();
   h+=`</div>`;
@@ -110,7 +112,10 @@ function animateCounts(){
     requestAnimationFrame(step);
   });
 }
-async function setTab(t){tab=t;editId=null;await refresh();render();}
+let PEOPLE=null;
+async function setTab(t){tab=t;editId=null;await refresh();render();
+  if(t==='people'){PEOPLE=null;render();PEOPLE=await DB.listMembers();render();}
+}
 
 function audLabel(aud){
   if(aud==='all')return `<span class="pill audAll">Всички членове</span>`;
@@ -493,6 +498,57 @@ function statsView(){
     <div class="card">${fill}</div>
     <h3 style="margin-top:18px;">Най-търсени места/формати</h3>
     <div class="card"><table style="width:100%;border-collapse:collapse;">${fmtRows}</table></div>`;
+}
+function peopleView(){
+  if(PEOPLE===null)return `<h2>Членове</h2><p class="empty">Зареждане…</p>`;
+  if(!PEOPLE.length)return `<h2>Членове</h2><p class="empty">Все още няма членове.</p>`;
+  const today=new Date().toISOString().slice(0,10);
+  const cats=MEMBERS.slice();
+  // събираме и категории извън списъка (напр. guest)
+  const known=cats.map(c=>c.id);
+  const extra=[...new Set(PEOPLE.map(p=>p.membership).filter(m=>!known.includes(m)))];
+  extra.forEach(id=>cats.push({id,t:id}));
+  const personRow=p=>{
+    const nm=p.full_name||p.username||p.email||'член';
+    const exp=p.membership_until&&p.membership_until<today;
+    const until=p.membership_until?`Членство до ${isoToBg(p.membership_until)}${exp?' · <span style="color:#b5532f;">изтекло</span>':''}`:'Без зададен срок';
+    const fid='rnf_'+p.id;
+    return `<div class="card" style="margin-top:8px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+        <div><b>${esc(nm)}</b>${p.role==='admin'?' <span class="pill" style="border-color:var(--gold);color:var(--gold);">админ</span>':''}
+          <div class="muted" style="margin-top:2px;">${esc(p.email)}</div>
+          <div class="muted" style="margin-top:3px;color:${exp?'#b5532f':'var(--mid)'};">${until}</div></div>
+      </div>
+      <div class="row2" style="margin-top:10px;align-items:center;">
+        <div><input id="${fid}" readonly placeholder="удължи от дата (по подразб. днес)" data-iso="" onclick="openCal('${fid}')" style="cursor:pointer;"/></div>
+        <div><button class="btn sm" onclick="renewPerson('${esc(p.email)}','${fid}')">Поднови с 1 година</button></div>
+      </div></div>`;
+  };
+  let html='<h2>Членове</h2>';
+  cats.forEach((c,ci)=>{
+    const list=PEOPLE.filter(p=>p.membership===c.id);
+    if(!list.length)return;
+    const id='pg'+ci;
+    html+=`<div class="card" style="border-color:var(--gold-soft);cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-top:10px;" onclick="togglePG('${id}')">
+        <h3>${esc(c.t)} <span class="muted" style="font-weight:400;">· ${list.length}</span></h3>
+        <span id="pa_${id}" style="color:var(--gold);">отвори ▾</span></div>
+      <div id="${id}" style="display:none;">${list.map(personRow).join('')}</div>`;
+  });
+  return html;
+}
+function togglePG(id){
+  const d=document.getElementById(id),a=document.getElementById('pa_'+id);
+  if(!d)return;const open=d.style.display!=='none';
+  d.style.display=open?'none':'block';
+  if(a)a.textContent=open?'отвори ▾':'затвори ▴';
+}
+async function renewPerson(email,fieldId){
+  const f=document.getElementById(fieldId);
+  const from=f?(f.dataset.iso||''):'';
+  const {error,until}=await DB.renewMembership(email,from);
+  if(error){alert('Грешка: '+error.message);return;}
+  toast('Членството е подновено до '+(until?isoToBg(until):'—'));
+  PEOPLE=await DB.listMembers();render();
 }
 function membersView(){
   let rows=MEMBERS.map(m=>{
