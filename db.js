@@ -47,7 +47,26 @@
       let prof = null;
       try { const r = await sb.from('profiles').select('*').eq('id', s.user.id).single(); prof = r.data; } catch (e) {}
       return { id: s.user.id, email: s.user.email, username: prof ? prof.username : s.user.email,
+        full_name: prof ? (prof.full_name || '') : '',
         membership: prof ? prof.membership : 'guest', role: prof ? prof.role : 'member' };
+    },
+    // запазване на име на потребителя в профила
+    async updateProfileName(name) {
+      if (!LIVE) { const u = jget(K.user, null) || {}; u.full_name = name; jset(K.user, u); return { error: null }; }
+      const { data } = await sb.auth.getSession();
+      const s = data.session; if (!s) return { error: { message: 'no session' } };
+      const { error } = await sb.from('profiles').update({ full_name: (name || '').trim() }).eq('id', s.user.id);
+      return { error };
+    },
+    // качване на снимка/видео за събитие в Supabase Storage (bucket: event-media)
+    async uploadMedia(file) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+      const path = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+      const up = await sb.storage.from('event-media').upload(path, file, { upsert: true, contentType: file.type });
+      if (up.error) return { error: up.error };
+      const { data } = sb.storage.from('event-media').getPublicUrl(path);
+      return { url: data.publicUrl };
     },
     async signIn(email, password) {
       if (!LIVE) return { error: { message: 'demo' } };
@@ -77,6 +96,7 @@
       return (data || []).map(e => ({ id: e.id, title: e.title, format: e.format, place: e.place,
         date: e.date, end_date: e.end_date || '', time: e.time, ends: e.ends || '', capacity: e.capacity,
         table_capacity: e.table_capacity || 0, aud: toAud(e.audience),
+        image_url: e.image_url || '', video_url: e.video_url || '',
         stream_url: e.stream_url || '', is_live: !!e.is_live }));
     },
     // всички събития (за админ панела — без филтър по членство; в live разчита на admin RLS)
@@ -86,6 +106,7 @@
       const { error } = await sb.from('events').insert({ title: o.title, format: o.format, place: o.place, date: o.date || null,
         end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0,
         table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
+        image_url: o.image_url || null, video_url: o.video_url || null,
         stream_url: o.stream_url || null, is_live: !!o.is_live });
       return { error };
     },
@@ -94,6 +115,7 @@
       const { error } = await sb.from('events').update({ title: o.title, format: o.format, place: o.place, date: o.date || null,
         end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0,
         table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
+        image_url: o.image_url || null, video_url: o.video_url || null,
         stream_url: o.stream_url || null, is_live: !!o.is_live }).eq('id', id);
       return { error };
     },

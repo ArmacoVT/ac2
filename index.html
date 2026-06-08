@@ -39,6 +39,8 @@
   .sec-title{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;padding:24px 20px 2px;}
   .resday{color:var(--mid);font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:capitalize;margin:14px 0 8px;border-left:3px solid var(--gold-soft);padding:2px 0 2px 10px;}
   .daybody{animation:fadeIn .2s ease;}
+  .evposter{width:100%;border-radius:12px;margin-bottom:12px;display:block;object-fit:cover;max-height:240px;}
+  .evvideo{width:100%;border-radius:12px;margin:10px 0 4px;display:block;background:#000;max-height:300px;}
   .sec-sub{color:var(--muted);font-size:13px;padding:0 20px 10px;}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px;}
   .grid{gap:16px;}
@@ -213,7 +215,7 @@ const T={
     newPassTitle:'Нова парола',passConfirm:'Потвърди паролата',passMismatch:'Паролите не съвпадат',pwSave:'Запази',cancelBtn:'Отказ',
     setPassTitle:'Задай своята парола',passSet:'Паролата е създадена успешно. Добре дошъл!',
     currentPass:'Текуща парола',wrongCurrent:'Грешна текуща парола',checking:'Проверка…',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими',
-    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души',pastRes:'Изминали',noUpcomingRes:'Няма предстоящи резервации.'},
+    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души',pastRes:'Изминали',noUpcomingRes:'Няма предстоящи резервации.',yourName:'Вашето име',editName:'Редактирай име',nameSaved:'Името е запазено',bookingName:'На кое име'},
   en:{home:'Home',events:'Events',reserve:'Reserve',membership:'Membership',signin:'Sign in',profile:'Profile',
     formats:'Formats',formatsSub:'The seven formats of the club. Tap a card.',quick:'Quick actions',
     includes:'What it includes',enquiry:'Enquiry / reservation',seeEvents:'See events',
@@ -230,7 +232,7 @@ const T={
     newPassTitle:'New password',passConfirm:'Confirm password',passMismatch:'Passwords do not match',pwSave:'Save',cancelBtn:'Cancel',
     setPassTitle:'Set your password',passSet:'Password created successfully. Welcome!',
     currentPass:'Current password',wrongCurrent:'Wrong current password',checking:'Checking…',inviteOnly:'Access is by club invitation only.',demoOnlyLive:'Available after Supabase is connected',ticket:'Reserve a ticket',tableSuggest:'Reserve a table at AC² Table',afterEvent:'After the event',ticketToast:'Request sent',fav:'Favorites',
-    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion',alreadyBooked:'You already have a request for this event',booked:'Ticket requested',addTable:'Also reserve a table after the event',tableParty:'Table for how many',pastRes:'Past',noUpcomingRes:'No upcoming reservations.'}
+    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion',alreadyBooked:'You already have a request for this event',booked:'Ticket requested',addTable:'Also reserve a table after the event',tableParty:'Table for how many',pastRes:'Past',noUpcomingRes:'No upcoming reservations.',yourName:'Your name',editName:'Edit name',nameSaved:'Name saved',bookingName:'Name for the booking'}
 };
 const FORMATS=[
  {id:'culture',t:'AC² Culture',c:'#6b3a5b',img:'cards/logo-culture.webp',b:{bg:['музика','изложби','литература','камерни театрални формати','срещи с артисти и лектори'],en:['music','exhibitions','literature','chamber theatre formats','meetings with artists and lecturers']}},
@@ -376,11 +378,15 @@ function eventCard(e){
       <div class="tablebox" id="tbx_${e.id}"><label>${tr('tableParty')}</label>
         <input id="tbp_${e.id}" type="number" min="1" value="2"/></div></div>`:'';
   const form=booked?'':`<div class="bookform" id="bk_${e.id}">
+    <label>${tr('bookingName')}</label>
+    <input id="bn_${e.id}" type="text" value="${user?esc(user.full_name||user.username||''):''}"/>
     <label>${tr('party')}</label>
     <input id="bp_${e.id}" type="number" min="1" max="${seats}" value="2"/>
     ${tableOpt}
     <button class="btn" style="margin-top:12px;" onclick="event.stopPropagation();confirmBook('${e.id}')">${tr('send')}</button></div>`;
-  return `<div class="ev"><div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>
+  const media=e.image_url?`<img class="evposter" src="${esc(e.image_url)}" alt="" loading="lazy"/>`:'';
+  const vid=e.video_url?`<video class="evvideo" src="${esc(e.video_url)}" controls preload="metadata" playsinline></video>`:'';
+  return `<div class="ev">${media}<div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>${vid}
     <div class="row">${fav}${book}</div>${form}</div>`;
 }
 function toggleTableOpt(id){
@@ -401,6 +407,7 @@ async function confirmBook(id){
   if(!user){needLogin();return;}
   const e=EVENTS.find(x=>x.id===id); if(!e)return;
   const inp=document.getElementById('bp_'+id); const n=parseInt((inp&&inp.value)||'1',10);
+  const bname=(document.getElementById('bn_'+id)?.value||'').trim()||user.full_name||user.username||user.email;
   const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
   if(n<1){toast(tr('party'));return;}
   if(n>seats){toast((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
@@ -410,13 +417,13 @@ async function confirmBook(id){
   // само една активна заявка на член за събитие
   try{RES=await DB.listReservations();}catch(err){}
   if(hasBooking(id)){toast(tr('alreadyBooked'));route();return;}
-  const r=await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:e.time,party:n,note:'Билет / ticket'});
+  const r=await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:e.time,party:n,note:'Билет / ticket',res_name:bname,email:user.email,phone:''});
   if(r&&r.error){toast(/duplicate|unique/i.test(r.error.message)?tr('alreadyBooked'):r.error.message);return;}
   if(wantTable){
     await DB.addReservation({fmt:'restaurant',place:venueLabel('restaurant'),date:e.date,time:e.ends||e.time,party:tp>0?tp:2,
       table_event_id:e.id,
       note:(lang==='bg'?'Маса след събитие: ':'Table after event: ')+e.title,
-      res_name:user.username||user.email,email:user.email,phone:''});
+      res_name:bname,email:user.email,phone:''});
   }
   const f=document.getElementById('bk_'+id); if(f)f.classList.remove('open');
   try{RES=await DB.listReservations();}catch(err){}
@@ -496,7 +503,7 @@ function reserve(q){
   return topbar(tr('reserve'))+`<div class="page">
     <h2 style="font-family:var(--serif);color:var(--cream);font-size:24px;font-weight:500;">${tr('resTitle')}</h2>
     ${memInfo}
-    <label>${tr('resName')} *</label><input id="r_name" value="${user?esc(user.username||''):''}"/>
+    <label>${tr('resName')} *</label><input id="r_name" value="${user?esc(user.full_name||user.username||''):''}"/>
     <label>${tr('placeChoose')} *</label><div class="selrow" id="vensel">${vsel}</div>
     <label>${tr('date')} *</label><input id="r_date" readonly placeholder="дд.мм.гггг" data-iso="" onclick="openResCal()" style="cursor:pointer;"/>
     <label>${tr('time')} *</label><input id="r_time" placeholder="19:30"/>
@@ -673,14 +680,15 @@ function profile(){
   const res=RES;
   return topbar(tr('profile'))+`<div class="page">
     <div class="panel" style="padding:22px;text-align:center;">
-      <div style="color:var(--cream);font-size:22px;font-family:var(--serif);">${esc(user.username||user.email)}</div>
-      <div style="display:inline-block;margin-top:8px;border:1px solid var(--gold);border-radius:20px;padding:5px 16px;color:var(--gold);font-size:13px;letter-spacing:2px;text-transform:uppercase;">${m?m.t:'Guest'}</div>
+      <div style="color:var(--cream);font-size:22px;font-family:var(--serif);">${esc(user.full_name||user.username||user.email)}</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:4px;">${esc(user.email)} · <a style="color:var(--gold);cursor:pointer;" onclick="editName()">${tr('editName')}</a></div>
+      <div style="display:inline-block;margin-top:10px;border:1px solid var(--gold);border-radius:20px;padding:5px 16px;color:var(--gold);font-size:13px;letter-spacing:2px;text-transform:uppercase;">${m?m.t:'Guest'}</div>
       <div style="color:var(--mid);font-size:12px;margin-top:12px;">${EVENTS.filter(canAccess).length} ${lang==='bg'?'налични събития':'available events'}</div></div>
     <div class="ev" onclick="go('membership')" style="margin-top:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><h3 style="font-size:15px;">${tr('membership')}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Категории и предимства':'Categories and benefits'}</div></div>
       <span style="color:var(--muted);font-size:20px;">›</span></div>
     <div class="sec-title" style="padding:24px 0 8px;">${tr('myEvents')}</div>
-    ${sev.length?sev.map(e=>`<div class="ev" style="margin-bottom:8px;"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m">${evMeta(e)}</div></div>`).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noEvents')}</p>`}
+    ${sev.length?sev.map(e=>`<div class="ev" style="margin-bottom:8px;cursor:pointer;" onclick="go('format/${e.format}')"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m">${evMeta(e)}</div></div>`).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noEvents')}</p>`}
     <div class="sec-title" style="padding:22px 0 8px;">${tr('myRes')}</div>
     ${resSections(res)}
     ${DB.live?`<button class="btn btn-ghost" style="margin-top:26px;" onclick="changePass()">${tr('changePass')}</button>`:''}
@@ -691,7 +699,11 @@ function resCard(r,dim){
   const SL={requested:lang==='bg'?'чакаща':'pending',confirmed:lang==='bg'?'одобрена':'approved',declined:lang==='bg'?'отказана':'declined',cancelled:lang==='bg'?'отменена':'cancelled'};
   const SC={confirmed:'#4f7a43',declined:'#b5532f'};
   const tm=r.time?(r.time+' · '):'';
-  return `<div class="ev" style="margin-bottom:8px;${dim?'opacity:.6;':''}"><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}</h3><div class="m">${tm}<b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div></div>`;
+  const evId=r.event_id||r.table_event_id;
+  const ev=evId?EVENTS.find(x=>x.id===evId):null;
+  const click=ev?` cursor:pointer;`:'';
+  const onclick=ev?` onclick="go('format/${ev.format}')"`:'';
+  return `<div class="ev" style="margin-bottom:8px;${dim?'opacity:.6;':''}${click}"${onclick}><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}</h3><div class="m">${tm}<b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div></div>`;
 }
 // заглавие на дата: „петък, 6 юни 2026"
 function resDayLabel(iso){
@@ -743,6 +755,27 @@ function togglePast(btn){
   const open=d.style.display!=='none';
   d.style.display=open?'none':'block';
   if(btn)btn.innerHTML=btn.innerHTML.replace(open?'▴':'▾',open?'▾':'▴');
+}
+function askName(title,initial){
+  return new Promise(res=>{
+    const ov=document.createElement('div');ov.className='pwov';
+    ov.innerHTML=`<div class="pwcard"><h3>${title||tr('yourName')}</h3>
+      <input id="nm1" type="text" value="${esc(initial||'')}" placeholder="${tr('yourName')}"/>
+      <div class="pwerr" id="nmerr"></div>
+      <button class="btn" id="nmok">${tr('pwSave')}</button>
+      <button class="btn btn-ghost" id="nmcancel">${tr('cancelBtn')}</button></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('#nmok').onclick=()=>{const v=ov.querySelector('#nm1').value.trim();
+      if(!v){ov.querySelector('#nmerr').textContent=tr('reqName');return;}ov.remove();res(v);};
+    ov.querySelector('#nmcancel').onclick=()=>{ov.remove();res(null);};
+  });
+}
+async function editName(){
+  const v=await askName(tr('editName'),user.full_name||user.username||'');
+  if(!v)return;
+  const r=await DB.updateProfileName(v);
+  if(r&&r.error){toast(r.error.message);return;}
+  user.full_name=v;toast(tr('nameSaved'));route();
 }
 async function signout(){await DB.signOut();user=null;saved=[];RES=[];go('');}
 // брой нови известия (резервации с променен статус, които още не са видени)
@@ -830,6 +863,14 @@ async function promptInitialPassword(){
   const isInvite=DB.urlType==='invite';
   const p=await askNewPassword(isInvite?tr('setPassTitle'):tr('newPassTitle'));
   if(p){const r=await DB.updatePassword(p);toast(r&&r.error?r.error.message:(isInvite?tr('passSet'):tr('passChanged')));}
+  // при покана питаме и за име
+  if(isInvite){
+    try{user=await DB.getUser();}catch(e){}
+    if(user&&!user.full_name){
+      const nm=await askName(tr('yourName'),user.username||'');
+      if(nm){await DB.updateProfileName(nm);user.full_name=nm;route();}
+    }
+  }
 }
 DB.onRecovery(promptInitialPassword);
 (async function(){

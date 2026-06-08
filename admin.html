@@ -188,7 +188,14 @@ function formView(){
       <div><label>Край (час)</label><input id="f_ends" value="${esc(e?e.ends:'')}" placeholder="22:00"/></div></div>
     <div class="row2"><div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}"/></div>
       <div><label>Места на маса след събитието</label><input id="f_tcap" type="number" min="0" value="${e&&e.table_capacity?e.table_capacity:''}" placeholder="по желание"/></div></div>
-    <label>Линк за live stream (по желание — YouTube, Vimeo или друг)</label>
+    <label>Постер / снимка на събитието (по желание)</label>
+    ${e&&e.image_url?`<div style="margin-bottom:8px;"><img src="${esc(e.image_url)}" style="max-width:100%;border-radius:10px;"/><div><a href="#" onclick="clearMedia('img');return false;" style="color:#b5532f;font-size:12px;">Премахни снимката</a></div></div>`:''}
+    <input id="f_img" type="file" accept="image/*"/>
+    <label>Видео на събитието (по желание — качи файл)</label>
+    ${e&&e.video_url?`<div style="margin-bottom:8px;"><video src="${esc(e.video_url)}" controls style="max-width:100%;border-radius:10px;"></video><div><a href="#" onclick="clearMedia('vid');return false;" style="color:#b5532f;font-size:12px;">Премахни видеото</a></div></div>`:''}
+    <input id="f_vid" type="file" accept="video/*"/>
+    <div id="f_media_keep" data-img="${esc(e?(e.image_url||''):'')}" data-vid="${esc(e?(e.video_url||''):'')}"></div>
+    <label style="margin-top:14px;">Линк за live stream (по желание — YouTube, Vimeo или друг)</label>
     <input id="f_stream" value="${esc(e?e.stream_url:'')}" placeholder="https://www.youtube.com/watch?v=..."/>
     <label style="display:flex;align-items:center;gap:10px;margin-top:12px;cursor:pointer;">
       <input type="checkbox" id="f_live" ${e&&e.is_live?'checked':''} style="width:auto;"/> На живо сега (стриймът е активен)</label>
@@ -290,9 +297,23 @@ function editEvent(id){editId=id;tab='events';const e=EVENTS.find(x=>x.id===id);
 function cancelEdit(){editId=null;draftAud=['all'];render();}
 async function delEvent(id){if(!confirm('Да изтрия ли събитието?'))return;await DB.deleteEvent(id);await refresh();render();}
 async function toggleLive(id,on){await DB.setLive(id,on);await refresh();render();}
+function clearMedia(which){
+  const keep=document.getElementById('f_media_keep');if(!keep)return;
+  if(which==='img')keep.dataset.img='';else keep.dataset.vid='';
+  alert(which==='img'?'Снимката ще се премахне при запис.':'Видеото ще се премахне при запис.');
+}
 async function saveEvent(){
   const title=document.getElementById('f_title').value.trim();
   if(!title){alert('Въведи заглавие');return;}
+  // качване на снимка/видео, ако са избрани
+  const keep=document.getElementById('f_media_keep');
+  let imgUrl=keep?keep.dataset.img:'', vidUrl=keep?keep.dataset.vid:'';
+  const imgF=document.getElementById('f_img'), vidF=document.getElementById('f_vid');
+  const saveBtn=document.querySelector('#root .btn');
+  if(imgF&&imgF.files[0]){ if(saveBtn)saveBtn.textContent='Качване на снимка…';
+    const u=await DB.uploadMedia(imgF.files[0]); if(u.error){alert('Снимката не се качи: '+u.error.message);if(saveBtn)saveBtn.textContent='Запази';return;} imgUrl=u.url; }
+  if(vidF&&vidF.files[0]){ if(saveBtn)saveBtn.textContent='Качване на видео…';
+    const u=await DB.uploadMedia(vidF.files[0]); if(u.error){alert('Видеото не се качи: '+u.error.message);if(saveBtn)saveBtn.textContent='Запази';return;} vidUrl=u.url; }
   const dIso=document.getElementById('f_date').dataset.iso||'';
   const edIso=document.getElementById('f_end_date').dataset.iso||'';
   if(edIso&&dIso&&edIso<dIso){alert('Крайната дата е преди началната');return;}
@@ -300,6 +321,7 @@ async function saveEvent(){
     date:dIso,end_date:edIso,time:document.getElementById('f_time').value.trim(),ends:document.getElementById('f_ends').value.trim(),
     capacity:parseInt(document.getElementById('f_cap').value||'0',10),
     table_capacity:parseInt(document.getElementById('f_tcap').value||'0',10),
+    image_url:imgUrl,video_url:vidUrl,
     stream_url:document.getElementById('f_stream').value.trim(),
     is_live:document.getElementById('f_live').checked,
     aud:draftAud.includes('all')?'all':draftAud.slice()};
