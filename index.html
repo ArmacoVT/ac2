@@ -215,7 +215,7 @@ const T={
     newPassTitle:'Нова парола',passConfirm:'Потвърди паролата',passMismatch:'Паролите не съвпадат',pwSave:'Запази',cancelBtn:'Отказ',
     setPassTitle:'Задай своята парола',passSet:'Паролата е създадена успешно. Добре дошъл!',
     currentPass:'Текуща парола',wrongCurrent:'Грешна текуща парола',checking:'Проверка…',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими',
-    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души',pastRes:'Изминали',noUpcomingRes:'Няма предстоящи резервации.',yourName:'Вашето име',editName:'Редактирай име',nameSaved:'Името е запазено',bookingName:'На кое име'},
+    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души',pastRes:'Изминали',noUpcomingRes:'Няма предстоящи резервации.',yourName:'Вашето име',editName:'Редактирай име',nameSaved:'Името е запазено',bookingName:'На кое име',bioLogin:'Влез с Face ID / отпечатък',bioReason:'Влизане в Arcus Club',bioNone:'Първо влез с парола веднъж'},
   en:{home:'Home',events:'Events',reserve:'Reserve',membership:'Membership',signin:'Sign in',profile:'Profile',
     formats:'Formats',formatsSub:'The seven formats of the club. Tap a card.',quick:'Quick actions',
     includes:'What it includes',enquiry:'Enquiry / reservation',seeEvents:'See events',
@@ -232,7 +232,7 @@ const T={
     newPassTitle:'New password',passConfirm:'Confirm password',passMismatch:'Passwords do not match',pwSave:'Save',cancelBtn:'Cancel',
     setPassTitle:'Set your password',passSet:'Password created successfully. Welcome!',
     currentPass:'Current password',wrongCurrent:'Wrong current password',checking:'Checking…',inviteOnly:'Access is by club invitation only.',demoOnlyLive:'Available after Supabase is connected',ticket:'Reserve a ticket',tableSuggest:'Reserve a table at AC² Table',afterEvent:'After the event',ticketToast:'Request sent',fav:'Favorites',
-    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion',alreadyBooked:'You already have a request for this event',booked:'Ticket requested',addTable:'Also reserve a table after the event',tableParty:'Table for how many',pastRes:'Past',noUpcomingRes:'No upcoming reservations.',yourName:'Your name',editName:'Edit name',nameSaved:'Name saved',bookingName:'Name for the booking'}
+    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion',alreadyBooked:'You already have a request for this event',booked:'Ticket requested',addTable:'Also reserve a table after the event',tableParty:'Table for how many',pastRes:'Past',noUpcomingRes:'No upcoming reservations.',yourName:'Your name',editName:'Edit name',nameSaved:'Name saved',bookingName:'Name for the booking',bioLogin:'Sign in with Face ID / fingerprint',bioReason:'Sign in to Arcus Club',bioNone:'Sign in with your password once first'}
 };
 const FORMATS=[
  {id:'culture',t:'AC² Culture',c:'#6b3a5b',img:'cards/logo-culture.webp',b:{bg:['музика','изложби','литература','камерни театрални формати','срещи с артисти и лектори'],en:['music','exhibitions','literature','chamber theatre formats','meetings with artists and lecturers']}},
@@ -582,15 +582,36 @@ async function sendRes(seats){
   await DB.addReservation({fmt:venue,place:venueLabel(venue),date:rdate,time:rtime,party:n,note,res_name:name,email,phone});
   toast(tr('resToast'));setTimeout(()=>go('profile'),700);
 }
+// ---------- Биометрия (Face ID / отпечатък) през Capacitor native plugin ----------
+const BIO_SERVER='arcusclub';
+function NB(){try{const C=window.Capacitor;return (C&&C.isNativePlatform&&C.isNativePlatform()&&C.Plugins&&C.Plugins.NativeBiometric)||null;}catch(e){return null;}}
+function bioEnabled(){return !!(NB()&&localStorage.getItem('acac_bio'));}
+async function saveBioCreds(email,pass){const b=NB();if(!b)return;try{const a=await b.isAvailable();if(!a||!a.isAvailable)return;await b.setCredentials({username:email,password:pass,server:BIO_SERVER});localStorage.setItem('acac_bio','1');}catch(e){}}
+async function bioLogin(){
+  const b=NB();if(!b){toast(tr('bioNone'));return;}
+  try{
+    await b.verifyIdentity({reason:tr('bioReason'),title:'Arcus Club',subtitle:'',description:''});
+    const c=await b.getCredentials({server:BIO_SERVER});
+    if(!c||!c.username){toast(tr('bioNone'));return;}
+    const {error}=await DB.signIn(c.username,c.password);
+    if(error){toast((lang==='bg'?'Грешка: ':'Error: ')+error.message);return;}
+    user=await DB.getUser();
+    if(!user){toast(lang==='bg'?'Влез наново':'Sign in again');return;}
+    saved=await DB.listSaved();EVENTS=await DB.listEvents();
+    toast(tr('loginToast'));location.hash='';route();
+  }catch(e){/* отказан/неуспешен Face ID — нищо */}
+}
 let entered=false;
 function gate(){
   const live=DB.live;
   const su=loginMode==='signup';
+  const bioBtn=bioEnabled()?`<button class="btn btn-ghost" style="margin-top:10px;" onclick="bioLogin()">${tr('bioLogin')}</button>`:'';
   const memChips=MEMBERS.concat([{id:'guest',t:'Guest'}]).map(m=>`<button type="button" class="chip ${pickedMem===m.id?'on':''}" onclick="pickMem(this)" data-m="${m.id}">${m.t}</button>`).join('');
   const fields=live
     ? `<input id="l_email" type="email" autocapitalize="none" autocomplete="username" placeholder="${tr('email')}" onkeydown="if(event.key==='Enter')doAuth()"/>
        <input id="l_pass" type="password" autocomplete="current-password" placeholder="${tr('pass')}" onkeydown="if(event.key==='Enter')doAuth()"/>
        <button class="btn" onclick="doAuth()">${tr('enter')}</button>
+       ${bioBtn}
        <div style="margin-top:14px;"><a style="color:var(--gold);font-size:13px;cursor:pointer;" onclick="doForgot()">${tr('forgot')}</a></div>
        <div style="margin-top:10px;color:var(--muted);font-size:12px;">${tr('inviteOnly')}</div>`
     : `<input id="l_user" autocapitalize="none" autocomplete="username" placeholder="${tr('uname')}" onkeydown="if(event.key==='Enter')doAuth()"/>
@@ -626,6 +647,8 @@ async function doAuth(){
   }
   user=await DB.getUser();
   if(!user){toast(lang==='bg'?'Потвърди имейла си и влез':'Confirm your email, then sign in');return;}
+  // запазваме данните за Face ID/отпечатък (само на телефона, в защитения Keychain)
+  if(DB.live){const _e=(document.getElementById('l_email')?.value||'').trim();const _p=document.getElementById('l_pass')?.value||'';if(_e&&_p)saveBioCreds(_e,_p);}
   saved=await DB.listSaved();EVENTS=await DB.listEvents();
   toast(tr('loginToast'));location.hash='';route();
 }
@@ -878,6 +901,8 @@ DB.onRecovery(promptInitialPassword);
   // дошъл от имейл-покана → задава си парола веднага (с потвърждение)
   if(user&&(DB.urlType==='invite'||DB.urlType==='recovery')) await promptInitialPassword();
   route();
+  // ако сесията е изтекла, но има запазени данни → предлагаме Face ID веднага
+  if(!user&&bioEnabled()){setTimeout(bioLogin,400);}
   // известие в приложението при одобрена/отказана резервация (вижда се, докато не се отвори профилът)
   if(user){try{
     RES=await DB.listReservations();
