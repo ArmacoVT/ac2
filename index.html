@@ -423,32 +423,26 @@ function eventCard(e){
   return `<div class="ev">${media}<div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>${vid}
     <div class="row">${fav}${book}${cal}</div>${form}</div>`;
 }
-function addToCalendar(id){
+// календарен native плъгин (в приложението)
+function CalPlugin(){try{const C=window.Capacitor;if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return null;return (C.Plugins&&C.Plugins.CapacitorCalendar)||(C.registerPlugin&&C.registerPlugin('CapacitorCalendar'))||null;}catch(e){return null;}}
+async function addToCalendar(id){
   const e=EVENTS.find(x=>x.id===id); if(!e||!e.date)return;
-  const pad=n=>String(n).padStart(2,'0');
-  const dt=(iso,t)=>{const[Y,M,D]=iso.split('-');let h='09',mi='00';if(t&&/\d{1,2}:\d{2}/.test(t)){const p=t.split(':');h=pad(p[0]);mi=pad(p[1]);}return Y+M+D+'T'+h+mi+'00';};
-  const esc2=s=>(''+(s||'')).replace(/([,;\\])/g,'\\$1').replace(/\n/g,'\\n');
-  const now=new Date();const stamp=now.getUTCFullYear()+pad(now.getUTCMonth()+1)+pad(now.getUTCDate())+'T'+pad(now.getUTCHours())+pad(now.getUTCMinutes())+pad(now.getUTCSeconds())+'Z';
-  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Arcus Club//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',
-    'UID:'+(e.id||Date.now())+'@arcusclub','DTSTAMP:'+stamp,
-    'DTSTART:'+dt(e.date,e.time),'DTEND:'+dt(e.end_date||e.date,e.ends||e.time),
-    'SUMMARY:'+esc2(e.title),'LOCATION:'+esc2(e.place||''),'DESCRIPTION:'+esc2('American College Arcus Club'),
-    'END:VEVENT','END:VCALENDAR'].join('\r\n');
-  const fname=(e.title||'event').replace(/[^\w]+/g,'_')+'.ics';
-  // 1) Телефон: споделяне на файл (отваря менюто → „Добави в календара")
-  try{
-    const file=new File([ics],fname,{type:'text/calendar'});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      navigator.share({files:[file],title:e.title}).catch(()=>{});
+  const toMs=(iso,t)=>{const[Y,M,D]=iso.split('-').map(Number);let h=9,mi=0;if(t&&/\d{1,2}:\d{2}/.test(t)){const p=t.split(':');h=+p[0];mi=+p[1];}return new Date(Y,M-1,D,h,mi,0).getTime();};
+  const start=toMs(e.date,e.time), end=toMs(e.end_date||e.date,e.ends||e.time);
+  // 1) Телефон: отваря директно системния календар за ново събитие
+  const Cal=CalPlugin();
+  if(Cal&&Cal.createEventWithPrompt){
+    try{
+      try{ if(Cal.requestAllPermissions) await Cal.requestAllPermissions(); }catch(_){}
+      await Cal.createEventWithPrompt({title:e.title,location:e.place||'',startDate:start,endDate:end,notes:'American College Arcus Club'});
       return;
-    }
-  }catch(err){}
-  // 2) Резервен вариант: сваляне на файла (компютър/браузър)
-  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download=fname;a.rel='noopener';
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1500);
+    }catch(err){/* пада към уеб варианта */}
+  }
+  // 2) Браузър: отваря Google Calendar с готово събитие
+  const pad=n=>String(n).padStart(2,'0');
+  const g=(ms)=>{const d=new Date(ms);return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'T'+pad(d.getHours())+pad(d.getMinutes())+'00';};
+  const p=new URLSearchParams({action:'TEMPLATE',text:e.title||'',dates:g(start)+'/'+g(end),location:e.place||'',details:'American College Arcus Club'});
+  window.open('https://calendar.google.com/calendar/render?'+p.toString(),'_blank');
 }
 function toggleTableOpt(id){
   const box=document.getElementById('tbx_'+id),ck=document.getElementById('tb_'+id);
