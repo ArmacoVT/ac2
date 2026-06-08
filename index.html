@@ -79,6 +79,20 @@
   .grid .fcard:nth-child(4){animation-delay:.15s}.grid .fcard:nth-child(5){animation-delay:.2s}
   .grid .fcard:nth-child(6){animation-delay:.25s}.grid .fcard:nth-child(7){animation-delay:.3s}
   @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+  @keyframes popIn{0%{transform:scale(.8)}55%{transform:scale(1.12)}100%{transform:scale(1)}}
+  @keyframes shimmer{0%{background-position:-220px 0}100%{background-position:220px 0}}
+  @keyframes appIn{from{opacity:.4}to{opacity:1}}
+  #app.nav{animation:appIn .2s ease}
+  .grid>*{animation:cardIn .4s ease backwards}
+  .grid>*:nth-child(2){animation-delay:.05s}.grid>*:nth-child(3){animation-delay:.1s}
+  .grid>*:nth-child(4){animation-delay:.15s}.grid>*:nth-child(5){animation-delay:.2s}
+  .grid>*:nth-child(6){animation-delay:.25s}.grid>*:nth-child(7){animation-delay:.3s}.grid>*:nth-child(n+8){animation-delay:.35s}
+  .page .ev{animation:cardIn .38s ease backwards}
+  .chip.pop{animation:popIn .42s cubic-bezier(.3,1.5,.5,1)}
+  .skel{border-radius:16px;height:96px;margin-bottom:14px;background:linear-gradient(90deg,var(--surface2) 25%,#efe6d3 37%,var(--surface2) 63%);background-size:400px 100%;animation:shimmer 1.2s infinite linear;}
+  @media (prefers-reduced-motion:reduce){.grid>*,.page .ev,.chip.pop,#app.nav,.nb,.skel{animation:none!important}}
   .tile{background:var(--bg);border-radius:16px;padding:18px;text-align:center;cursor:pointer;
     box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;transition:box-shadow .2s,transform .15s;}
   .tile:active{box-shadow:inset 5px 5px 10px #d9cdb6,inset -5px -5px 10px #fffdf4;transform:scale(.99);}
@@ -177,12 +191,12 @@
     width:min(94%,500px);display:flex;padding:6px;border-radius:34px;
     background:rgba(241,232,214,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
     box-shadow:0 12px 30px rgba(58,44,35,.25),inset 0 1px 0 rgba(255,255,255,.7);
-    transition:transform .35s cubic-bezier(.2,.7,.2,1),opacity .35s;}
-  .tabbar.mini{transform:translateX(-50%) scale(.86) translateY(8px);opacity:.8;}
+    transition:transform .2s cubic-bezier(.2,.8,.2,1),opacity .2s;}
+  .tabbar.mini{transform:translateX(-50%) scale(.92) translateY(5px);opacity:.9;}
   .tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 7px;color:var(--muted);font-size:9.5px;text-decoration:none;cursor:pointer;transition:color .2s;}
   .tabbar a .ti{display:flex;align-items:center;justify-content:center;position:relative;}
   .tabbar a .ti svg{width:23px;height:23px;}
-  .nb{position:absolute;top:-7px;right:-11px;background:#b5532f;color:#fffdf4;font-size:10px;line-height:1;font-weight:700;padding:3px 5px;border-radius:10px;min-width:9px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+  .nb{position:absolute;top:-7px;right:-11px;background:#b5532f;color:#fffdf4;font-size:10px;line-height:1;font-weight:700;padding:3px 5px;border-radius:10px;min-width:9px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.25);animation:badgePulse 1.6s ease-in-out infinite;}
   .tabbar a.active{color:var(--gold);}
   .tabbar a.active .ti{background:#f1e8d6;border-radius:50%;box-shadow:3px 3px 6px #d3c6ad,-3px -3px 6px #fff;padding:7px;margin-top:-2px;}
   @keyframes ac2In{from{opacity:0;transform:scale(.7);}to{opacity:1;transform:scale(1);}}
@@ -318,6 +332,25 @@ const tx=o=>o[lang];
 const esc=s=>(''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 function go(h){location.hash=h;}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1900);}
+// хаптик (вибрация): native Capacitor Haptics на телефон, иначе Vibration API (Android браузър)
+let _hap;
+function hap(kind){
+  try{
+    const C=window.Capacitor;
+    if(C&&C.isNativePlatform&&C.isNativePlatform()){
+      if(_hap===undefined)_hap=(C.Plugins&&C.Plugins.Haptics)||(C.registerPlugin&&C.registerPlugin('Haptics'))||null;
+      const H=_hap;
+      if(H){
+        if(kind==='success'&&H.notification)H.notification({type:'SUCCESS'});
+        else if(kind==='warning'&&H.notification)H.notification({type:'WARNING'});
+        else if(kind==='select'&&H.impact)H.impact({style:'LIGHT'});
+        else if(H.impact)H.impact({style:kind==='medium'?'MEDIUM':'LIGHT'});
+        return;
+      }
+    }
+    if(navigator.vibrate)navigator.vibrate(kind==='success'?[8,30,8]:kind==='warning'?[25,25,25]:10);
+  }catch(e){}
+}
 function toggleLang(){lang=lang==='bg'?'en':'bg';localStorage.setItem('lang',lang);document.documentElement.lang=lang;route();}
 function topbar(title){
   const left=title?`<span class="back" onclick="history.back()">‹</span>`:'';
@@ -376,7 +409,7 @@ function formatPage(id){
   const f=FORMATS.find(x=>x.id===id); if(!f)return home();
   let bul=tx(f.b).map(b=>`<div class="bul"><span class="d">◆</span><span class="x">${b}</span></div>`).join('');
   const fevents=EVENTS.filter(e=>e.format===f.id&&canAccess(e));
-  const prog=eventsHtml(fevents,lang==='bg'?'Все още няма обявени събития.':'No events announced yet.');
+  const prog=(!dataReady&&!EVENTS.length)?skel(3):eventsHtml(fevents,lang==='bg'?'Все още няма обявени събития.':'No events announced yet.');
   return topbar(f.t)+`<div class="page">
     <div class="fbanner" style="border-color:${f.c}33"><img src="illustrations/fmt-${f.id}.svg" alt=""/><h2 style="color:${f.c}">${f.t}</h2></div>
     <div class="sec-title" style="padding:18px 4px 6px;">${tr('includes')}</div>${bul}
@@ -385,6 +418,7 @@ function formatPage(id){
 }
 // има ли вече активна заявка (чакаща или одобрена) за това събитие
 const hasBooking=id=>RES.some(r=>r.event_id===id&&(!r.status||r.status==='requested'||r.status==='confirmed'));
+let justBooked=null; // за bounce ефекта на бутона след заявка
 // минало ли е събитието (по крайна дата, ако има, иначе по началната)
 function todayISO(){const t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');}
 const evEnd=e=>e.end_date||e.date||'';
@@ -401,13 +435,15 @@ function eventsHtml(list,emptyMsg){
   return h;
 }
 function togglePastEv(btn){const d=document.getElementById('pastev');if(!d)return;const open=d.style.display!=='none';d.style.display=open?'none':'block';if(btn)btn.innerHTML=btn.innerHTML.replace(open?'▴':'▾',open?'▾':'▴');}
-function eventCard(e){
+function eventCard(e,i){
   const on=saved.includes(e.id);
   const fav=`<button class="chip ${on?'on':''}" onclick="event.stopPropagation();toggleSave('${e.id}')">${on?'♥':'♡'} ${tr('fav')}</button>`;
   const past=isPast(e);
   const booked=user&&hasBooking(e.id);
-  const book=past?'':(booked?`<button class="chip on" onclick="event.stopPropagation();toast(tr('alreadyBooked'))">✓ ${tr('booked')}</button>`
+  const popCls=(justBooked===e.id)?' pop':'';
+  const book=past?'':(booked?`<button class="chip on${popCls}" onclick="event.stopPropagation();toast(tr('alreadyBooked'))">✓ ${tr('booked')}</button>`
     :`<button class="chip" onclick="event.stopPropagation();toggleBook('${e.id}')">${tr('ticket')}</button>`);
+  const delay=`animation-delay:${((i||0)%8)*0.05}s;`;
   const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):1;
   const tableOpt=endsEarly(e)?`<div class="tableopt">
       <label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" id="tb_${e.id}" onchange="toggleTableOpt('${e.id}')"/>
@@ -424,7 +460,7 @@ function eventCard(e){
   const media=e.image_url?`<img class="evposter" src="${esc(e.image_url)}" alt="" loading="lazy"/>`:'';
   const vid=e.video_url?`<video class="evvideo" src="${esc(e.video_url)}" controls preload="metadata" playsinline></video>`:'';
   const cal=(!past&&e.date)?`<button class="chip" onclick="event.stopPropagation();addToCalendar('${e.id}')">${tr('addCal')}</button>`:'';
-  return `<div class="ev">${media}<div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>${vid}
+  return `<div class="ev" style="${delay}">${media}<div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>${vid}
     <div class="row">${fav}${book}${cal}</div>${form}</div>`;
 }
 // календарен native плъгин (в приложението)
@@ -480,7 +516,7 @@ function toggleTableOpt(id){
 }
 function events(){
   const mine=EVENTS.filter(canAccess);
-  const list=eventsHtml(mine,tr('noEvents'));
+  const list=(!dataReady&&!mine.length)?skel(4):eventsHtml(mine,tr('noEvents'));
   return topbar(tr('events'))+`<div class="page"><p style="color:var(--mid);font-size:14px;margin-bottom:14px;">${tr('program')}</p>${list}</div>`;
 }
 function setPreview(id){previewAs=id||null;route();}
@@ -512,6 +548,8 @@ async function confirmBook(id){
   }
   const f=document.getElementById('bk_'+id); if(f)f.classList.remove('open');
   try{RES=await DB.listReservations();}catch(err){}
+  justBooked=id;setTimeout(()=>{justBooked=null;},800);
+  hap('success');
   toast(wantTable?(lang==='bg'?'Билетът и масата са заявени':'Ticket and table requested'):tr('ticketToast'));route();
 }
 function streamEmbed(u){
@@ -559,6 +597,7 @@ async function toggleSave(id){
   const ev=EVENTS.find(e=>e.id===id);
   if(ev&&!canAccess(ev)){toast(tr('tierLocked'));return;}
   const now=await DB.toggleSaved(id);
+  hap('select');
   if(now)toast(tr('savedToast'));
   saved=await DB.listSaved();route();
 }
@@ -665,6 +704,7 @@ async function sendRes(seats){
   if(!phone){toast(tr('reqPhone'));return;}
   if(!note){toast(tr('reqNote'));return;}
   await DB.addReservation({fmt:venue,place:venueLabel(venue),date:rdate,time:rtime,party:n,note,res_name:name,email,phone});
+  hap('success');
   toast(tr('resToast'));setTimeout(()=>go('profile'),700);
 }
 // ---------- Биометрия (Face ID / отпечатък) през Capacitor native plugin ----------
@@ -746,6 +786,7 @@ async function doAuth(){
   // запазваме данните за Face ID/отпечатък (само на телефона, в защитения Keychain)
   if(DB.live){const _e=(document.getElementById('l_email')?.value||'').trim();const _p=document.getElementById('l_pass')?.value||'';if(_e&&_p)saveBioCreds(_e,_p);}
   saved=await DB.listSaved();EVENTS=await DB.listEvents();
+  hap('success');
   toast(tr('loginToast'));location.hash='';route();
 }
 async function doForgot(){
@@ -956,7 +997,7 @@ function tabbar(active){
   const n=appBadge();
   const nb=n?`<span class="nb">${n}</span>`:'';
   const items=[['','home',tr('home'),''],['events','events',tr('events'),''],['live','live',tr('live'),''],['reserve','reserve',tr('reserve'),''],[user?'profile':'login','profile',user?tr('profile'):tr('signin'),nb]];
-  document.getElementById('tabbar').innerHTML=items.map(i=>`<a onclick="go('${i[0]}')" class="${active===(i[0]||'home')?'active':''}"><span class="ti">${ICN[i[1]]}${i[3]||''}</span>${i[2]}</a>`).join('');
+  document.getElementById('tabbar').innerHTML=items.map(i=>`<a onclick="hap('select');go('${i[0]}')" class="${active===(i[0]||'home')?'active':''}"><span class="ti">${ICN[i[1]]}${i[3]||''}</span>${i[2]}</a>`).join('');
 }
 function renderPath(path,q,parts){
   let html,active='home';
@@ -969,10 +1010,13 @@ function renderPath(path,q,parts){
   else if(path==='profile'){html=profile();active='profile';}
   else{html=home();}
   app.innerHTML=html;
+  // лек преход при смяна на екран
+  app.classList.remove('nav');void app.offsetWidth;app.classList.add('nav');
   if(path==='profile')markResSeen();
   tabbar(active);
 }
-let dataSig='';
+let dataSig='',dataReady=false;
+const skel=n=>('<div class="skel"></div>').repeat(n);
 async function route(){
   const tb=document.getElementById('tabbar');
   if(!user){
@@ -992,9 +1036,9 @@ async function route(){
     try{
       const [ev,sv,rs]=await Promise.all([DB.listEvents(),DB.listSaved(),DB.listReservations()]);
       const sig=JSON.stringify([ev,sv,rs]);
-      EVENTS=ev;saved=sv;RES=rs;
+      EVENTS=ev;saved=sv;RES=rs;const wasReady=dataReady;dataReady=true;
       const cur=location.hash.replace(/^#/,'').split('?')[0];
-      if(cur===path&&sig!==dataSig){dataSig=sig;renderPath(path,q,parts);}
+      if(cur===path&&(sig!==dataSig||!wasReady)){dataSig=sig;renderPath(path,q,parts);}
     }catch(e){}
   }
 }
@@ -1007,7 +1051,7 @@ window.addEventListener('scroll',()=>{
   if(!tb||tb.style.display==='none')return;
   tb.classList.add('mini');
   clearTimeout(tbTimer);
-  tbTimer=setTimeout(()=>tb.classList.remove('mini'),280);
+  tbTimer=setTimeout(()=>tb.classList.remove('mini'),130);
 },{passive:true});
 // жест: плъзване от левия ръб надясно → назад
 let swX=null,swY=null;
@@ -1039,10 +1083,10 @@ async function promptInitialPassword(){
 }
 DB.onRecovery(promptInitialPassword);
 (async function(){
-  try{ user=await DB.getUser(); if(user){saved=await DB.listSaved();EVENTS=await DB.listEvents();} }catch(e){}
+  try{ user=await DB.getUser(); }catch(e){}
   // дошъл от имейл-покана → задава си парола веднага (с потвърждение)
   if(user&&(DB.urlType==='invite'||DB.urlType==='recovery')) await promptInitialPassword();
-  route();
+  route(); // рисува веднага (skeleton при нужда), данните идват на фон
   // ако сесията е изтекла, но има запазени данни → предлагаме Face ID веднага
   if(!user&&bioEnabled()){setTimeout(bioLogin,400);}
   // известие в приложението при одобрена/отказана резервация (вижда се, докато не се отвори профилът)

@@ -97,6 +97,18 @@ function render(){
   else h+=membersView();
   h+=`</div>`;
   root.innerHTML=h;
+  if(tab==='stats')setTimeout(animateCounts,30);
+}
+function animateCounts(){
+  document.querySelectorAll('.countup').forEach(el=>{
+    const to=parseInt(el.dataset.to||'0',10);
+    if(!to){el.textContent='0';return;}
+    const dur=700,start=performance.now();
+    const step=now=>{const p=Math.min(1,(now-start)/dur);
+      el.textContent=Math.round(to*(1-Math.pow(1-p,3)));
+      if(p<1)requestAnimationFrame(step);};
+    requestAnimationFrame(step);
+  });
 }
 async function setTab(t){tab=t;editId=null;await refresh();render();}
 
@@ -441,7 +453,7 @@ function statsView(){
   RES.forEach(r=>{const f=r.fmt||'—';byFmt[f]=(byFmt[f]||0)+1;});
   const fmtRows=Object.entries(byFmt).sort((a,b)=>b[1]-a[1]).map(([f,n])=>`<tr><td>${esc(f)}</td><td style="text-align:right;">${n}</td></tr>`).join('')||'<tr><td class="muted">—</td><td></td></tr>';
   const stat=(label,val,col)=>`<div class="card" style="flex:1;min-width:120px;text-align:center;padding:16px;">
-    <div style="font-size:26px;color:${col||'var(--text)'};">${val}</div><div class="muted" style="font-size:12px;margin-top:2px;">${label}</div></div>`;
+    <div class="countup" data-to="${val}" style="font-size:26px;color:${col||'var(--text)'};">0</div><div class="muted" style="font-size:12px;margin-top:2px;">${label}</div></div>`;
   return `<h2>Статистика</h2>
     <div style="display:flex;flex-wrap:wrap;gap:10px;">
       ${stat('Събития общо',EVENTS.length)}
