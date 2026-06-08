@@ -557,13 +557,13 @@ async function confirmBook(id){
   // само една активна заявка на член за събитие
   try{RES=await DB.listReservations();}catch(err){}
   if(hasBooking(id)){toast(tr('alreadyBooked'));route();return;}
-  const r=await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:e.time,party:n,note:'Билет / ticket',res_name:bname,email:user.email,phone:''});
+  const r=await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:e.time,party:n,note:'Билет / ticket',res_name:bname,email:user.email,phone:user.phone||''});
   if(r&&r.error){toast(/duplicate|unique/i.test(r.error.message)?tr('alreadyBooked'):r.error.message);return;}
   if(wantTable){
     await DB.addReservation({fmt:'restaurant',place:venueLabel('restaurant'),date:e.date,time:e.ends||e.time,party:tp>0?tp:2,
       table_event_id:e.id,
       note:(lang==='bg'?'Маса след събитие: ':'Table after event: ')+e.title,
-      res_name:bname,email:user.email,phone:''});
+      res_name:bname,email:user.email,phone:user.phone||''});
   }
   const f=document.getElementById('bk_'+id); if(f)f.classList.remove('open');
   try{RES=await DB.listReservations();}catch(err){}
