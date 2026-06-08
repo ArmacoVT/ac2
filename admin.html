@@ -513,6 +513,8 @@ function peopleView(){
     const exp=p.membership_until&&p.membership_until<today;
     const until=p.membership_until?`Членство до ${isoToBg(p.membership_until)}${exp?' · <span style="color:#b5532f;">изтекло</span>':''}`:'Без зададен срок';
     const fid='rnf_'+p.id;
+    const mid='mch_'+p.id;
+    const memOpts=MEMBERS.concat([{id:'guest',t:'Guest'}]).map(m=>`<option value="${m.id}" ${p.membership===m.id?'selected':''}>${m.t}</option>`).join('');
     return `<div class="card" style="margin-top:8px;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
         <div><b>${esc(nm)}</b>${p.role==='admin'?' <span class="pill" style="border-color:var(--gold);color:var(--gold);">админ</span>':''}
@@ -522,6 +524,10 @@ function peopleView(){
       <div class="row2" style="margin-top:10px;align-items:center;">
         <div><input id="${fid}" readonly placeholder="удължи от дата (по подразб. днес)" data-iso="" onclick="openCal('${fid}')" style="cursor:pointer;"/></div>
         <div><button class="btn sm" onclick="renewPerson('${esc(p.email)}','${fid}')">Поднови с 1 година</button></div>
+      </div>
+      <div class="row2" style="margin-top:8px;align-items:center;">
+        <div><label style="margin-bottom:4px;">Членство</label><select id="${mid}">${memOpts}</select></div>
+        <div><button class="btn ghost sm" onclick="changeMembership('${esc(p.email)}','${p.id}')">Промени членството</button></div>
       </div></div>`;
   };
   let html='<h2>Членове</h2>';
@@ -548,6 +554,16 @@ async function renewPerson(email,fieldId){
   const {error,until}=await DB.renewMembership(email,from);
   if(error){alert('Грешка: '+error.message);return;}
   toast('Членството е подновено до '+(until?isoToBg(until):'—'));
+  PEOPLE=await DB.listMembers();render();
+}
+async function changeMembership(email,id){
+  const sel=document.getElementById('mch_'+id); if(!sel)return;
+  const m=sel.value;
+  const label=(MEMBERS.find(x=>x.id===m)||{t:m}).t;
+  if(!confirm('Да сменя ли членството на '+email+' на „'+label+'"?'))return;
+  const {error}=await DB.setMembership(email,m);
+  if(error){alert('Грешка: '+error.message);return;}
+  toast('Членството е променено на '+label);
   PEOPLE=await DB.listMembers();render();
 }
 function membersView(){
