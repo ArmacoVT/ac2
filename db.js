@@ -48,8 +48,10 @@
       try { const r = await sb.from('profiles').select('*').eq('id', s.user.id).single(); prof = r.data; } catch (e) {}
       return { id: s.user.id, email: s.user.email, username: prof ? prof.username : s.user.email,
         full_name: prof ? (prof.full_name || '') : '',
+        phone: prof ? (prof.phone || '') : '',
         fav_formats: prof && Array.isArray(prof.fav_formats) ? prof.fav_formats : [],
         membership_until: prof ? (prof.membership_until || '') : '',
+        company_id: prof ? (prof.company_id || '') : '',
         membership: prof ? prof.membership : 'guest', role: prof ? prof.role : 'member' };
     },
     async updateFavFormats(list) {
@@ -65,6 +67,14 @@
       const { data } = await sb.auth.getSession();
       const s = data.session; if (!s) return { error: { message: 'no session' } };
       const { error } = await sb.from('profiles').update({ full_name: (name || '').trim() }).eq('id', s.user.id);
+      return { error };
+    },
+    // запазване на телефон за контакт
+    async updateProfilePhone(phone) {
+      if (!LIVE) { const u = jget(K.user, null) || {}; u.phone = phone; jset(K.user, u); return { error: null }; }
+      const { data } = await sb.auth.getSession();
+      const s = data.session; if (!s) return { error: { message: 'no session' } };
+      const { error } = await sb.from('profiles').update({ phone: (phone || '').trim() }).eq('id', s.user.id);
       return { error };
     },
     // качване на снимка/видео за събитие в Supabase Storage (bucket: event-media)

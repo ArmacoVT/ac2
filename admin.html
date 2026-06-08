@@ -583,7 +583,7 @@ function peopleView(){
     return `<div class="card" style="margin-top:8px;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
         <div><b>${esc(nm)}</b>${p.role==='admin'?' <span class="pill" style="border-color:var(--gold);color:var(--gold);">админ</span>':''} ${companyTag}
-          <div class="muted" style="margin-top:2px;">${esc(p.email)}</div>
+          <div class="muted" style="margin-top:2px;">${esc(p.email)}${p.phone?' · '+esc(p.phone):' · <span style="color:#bf8a2e;">без телефон</span>'}</div>
           <div class="muted" style="margin-top:3px;color:${exp?'#b5532f':'var(--mid)'};">${until}</div></div>
       </div>
       <div class="row2" style="margin-top:10px;align-items:center;">
