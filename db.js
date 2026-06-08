@@ -245,6 +245,26 @@
       if (data && data.error) return { error: { message: data.error } };
       return { error: null, membership: data && data.membership };
     },
+    // ---------- ФИРМЕНИ ПРОФИЛИ (корпоративно членство) ----------
+    async companyMembers() {
+      if (!LIVE) return { members: [], max: 5 };
+      const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'company_members' } });
+      if (error || !data || data.error) return { members: [], max: 5 };
+      return { members: data.members || [], max: data.max || 5 };
+    },
+    async companyInvite(email, username) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await sb.functions.invoke('invite-member',
+        { body: { action: 'company_invite', email: (email || '').trim(), username: (username || '').trim() } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null };
+    },
+
     // ---------- КАНДИДАТУРИ / ПРЕДЛОЖЕНИЯ ----------
     async submitApplication(o) {
       if (!LIVE) return { error: { message: 'demo' } };

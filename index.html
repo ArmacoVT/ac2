@@ -692,6 +692,34 @@ async function submitApp(nominate){
   toast(lang==='bg'?'Благодарим! Кандидатурата е изпратена.':'Thank you! Your application was sent.');
   setTimeout(()=>{location.hash='';route();},900);
 }
+// фирмени профили (корпоративно членство)
+let COMPANY=null;
+function companyView(){
+  const bg=lang==='bg';
+  const t=bg?'Фирмени профили':'Company profiles';
+  if(COMPANY===null)return topbar(t)+`<div class="page"><p style="color:var(--muted);">${bg?'Зареждане…':'Loading…'}</p></div>`;
+  const members=COMPANY.members||[],max=COMPANY.max||5;
+  const rows=members.map(m=>`<div class="ev" style="margin-bottom:8px;"><h3 style="font-size:15px;">${esc(m.name||m.email)}${m.owner?` <span style="color:var(--gold);font-size:11px;">(${bg?'основен':'main'})</span>`:''}</h3><div class="m">${esc(m.email)}</div></div>`).join('');
+  const canAdd=members.length<max;
+  const addBox=canAdd?`<label>${bg?'Имейл на новия профил':'New profile email'}</label><input id="co_email" type="email" autocapitalize="none"/>
+      <label>${bg?'Име (по желание)':'Name (optional)'}</label><input id="co_name"/>
+      <button class="btn" style="margin-top:12px;" onclick="addCompanyMember()">${bg?'Покани профил':'Invite profile'}</button>`
+    :`<p style="color:var(--muted);font-style:italic;">${bg?'Достигнат е лимитът от 5 профила.':'Reached the limit of 5 profiles.'}</p>`;
+  return topbar(t)+`<div class="page">
+    <p style="color:var(--mid);font-size:14px;margin-bottom:12px;">${bg?'До 5 профила към фирменото членство':'Up to 5 profiles per company membership'} (${members.length}/${max}).</p>
+    ${rows}
+    <div class="sec-title" style="padding:18px 0 8px;">${bg?'Добави профил':'Add profile'}</div>
+    ${addBox}<div style="height:30px;"></div></div>`;
+}
+async function addCompanyMember(){
+  const email=(document.getElementById('co_email')?.value||'').trim();
+  const name=(document.getElementById('co_name')?.value||'').trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast(lang==='bg'?'Въведете валиден имейл':'Enter a valid email');return;}
+  const r=await DB.companyInvite(email,name);
+  if(r&&r.error){toast(r.error.message);return;}
+  hap('success');toast(lang==='bg'?'Поканата е изпратена':'Invitation sent');
+  COMPANY=await DB.companyMembers();route();
+}
 function reserve(q){
   if(user&&!membershipActive())return topbar(tr('reserve'))+`<div class="page"><div class="ev" style="border:1px solid #b5532f;"><h3 style="font-size:15px;color:#b5532f;">${tr('memberExpiredTitle')}</h3><div class="m" style="color:#b5532f;margin-top:3px;">${tr('memberExpiredMsg')}</div></div></div>`;
   const preV=new URLSearchParams(q).get('v')||'';
@@ -935,6 +963,9 @@ function profile(){
     ${active?`<div class="ev" onclick="go('nominate')" style="margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><h3 style="font-size:15px;">${lang==='bg'?'Предложи член':'Propose a member'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Препоръчай човек или фирма':'Recommend a person or company'}</div></div>
       <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
+    ${(active&&user.membership==='corporate')?`<div class="ev" onclick="go('company')" style="margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+      <div><h3 style="font-size:15px;">${lang==='bg'?'Фирмени профили':'Company profiles'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'До 5 профила към членството':'Up to 5 profiles'}</div></div>
+      <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
     <div class="sec-title" style="padding:24px 0 8px;">${tr('myEvents')}</div>
     ${sev.length?sev.map(e=>`<div class="ev" style="margin-bottom:8px;cursor:pointer;" onclick="go('format/${e.format}')"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m">${evMeta(e)}</div></div>`).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noEvents')}</p>`}
     <div class="sec-title" style="padding:22px 0 8px;">${tr('myRes')}</div>
@@ -1098,6 +1129,7 @@ function renderPath(path,q,parts){
   else if(path==='membership'){html=membership();active='membership';}
   else if(path==='profile'){html=profile();active='profile';}
   else if(path==='nominate'){html=appForm('nominate');active='profile';}
+  else if(path==='company'){html=companyView();active='profile';}
   else{html=home();}
   app.innerHTML=html;
   // лек преход при смяна на екран
@@ -1121,8 +1153,14 @@ async function route(){
   if(path!=='events')previewAs=null;
   const parts=path.split('/');
   // 1) Рисуваме веднага с наличните данни (без чакане → без забавяне)
+  if(path==='company')COMPANY=null;
   renderPath(path,q,parts);
   window.scrollTo(0,0);
+  // фирмени профили — зареждаме във фон
+  if(path==='company'&&user&&user.membership==='corporate'){
+    try{COMPANY=await DB.companyMembers();}catch(e){COMPANY={members:[],max:5};}
+    if((location.hash.replace(/^#/,'').split('?')[0])==='company')renderPath(path,q,parts);
+  }
   // 2) Във фон опресняваме (паралелно) и пре-рисуваме само ако нещо се е променило
   const needsData=['','home','events','profile','live'].includes(path)||parts[0]==='format';
   if(needsData){
