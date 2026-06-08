@@ -215,7 +215,7 @@ const T={
     newPassTitle:'Нова парола',passConfirm:'Потвърди паролата',passMismatch:'Паролите не съвпадат',pwSave:'Запази',cancelBtn:'Отказ',
     setPassTitle:'Задай своята парола',passSet:'Паролата е създадена успешно. Добре дошъл!',
     currentPass:'Текуща парола',wrongCurrent:'Грешна текуща парола',checking:'Проверка…',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими',
-    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души',pastRes:'Изминали',noUpcomingRes:'Няма предстоящи резервации.',yourName:'Вашето име',editName:'Редактирай име',nameSaved:'Името е запазено',bookingName:'На кое име',bioLogin:'Влез с Face ID / отпечатък',bioReason:'Влизане в Arcus Club',bioNone:'Първо влез с парола веднъж'},
+    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души',pastRes:'Изминали',noUpcomingRes:'Няма предстоящи резервации.',yourName:'Вашето име',editName:'Редактирай име',nameSaved:'Името е запазено',bookingName:'На кое име',bioLogin:'Влез с Face ID / отпечатък',bioReason:'Влизане в Arcus Club',bioNone:'Първо влез с парола веднъж',pastEvents:'Изминали събития'},
   en:{home:'Home',events:'Events',reserve:'Reserve',membership:'Membership',signin:'Sign in',profile:'Profile',
     formats:'Formats',formatsSub:'The seven formats of the club. Tap a card.',quick:'Quick actions',
     includes:'What it includes',enquiry:'Enquiry / reservation',seeEvents:'See events',
@@ -232,7 +232,7 @@ const T={
     newPassTitle:'New password',passConfirm:'Confirm password',passMismatch:'Passwords do not match',pwSave:'Save',cancelBtn:'Cancel',
     setPassTitle:'Set your password',passSet:'Password created successfully. Welcome!',
     currentPass:'Current password',wrongCurrent:'Wrong current password',checking:'Checking…',inviteOnly:'Access is by club invitation only.',demoOnlyLive:'Available after Supabase is connected',ticket:'Reserve a ticket',tableSuggest:'Reserve a table at AC² Table',afterEvent:'After the event',ticketToast:'Request sent',fav:'Favorites',
-    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion',alreadyBooked:'You already have a request for this event',booked:'Ticket requested',addTable:'Also reserve a table after the event',tableParty:'Table for how many',pastRes:'Past',noUpcomingRes:'No upcoming reservations.',yourName:'Your name',editName:'Edit name',nameSaved:'Name saved',bookingName:'Name for the booking',bioLogin:'Sign in with Face ID / fingerprint',bioReason:'Sign in to Arcus Club',bioNone:'Sign in with your password once first'}
+    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion',alreadyBooked:'You already have a request for this event',booked:'Ticket requested',addTable:'Also reserve a table after the event',tableParty:'Table for how many',pastRes:'Past',noUpcomingRes:'No upcoming reservations.',yourName:'Your name',editName:'Edit name',nameSaved:'Name saved',bookingName:'Name for the booking',bioLogin:'Sign in with Face ID / fingerprint',bioReason:'Sign in to Arcus Club',bioNone:'Sign in with your password once first',pastEvents:'Past events'}
 };
 const FORMATS=[
  {id:'culture',t:'AC² Culture',c:'#6b3a5b',img:'cards/logo-culture.webp',b:{bg:['музика','изложби','литература','камерни театрални формати','срещи с артисти и лектори'],en:['music','exhibitions','literature','chamber theatre formats','meetings with artists and lecturers']}},
@@ -328,7 +328,7 @@ function home(){
     theater:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 24 c14 -4 22 2 22 16 c0 14 -8 22 -16 22 c-9 0 -14 -10 -14 -24 c0 -8 2 -12 8 -14 Z"/><path d="M24 38 q3 -3 6 0 M30 50 q-4 4 -9 1"/><path d="M62 24 c-14 -4 -22 2 -22 16 c0 14 8 22 16 22 c9 0 14 -10 14 -24 c0 -8 -2 -12 -8 -14 Z"/><path d="M56 38 q-3 -3 -6 0 M50 52 q4 4 9 1"/></g></svg>`
   };
   let cards=FORMATS.map(f=>{
-    const n=EVENTS.filter(e=>e.format===f.id&&canAccess(e)).length;
+    const n=EVENTS.filter(e=>e.format===f.id&&canAccess(e)&&!isPast(e)).length;
     const badge=n?`<div class="evbadge"><span class="evdot" style="background:${f.c}"></span>${n} ${n===1?(lang==='bg'?'събитие':'event'):(lang==='bg'?'събития':'events')}</div>`:'';
     return `<div class="fcard" onclick="go('format/${f.id}')">
     <div class="top"><div class="well" style="color:${f.c}">${MOTIF[f.id]||''}</div><div class="ac2" style="color:${f.c}">AC²</div></div>
@@ -356,7 +356,7 @@ function formatPage(id){
   const f=FORMATS.find(x=>x.id===id); if(!f)return home();
   let bul=tx(f.b).map(b=>`<div class="bul"><span class="d">◆</span><span class="x">${b}</span></div>`).join('');
   const fevents=EVENTS.filter(e=>e.format===f.id&&canAccess(e));
-  const prog=fevents.length?fevents.map(eventCard).join(''):`<p style="color:var(--muted);font-style:italic;">${lang==='bg'?'Все още няма обявени събития.':'No events announced yet.'}</p>`;
+  const prog=eventsHtml(fevents,lang==='bg'?'Все още няма обявени събития.':'No events announced yet.');
   return topbar(f.t)+`<div class="page">
     <div class="fbanner" style="border-color:${f.c}33"><img src="illustrations/fmt-${f.id}.svg" alt=""/><h2 style="color:${f.c}">${f.t}</h2></div>
     <div class="sec-title" style="padding:18px 4px 6px;">${tr('includes')}</div>${bul}
@@ -365,19 +365,36 @@ function formatPage(id){
 }
 // има ли вече активна заявка (чакаща или одобрена) за това събитие
 const hasBooking=id=>RES.some(r=>r.event_id===id&&(!r.status||r.status==='requested'||r.status==='confirmed'));
+// минало ли е събитието (по крайна дата, ако има, иначе по началната)
+function todayISO(){const t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');}
+const evEnd=e=>e.end_date||e.date||'';
+const isPast=e=>{const d=evEnd(e);return d&&d<todayISO();};
+// разделяне на предстоящи/изминали + сгъваема секция за изминалите
+function eventsHtml(list,emptyMsg){
+  const up=list.filter(e=>!isPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1));
+  const past=list.filter(isPast).sort((a,b)=>(a.date<b.date?1:-1));
+  let h=up.length?up.map(eventCard).join(''):`<p style="color:var(--muted);font-style:italic;">${emptyMsg}</p>`;
+  if(past.length){
+    h+=`<button class="btn btn-ghost" style="margin-top:10px;" onclick="togglePastEv(this)">${tr('pastEvents')} (${past.length}) ▾</button>
+      <div id="pastev" style="display:none;margin-top:10px;">${past.map(eventCard).join('')}</div>`;
+  }
+  return h;
+}
+function togglePastEv(btn){const d=document.getElementById('pastev');if(!d)return;const open=d.style.display!=='none';d.style.display=open?'none':'block';if(btn)btn.innerHTML=btn.innerHTML.replace(open?'▴':'▾',open?'▾':'▴');}
 function eventCard(e){
   const on=saved.includes(e.id);
   const fav=`<button class="chip ${on?'on':''}" onclick="event.stopPropagation();toggleSave('${e.id}')">${on?'♥':'♡'} ${tr('fav')}</button>`;
+  const past=isPast(e);
   const booked=user&&hasBooking(e.id);
-  const book=booked?`<button class="chip on" onclick="event.stopPropagation();toast(tr('alreadyBooked'))">✓ ${tr('booked')}</button>`
-    :`<button class="chip" onclick="event.stopPropagation();toggleBook('${e.id}')">${tr('ticket')}</button>`;
+  const book=past?'':(booked?`<button class="chip on" onclick="event.stopPropagation();toast(tr('alreadyBooked'))">✓ ${tr('booked')}</button>`
+    :`<button class="chip" onclick="event.stopPropagation();toggleBook('${e.id}')">${tr('ticket')}</button>`);
   const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):1;
   const tableOpt=endsEarly(e)?`<div class="tableopt">
       <label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" id="tb_${e.id}" onchange="toggleTableOpt('${e.id}')"/>
         <span>${tr('addTable')} <small>· ${tr('afterEvent')} · ${e.ends}</small></span></label>
       <div class="tablebox" id="tbx_${e.id}"><label>${tr('tableParty')}</label>
         <input id="tbp_${e.id}" type="number" min="1" value="2"/></div></div>`:'';
-  const form=booked?'':`<div class="bookform" id="bk_${e.id}">
+  const form=(booked||past)?'':`<div class="bookform" id="bk_${e.id}">
     <label>${tr('bookingName')}</label>
     <input id="bn_${e.id}" type="text" value="${user?esc(user.full_name||user.username||''):''}"/>
     <label>${tr('party')}</label>
@@ -395,7 +412,7 @@ function toggleTableOpt(id){
 }
 function events(){
   const mine=EVENTS.filter(canAccess);
-  const list=mine.length?mine.map(eventCard).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noEvents')}</p>`;
+  const list=eventsHtml(mine,tr('noEvents'));
   return topbar(tr('events'))+`<div class="page"><p style="color:var(--mid);font-size:14px;margin-bottom:14px;">${tr('program')}</p>${list}</div>`;
 }
 function setPreview(id){previewAs=id||null;route();}
