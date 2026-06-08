@@ -584,7 +584,18 @@ async function sendRes(seats){
 }
 // ---------- Биометрия (Face ID / отпечатък) през Capacitor native plugin ----------
 const BIO_SERVER='arcusclub';
-function NB(){try{const C=window.Capacitor;return (C&&C.isNativePlatform&&C.isNativePlatform()&&C.Plugins&&C.Plugins.NativeBiometric)||null;}catch(e){return null;}}
+let _nbCache;
+function NB(){
+  try{
+    const C=window.Capacitor;
+    if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return null;
+    if(_nbCache!==undefined)return _nbCache;
+    if(C.Plugins&&C.Plugins.NativeBiometric)_nbCache=C.Plugins.NativeBiometric;
+    else if(C.registerPlugin)_nbCache=C.registerPlugin('NativeBiometric'); // надежден начин при отдалечен сайт
+    else _nbCache=null;
+    return _nbCache;
+  }catch(e){return null;}
+}
 function bioEnabled(){return !!(NB()&&localStorage.getItem('acac_bio'));}
 async function saveBioCreds(email,pass){const b=NB();if(!b)return;try{const a=await b.isAvailable();if(!a||!a.isAvailable)return;await b.setCredentials({username:email,password:pass,server:BIO_SERVER});localStorage.setItem('acac_bio','1');}catch(e){}}
 async function bioLogin(){
