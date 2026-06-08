@@ -116,9 +116,13 @@ function animateCounts(){
     requestAnimationFrame(step);
   });
 }
-let PEOPLE=null,APPS=null;
+let PEOPLE=null,APPS=null,PHONES=null;
+async function loadPhones(){
+  try{const list=await DB.listMembers();const m={};list.forEach(p=>{if(p.email)m[p.email.toLowerCase()]=p.phone||'';m[p.id]=p.phone||'';});PHONES=m;}catch(e){PHONES={};}
+}
 async function setTab(t){tab=t;editId=null;await refresh();render();
   if(t==='people'){PEOPLE=null;render();PEOPLE=await DB.listMembers();render();}
+  if((t==='res'||t==='events')&&!PHONES){await loadPhones();render();}
 }
 
 function audLabel(aud){
@@ -155,7 +159,8 @@ function eventResList(e){
   const row=(r,isTable)=>{
     const st=r.status||'requested';
     const nm=r.name||r.who||'член';
-    const contact=[r.email,r.phone].filter(Boolean).map(esc).join(' · ');
+    const ph=r.phone||(PHONES&&(PHONES[(r.email||'').toLowerCase()]||PHONES[r.user_id]))||'';
+    const contact=[r.email,ph].filter(Boolean).map(esc).join(' · ');
     return `<div style="padding:8px 0;border-top:1px solid var(--line-soft);">
       <div><b>${esc(nm)}</b> · ${r.party||1} ${isTable?'на маса':'места'}${isTable?' 🍽':''}
         <span style="color:${stCol[st]||'var(--muted)'};font-size:12px;"> · ${stTxt[st]||'чакаща'}</span></div>
@@ -415,7 +420,8 @@ function resView(){
     const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null;
     const cap=ev&&ev.capacity?` ${seatsInfo(ev)}`:'';
     const nm=r.name||r.who||'член';
-    const contact=[r.email,r.phone].filter(Boolean).map(esc).join(' · ');
+    const ph=r.phone||(PHONES&&(PHONES[(r.email||'').toLowerCase()]||PHONES[r.user_id]))||'';
+    const contact=[r.email,ph].filter(Boolean).map(esc).join(' · ');
     const acts=st==='requested'
       ? `<button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Потвърди</button>
          <button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button>

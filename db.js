@@ -163,7 +163,7 @@
     async listReservations() {
       if (!LIVE) return jget(K.res, []);
       const { data } = await sb.from('reservations').select('*').order('created_at', { ascending: false });
-      return (data || []).map(r => ({ id: r.id, event_id: r.event_id || null, table_event_id: r.table_event_id || null,
+      return (data || []).map(r => ({ id: r.id, user_id: r.user_id || null, event_id: r.event_id || null, table_event_id: r.table_event_id || null,
         who: r.who || '', membership: r.membership || '', fmt: r.format,
         place: r.place, date: r.date, time: r.time, party: r.party_size, note: r.note, status: r.status,
         name: r.res_name || '', email: r.contact_email || '', phone: r.contact_phone || '' }));
