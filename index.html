@@ -438,12 +438,38 @@ async function addToCalendar(id){
       return;
     }catch(err){/* пада към уеб варианта */}
   }
-  // 2) Браузър: отваря Google Calendar с готово събитие
-  const pad=n=>String(n).padStart(2,'0');
-  const g=(ms)=>{const d=new Date(ms);return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'T'+pad(d.getHours())+pad(d.getMinutes())+'00';};
-  const p=new URLSearchParams({action:'TEMPLATE',text:e.title||'',dates:g(start)+'/'+g(end),location:e.place||'',details:'American College Arcus Club'});
-  window.open('https://calendar.google.com/calendar/render?'+p.toString(),'_blank');
+  // 2) Браузър: меню за избор на календар
+  calMenu(e,start,end);
 }
+function calMenu(e,start,end){
+  const pad=n=>String(n).padStart(2,'0');
+  const gfmt=ms=>{const d=new Date(ms);return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'T'+pad(d.getHours())+pad(d.getMinutes())+'00';};
+  const ifmt=ms=>{const d=new Date(ms);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00';};
+  const loc=e.place||'', details='American College Arcus Club', title=e.title||'';
+  const google='https://calendar.google.com/calendar/render?'+new URLSearchParams({action:'TEMPLATE',text:title,dates:gfmt(start)+'/'+gfmt(end),location:loc,details}).toString();
+  const outlook='https://outlook.live.com/calendar/0/deeplink/compose?'+new URLSearchParams({path:'/calendar/action/compose',rru:'addevent',subject:title,startdt:ifmt(start),enddt:ifmt(end),location:loc,body:details}).toString();
+  const openUrl=u=>{closeCalMenu();window.open(u,'_blank','noopener');};
+  const apple=()=>{
+    closeCalMenu();
+    const esc2=s=>(''+(s||'')).replace(/([,;\\])/g,'\\$1').replace(/\n/g,'\\n');
+    const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Arcus Club//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',
+      'UID:'+(e.id||Date.now())+'@arcusclub','DTSTAMP:'+gfmt(Date.now()),'DTSTART:'+gfmt(start),'DTEND:'+gfmt(end),
+      'SUMMARY:'+esc2(title),'LOCATION:'+esc2(loc),'DESCRIPTION:'+esc2(details),'END:VEVENT','END:VCALENDAR'].join('\r\n');
+    const url=URL.createObjectURL(new Blob([ics],{type:'text/calendar;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download=(title||'event').replace(/[^\w]+/g,'_')+'.ics';
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  };
+  window._calApple=apple;window._calG=()=>openUrl(google);window._calO=()=>openUrl(outlook);
+  const ov=document.createElement('div');ov.className='pwov';ov.id='calmenu';
+  ov.innerHTML=`<div class="pwcard"><h3>${lang==='bg'?'Добави в календара':'Add to calendar'}</h3>
+    <button class="btn" onclick="_calG()">Google Calendar</button>
+    <button class="btn" style="margin-top:8px;" onclick="_calO()">Outlook</button>
+    <button class="btn" style="margin-top:8px;" onclick="_calApple()">Apple Calendar</button>
+    <button class="btn btn-ghost" style="margin-top:8px;" onclick="closeCalMenu()">${tr('cancelBtn')}</button></div>`;
+  ov.addEventListener('click',ev=>{if(ev.target===ov)closeCalMenu();});
+  document.body.appendChild(ov);
+}
+function closeCalMenu(){const m=document.getElementById('calmenu');if(m)m.remove();}
 function toggleTableOpt(id){
   const box=document.getElementById('tbx_'+id),ck=document.getElementById('tb_'+id);
   if(box)box.style.display=ck&&ck.checked?'block':'none';

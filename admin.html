@@ -152,7 +152,7 @@ function toggleEvRes(id){
   if(b)b.textContent=b.textContent.replace(open?'▴':'▾',open?'▾':'▴');
 }
 function eventsView(){
-  let list=EVENTS.map(e=>{
+  const evCard=e=>{
     const liveBadge=e.is_live?'<span class="pill" style="border-color:#d98b6e;color:#d98b6e;">● НА ЖИВО</span>':(e.stream_url?'<span class="pill">стрийм готов</span>':'');
     const liveBtn=e.stream_url
       ? (e.is_live?`<button class="btn no sm" onclick="toggleLive('${e.id}',false)">Спри стрийма</button>`
@@ -168,9 +168,19 @@ function eventsView(){
         ${liveBtn}
         <button class="btn ghost sm" onclick="editEvent('${e.id}')">Редактирай</button>
         <button class="btn no sm" onclick="delEvent('${e.id}')">Изтрий</button></div>
-    </div>${eventResList(e)}</div>`;}).join('')||`<p class="empty">Няма събития. Добави първото.</p>`;
+    </div>${eventResList(e)}</div>`;};
+  const today=new Date().toISOString().slice(0,10);
+  const evEnd=e=>e.end_date||e.date||'';
+  const up=EVENTS.filter(e=>!evEnd(e)||evEnd(e)>=today).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1));
+  const past=EVENTS.filter(e=>evEnd(e)&&evEnd(e)<today).sort((a,b)=>(a.date<b.date?1:-1));
+  let list=up.length?up.map(evCard).join(''):`<p class="empty">Няма предстоящи събития.</p>`;
+  if(past.length){
+    list+=`<button class="btn ghost" style="margin-top:10px;" onclick="togglePastAdm(this)">Изминали събития (${past.length}) ▾</button>
+      <div id="pastadm" style="display:none;margin-top:10px;">${past.map(evCard).join('')}</div>`;
+  }
   return `<h2>Събития</h2>${formView()}${list}`;
 }
+function togglePastAdm(btn){const d=document.getElementById('pastadm');if(!d)return;const open=d.style.display!=='none';d.style.display=open?'none':'block';if(btn)btn.textContent=btn.textContent.replace(open?'▴':'▾',open?'▾':'▴');}
 function formView(){
   const e=editId?EVENTS.find(x=>x.id===editId):null;
   const allOn=draftAud.includes('all');
