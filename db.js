@@ -48,7 +48,15 @@
       try { const r = await sb.from('profiles').select('*').eq('id', s.user.id).single(); prof = r.data; } catch (e) {}
       return { id: s.user.id, email: s.user.email, username: prof ? prof.username : s.user.email,
         full_name: prof ? (prof.full_name || '') : '',
+        fav_formats: prof && Array.isArray(prof.fav_formats) ? prof.fav_formats : [],
         membership: prof ? prof.membership : 'guest', role: prof ? prof.role : 'member' };
+    },
+    async updateFavFormats(list) {
+      if (!LIVE) { const u = jget(K.user, null) || {}; u.fav_formats = list; jset(K.user, u); return { error: null }; }
+      const { data } = await sb.auth.getSession();
+      const s = data.session; if (!s) return { error: { message: 'no session' } };
+      const { error } = await sb.from('profiles').update({ fav_formats: list }).eq('id', s.user.id);
+      return { error };
     },
     // запазване на име на потребителя в профила
     async updateProfileName(name) {

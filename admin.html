@@ -89,9 +89,11 @@ function render(){
       <button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>
       <button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации</button>
       <button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>
+      <button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>
     </div>`;
   if(tab==='events')h+=eventsView();
   else if(tab==='res')h+=resView();
+  else if(tab==='stats')h+=statsView();
   else h+=membersView();
   h+=`</div>`;
   root.innerHTML=h;
@@ -408,6 +410,49 @@ async function setRes(id,st){
   await refresh();render();
 }
 
+function statsView(){
+  const today=new Date().toISOString().slice(0,10);
+  const evEnd=e=>e.end_date||e.date||'';
+  const upcoming=EVENTS.filter(e=>!evEnd(e)||evEnd(e)>=today);
+  const past=EVENTS.filter(e=>evEnd(e)&&evEnd(e)<today);
+  const tickets=RES.filter(r=>r.event_id);
+  const tables=RES.filter(r=>r.table_event_id);
+  const cnt=s=>RES.filter(r=>(r.status||'requested')===s).length;
+  const confirmed=cnt('confirmed'),requested=cnt('requested'),declined=cnt('declined');
+  // запълване на предстоящи събития с капацитет
+  const fill=upcoming.filter(e=>e.capacity).map(e=>{
+    const t=seatsTaken(e.id);const pct=Math.min(100,Math.round(t/e.capacity*100));
+    const col=pct>=90?'#b5532f':(pct>=60?'#bf8a2e':'#4f7a43');
+    return `<div style="margin-top:10px;"><div style="display:flex;justify-content:space-between;font-size:13px;"><span>${esc(e.title)}</span><span class="muted">${t}/${e.capacity}</span></div>
+      <div style="height:8px;border-radius:5px;background:var(--surface2);margin-top:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${col};"></div></div></div>`;
+  }).join('')||`<p class="muted" style="margin-top:8px;">Няма предстоящи събития с капацитет.</p>`;
+  // популярни формати по брой резервации
+  const byFmt={};
+  RES.forEach(r=>{const f=r.fmt||'—';byFmt[f]=(byFmt[f]||0)+1;});
+  const fmtRows=Object.entries(byFmt).sort((a,b)=>b[1]-a[1]).map(([f,n])=>`<tr><td>${esc(f)}</td><td style="text-align:right;">${n}</td></tr>`).join('')||'<tr><td class="muted">—</td><td></td></tr>';
+  const stat=(label,val,col)=>`<div class="card" style="flex:1;min-width:120px;text-align:center;padding:16px;">
+    <div style="font-size:26px;color:${col||'var(--text)'};">${val}</div><div class="muted" style="font-size:12px;margin-top:2px;">${label}</div></div>`;
+  return `<h2>Статистика</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      ${stat('Събития общо',EVENTS.length)}
+      ${stat('Предстоящи',upcoming.length,'#4f7a43')}
+      ${stat('Изминали',past.length,'var(--muted)')}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">
+      ${stat('Резервации',RES.length)}
+      ${stat('Чакащи',requested,'#bf8a2e')}
+      ${stat('Одобрени',confirmed,'#4f7a43')}
+      ${stat('Откази',declined,'#b5532f')}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">
+      ${stat('Билети за събития',tickets.length)}
+      ${stat('Маси след събитие',tables.length)}
+    </div>
+    <h3 style="margin-top:22px;">Запълване на предстоящи събития</h3>
+    <div class="card">${fill}</div>
+    <h3 style="margin-top:18px;">Най-търсени места/формати</h3>
+    <div class="card"><table style="width:100%;border-collapse:collapse;">${fmtRows}</table></div>`;
+}
 function membersView(){
   let rows=MEMBERS.map(m=>{
     const cnt=EVENTS.filter(e=>e.aud==='all'||(Array.isArray(e.aud)&&e.aud.includes(m.id))).length;
