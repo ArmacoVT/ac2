@@ -566,16 +566,23 @@ function peopleView(){
   const known=cats.map(c=>c.id);
   const extra=[...new Set(PEOPLE.map(p=>p.membership).filter(m=>!known.includes(m)))];
   extra.forEach(id=>cats.push({id,t:id}));
+  const byId={};PEOPLE.forEach(x=>{byId[x.id]=x;});
   const personRow=p=>{
     const nm=p.full_name||p.username||p.email||'член';
     const exp=p.membership_until&&p.membership_until<today;
     const until=p.membership_until?`Членство до ${isoToBg(p.membership_until)}${exp?' · <span style="color:#b5532f;">изтекло</span>':''}`:'Без зададен срок';
+    // връзка към фирма (корпоративни)
+    let companyTag='';
+    if(p.company_id){
+      if(p.company_id===p.id)companyTag=`<span class="pill" style="border-color:var(--gold);color:var(--gold);">основен фирмен профил</span>`;
+      else{const owner=byId[p.company_id];companyTag=`<span class="pill">профил към ${esc(owner?(owner.full_name||owner.username||owner.email):'фирма')}</span>`;}
+    }
     const fid='rnf_'+p.id;
     const mid='mch_'+p.id;
     const memOpts=MEMBERS.concat([{id:'guest',t:'Guest'}]).map(m=>`<option value="${m.id}" ${p.membership===m.id?'selected':''}>${m.t}</option>`).join('');
     return `<div class="card" style="margin-top:8px;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-        <div><b>${esc(nm)}</b>${p.role==='admin'?' <span class="pill" style="border-color:var(--gold);color:var(--gold);">админ</span>':''}
+        <div><b>${esc(nm)}</b>${p.role==='admin'?' <span class="pill" style="border-color:var(--gold);color:var(--gold);">админ</span>':''} ${companyTag}
           <div class="muted" style="margin-top:2px;">${esc(p.email)}</div>
           <div class="muted" style="margin-top:3px;color:${exp?'#b5532f':'var(--mid)'};">${until}</div></div>
       </div>
@@ -586,7 +593,8 @@ function peopleView(){
       <div class="row2" style="margin-top:8px;align-items:center;">
         <div><label style="margin-bottom:4px;">Членство</label><select id="${mid}">${memOpts}</select></div>
         <div><button class="btn ghost sm" onclick="changeMembership('${esc(p.email)}','${p.id}')">Промени членството</button></div>
-      </div></div>`;
+      </div>
+      ${p.role==='admin'?'':`<button class="btn no sm" style="margin-top:8px;" onclick="deletePerson('${p.id}','${esc(nm)}',${(p.company_id&&p.company_id===p.id)?PEOPLE.filter(x=>x.company_id===p.id&&x.id!==p.id).length:0})">Изтрий члена</button>`}</div>`;
   };
   let html='<h2>Членове</h2>';
   cats.forEach((c,ci)=>{
@@ -612,6 +620,15 @@ async function renewPerson(email,fieldId){
   const {error,until}=await DB.renewMembership(email,from);
   if(error){alert('Грешка: '+error.message);return;}
   toast('Членството е подновено до '+(until?isoToBg(until):'—'));
+  PEOPLE=await DB.listMembers();render();
+}
+async function deletePerson(id,name,subCount){
+  let msg='Да изтрия ли „'+name+'"? Това трие акаунта, резервациите и достъпа му. Действието е необратимо.';
+  if(subCount>0)msg='„'+name+'" е основен фирмен профил. Изтриването ще премахне И '+subCount+' свързани профила (цялата фирма). Сигурни ли сте? Действието е необратимо.';
+  if(!confirm(msg))return;
+  const {error}=await DB.deleteMember(id);
+  if(error){alert('Грешка: '+error.message);return;}
+  toast('Изтрито');
   PEOPLE=await DB.listMembers();render();
 }
 async function changeMembership(email,id){

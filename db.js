@@ -308,6 +308,18 @@
       if (error || !data || data.error) return [];
       return data.members || [];
     },
+    // изтриване на член (само админ)
+    async deleteMember(id) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'delete_user', id } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null };
+    },
     // подновяване на членство (само админ) — удължава с 1 година от дадена дата
     async renewMembership(email, validFrom) {
       if (!LIVE) return { error: { message: 'demo' } };
