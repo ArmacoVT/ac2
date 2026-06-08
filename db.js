@@ -242,6 +242,18 @@
       if (data && data.error) return { error: { message: data.error } };
       return { error: null, password: data && data.password, until: data && data.until };
     },
+    // корекция на телефон на член (само админ)
+    async adminSetPhone(id, phone) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'set_phone', id, phone } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null };
+    },
     // смяна на членска категория (само админ)
     async setMembership(email, membership) {
       if (!LIVE) return { error: { message: 'demo' } };

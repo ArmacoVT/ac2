@@ -643,10 +643,12 @@ function toggleMem(i){const b=document.getElementById('mb'+i),c=document.getElem
   const open=b.style.display==='block';b.style.display=open?'none':'block';c.textContent=open?'+':'−';}
 // кои категории може да предлага даден член (своето ниво и по-надолу; корпоративен само корпоративен)
 function allowedNominateTargets(prop){
-  if(prop==='corporate')return ['corporate'];
+  if(prop==='corporate')return ['corporate']; // корпоративен → само корпоративен
   const rank={founder:4,founding:3,club:2,alumni:1};
   const r=rank[prop]||0;
-  return ['founding','club','alumni'].filter(t=>rank[t]<=r);
+  if(!r)return []; // guest/без членство не предлага
+  // своето ниво и по-надолу сред индивидуалните + винаги може и фирма
+  return ['founding','club','alumni'].filter(t=>rank[t]<=r).concat('corporate');
 }
 // може ли този член изобщо да предлага
 function canNominate(){

@@ -594,6 +594,10 @@ function peopleView(){
         <div><label style="margin-bottom:4px;">Членство</label><select id="${mid}">${memOpts}</select></div>
         <div><button class="btn ghost sm" onclick="changeMembership('${esc(p.email)}','${p.id}')">Промени членството</button></div>
       </div>
+      <div class="row2" style="margin-top:8px;align-items:center;">
+        <div><label style="margin-bottom:4px;">Телефон</label><input id="phf_${p.id}" value="${esc(p.phone||'')}" placeholder="+359 ..."/></div>
+        <div><button class="btn ghost sm" onclick="savePhone('${p.id}')">Запази телефона</button></div>
+      </div>
       ${p.role==='admin'?'':`<button class="btn no sm" style="margin-top:8px;" onclick="deletePerson('${p.id}','${esc(nm)}',${(p.company_id&&p.company_id===p.id)?PEOPLE.filter(x=>x.company_id===p.id&&x.id!==p.id).length:0})">Изтрий члена</button>`}</div>`;
   };
   // за корпоративните: основен профил + вложени под-профили
@@ -655,6 +659,13 @@ async function deletePerson(id,name,subCount){
   const {error}=await DB.deleteMember(id);
   if(error){alert('Грешка: '+error.message);return;}
   toast('Изтрито');
+  PEOPLE=await DB.listMembers();render();
+}
+async function savePhone(id){
+  const f=document.getElementById('phf_'+id);if(!f)return;
+  const {error}=await DB.adminSetPhone(id,f.value.trim());
+  if(error){alert('Грешка: '+error.message);return;}
+  toast('Телефонът е обновен');
   PEOPLE=await DB.listMembers();render();
 }
 async function changeMembership(email,id){
