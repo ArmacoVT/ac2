@@ -658,7 +658,9 @@ function appForm(mode){
     <label>${bg?'Имейл':'Email'} *</label><input id="ap_email" type="email" autocapitalize="none"/>
     <label>${bg?'Телефон':'Phone'} *</label><input id="ap_phone" type="tel" placeholder="+359 ..."/>
     <div id="ap_profBox"><label>${bg?'Професия':'Profession'}</label><input id="ap_prof"/></div>
-    <div id="ap_alumniBox" style="display:none;"><label>${bg?'Връзка с Американски колеж Аркус (кога и какъв допир)':'Connection to American College Arcus (when and how)'}</label><textarea id="ap_alumni" rows="2"></textarea></div>
+    <div id="ap_alumniBox" style="display:none;"><label>${bg?'Връзка с Американски колеж Аркус':'Connection to American College Arcus'}</label>
+      <div class="selrow" id="ap_alumniChips">${(bg?['Родител на настоящ ученик','Родител на възпитаник','Възпитаник','Учител / служител / партньор','Приятел на Arcus общността','Поканен от настоящ член']:['Parent of a current student','Parent of an alumnus','Alumnus','Teacher / staff / partner','Friend of the Arcus community','Invited by a current member']).map(o=>`<button type="button" class="chip" data-v="${o}" onclick="chipToggle(this)">${o}</button>`).join('')}</div>
+      <input id="ap_alumniOther" placeholder="${bg?'Друго (по желание)':'Other (optional)'}"/></div>
     <div id="ap_corpBox" style="display:none;">
       <label>${bg?'БУЛСТАТ / ЕИК':'Company ID (BULSTAT)'}</label><input id="ap_bulstat"/>
       <label>${bg?'Размер на компанията (брой служители)':'Company size (employees)'}</label><input id="ap_size" type="number" min="1"/>
@@ -669,6 +671,7 @@ function appForm(mode){
     <button class="btn" style="margin-top:16px;" onclick="submitApp(${nominate?'true':'false'})">${nominate?(bg?'Изпрати предложение':'Send proposal'):(bg?'Изпрати кандидатура':'Send application')}</button>
     <div style="height:30px;"></div></div>`;
 }
+function chipToggle(el){el.classList.toggle('on');}
 function appToggle(){
   const m=document.getElementById('ap_mem').value;
   const show=(id,on)=>{const el=document.getElementById(id);if(el)el.style.display=on?'block':'none';};
@@ -684,8 +687,14 @@ async function submitApp(nominate){
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast(lang==='bg'?'Въведете валиден имейл':'Enter a valid email');return;}
   if(!phone){toast(lang==='bg'?'Въведете телефон':'Enter a phone');return;}
   if(!about){toast(lang==='bg'?'Опишете мотивацията си':'Describe your motivation');return;}
+  let alumni='';
+  if(m==='alumni'){
+    const parts=[];document.querySelectorAll('#ap_alumniChips .chip.on').forEach(c=>parts.push(c.dataset.v));
+    const other=v('ap_alumniOther'); if(other)parts.push(other);
+    alumni=parts.join(', ');
+  }
   const r=await DB.submitApplication({nominate,membership:m,name,email,phone,about,
-    profession:v('ap_prof'),interests:v('ap_interests'),alumni_relation:v('ap_alumni'),
+    profession:v('ap_prof'),interests:v('ap_interests'),alumni_relation:alumni,
     corp_bulstat:v('ap_bulstat'),corp_size:v('ap_size'),corp_activity:v('ap_activity')});
   if(r&&r.error){toast(r.error.message);return;}
   hap('success');
