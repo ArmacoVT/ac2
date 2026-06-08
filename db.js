@@ -245,6 +245,42 @@
       if (data && data.error) return { error: { message: data.error } };
       return { error: null, membership: data && data.membership };
     },
+    // ---------- КАНДИДАТУРИ / ПРЕДЛОЖЕНИЯ ----------
+    async submitApplication(o) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const ins = {
+        type: o.nominate ? 'nomination' : 'application',
+        kind: o.membership === 'corporate' ? 'corporate' : 'individual',
+        membership: o.membership || null,
+        name: o.name || null, email: (o.email || '').trim() || null, phone: o.phone || null,
+        profession: o.profession || null, interests: o.interests || null, about: o.about || null,
+        alumni_relation: o.alumni_relation || null,
+        corp_bulstat: o.corp_bulstat || null, corp_size: o.corp_size || null, corp_activity: o.corp_activity || null,
+        status: 'new'
+      };
+      if (o.nominate && sb) {
+        try { const { data } = await sb.auth.getSession(); const s = data.session;
+          if (s) { ins.proposer_id = s.user.id; ins.proposer_email = s.user.email; } } catch (e) {}
+      }
+      const { error } = await sb.from('applications').insert(ins);
+      return { error };
+    },
+    async listApplications() {
+      if (!LIVE) return [];
+      const { data } = await sb.from('applications').select('*').order('created_at', { ascending: false });
+      return data || [];
+    },
+    async setApplicationStatus(id, status) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.from('applications').update({ status }).eq('id', id);
+      return { error };
+    },
+    async deleteApplication(id) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.from('applications').delete().eq('id', id);
+      return { error };
+    },
+
     // списък с всички членове (само админ)
     async listMembers() {
       if (!LIVE) return [];

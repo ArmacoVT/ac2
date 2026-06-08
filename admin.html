@@ -89,12 +89,14 @@ function render(){
       <button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>
       <button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации</button>
       <button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>
+      <button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури</button>
       <button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>
       <button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>
     </div>`;
   if(tab==='events')h+=eventsView();
   else if(tab==='res')h+=resView();
   else if(tab==='people')h+=peopleView();
+  else if(tab==='apps')h+=appsView();
   else if(tab==='stats')h+=statsView();
   else h+=membersView();
   h+=`</div>`;
@@ -112,9 +114,10 @@ function animateCounts(){
     requestAnimationFrame(step);
   });
 }
-let PEOPLE=null;
+let PEOPLE=null,APPS=null;
 async function setTab(t){tab=t;editId=null;await refresh();render();
   if(t==='people'){PEOPLE=null;render();PEOPLE=await DB.listMembers();render();}
+  if(t==='apps'){APPS=null;render();APPS=await DB.listApplications();render();}
 }
 
 function audLabel(aud){
@@ -498,6 +501,61 @@ function statsView(){
     <div class="card">${fill}</div>
     <h3 style="margin-top:18px;">Най-търсени места/формати</h3>
     <div class="card"><table style="width:100%;border-collapse:collapse;">${fmtRows}</table></div>`;
+}
+function appsView(){
+  if(APPS===null)return `<h2>Кандидатури</h2><p class="empty">Зареждане…</p>`;
+  if(!APPS.length)return `<h2>Кандидатури</h2><p class="empty">Все още няма кандидатури.</p>`;
+  const memName2=id=>(MEMBERS.find(m=>m.id===id)||{t:id||'—'}).t;
+  const row=a=>{
+    const st=a.status||'new';
+    const badge=st==='approved'?'<span class="pill audAll">одобрена</span>':st==='declined'?'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>':'<span class="pill">нова</span>';
+    const isCorp=a.kind==='corporate'||a.membership==='corporate';
+    const lines=[];
+    lines.push(`${esc(a.email||'')}${a.phone?' · '+esc(a.phone):''}`);
+    if(a.profession)lines.push('Професия: '+esc(a.profession));
+    if(a.interests)lines.push('Интереси: '+esc(a.interests));
+    if(a.alumni_relation)lines.push('Връзка с колежа: '+esc(a.alumni_relation));
+    if(isCorp){const c=[a.corp_bulstat&&('БУЛСТАТ '+a.corp_bulstat),a.corp_size&&(a.corp_size+' служители'),a.corp_activity].filter(Boolean).map(esc).join(' · ');if(c)lines.push(c);}
+    if(a.type==='nomination'&&a.proposer_email)lines.push('Предложен от: '+esc(a.proposer_email));
+    return `<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+      <div><h3>${esc(a.name||'—')} <span class="muted" style="font-weight:400;">· ${esc(memName2(a.membership))}${a.type==='nomination'?' · предложение':''}</span></h3>
+        ${lines.map(l=>`<div class="muted" style="margin-top:3px;">${l}</div>`).join('')}
+        ${a.about?`<div class="muted" style="margin-top:5px;">„${esc(a.about)}"</div>`:''}
+        <div style="margin-top:7px;">${badge}</div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button class="btn ok sm" onclick="approveApp('${a.id}','${esc(a.email||'')}','${esc(a.membership||'guest')}','${esc(a.name||'')}')">Одобри и покани</button>
+        <button class="btn no sm" onclick="setApp('${a.id}','declined')">Откажи</button>
+        <button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button></div>
+    </div></div>`;
+  };
+  const news=APPS.filter(a=>(a.status||'new')==='new');
+  const done=APPS.filter(a=>(a.status||'new')!=='new');
+  let h='<h2>Кандидатури</h2>';
+  h+=news.length?news.map(row).join(''):'<p class="empty">Няма нови кандидатури.</p>';
+  if(done.length)h+=`<h3 style="margin-top:18px;">Обработени</h3>${done.map(row).join('')}`;
+  return h;
+}
+async function approveApp(id,email,membership,name){
+  if(!email){alert('Кандидатурата няма имейл');return;}
+  if(!confirm('Да поканя ли '+email+' като член ('+( (MEMBERS.find(m=>m.id===membership)||{t:membership}).t )+')?'))return;
+  const {error}=await DB.inviteMember(email,name,membership,'');
+  if(error){alert('Грешка при поканата: '+error.message);return;}
+  await DB.setApplicationStatus(id,'approved');
+  toast('Поканата е изпратена и кандидатурата е одобрена');
+  APPS=await DB.listApplications();render();
+}
+async function setApp(id,status){
+  const r=await DB.setApplicationStatus(id,status);
+  if(r&&r.error){alert('Грешка: '+r.error.message);return;}
+  toast(status==='declined'?'Кандидатурата е отказана':'Готово');
+  APPS=await DB.listApplications();render();
+}
+async function delApp(id){
+  if(!confirm('Да изтрия ли тази кандидатура?'))return;
+  const r=await DB.deleteApplication(id);
+  if(r&&r.error){alert('Грешка: '+r.error.message);return;}
+  toast('Изтрита');
+  APPS=await DB.listApplications();render();
 }
 function peopleView(){
   if(PEOPLE===null)return `<h2>Членове</h2><p class="empty">Зареждане…</p>`;
