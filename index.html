@@ -978,6 +978,7 @@ async function changePass(){
 }
 function profile(){
   if(!user)return gate();
+  newResSet=computeNewRes();
   const m=MEMBERS.find(x=>x.id===user.membership);
   const seats=m?m.seats:1;
   const sev=saved.map(id=>EVENTS.find(e=>e.id===id)).filter(Boolean);
@@ -1050,7 +1051,10 @@ function resCard(r,dim){
   const ev=evId?EVENTS.find(x=>x.id===evId):null;
   const click=ev?` cursor:pointer;`:'';
   const onclick=ev?` onclick="go('format/${ev.format}')"`:'';
-  return `<div class="ev" style="margin-bottom:8px;${dim?'opacity:.6;':''}${click}"${onclick}><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}</h3><div class="m">${tm}<b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div></div>`;
+  const isNew=newResSet&&newResSet[r.id];
+  const hl=isNew?`border:1px solid var(--gold);box-shadow:0 0 0 2px rgba(191,138,46,.18);`:'';
+  const newTag=isNew?` <span style="background:var(--gold);color:#fff7ea;font-size:9px;font-weight:700;border-radius:8px;padding:2px 6px;vertical-align:middle;">${lang==='bg'?'НОВО':'NEW'}</span>`:'';
+  return `<div class="ev"${isNew?' data-newres="1"':''} style="margin-bottom:8px;${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}${newTag}</h3><div class="m">${tm}<b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div></div>`;
 }
 // заглавие на дата: „петък, 6 юни 2026"
 function resDayLabel(iso){
@@ -1068,11 +1072,12 @@ function resGroups(list,dim,prefix){
     if(g.items.length<=1) return `<div class="resday">${lbl}</div>`+g.items.map(r=>resCard(r,dim)).join('');
     const id=(prefix||'rg')+gi;
     const cnt=g.items.length+' '+(lang==='bg'?'резервации':'reservations');
+    const hasNew=g.items.some(r=>newResSet&&newResSet[r.id]); // ден с ново известие → отворен
     return `<div class="resday">${lbl}</div>
       <div class="ev" id="dh_${id}" onclick="toggleDay('${id}')" style="margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;${dim?'opacity:.6;':''}">
         <h3 style="font-size:15px;">${cnt}</h3>
-        <span class="dayarrow" style="color:var(--gold);font-size:14px;white-space:nowrap;">${word} ▾</span></div>
-      <div id="${id}" class="daybody" style="display:none;">${g.items.map(r=>resCard(r,dim)).join('')}</div>`;
+        <span class="dayarrow" style="color:var(--gold);font-size:14px;white-space:nowrap;">${hasNew?(lang==='bg'?'затвори':'close')+' ▴':word+' ▾'}</span></div>
+      <div id="${id}" class="daybody" style="display:${hasNew?'block':'none'};">${g.items.map(r=>resCard(r,dim)).join('')}</div>`;
   }).join('');
 }
 function toggleDay(id){
@@ -1187,6 +1192,14 @@ function notifCount(){
     return RES.filter(r=>(r.status==='confirmed'||r.status==='declined')&&seen[r.id]!==r.status).length;
   }catch(e){return 0;}
 }
+// кои резервации са с НОВ (невиждан) статус — за подчертаване в профила
+let newResSet={};
+function computeNewRes(){
+  const s={};
+  try{const seen=JSON.parse(localStorage.getItem('acac_seen_res')||'{}');
+    RES.forEach(r=>{if((r.status==='confirmed'||r.status==='declined')&&seen[r.id]!==r.status)s[r.id]=true;});}catch(e){}
+  return s;
+}
 // отбелязва всичко като видяно (при отваряне на профила)
 function markResSeen(){
   try{
@@ -1226,7 +1239,12 @@ function renderPath(path,q,parts){
   // лек преход при смяна на екран
   app.classList.remove('nav');void app.offsetWidth;app.classList.add('nav');
   if(document.getElementById('ap_mem'))appToggle();
-  if(path==='profile')markResSeen();
+  if(path==='profile'){
+    // ако има ново известие за резервация → скролваме до нея, после маркираме като видяно
+    const el=document.querySelector('[data-newres]');
+    if(el)setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'center'}),200);
+    markResSeen();
+  }
   tabbar(active);
 }
 let dataSig='',dataReady=false;
