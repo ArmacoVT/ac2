@@ -9,6 +9,10 @@
 <title>American College Arcus Club</title>
 <link rel="icon" href="favicon.svg" />
 <link rel="manifest" href="manifest.json" />
+<link rel="preconnect" href="https://twcxfqgknhqicxqghcrx.supabase.co" crossorigin />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
   :root{
@@ -954,6 +958,21 @@ function tabbar(active){
   const items=[['','home',tr('home'),''],['events','events',tr('events'),''],['live','live',tr('live'),''],['reserve','reserve',tr('reserve'),''],[user?'profile':'login','profile',user?tr('profile'):tr('signin'),nb]];
   document.getElementById('tabbar').innerHTML=items.map(i=>`<a onclick="go('${i[0]}')" class="${active===(i[0]||'home')?'active':''}"><span class="ti">${ICN[i[1]]}${i[3]||''}</span>${i[2]}</a>`).join('');
 }
+function renderPath(path,q,parts){
+  let html,active='home';
+  if(path===''||path==='home'){html=home();active='home';}
+  else if(parts[0]==='format'){html=formatPage(parts[1]);active='home';}
+  else if(path==='events'){html=events();active='events';}
+  else if(path==='live'){html=liveView();active='live';}
+  else if(path==='reserve'){html=reserve(q||'');active='reserve';}
+  else if(path==='membership'){html=membership();active='membership';}
+  else if(path==='profile'){html=profile();active='profile';}
+  else{html=home();}
+  app.innerHTML=html;
+  if(path==='profile')markResSeen();
+  tabbar(active);
+}
+let dataSig='';
 async function route(){
   const tb=document.getElementById('tabbar');
   if(!user){
@@ -964,20 +983,20 @@ async function route(){
   const [path,q]=raw.split('?');
   if(path!=='events')previewAs=null;
   const parts=path.split('/');
-  if(['','home','events','profile','live'].includes(path)||parts[0]==='format'){ try{EVENTS=await DB.listEvents();saved=await DB.listSaved();}catch(e){} }
-  if(['','home','profile','events'].includes(path)||parts[0]==='format'){ try{RES=await DB.listReservations();}catch(e){RES=[];} }
-  let html,active='home';
-  if(path===''||path==='home'){html=home();active='home';}
-  else if(parts[0]==='format'){html=formatPage(parts[1]);active='home';}
-  else if(path==='events'){html=events();active='events';}
-  else if(path==='live'){html=liveView();active='live';}
-  else if(path==='reserve'){html=reserve(q||'');active='reserve';}
-  else if(path==='membership'){html=membership();active='membership';}
-  else if(path==='profile'){html=profile();active='profile';}
-  else{html=home();}
-  app.innerHTML=html;window.scrollTo(0,0);
-  if(path==='profile')markResSeen();
-  tabbar(active);
+  // 1) Рисуваме веднага с наличните данни (без чакане → без забавяне)
+  renderPath(path,q,parts);
+  window.scrollTo(0,0);
+  // 2) Във фон опресняваме (паралелно) и пре-рисуваме само ако нещо се е променило
+  const needsData=['','home','events','profile','live'].includes(path)||parts[0]==='format';
+  if(needsData){
+    try{
+      const [ev,sv,rs]=await Promise.all([DB.listEvents(),DB.listSaved(),DB.listReservations()]);
+      const sig=JSON.stringify([ev,sv,rs]);
+      EVENTS=ev;saved=sv;RES=rs;
+      const cur=location.hash.replace(/^#/,'').split('?')[0];
+      if(cur===path&&sig!==dataSig){dataSig=sig;renderPath(path,q,parts);}
+    }catch(e){}
+  }
 }
 window.addEventListener('hashchange',()=>{loginMode='login';route();});
 document.documentElement.lang=lang;
