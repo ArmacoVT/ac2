@@ -104,6 +104,7 @@
       return (data || []).map(e => ({ id: e.id, title: e.title, format: e.format, place: e.place,
         date: e.date, end_date: e.end_date || '', time: e.time, ends: e.ends || '', capacity: e.capacity,
         table_capacity: e.table_capacity || 0, aud: toAud(e.audience),
+        booking_windows: e.booking_windows || null,
         image_url: e.image_url || '', video_url: e.video_url || '',
         stream_url: e.stream_url || '', is_live: !!e.is_live }));
     },
@@ -114,6 +115,7 @@
       const { error } = await sb.from('events').insert({ title: o.title, format: o.format, place: o.place, date: o.date || null,
         end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0,
         table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
+        booking_windows: o.booking_windows || null,
         image_url: o.image_url || null, video_url: o.video_url || null,
         stream_url: o.stream_url || null, is_live: !!o.is_live });
       return { error };
@@ -123,6 +125,7 @@
       const { error } = await sb.from('events').update({ title: o.title, format: o.format, place: o.place, date: o.date || null,
         end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0,
         table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
+        booking_windows: o.booking_windows || null,
         image_url: o.image_url || null, video_url: o.video_url || null,
         stream_url: o.stream_url || null, is_live: !!o.is_live }).eq('id', id);
       return { error };

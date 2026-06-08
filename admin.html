@@ -225,10 +225,26 @@ function formView(){
       <input type="checkbox" id="f_live" ${e&&e.is_live?'checked':''} style="width:auto;"/> На живо сега (стриймът е активен)</label>
     <label>Видимо за (кой може да го вижда / гледа / запазва)</label>
     <div class="chips">${memCk}</div>
+    ${bwSection(e)}
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn" onclick="saveEvent()">${e?'Запази промените':'Добави събитие'}</button>
       ${e?`<button class="btn ghost" onclick="cancelEdit()">Откажи</button>`:''}
     </div></div>`;
+}
+// приоритетно записване: „от дата" за всяко избрано ниво (празно = веднага)
+function bwSection(e){
+  if(draftAud.includes('all'))return '';
+  const list=draftAud.filter(id=>id!=='all');
+  if(!list.length)return '';
+  const rows=list.map(id=>{
+    const mem=MEMBERS.find(m=>m.id===id);
+    const iso=(e&&e.booking_windows&&e.booking_windows[id])||'';
+    return `<div class="row2" style="align-items:center;margin-top:6px;">
+      <div style="padding-top:8px;">${mem?mem.t:id}</div>
+      <div><input class="bwfield" data-mem="${id}" id="f_bw_${id}" readonly placeholder="веднага" value="${iso?isoToBg(iso):''}" data-iso="${esc(iso)}" onclick="openCal('f_bw_${id}')" style="cursor:pointer;"/></div></div>`;
+  }).join('');
+  return `<label style="margin-top:14px;">Приоритетно записване — „записване от" за всяко ниво (празно = веднага)</label>
+    <p class="muted" style="margin:2px 0 4px;font-size:12px;">Така напр. Founder записват веднага, Founding след седмица, Club още по-късно. Всички виждат събитието; само записването е на вълни.</p>${rows}`;
 }
 // запазва/връща въведеното във формата (за да не се губи при преначертаване)
 function grabForm(){
@@ -236,8 +252,9 @@ function grabForm(){
   const live=document.getElementById('f_live');
   const date=document.getElementById('f_date');
   const ed=document.getElementById('f_end_date');
+  const bw={};document.querySelectorAll('.bwfield').forEach(el=>{bw[el.dataset.mem]=el.dataset.iso||'';});
   return {title:g('f_title'),format:g('f_format'),place:g('f_place'),time:g('f_time'),ends:g('f_ends'),
-    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),stream:g('f_stream'),live:live?live.checked:false};
+    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),stream:g('f_stream'),live:live?live.checked:false,bw};
 }
 function putForm(v){
   if(!v)return;
@@ -248,6 +265,7 @@ function putForm(v){
   if(date){date.dataset.iso=v.dateIso||'';date.value=v.dateIso?isoToBg(v.dateIso):'';}
   const ed=document.getElementById('f_end_date');
   if(ed){ed.dataset.iso=v.endDateIso||'';ed.value=v.endDateIso?isoToBg(v.endDateIso):'';}
+  if(v.bw)Object.keys(v.bw).forEach(mem=>{const el=document.getElementById('f_bw_'+mem);if(el){el.dataset.iso=v.bw[mem]||'';el.value=v.bw[mem]?isoToBg(v.bw[mem]):'';}});
   const live=document.getElementById('f_live');if(live)live.checked=!!v.live;
 }
 function toggleAud(id){
@@ -345,6 +363,7 @@ async function saveEvent(){
     date:dIso,end_date:edIso,time:document.getElementById('f_time').value.trim(),ends:document.getElementById('f_ends').value.trim(),
     capacity:parseInt(document.getElementById('f_cap').value||'0',10),
     table_capacity:parseInt(document.getElementById('f_tcap').value||'0',10),
+    booking_windows:(()=>{const bw={};document.querySelectorAll('.bwfield').forEach(el=>{if(el.dataset.iso)bw[el.dataset.mem]=el.dataset.iso;});return Object.keys(bw).length?bw:null;})(),
     image_url:imgUrl,video_url:vidUrl,
     stream_url:document.getElementById('f_stream').value.trim(),
     is_live:document.getElementById('f_live').checked,
