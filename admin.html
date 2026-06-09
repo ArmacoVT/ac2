@@ -189,7 +189,7 @@ function eventsView(){
     return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
       <div><h3>${esc(e.title)} ${liveBadge}</h3>
-        <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)}${e.end_date?' – '+isoToBg(e.end_date):''} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места</div>
+        <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)}${e.end_date?' – '+isoToBg(e.end_date):''} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места · ${e.price>0?(e.price+' лв./билет'):'безплатно'}</div>
         <div style="margin-top:6px;">${seatsInfo(e)} ${tableInfo(e)}</div>
         <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
@@ -228,6 +228,7 @@ function formView(){
       <div><label>Край (час)</label><input id="f_ends" value="${esc(e?e.ends:'')}" placeholder="22:00"/></div></div>
     <div class="row2"><div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}"/></div>
       <div><label>Места на маса след събитието</label><input id="f_tcap" type="number" min="0" value="${e&&e.table_capacity?e.table_capacity:''}" placeholder="по желание"/></div></div>
+    <div class="row2"><div><label>Цена на билет (лв.) — 0 = безплатно</label><input id="f_price" type="number" min="0" step="0.01" value="${e&&e.price?e.price:0}"/></div><div></div></div>
     <label>Постер / снимка на събитието (по желание)</label>
     ${e&&e.image_url?`<div style="margin-bottom:8px;"><img src="${esc(e.image_url)}" style="max-width:100%;border-radius:10px;"/><div><a href="#" onclick="clearMedia('img');return false;" style="color:#b5532f;font-size:12px;">Премахни снимката</a></div></div>`:''}
     <input id="f_img" type="file" accept="image/*"/>
@@ -270,13 +271,13 @@ function grabForm(){
   const ed=document.getElementById('f_end_date');
   const bw={};document.querySelectorAll('.bwfield').forEach(el=>{bw[el.dataset.mem]=el.dataset.iso||'';});
   return {title:g('f_title'),format:g('f_format'),place:g('f_place'),time:g('f_time'),ends:g('f_ends'),
-    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),stream:g('f_stream'),live:live?live.checked:false,bw};
+    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),price:g('f_price'),stream:g('f_stream'),live:live?live.checked:false,bw};
 }
 function putForm(v){
   if(!v)return;
   const s=(id,val)=>{const el=document.getElementById(id);if(el&&val!=null)el.value=val;};
   s('f_title',v.title);s('f_format',v.format);s('f_place',v.place);s('f_time',v.time);s('f_ends',v.ends);
-  s('f_cap',v.cap);s('f_tcap',v.tcap);s('f_stream',v.stream);
+  s('f_cap',v.cap);s('f_tcap',v.tcap);s('f_price',v.price);s('f_stream',v.stream);
   const date=document.getElementById('f_date');
   if(date){date.dataset.iso=v.dateIso||'';date.value=v.dateIso?isoToBg(v.dateIso):'';}
   const ed=document.getElementById('f_end_date');
@@ -379,6 +380,7 @@ async function saveEvent(){
     date:dIso,end_date:edIso,time:document.getElementById('f_time').value.trim(),ends:document.getElementById('f_ends').value.trim(),
     capacity:parseInt(document.getElementById('f_cap').value||'0',10),
     table_capacity:parseInt(document.getElementById('f_tcap').value||'0',10),
+    price:parseFloat(document.getElementById('f_price').value||'0')||0,
     booking_windows:(()=>{const bw={};document.querySelectorAll('.bwfield').forEach(el=>{if(el.dataset.iso)bw[el.dataset.mem]=el.dataset.iso;});return Object.keys(bw).length?bw:null;})(),
     image_url:imgUrl,video_url:vidUrl,
     stream_url:document.getElementById('f_stream').value.trim(),
