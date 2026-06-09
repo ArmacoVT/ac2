@@ -296,7 +296,7 @@ const euDate=iso=>iso?iso.split('-').reverse().join('.'):'';
 // Видимост: 'all' = всички членове, иначе списък с категории
 const canAccess=ev=>ev.aud==='all'||(Array.isArray(ev.aud)&&ev.aud.includes(curMembership()));
 function fmtDay(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{day:'numeric',month:'long'});}
-function fmtPrice(n){n=Number(n)||0;const s=(n%1===0)?String(n):n.toFixed(2);return (lang==='bg'?s.replace('.',',')+' лв.':s+' BGN');}
+function fmtPrice(n){n=Number(n)||0;const s=(n%1===0)?String(n):n.toFixed(2);return (lang==='bg'?s.replace('.',',')+' €':s+' €');}
 function evMeta(e){const ds=e.end_date&&e.end_date!==e.date?(fmtDay(e.date)+' – '+fmtDay(e.end_date)):fmtDay(e.date);const t=e.time?(e.time+(e.ends?('–'+e.ends):'')):'';return [ds,t,e.place].filter(Boolean).join(' · ');}
 // събитие, което приключва до 22:30 → предлагаме маса в ресторанта (AC² Table)
 function endsEarly(e){return e.ends && e.format!=='table' && e.ends<='22:30';}
