@@ -630,18 +630,28 @@ function liveView(){
   return topbar(tr('live'))+`<div class="page">${liveOnes.length>1?`<p style="color:var(--mid);font-size:13px;margin-bottom:12px;">${lang==='bg'?'Има няколко излъчвания — докосни това, което искаш да гледаш.':'Several streams are live — tap the one you want to watch.'}</p>`:''}${body}</div>`;
 }
 function isDirectVideo(u){return /\.(mp4|m3u8|webm|mov)(\?|$)/i.test(u||'');}
+// нативен видео-плеър (само в приложението) — истинско PiP + фон
+function VideoPlugin(){try{const C=window.Capacitor;if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return null;return (C.Plugins&&C.Plugins.CapacitorVideoPlayer)||(C.registerPlugin&&C.registerPlugin('CapacitorVideoPlayer'))||null;}catch(e){return null;}}
 function playLive(id){
   const e=EVENTS.find(x=>x.id===id); if(!e)return;
   const w=document.getElementById('lw_'+id); if(!w)return;
   const box='position:relative;padding-top:56.25%;margin-top:12px;border-radius:10px;overflow:hidden;background:#000;';
+  const VP=VideoPlugin();
+  // 1) Телефон + директен/HLS стрийм → нативен плеър (PiP + фон)
+  if(VP&&isDirectVideo(e.stream_url)){
+    try{VP.initPlayer({mode:'fullscreen',url:e.stream_url,playerId:'fullscreen',pipEnabled:true,bkmodeEnabled:true,exitOnEnd:false,showControls:true});}catch(err){}
+    w.innerHTML=`<div class="liveposter" onclick="playLive('${id}')"><div class="playbtn">▶</div><div class="pl">${lang==='bg'?'Отвори отново':'Open again'}</div></div>`;
+    return;
+  }
+  // 2) Браузър + директен стрийм → истинско <video>
   if(isDirectVideo(e.stream_url)){
-    // истински видео-елемент → поддържа PiP и продължаване на фон (Cloudflare/директен/HLS)
     w.innerHTML=`<div style="${box}"><video src="${esc(e.stream_url)}" controls autoplay playsinline webkit-playsinline
       style="position:absolute;inset:0;width:100%;height:100%;background:#000;"></video></div>`;
-  }else{
-    w.innerHTML=`<div style="${box}"><iframe src="${esc(streamEmbed(e.stream_url))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen
-      style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>`;
+    return;
   }
+  // 3) Vimeo/YouTube и др. → вграден плеър (iframe)
+  w.innerHTML=`<div style="${box}"><iframe src="${esc(streamEmbed(e.stream_url))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen
+    style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>`;
 }
 function needLogin(){toast(tr('signinSave'));setTimeout(()=>go('login'),800);}
 async function toggleSave(id){
