@@ -629,12 +629,19 @@ function liveView(){
   }
   return topbar(tr('live'))+`<div class="page">${liveOnes.length>1?`<p style="color:var(--mid);font-size:13px;margin-bottom:12px;">${lang==='bg'?'Има няколко излъчвания — докосни това, което искаш да гледаш.':'Several streams are live — tap the one you want to watch.'}</p>`:''}${body}</div>`;
 }
+function isDirectVideo(u){return /\.(mp4|m3u8|webm|mov)(\?|$)/i.test(u||'');}
 function playLive(id){
   const e=EVENTS.find(x=>x.id===id); if(!e)return;
   const w=document.getElementById('lw_'+id); if(!w)return;
-  w.innerHTML=`<div style="position:relative;padding-top:56.25%;margin-top:12px;border-radius:10px;overflow:hidden;background:#000;">
-    <iframe src="${esc(streamEmbed(e.stream_url))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen
+  const box='position:relative;padding-top:56.25%;margin-top:12px;border-radius:10px;overflow:hidden;background:#000;';
+  if(isDirectVideo(e.stream_url)){
+    // истински видео-елемент → поддържа PiP и продължаване на фон (Cloudflare/директен/HLS)
+    w.innerHTML=`<div style="${box}"><video src="${esc(e.stream_url)}" controls autoplay playsinline webkit-playsinline
+      style="position:absolute;inset:0;width:100%;height:100%;background:#000;"></video></div>`;
+  }else{
+    w.innerHTML=`<div style="${box}"><iframe src="${esc(streamEmbed(e.stream_url))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen
       style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>`;
+  }
 }
 function needLogin(){toast(tr('signinSave'));setTimeout(()=>go('login'),800);}
 async function toggleSave(id){
@@ -896,7 +903,7 @@ async function bioLogin(){
     const c=await b.getCredentials({server:BIO_SERVER});
     if(!c||!c.username){toast(tr('bioNone'));return;}
     const {error}=await DB.signIn(c.username,c.password);
-    if(error){toast((lang==='bg'?'Грешка: ':'Error: ')+error.message);return;}
+    if(error){toast(lang==='bg'?'Влез веднъж с парола — Face ID ще се опресни':'Sign in once with your password — Face ID will refresh');return;}
     user=await DB.getUser();
     if(!user){toast(lang==='bg'?'Влез наново':'Sign in again');return;}
     saved=await DB.listSaved();EVENTS=await DB.listEvents();
@@ -1000,6 +1007,7 @@ async function changePass(){
   if(!p)return;
   const {error}=await DB.updatePassword(p);
   if(error){toast(error.message);return;}
+  if(user&&user.email)saveBioCreds(user.email,p); // опресняваме запазената парола за Face ID
   toast(tr('passChanged'));
 }
 function profile(){
@@ -1338,7 +1346,8 @@ async function promptInitialPassword(){
   if(pwPrompted)return; pwPrompted=true;
   const isInvite=DB.urlType==='invite';
   const p=await askNewPassword(isInvite?tr('setPassTitle'):tr('newPassTitle'));
-  if(p){const r=await DB.updatePassword(p);toast(r&&r.error?r.error.message:(isInvite?tr('passSet'):tr('passChanged')));}
+  if(p){const r=await DB.updatePassword(p);toast(r&&r.error?r.error.message:(isInvite?tr('passSet'):tr('passChanged')));
+    if(!(r&&r.error)){try{const u=await DB.getUser();if(u&&u.email)saveBioCreds(u.email,p);}catch(e){}}}
   // при покана питаме и за име
   if(isInvite){
     try{user=await DB.getUser();}catch(e){}
