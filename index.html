@@ -427,6 +427,15 @@ function formatPage(id){
 // има ли вече активна заявка (чакаща или одобрена) за това събитие
 const hasBooking=id=>RES.some(r=>r.event_id===id&&(!r.status||r.status==='requested'||r.status==='confirmed'));
 let justBooked=null; // за bounce ефекта на бутона след заявка
+let TAKEN={}; // заети места по събитие (само число)
+// свободни места: null = без лимит; иначе оставащи
+function seatsLeft(e){if(!e.capacity)return null;return Math.max(0,e.capacity-(TAKEN[e.id]||0));}
+function seatInfoText(e){
+  const l=seatsLeft(e); if(l===null)return '';
+  if(l<=0)return lang==='bg'?'Изчерпано':'Sold out';
+  if(l<=10)return lang==='bg'?('Остават '+l+' места'):(l+' seats left');
+  return lang==='bg'?'Свободни места':'Seats available';
+}
 // минало ли е събитието (по крайна дата, ако има, иначе по началната)
 function todayISO(){const t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');}
 const evEnd=e=>e.end_date||e.date||'';
@@ -457,9 +466,11 @@ function eventCard(e,i){
   const lockEu=locked?lockISO.split('-').reverse().join('.'):'';
   const lockSvg=`<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><rect x="5" y="10.5" width="14" height="9.5" rx="2.4"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>`;
   const expiredMember=user&&!membershipActive();
+  const left=seatsLeft(e); const soldOut=left!==null&&left<=0;
   const book=past?'':(expiredMember?`<button class="chip locked" onclick="event.stopPropagation();go('profile')">${lockSvg}${tr('membershipOver')}</button>`
     :booked?`<button class="chip on${popCls}" onclick="event.stopPropagation();toast(tr('alreadyBooked'))">✓ ${tr('booked')}</button>`
     :locked?`<button class="chip locked" onclick="event.stopPropagation();toast(tr('bookFrom')+' '+'${lockEu}')">${lockSvg}${tr('bookFrom')} ${lockEu}</button>`
+    :soldOut?`<button class="chip locked" onclick="event.stopPropagation();toast(lang==='bg'?'Изчерпано':'Sold out')">${lang==='bg'?'Изчерпано':'Sold out'}</button>`
     :`<button class="chip" onclick="event.stopPropagation();toggleBook('${e.id}')">${tr('ticket')}</button>`);
   const delay=`animation-delay:${((i||0)%8)*0.05}s;`;
   const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):1;
@@ -473,7 +484,7 @@ function eventCard(e,i){
     <label>${tr('bookingName')}</label>
     <input id="bn_${e.id}" type="text" value="${user?esc(user.full_name||user.username||''):''}"/>
     <label>${tr('party')}</label>
-    <input id="bp_${e.id}" type="number" min="1" max="${seats}" value="2" oninput="updTotal('${e.id}',${e.price||0})"/>
+    <input id="bp_${e.id}" type="number" min="1" max="${left!==null?Math.min(seats,left):seats}" value="${left!==null?Math.min(2,seats,left||1):2}" oninput="updTotal('${e.id}',${e.price||0})"/>
     ${totalLine}
     ${tableOpt}
     <button class="btn" style="margin-top:12px;" onclick="event.stopPropagation();confirmBook('${e.id}')">${tr('send')}</button></div>`;
@@ -481,7 +492,10 @@ function eventCard(e,i){
   const vid=e.video_url?`<video class="evvideo" src="${esc(e.video_url)}" controls preload="metadata" playsinline></video>`:'';
   const cal=(!past&&e.date)?`<button class="chip" onclick="event.stopPropagation();addToCalendar('${e.id}')">${tr('addCal')}</button>`:'';
   const priceTag=e.price>0?`<div style="margin-top:6px;color:var(--gold);font-weight:600;font-size:13px;">${lang==='bg'?'Билет':'Ticket'}: ${fmtPrice(e.price)}</div>`:(e.price===0?`<div style="margin-top:6px;color:#4f7a43;font-size:13px;">${lang==='bg'?'Безплатно':'Free'}</div>`:'');
-  return `<div class="ev" style="${delay}">${media}<div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>${priceTag}${vid}
+  const si=(!past)?seatInfoText(e):'';
+  const siCol=soldOut?'#b5532f':((left!==null&&left<=10)?'#bf8a2e':'#4f7a43');
+  const seatTag=si?`<div style="margin-top:4px;color:${siCol};font-size:12px;">${si}</div>`:'';
+  return `<div class="ev" style="${delay}">${media}<div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>${priceTag}${seatTag}${vid}
     <div class="row">${fav}${book}${cal}</div>${form}</div>`;
 }
 function updTotal(id,price){
@@ -560,6 +574,9 @@ async function confirmBook(id){
   const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
   if(n<1){toast(tr('party'));return;}
   if(n>seats){toast((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
+  // проверка за свободни места
+  const left=seatsLeft(e);
+  if(left!==null&&n>left){toast(left<=0?(lang==='bg'?'Изчерпано':'Sold out'):(lang==='bg'?('Остават само '+left+' места'):('Only '+left+' seats left')));return;}
   // искаме ли и маса след събитието?
   const wantTable=endsEarly(e)&&document.getElementById('tb_'+id)?.checked;
   const tp=parseInt(document.getElementById('tbp_'+id)?.value||'2',10);
@@ -1283,9 +1300,9 @@ async function route(){
   const needsData=['','home','events','profile','live'].includes(path)||parts[0]==='format';
   if(needsData){
     try{
-      const [ev,sv,rs]=await Promise.all([DB.listEvents(),DB.listSaved(),DB.listReservations()]);
-      const sig=JSON.stringify([ev,sv,rs]);
-      EVENTS=ev;saved=sv;RES=rs;const wasReady=dataReady;dataReady=true;
+      const [ev,sv,rs,tk]=await Promise.all([DB.listEvents(),DB.listSaved(),DB.listReservations(),DB.listEventTaken()]);
+      const sig=JSON.stringify([ev,sv,rs,tk]);
+      EVENTS=ev;saved=sv;RES=rs;TAKEN=tk||{};const wasReady=dataReady;dataReady=true;
       const cur=location.hash.replace(/^#/,'').split('?')[0];
       if(cur===path&&(sig!==dataSig||!wasReady)){dataSig=sig;renderPath(path,q,parts);}
     }catch(e){}

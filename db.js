@@ -122,6 +122,17 @@
     },
     // всички събития (за админ панела — без филтър по членство; в live разчита на admin RLS)
     async listAllEvents() { return this.listEvents(); },
+    // само БРОЯ заети места на събитие (без лични данни — за наличност при членовете)
+    async listEventTaken() {
+      if (!LIVE) {
+        const r = jget(K.res, []); const m = {};
+        r.forEach(x => { if (x.event_id && (x.status === 'requested' || x.status === 'confirmed' || !x.status)) m[x.event_id] = (m[x.event_id] || 0) + (x.party || 1); });
+        return m;
+      }
+      const { data } = await sb.from('event_taken').select('event_id,taken');
+      const m = {}; (data || []).forEach(r => { m[r.event_id] = r.taken || 0; });
+      return m;
+    },
     async addEvent(o) {
       if (!LIVE) { const e = seedDemo(); o.id = 'e' + Date.now(); e.unshift(o); jset(K.ev, e); return { error: null }; }
       const { error } = await sb.from('events').insert({ title: o.title, format: o.format, place: o.place, date: o.date || null,
