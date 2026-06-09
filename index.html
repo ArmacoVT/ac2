@@ -1080,7 +1080,8 @@ function resCard(r,dim){
   const isNew=newResSet&&newResSet[r.id];
   const hl=isNew?`border:1px solid var(--gold);box-shadow:0 0 0 2px rgba(191,138,46,.18);`:'';
   const newTag=isNew?` <span style="background:var(--gold);color:#fff7ea;font-size:9px;font-weight:700;border-radius:8px;padding:2px 6px;vertical-align:middle;">${lang==='bg'?'НОВО':'NEW'}</span>`:'';
-  return `<div class="ev"${isNew?' data-newres="1"':''} style="margin-bottom:8px;${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}${newTag}</h3><div class="m">${tm}<b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div></div>`;
+  const priceLine=(ev&&ev.price>0&&r.event_id)?`<div class="m" style="color:var(--gold);font-weight:600;">${lang==='bg'?'Общо: ':'Total: '}${fmtPrice(ev.price*(r.party||1))}</div>`:'';
+  return `<div class="ev"${isNew?' data-newres="1"':''} style="margin-bottom:8px;${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}${newTag}</h3><div class="m">${tm}<b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div>${priceLine}</div>`;
 }
 // заглавие на дата: „петък, 6 юни 2026"
 function resDayLabel(iso){
