@@ -907,14 +907,14 @@ function NB(){
 function bioEnabled(){return !!(NB()&&localStorage.getItem('acac_bio'));}
 async function saveBioCreds(email,pass){
   const b=NB();
-  if(!b){toast('Face ID: плъгинът не е намерен');return;}
+  if(!b){alert('Face ID диагностика: плъгинът НЕ е намерен (native:'+(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())+')');return;}
   try{
     const a=await b.isAvailable();
-    if(!a||!a.isAvailable){toast('Face ID: не е наличен на устройството');return;}
+    if(!a||!a.isAvailable){alert('Face ID диагностика: не е наличен на устройството. Отговор: '+JSON.stringify(a));return;}
     await b.setCredentials({username:email,password:pass,server:BIO_SERVER});
     localStorage.setItem('acac_bio','1');
-    toast('Face ID е активиран ✓');
-  }catch(e){toast('Face ID грешка: '+((e&&e.message)||e));}
+    alert('Face ID диагностика: активиран успешно ✓ — бутонът ще се появи.');
+  }catch(e){alert('Face ID диагностика: грешка → '+((e&&e.message)||e));}
 }
 async function bioLogin(){
   const b=NB();if(!b){toast(tr('bioNone'));return;}
