@@ -905,7 +905,17 @@ function NB(){
   }catch(e){return null;}
 }
 function bioEnabled(){return !!(NB()&&localStorage.getItem('acac_bio'));}
-async function saveBioCreds(email,pass){const b=NB();if(!b)return;try{const a=await b.isAvailable();if(!a||!a.isAvailable)return;await b.setCredentials({username:email,password:pass,server:BIO_SERVER});localStorage.setItem('acac_bio','1');}catch(e){}}
+async function saveBioCreds(email,pass){
+  const b=NB();
+  if(!b){toast('Face ID: плъгинът не е намерен');return;}
+  try{
+    const a=await b.isAvailable();
+    if(!a||!a.isAvailable){toast('Face ID: не е наличен на устройството');return;}
+    await b.setCredentials({username:email,password:pass,server:BIO_SERVER});
+    localStorage.setItem('acac_bio','1');
+    toast('Face ID е активиран ✓');
+  }catch(e){toast('Face ID грешка: '+((e&&e.message)||e));}
+}
 async function bioLogin(){
   const b=NB();if(!b){toast(tr('bioNone'));return;}
   try{
