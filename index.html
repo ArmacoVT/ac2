@@ -520,12 +520,13 @@ function eventCard(e,i){
   const media=e.image_url?`<img class="evposter" src="${esc(e.image_url)}" alt="" loading="lazy"/>`:'';
   const vid=e.video_url?`<video class="evvideo" src="${esc(e.video_url)}" controls preload="metadata" playsinline></video>`:'';
   const cal=(!past&&e.date)?`<button class="chip" onclick="event.stopPropagation();addToCalendar('${e.id}')">${tr('addCal')}</button>`:'';
+  const share=`<button class="chip" onclick="event.stopPropagation();shareEvent('${e.id}')">${lang==='bg'?'Сподели':'Share'}</button>`;
   const priceTag=e.price>0?`<div style="margin-top:6px;color:var(--gold);font-weight:600;font-size:13px;">${lang==='bg'?'Билет':'Ticket'}: ${fmtPrice(e.price)}</div>`:(e.price===0?`<div style="margin-top:6px;color:#4f7a43;font-size:13px;">${lang==='bg'?'Безплатно':'Free'}</div>`:'');
   const si=(!past)?seatInfoText(e):'';
   const siCol=soldOut?'#b5532f':((left!==null&&left<=10)?'#bf8a2e':'#4f7a43');
   const seatTag=si?`<div style="margin-top:4px;color:${siCol};font-size:12px;">${si}</div>`:'';
   return `<div class="ev" style="${delay}">${media}<div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>${priceTag}${seatTag}${vid}
-    <div class="row">${fav}${book}${cal}</div>${form}</div>`;
+    <div class="row">${fav}${book}${cal}${share}</div>${form}</div>`;
 }
 function updTotal(id,price){
   const q=parseInt(document.getElementById('bp_'+id)?.value||'1',10)||1;
@@ -1249,6 +1250,38 @@ async function ensurePhone(){
   if(v){await DB.updateProfilePhone(v);user.phone=v;user.phone_recheck=false;}
 }
 // нотификация, когато се отвори записването за събитие (фазов достъп)
+// споделяне на събитие (нативен share лист на iOS/Android, иначе копира)
+function shareEvent(id){
+  const e=EVENTS.find(x=>x.id===id); if(!e)return;
+  const when=e.date?(' · '+fmtDay(e.date)+(e.time?' '+e.time:'')):'';
+  const txt=(lang==='bg'?'Събитие в Arcus Club: ':'Event at Arcus Club: ')+e.title+when;
+  const url='https://armacovt.github.io/ac2/#format/'+e.format;
+  if(navigator.share){navigator.share({title:e.title,text:txt,url}).catch(()=>{});}
+  else{try{navigator.clipboard.writeText(txt+' '+url);toast(lang==='bg'?'Копирано':'Copied');}catch(_){}}
+}
+// ---------- ЛОКАЛНИ ИЗВЕСТИЯ (в приложението; иска @capacitor/local-notifications) ----------
+function LocalNotif(){try{const C=window.Capacitor;if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return null;return (C.Plugins&&C.Plugins.LocalNotifications)||(C.registerPlugin&&C.registerPlugin('LocalNotifications'))||null;}catch(e){return null;}}
+async function scheduleLocalNotifs(){
+  const LN=LocalNotif(); if(!LN||!user||!membershipActive())return;
+  try{
+    let p=await LN.checkPermissions();
+    if(p.display!=='granted'){p=await LN.requestPermissions();}
+    if(!p||p.display!=='granted')return;
+  }catch(e){return;}
+  const now=Date.now();
+  const idFor=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h)%2000000000;};
+  const evStart=e=>{if(!e.date)return null;const t=(e.time&&/\d{1,2}:\d{2}/.test(e.time))?e.time:'19:00';const p=e.date.split('-').map(Number);const tt=t.split(':').map(Number);return new Date(p[0],p[1]-1,p[2],tt[0],tt[1],0);};
+  const notifs=[];
+  EVENTS.forEach(e=>{
+    if(!canAccess(e)||isPast(e))return;
+    if(hasBooking(e.id)){
+      const st=evStart(e); if(st){const at=new Date(st.getTime()-3600000); if(at.getTime()>now)notifs.push({id:idFor('ev'+e.id),title:lang==='bg'?'Скоро започва':'Starting soon',body:(lang==='bg'?'„'+e.title+'" започва в ':'“'+e.title+'” starts at ')+(e.time||''),schedule:{at}});}
+    }
+    const w=e.booking_windows&&e.booking_windows[user.membership];
+    if(w&&w>=todayISO()&&!hasBooking(e.id)){const p=w.split('-').map(Number);const at=new Date(p[0],p[1]-1,p[2],9,0,0);if(at.getTime()>now)notifs.push({id:idFor('bw'+e.id),title:lang==='bg'?'Билетите се отвориха':'Booking is open',body:(lang==='bg'?'Вече можеш да запазиш билет за „'+e.title+'"':'You can now book “'+e.title+'”'),schedule:{at}});}
+  });
+  try{if(notifs.length)await LN.schedule({notifications:notifs.slice(0,60)});}catch(e){}
+}
 function checkUnlocks(){
   if(!user||!membershipActive())return;
   let seen={};try{seen=JSON.parse(localStorage.getItem('acac_unlock')||'{}');}catch(e){}
@@ -1425,6 +1458,7 @@ DB.onRecovery(promptInitialPassword);
     if(!EVENTS.length)EVENTS=await DB.listEvents();
     RES=await DB.listReservations();
     checkUnlocks();
+    scheduleLocalNotifs();
     const p0=location.hash.replace(/^#/,'').split('?')[0];
     tabbar(p0===''?'home':(p0.split('/')[0]==='format'?'home':p0));
     const n=notifCount();
