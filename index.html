@@ -999,6 +999,7 @@ async function doAuth(){
     const pass=document.getElementById('l_pass').value||'';
     if(!email||!pass){toast(tr('email'));return;}
     if(loginMode==='signup'){
+      const pe=pwPolicy(pass); if(pe){toast(pe);return;}
       const uname=(document.getElementById('l_user').value||'').trim();
       const {error}=await DB.signUp(email,pass,uname,pickedMem);
       if(error){toast(error.message);return;}
@@ -1026,6 +1027,14 @@ async function doForgot(){
   if(error){toast(error.message);return;}
   toast(tr('resetSent'));
 }
+function pwPolicy(p){
+  const bg=lang==='bg';
+  if(p.length<6)return bg?'Поне 6 знака':'At least 6 characters';
+  if(!/[a-z]/.test(p))return bg?'Трябва малка буква':'Need a lowercase letter';
+  if(!/[A-Z]/.test(p))return bg?'Трябва главна буква':'Need an uppercase letter';
+  if(!/[0-9]/.test(p))return bg?'Трябва цифра':'Need a digit';
+  return '';
+}
 function askNewPassword(title,requireCurrent){
   return new Promise(res=>{
     const ov=document.createElement('div');ov.className='pwov';
@@ -1033,13 +1042,14 @@ function askNewPassword(title,requireCurrent){
       ${requireCurrent?`<input id="pw0" type="password" placeholder="${tr('currentPass')}" autocomplete="current-password"/>`:''}
       <input id="pw1" type="password" placeholder="${tr('newPassTitle')}" autocomplete="new-password"/>
       <input id="pw2" type="password" placeholder="${tr('passConfirm')}" autocomplete="new-password"/>
+      <div style="color:var(--muted);font-size:11px;margin:-2px 0 6px;">${lang==='bg'?'Поне 6 знака, главна и малка буква и цифра.':'At least 6 chars, upper + lower case and a digit.'}</div>
       <div class="pwerr" id="pwerr"></div>
       <button class="btn" id="pwok">${tr('pwSave')}</button>
       <button class="btn btn-ghost" id="pwcancel">${tr('cancelBtn')}</button></div>`;
     document.body.appendChild(ov);
     ov.querySelector('#pwok').onclick=async ()=>{
       const a=ov.querySelector('#pw1').value,b=ov.querySelector('#pw2').value,err=ov.querySelector('#pwerr');
-      if(a.length<6){err.textContent=tr('passShort');return;}
+      const pe=pwPolicy(a); if(pe){err.textContent=pe;return;}
       if(a!==b){err.textContent=tr('passMismatch');return;}
       if(requireCurrent){
         const cur=ov.querySelector('#pw0').value;
