@@ -366,6 +366,65 @@
       if (data && data.error) return { error: { message: data.error } };
       return { error: null };
     },
+    // членът изтрива собствения си акаунт (GDPR)
+    async deleteSelfAccount() {
+      if (!LIVE) { localStorage.removeItem(K.user); return { error: null }; }
+      const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'delete_self' } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      await sb.auth.signOut();
+      return { error: null };
+    },
+    // членът отказва собствена резервация
+    async cancelOwnReservation(id) {
+      if (!LIVE) { let r = jget(K.res, []); r = r.map(x => x.id === id ? { ...x, status: 'cancelled' } : x); jset(K.res, r); return { error: null }; }
+      const { error } = await sb.from('reservations').update({ status: 'cancelled' }).eq('id', id);
+      return { error };
+    },
+
+    // ---------- ОБЯВИ ----------
+    async listAnnouncements() {
+      if (!LIVE) return jget('acac_ann', []);
+      try { const { data } = await sb.from('announcements').select('*').order('created_at', { ascending: false }); return data || []; }
+      catch (e) { return []; }
+    },
+    async createAnnouncement(a) {
+      if (!LIVE) { const l = jget('acac_ann', []); l.unshift({ id: 'a' + Date.now(), created_at: new Date().toISOString(), ...a }); jset('acac_ann', l); return { error: null }; }
+      const { data: ses } = await sb.auth.getSession();
+      const row = {
+        title: a.title, body: a.body, audience: a.audience || 'all',
+        memberships: a.memberships || [], user_ids: a.user_ids || [],
+        created_by: ses && ses.session ? ses.session.user.id : null
+      };
+      const { error } = await sb.from('announcements').insert(row);
+      return { error };
+    },
+    async deleteAnnouncement(id) {
+      if (!LIVE) { jset('acac_ann', jget('acac_ann', []).filter(x => x.id !== id)); return { error: null }; }
+      const { error } = await sb.from('announcements').delete().eq('id', id);
+      return { error };
+    },
+
+    // ---------- ЖУРНАЛ ----------
+    async logAudit(action, target, details) {
+      if (!LIVE) return;
+      try {
+        const { data: ses } = await sb.auth.getSession();
+        const uid = ses && ses.session ? ses.session.user.id : null;
+        let nm = '';
+        if (uid) { try { const r = await sb.from('profiles').select('username,full_name').eq('id', uid).single(); nm = (r.data && (r.data.full_name || r.data.username)) || ''; } catch (e) {} }
+        await sb.from('audit_log').insert({ actor: uid, actor_name: nm, action, target: target || '', details: details || '' });
+      } catch (e) {}
+    },
+    async listAudit(limit) {
+      if (!LIVE) return [];
+      const { data } = await sb.from('audit_log').select('*').order('created_at', { ascending: false }).limit(limit || 300);
+      return data || [];
+    },
     // подновяване на членство (само админ) — удължава с 1 година от дадена дата
     async renewMembership(email, validFrom) {
       if (!LIVE) return { error: { message: 'demo' } };

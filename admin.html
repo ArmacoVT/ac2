@@ -2,6 +2,8 @@
 <html lang="bg">
 <head>
 <meta charset="UTF-8" />
+<!-- Sentry — мониторинг на грешки -->
+<script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="theme-color" content="#f6efe2" />
 <title>Arcus Club · Админ панел</title>
@@ -92,14 +94,18 @@ function render(){
       <button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации${tabBadge(RES.filter(r=>!r.status||r.status==='requested').length)}</button>
       <button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>
       <button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge((APPS||[]).filter(a=>(a.status||'new')==='new').length)}</button>
+      <button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Обяви</button>
       <button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>
       <button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>
+      <button class="tab ${tab==='audit'?'on':''}" onclick="setTab('audit')">Журнал</button>
     </div>`;
   if(tab==='events')h+=eventsView();
   else if(tab==='res')h+=resView();
   else if(tab==='people')h+=peopleView();
   else if(tab==='apps')h+=appsView();
+  else if(tab==='ann')h+=announcementsView();
   else if(tab==='stats')h+=statsView();
+  else if(tab==='audit')h+=auditView();
   else h+=membersView();
   h+=`</div>`;
   root.innerHTML=h;
@@ -116,13 +122,15 @@ function animateCounts(){
     requestAnimationFrame(step);
   });
 }
-let PEOPLE=null,APPS=null,PHONES=null;
+let PEOPLE=null,APPS=null,PHONES=null,ANN=null,AUDIT=null,annAud='all';
 async function loadPhones(){
   try{const list=await DB.listMembers();const m={};list.forEach(p=>{m[p.id]={email:p.email||'',phone:p.phone||''};});PHONES=m;}catch(e){PHONES={};}
 }
 async function setTab(t){tab=t;editId=null;await refresh();render();
   if(t==='people'){PEOPLE=null;render();PEOPLE=await DB.listMembers();render();}
   if((t==='res'||t==='events')&&!PHONES){await loadPhones();render();}
+  if(t==='ann'){ANN=await DB.listAnnouncements();if(!PEOPLE)PEOPLE=await DB.listMembers();render();}
+  if(t==='audit'){AUDIT=await DB.listAudit(300);render();}
 }
 
 function audLabel(aud){
@@ -354,7 +362,7 @@ function pickDate(iso){
 }
 function editEvent(id){editId=id;tab='events';const e=EVENTS.find(x=>x.id===id);draftAud=e.aud==='all'?['all']:e.aud.slice();render();window.scrollTo(0,0);}
 function cancelEdit(){editId=null;draftAud=['all'];render();}
-async function delEvent(id){if(!confirm('Да изтрия ли събитието?'))return;await DB.deleteEvent(id);await refresh();render();}
+async function delEvent(id){if(!confirm('Да изтрия ли събитието?'))return;const ev=EVENTS.find(x=>x.id===id);await DB.deleteEvent(id);DB.logAudit('event_deleted',(ev&&ev.title)||'','');await refresh();render();}
 async function toggleLive(id,on){await DB.setLive(id,on);await refresh();render();}
 function clearMedia(which){
   const keep=document.getElementById('f_media_keep');if(!keep)return;
@@ -468,6 +476,7 @@ async function setRes(id,st){
   if(r&&r.error){alert('Грешка при промяна на статуса: '+r.error.message);return;}
   // обновяваме само картата — без пречертаване, без скок
   const rr=RES.find(x=>x.id===id);if(rr)rr.status=st;
+  DB.logAudit(st==='confirmed'?'reservation_confirmed':'reservation_declined',(rr&&(rr.name||rr.who||rr.place))||'',(rr&&rr.date)||'');
   const badge=st==='confirmed'?'<span class="pill audAll">потвърдена</span>':'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>';
   const be=document.getElementById('resbadge_'+id);if(be)be.innerHTML=badge;
   const ae=document.getElementById('resact_'+id);if(ae)ae.innerHTML=`<button class="btn ghost sm" onclick="delRes('${id}')">Изтрий</button>`;
@@ -520,7 +529,101 @@ function statsView(){
     <h3 style="margin-top:22px;">Запълване на предстоящи събития</h3>
     <div class="card">${fill}</div>
     <h3 style="margin-top:18px;">Най-търсени места/формати</h3>
-    <div class="card"><table style="width:100%;border-collapse:collapse;">${fmtRows}</table></div>`;
+    <div class="card"><table style="width:100%;border-collapse:collapse;">${fmtRows}</table></div>
+    <h3 style="margin-top:22px;">Износ в CSV (за Excel)</h3>
+    <div class="card" style="display:flex;flex-wrap:wrap;gap:10px;">
+      <button class="btn sm" onclick="exportCSV('members')">Членове</button>
+      <button class="btn sm" onclick="exportCSV('res')">Резервации</button>
+      <button class="btn sm" onclick="exportCSV('apps')">Кандидатури</button>
+    </div>`;
+}
+// ---------- ИЗНОС В CSV ----------
+function csvCell(v){const s=(''+(v??'')).replace(/"/g,'""');return /[",;\n]/.test(s)?`"${s}"`:s;}
+function csvDownload(name,rows){
+  const csv=rows.map(r=>r.map(csvCell).join(';')).join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=name+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+async function exportCSV(kind){
+  if(kind==='members'){
+    const list=PEOPLE||await DB.listMembers();
+    const rows=[['Име','Потребител','Имейл','Телефон','Членство','Валидно до','Роля']];
+    list.forEach(p=>rows.push([p.full_name||'',p.username||'',p.email||'',p.phone||'',memName(p.membership||'guest'),p.membership_until||'',p.role||'member']));
+    csvDownload('chlenove',rows);
+  } else if(kind==='res'){
+    const rows=[['Дата','Час','Място/Формат','Име','Имейл','Телефон','Места','Статус']];
+    RES.forEach(r=>rows.push([r.date||'',r.time||'',r.place||r.fmt||'',r.name||r.who||'',r.email||'',r.phone||'',r.party||'',r.status||'requested']));
+    csvDownload('rezervacii',rows);
+  } else {
+    const list=APPS||await DB.listApplications();
+    const rows=[['Тип','Име','Имейл','Телефон','Членство','Професия','Интереси','Връзка с колежа','БУЛСТАТ','Статус']];
+    list.forEach(a=>rows.push([a.type||'application',a.name||'',a.email||'',a.phone||'',a.membership||'',a.profession||'',a.interests||'',a.alumni_relation||'',a.corp_bulstat||'',a.status||'new']));
+    csvDownload('kandidaturi',rows);
+  }
+}
+// ---------- ОБЯВИ ----------
+function announcementsView(){
+  const memChecks=MEMBERS.map(m=>`<label class="pill" style="cursor:pointer;"><input type="checkbox" class="annMem" value="${m.id}" style="margin-right:5px;">${m.t}</label>`).join(' ');
+  const people=(PEOPLE||[]).filter(p=>p.role!=='admin');
+  const memberChecks=people.length?people.map(p=>`<label style="display:block;padding:3px 0;cursor:pointer;"><input type="checkbox" class="annUser" value="${p.id}" style="margin-right:6px;">${esc(p.full_name||p.username||p.email||'')}<span class="muted"> · ${esc(memName(p.membership||'guest'))}</span></label>`).join(''):'<span class="muted">Зареждане…</span>';
+  const list=(ANN||[]).map(a=>{
+    let aud='Всички';
+    if(a.audience==='membership')aud='Категории: '+(a.memberships||[]).map(memName).join(', ');
+    else if(a.audience==='specific')aud=(a.user_ids||[]).length+' избрани';
+    const d=a.created_at?new Date(a.created_at).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    return `<div class="card" style="margin-top:8px;"><div style="display:flex;justify-content:space-between;gap:10px;"><b>${esc(a.title)}</b><button class="btn no sm" onclick="delAnn('${a.id}')">Изтрий</button></div>
+      <div style="margin-top:4px;white-space:pre-wrap;">${esc(a.body)}</div>
+      <div class="muted" style="font-size:12px;margin-top:6px;">${esc(aud)} · ${d}</div></div>`;
+  }).join('')||'<p class="empty">Все още няма обяви.</p>';
+  return `<h2>Обяви</h2>
+    <div class="card">
+      <input id="annTitle" placeholder="Заглавие" style="width:100%;margin-bottom:8px;">
+      <textarea id="annBody" placeholder="Текст на обявата" rows="4" style="width:100%;margin-bottom:10px;"></textarea>
+      <div style="font-weight:600;margin-bottom:6px;">До кого:</div>
+      <label style="display:block;margin-bottom:4px;cursor:pointer;"><input type="radio" name="annAud" value="all" ${annAud==='all'?'checked':''} onclick="annAud='all';render();" style="margin-right:6px;">Всички членове</label>
+      <label style="display:block;margin-bottom:4px;cursor:pointer;"><input type="radio" name="annAud" value="membership" ${annAud==='membership'?'checked':''} onclick="annAud='membership';render();" style="margin-right:6px;">Определени категории членство</label>
+      ${annAud==='membership'?`<div style="margin:4px 0 8px 22px;display:flex;flex-wrap:wrap;gap:6px;">${memChecks}</div>`:''}
+      <label style="display:block;margin-bottom:4px;cursor:pointer;"><input type="radio" name="annAud" value="specific" ${annAud==='specific'?'checked':''} onclick="annAud='specific';render();" style="margin-right:6px;">Определени членове</label>
+      ${annAud==='specific'?`<div style="margin:4px 0 8px 22px;max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:8px;">${memberChecks}</div>`:''}
+      <button class="btn ok" style="margin-top:8px;" onclick="sendAnn()">Публикувай обявата</button>
+    </div>
+    <h3 style="margin-top:20px;">Публикувани обяви</h3>
+    ${list}`;
+}
+async function sendAnn(){
+  const title=(document.getElementById('annTitle').value||'').trim();
+  const body=(document.getElementById('annBody').value||'').trim();
+  if(!title||!body){alert('Въведи заглавие и текст.');return;}
+  const a={title,body,audience:annAud,memberships:[],user_ids:[]};
+  if(annAud==='membership'){a.memberships=[...document.querySelectorAll('.annMem:checked')].map(x=>x.value);if(!a.memberships.length){alert('Избери поне една категория.');return;}}
+  if(annAud==='specific'){a.user_ids=[...document.querySelectorAll('.annUser:checked')].map(x=>x.value);if(!a.user_ids.length){alert('Избери поне един член.');return;}}
+  const r=await DB.createAnnouncement(a);
+  if(r&&r.error){alert('Грешка: '+(r.error.message||r.error));return;}
+  await DB.logAudit('announcement_posted',title,a.audience==='all'?'до всички':(a.audience==='membership'?'категории: '+a.memberships.join(','):a.user_ids.length+' членове'));
+  annAud='all';ANN=await DB.listAnnouncements();render();
+}
+async function delAnn(id){
+  if(!confirm('Да изтрия ли тази обява?'))return;
+  const r=await DB.deleteAnnouncement(id);
+  if(r&&r.error){alert('Грешка: '+(r.error.message||r.error));return;}
+  ANN=await DB.listAnnouncements();render();
+}
+// ---------- ЖУРНАЛ ----------
+function auditView(){
+  if(AUDIT===null)return `<h2>Журнал</h2><p class="empty">Зареждане…</p>`;
+  if(!AUDIT.length)return `<h2>Журнал на действията</h2><p class="empty">Все още няма записи.</p>`;
+  const AL={reservation_confirmed:'потвърди резервация',reservation_declined:'отказа резервация',application_approved:'одобри кандидатура',application_declined:'отказа кандидатура',member_deleted:'изтри член',member_renewed:'поднови членство',membership_changed:'смени членство',phone_set:'смени телефон',phone_requested:'поиска нов телефон',member_invited:'покани член',announcement_posted:'публикува обява',event_deleted:'изтри събитие'};
+  const rows=AUDIT.map(a=>{
+    const d=a.created_at?new Date(a.created_at).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    const act=AL[a.action]||a.action;
+    return `<tr><td class="muted" style="white-space:nowrap;">${d}</td><td>${esc(a.actor_name||'—')}</td><td>${esc(act)}</td><td>${esc(a.target||'')}${a.details?' <span class="muted">('+esc(a.details)+')</span>':''}</td></tr>`;
+  }).join('');
+  return `<h2>Журнал на действията</h2>
+    <div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr style="text-align:left;color:var(--muted);"><th>Дата</th><th>Кой</th><th>Действие</th><th>Към</th></tr>
+      ${rows}</table></div>`;
 }
 function appsView(){
   if(APPS===null)return `<h2>Кандидатури</h2><p class="empty">Зареждане…</p>`;
@@ -569,12 +672,14 @@ async function approveApp(id,email,membership,name){
   const {error}=await DB.inviteMember(email,name,membership,'');
   if(error){alert('Грешка при поканата: '+error.message);return;}
   await DB.setApplicationStatus(id,'approved');
+  DB.logAudit('application_approved',name||email,memName(membership));
   appMark(id,'approved');
   toast('Поканата е изпратена и кандидатурата е одобрена');
 }
 async function setApp(id,status){
   const r=await DB.setApplicationStatus(id,status);
   if(r&&r.error){alert('Грешка: '+r.error.message);return;}
+  if(status==='declined')DB.logAudit('application_declined',(APPS||[]).find(a=>a.id===id)?.email||'','');
   appMark(id,status);
   toast(status==='declined'?'Кандидатурата е отказана':'Готово');
 }
@@ -679,6 +784,7 @@ async function renewPerson(email,fieldId){
   const from=f?(f.dataset.iso||''):'';
   const {error,until}=await DB.renewMembership(email,from);
   if(error){alert('Грешка: '+error.message);return;}
+  DB.logAudit('member_renewed',email,until?isoToBg(until):'');
   toast('Членството е подновено до '+(until?isoToBg(until):'—'));
   PEOPLE=await DB.listMembers();render();
 }
@@ -688,6 +794,7 @@ async function deletePerson(id,name,subCount){
   if(!confirm(msg))return;
   const {error}=await DB.deleteMember(id);
   if(error){alert('Грешка: '+error.message);return;}
+  DB.logAudit('member_deleted',name||'',subCount>0?('фирма, +'+subCount+' профила'):'');
   toast('Изтрито');
   PEOPLE=await DB.listMembers();render();
 }
@@ -695,6 +802,7 @@ async function savePhone(id){
   const f=document.getElementById('phf_'+id);if(!f)return;
   const {error}=await DB.adminSetPhone(id,f.value.trim());
   if(error){alert('Грешка: '+error.message);return;}
+  DB.logAudit('phone_set',(PHONES&&PHONES[id]&&PHONES[id].email)||id,f.value.trim());
   toast('Телефонът е обновен');
   PEOPLE=await DB.listMembers();render();
 }
@@ -702,6 +810,7 @@ async function requestPhone(id,name){
   if(!confirm('Да поискам ли нов телефон от „'+name+'"? Ще му излезе подкана при следващо влизане.'))return;
   const {error}=await DB.adminRequestPhone(id);
   if(error){alert('Грешка: '+error.message);return;}
+  DB.logAudit('phone_requested',name||'','');
   toast('Поискан е нов телефон от члена');
 }
 async function changeMembership(email,id){
@@ -711,6 +820,7 @@ async function changeMembership(email,id){
   if(!confirm('Да сменя ли членството на '+email+' на „'+label+'"?'))return;
   const {error}=await DB.setMembership(email,m);
   if(error){alert('Грешка: '+error.message);return;}
+  DB.logAudit('membership_changed',email,label);
   toast('Членството е променено на '+label);
   PEOPLE=await DB.listMembers();render();
 }

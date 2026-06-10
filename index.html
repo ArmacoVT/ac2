@@ -2,6 +2,8 @@
 <html lang="bg">
 <head>
 <meta charset="UTF-8" />
+<!-- Sentry — мониторинг на грешки (зарежда се рано, за да улавя всичко) -->
+<script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#f6efe2" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -269,7 +271,7 @@ const T={
     seats:'места',loginTitle:'Вход в клуба',email:'Имейл',pass:'Парола',enter:'Влез',noAcc:'Нямаш профил? Регистрирай се',
     signupTitle:'Нов профил',uname:'Потребителско име',memCat:'Категория членство',create:'Създай профил',haveAcc:'Вече имаш профил? Влез',
     savedToast:'Запазено в профила',resToast:'Запитването е изпратено',loginToast:'Влязохте успешно',
-    myEvents:'Моите събития',myRes:'Моите резервации',noEvents:'Все още няма запазени събития.',noRes:'Няма резервации.',signout:'Изход',
+    myEvents:'Моите събития',myRes:'Моите резервации',noEvents:'Все още няма запазени събития.',noRes:'Няма резервации.',signout:'Изход',delAcc:'Изтрий акаунта',
     allow:'Места за запазване',signinSave:'Влез, за да запазваш събития',tierLocked:'Не е достъпно за твоето членство',locked:'🔒 Заключено',access:'Достъп според членството',memb:'Твоето членство',
     live:'На живо',noLiveTitle:'Няма активно излъчване в момента',noLiveSub:'Тук ще се появи live stream, когато започне представление.',nextUp:'Следващо събитие',watch:'▶ Гледай на живо',liveLockedMsg:'Това излъчване не е достъпно за твоето членство.',openExt:'Отвори в нов прозорец',liveTag:'НА ЖИВО',
     forgot:'Забравена парола?',enterEmail:'Въведи имейла си',resetSent:'Изпратихме линк за нова парола на имейла ти',changePass:'Смени парола',newPassPrompt:'Нова парола (поне 6 знака):',passChanged:'Паролата е сменена',passShort:'Твърде кратка парола',
@@ -286,7 +288,7 @@ const T={
     seats:'seats',loginTitle:'Sign in',email:'Email',pass:'Password',enter:'Sign in',noAcc:"No account? Sign up",
     signupTitle:'Create account',uname:'Username',memCat:'Membership category',create:'Sign up',haveAcc:'Already have an account? Sign in',
     savedToast:'Saved to profile',resToast:'Request sent',loginToast:'Signed in',
-    myEvents:'My saved events',myRes:'My reservations',noEvents:'No saved events yet.',noRes:'No reservations.',signout:'Sign out',
+    myEvents:'My saved events',myRes:'My reservations',noEvents:'No saved events yet.',noRes:'No reservations.',signout:'Sign out',delAcc:'Delete account',
     allow:'Seats you can book',signinSave:'Sign in to save events',tierLocked:'Not available for your membership',locked:'🔒 Locked',access:'Access by membership',memb:'Your membership',
     live:'Live',noLiveTitle:'No live stream right now',noLiveSub:'A live stream will appear here when a performance starts.',nextUp:'Next event',watch:'▶ Watch live',liveLockedMsg:'This stream is not available for your membership.',openExt:'Open in new window',liveTag:'LIVE',
     forgot:'Forgot password?',enterEmail:'Enter your email',resetSent:'We sent a password reset link to your email',changePass:'Change password',newPassPrompt:'New password (min 6 chars):',passChanged:'Password changed',passShort:'Password too short',
@@ -361,7 +363,22 @@ const ICN={
 let lang=localStorage.getItem('lang')||'bg';
 let saved=[];
 let user=null;
-let RES=[];
+let RES=[],ANN=[];
+function annNewestSeen(){try{return localStorage.getItem('acac_ann_seen')||'';}catch(e){return '';}}
+function annUnseenCount(){const s=annNewestSeen();return (ANN||[]).filter(a=>(a.created_at||'')>s).length;}
+function markAnnSeen(){if(ANN&&ANN.length){try{localStorage.setItem('acac_ann_seen',ANN[0].created_at||new Date().toISOString());}catch(e){}}}
+function annHtml(){
+  if(!ANN||!ANN.length)return '';
+  const seen=annNewestSeen();
+  const cards=ANN.slice(0,6).map(a=>{
+    const isNew=(a.created_at||'')>seen;
+    const tag=isNew?` <span style="background:var(--gold);color:#fff7ea;font-size:9px;font-weight:700;border-radius:8px;padding:2px 6px;vertical-align:middle;">${lang==='bg'?'НОВО':'NEW'}</span>`:'';
+    const d=a.created_at?new Date(a.created_at).toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+    const hl=isNew?`border:1px solid var(--gold);box-shadow:0 0 0 2px rgba(191,138,46,.15);`:'';
+    return `<div class="ev" style="margin-bottom:8px;${hl}"><h3 style="font-size:15px;">${esc(a.title)}${tag}</h3><div style="margin-top:4px;white-space:pre-wrap;">${esc(a.body)}</div><div class="m" style="margin-top:6px;">${d}</div></div>`;
+  }).join('');
+  return `<div class="sec-title">${lang==='bg'?'Обяви':'Announcements'}</div>${cards}`;
+}
 let loginMode='login';
 const app=document.getElementById('app');
 const tr=k=>T[lang][k];
@@ -434,6 +451,7 @@ function home(){
       <h1>American College<br>Arcus Club</h1>
       <img class="hero-illu" src="illustrations/hero.svg" alt="" />
       </div>
+    ${annHtml()}
     ${forYouHtml}
     <div class="sec-title">${tr('formats')}</div><div class="sec-sub">${tr('formatsSub')}</div>
     <div class="grid">${cards}</div>
@@ -1104,7 +1122,22 @@ function profile(){
     <div class="sec-title" style="padding:22px 0 8px;">${tr('myRes')}</div>
     ${resSections(res)}
     ${DB.live?`<button class="btn btn-ghost" style="margin-top:26px;" onclick="changePass()">${tr('changePass')}</button>`:''}
-    <button class="btn btn-ghost" style="margin-top:12px;" onclick="signout()">${tr('signout')}</button></div>`;
+    <button class="btn btn-ghost" style="margin-top:12px;" onclick="signout()">${tr('signout')}</button>
+    ${DB.live?`<button class="btn btn-ghost" style="margin-top:26px;color:#b5532f;border-color:rgba(181,83,47,.4);" onclick="deleteAccount()">${tr('delAcc')}</button>
+    <div class="m" style="text-align:center;margin-top:6px;">${lang==='bg'?'Изтрива профила и всички твои данни безвъзвратно.':'Permanently deletes your profile and all your data.'}</div>`:''}</div>`;
+}
+async function deleteAccount(){
+  const bg=lang==='bg';
+  if(!confirm(bg?'Сигурен ли си? Това ще изтрие акаунта и всички твои данни безвъзвратно.':'Are you sure? This permanently deletes your account and all your data.'))return;
+  const word=bg?'ИЗТРИЙ':'DELETE';
+  const ans=prompt(bg?`За потвърждение напиши: ${word}`:`To confirm, type: ${word}`);
+  if((ans||'').trim().toUpperCase()!==word){toast(bg?'Отказано':'Cancelled');return;}
+  const res=await DB.deleteSelfAccount();
+  if(res&&res.error){toast(res.error.message||(bg?'Грешка':'Error'));return;}
+  try{localStorage.removeItem('acac_bio');}catch(e){}
+  user=null;saved=[];RES=[];
+  alert(bg?'Акаунтът е изтрит. Благодарим ти!':'Your account has been deleted. Thank you!');
+  go('');
 }
 // дигитална членска карта
 function memberCard(){
@@ -1139,6 +1172,34 @@ async function toggleFav(id){
   route();
 }
 // карта за една резервация (dim=true за изминалите; датата е в заглавието на групата)
+const CANCEL_HOURS_EVENT=72, CANCEL_HOURS_TABLE=24; // билет за събитие / маса в ресторант
+function cancelCutoffH(r){ return (r.table_event_id && !r.event_id) ? CANCEL_HOURS_TABLE : CANCEL_HOURS_EVENT; }
+function resStartMs(r){
+  if(!r.date)return null;
+  const t=(r.time&&/^\d{1,2}:\d{2}/.test(r.time))?r.time.slice(0,5):'00:00';
+  const p=r.date.split('-').map(Number),tt=t.split(':').map(Number);
+  if(p.length<3)return null;
+  return new Date(p[0],p[1]-1,p[2],tt[0]||0,tt[1]||0,0).getTime();
+}
+function resCancellable(r){
+  if(r.status==='declined'||r.status==='cancelled')return false;
+  const s=resStartMs(r); if(s==null)return false;
+  return s-Date.now()>cancelCutoffH(r)*3600000;
+}
+async function cancelRes(id){
+  const r=RES.find(x=>x.id===id); if(!r)return;
+  const evId=r.event_id||r.table_event_id;
+  const ev=evId?EVENTS.find(x=>x.id===evId):null;
+  const paid=ev&&ev.price>0&&r.event_id;
+  let msg=lang==='bg'?'Да откажа ли тази резервация?':'Cancel this reservation?';
+  if(paid)msg+=lang==='bg'?'\n\nЗа платени билети ще се свържем с теб за връщане на сумата.':'\n\nFor paid tickets the club will contact you about a refund.';
+  if(!confirm(msg))return;
+  const res=await DB.cancelOwnReservation(id);
+  if(res&&res.error){toast(res.error.message||(lang==='bg'?'Грешка':'Error'));return;}
+  toast(lang==='bg'?'Резервацията е отказана':'Reservation cancelled');
+  try{RES=await DB.listReservations();}catch(e){}
+  if(typeof dataSig!=='undefined')dataSig=''; if(typeof route==='function')route();
+}
 function resCard(r,dim){
   const SL={requested:lang==='bg'?'чакаща':'pending',confirmed:lang==='bg'?'одобрена':'approved',declined:lang==='bg'?'отказана':'declined',cancelled:lang==='bg'?'отменена':'cancelled'};
   const SC={confirmed:'#4f7a43',declined:'#b5532f'};
@@ -1151,7 +1212,8 @@ function resCard(r,dim){
   const hl=isNew?`border:1px solid var(--gold);box-shadow:0 0 0 2px rgba(191,138,46,.18);`:'';
   const newTag=isNew?` <span style="background:var(--gold);color:#fff7ea;font-size:9px;font-weight:700;border-radius:8px;padding:2px 6px;vertical-align:middle;">${lang==='bg'?'НОВО':'NEW'}</span>`:'';
   const priceLine=(ev&&ev.price>0&&r.event_id)?`<div class="m" style="color:var(--gold);font-weight:600;">${lang==='bg'?'Общо: ':'Total: '}${fmtPrice(ev.price*(r.party||1))}</div>`:'';
-  return `<div class="ev"${isNew?' data-newres="1"':''} style="margin-bottom:8px;${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}${newTag}</h3><div class="m">${tm}<b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div>${priceLine}</div>`;
+  const cancelBtn=resCancellable(r)?`<button onclick="event.stopPropagation();cancelRes('${r.id}')" style="margin-top:6px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;">${lang==='bg'?'Откажи резервацията':'Cancel reservation'}</button>`:'';
+  return `<div class="ev"${isNew?' data-newres="1"':''} style="margin-bottom:8px;${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}${newTag}</h3><div class="m">${tm}<b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div>${priceLine}${cancelBtn}</div>`;
 }
 // заглавие на дата: „петък, 6 юни 2026"
 function resDayLabel(iso){
@@ -1354,7 +1416,7 @@ function tabbar(active){
 }
 function renderPath(path,q,parts){
   let html,active='home';
-  if(path===''||path==='home'){html=home();active='home';}
+  if(path===''||path==='home'){html=home();active='home';setTimeout(markAnnSeen,1200);}
   else if(parts[0]==='format'){html=formatPage(parts[1]);active='home';}
   else if(path==='events'){html=events();active='events';}
   else if(path==='live'){html=liveView();active='live';}
@@ -1403,9 +1465,9 @@ async function route(){
   const needsData=['','home','events','profile','live'].includes(path)||parts[0]==='format';
   if(needsData){
     try{
-      const [ev,sv,rs,tk]=await Promise.all([DB.listEvents(),DB.listSaved(),DB.listReservations(),DB.listEventTaken()]);
-      const sig=JSON.stringify([ev,sv,rs,tk]);
-      EVENTS=ev;saved=sv;RES=rs;TAKEN=tk||{};const wasReady=dataReady;dataReady=true;
+      const [ev,sv,rs,tk,an]=await Promise.all([DB.listEvents(),DB.listSaved(),DB.listReservations(),DB.listEventTaken(),DB.listAnnouncements()]);
+      const sig=JSON.stringify([ev,sv,rs,tk,an]);
+      EVENTS=ev;saved=sv;RES=rs;TAKEN=tk||{};ANN=an||[];const wasReady=dataReady;dataReady=true;
       const cur=location.hash.replace(/^#/,'').split('?')[0];
       if(cur===path&&(sig!==dataSig||!wasReady)){dataSig=sig;renderPath(path,q,parts);}
     }catch(e){}
