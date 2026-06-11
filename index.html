@@ -710,20 +710,33 @@ function streamEmbed(u){
   if((m=u.match(/vimeo\.com\/(\d+)/)))return 'https://player.vimeo.com/video/'+m[1]+'?autoplay=1';
   return u;
 }
+function hasConfirmedTicket(e){return RES.some(r=>r.event_id===e.id&&r.status==='confirmed');}
+function streamGated(e){return !!e.stream_gated;}
 function liveView(){
   const liveOnes=EVENTS.filter(e=>canAccess(e)&&isLiveNow(e));
+  const lock=`<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
   let body;
   if(liveOnes.length){
-    body=liveOnes.map(e=>`<div class="ev" style="border-color:#d98b6e;">
-      <div class="t" style="color:#d98b6e;">● ${tr('liveTag')} · ${e.format}</div>
-      <h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>
-      <div class="livewrap" id="lw_${e.id}">
-        <div class="liveposter" onclick="playLive('${e.id}')">
-          <div class="playbtn">▶</div>
-          <div class="pl">${lang==='bg'?'Докосни, за да гледаш':'Tap to watch'}</div>
-        </div></div>
-      <div class="row" style="margin-top:10px;"><a class="chip ghost" href="${esc(e.stream_url)}" target="_blank" rel="noopener">${tr('openExt')}</a></div>
-    </div>`).join('');
+    body=liveOnes.map(e=>{
+      const locked=streamGated(e)&&!hasConfirmedTicket(e);
+      const inner=locked
+        ? `<div style="text-align:center;padding:20px 14px;margin-top:12px;border-radius:12px;background:var(--surface2);color:var(--gold-soft);">
+            ${lock}
+            <div style="margin-top:8px;color:var(--cream);font-weight:500;font-size:14px;">${lang==='bg'?'Това излъчване е само за записани/платили.':'This stream is for booked / paid members only.'}</div>
+            <button class="btn" style="margin:12px auto 0;max-width:240px;" onclick="go('format/${e.format}')">${e.price>0?(lang==='bg'?'Купи билет':'Buy a ticket'):(lang==='bg'?'Запази, за да гледаш':'Book to watch')}</button>
+          </div>`
+        : `<div class="livewrap" id="lw_${e.id}">
+            <div class="liveposter" onclick="playLive('${e.id}')">
+              <div class="playbtn">▶</div>
+              <div class="pl">${lang==='bg'?'Докосни, за да гледаш':'Tap to watch'}</div>
+            </div></div>
+          <div class="row" style="margin-top:10px;"><a class="chip ghost" href="${esc(e.stream_url)}" target="_blank" rel="noopener">${tr('openExt')}</a></div>`;
+      return `<div class="ev" style="border-color:#d98b6e;">
+        <div class="t" style="color:#d98b6e;">● ${tr('liveTag')} · ${e.format}</div>
+        <h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>
+        ${inner}
+      </div>`;
+    }).join('');
   }else{
     const up=EVENTS.filter(canAccess).filter(e=>e.date&&!isPast(e)).sort((a,b)=>a.date<b.date?-1:1)[0];
     body=`<div class="ev" style="text-align:center;padding:32px 18px;">
@@ -740,6 +753,7 @@ function isDirectVideo(u){return /\.(mp4|m3u8|webm|mov)(\?|$)/i.test(u||'');}
 function VideoPlugin(){try{const C=window.Capacitor;if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return null;return (C.Plugins&&C.Plugins.CapacitorVideoPlayer)||(C.registerPlugin&&C.registerPlugin('CapacitorVideoPlayer'))||null;}catch(e){return null;}}
 function playLive(id){
   const e=EVENTS.find(x=>x.id===id); if(!e)return;
+  if(streamGated(e)&&!hasConfirmedTicket(e)){toast(lang==='bg'?'Достъпно само за записани/платили':'Only for booked / paid members');return;}
   const w=document.getElementById('lw_'+id); if(!w)return;
   const box='position:relative;padding-top:56.25%;margin-top:12px;border-radius:10px;overflow:hidden;background:#000;';
   const VP=VideoPlugin();
@@ -872,6 +886,7 @@ async function submitApp(nominate){
     profession:v('ap_prof'),interests:v('ap_interests'),alumni_relation:alumni,
     corp_bulstat:v('ap_bulstat'),corp_size:v('ap_size'),corp_activity:v('ap_activity')});
   if(r&&r.error){
+    if(r.error.cooldown){toast(lang==='bg'?'Скорошна кандидатура с този имейл/БУЛСТАТ беше отказана. Може да опитате отново след 30 дни.':'A recent application with this email/company ID was declined. You can re-apply after 30 days.');return;}
     if(r.error.dup){toast(lang==='bg'?'Вече има подадена кандидатура с този имейл или БУЛСТАТ. Изчакайте да я разгледаме.':'An application with this email or company ID already exists. Please wait for our review.');return;}
     toast(r.error.message);return;
   }

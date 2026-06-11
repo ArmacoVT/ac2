@@ -300,7 +300,9 @@ function formView(){
       <input type="checkbox" id="f_auto" ${e&&e.live_auto?'checked':''} style="width:auto;"/> Пусни автоматично в часа на събитието</label>
     <label style="display:flex;align-items:center;gap:10px;margin-top:8px;cursor:pointer;">
       <input type="checkbox" id="f_live" ${e&&e.is_live?'checked':''} style="width:auto;"/> На живо сега (ръчно пускане веднага)</label>
-    <p class="muted" style="margin:4px 0 0;font-size:12px;">При „авто старт" стриймът се показва сам в часа на началото и тече до ръчно спиране (бутон „Спри стрийма"), дори след заложения край.</p>
+    ${!draftAud.includes('all')?`<label style="display:flex;align-items:center;gap:10px;margin-top:8px;cursor:pointer;">
+      <input type="checkbox" id="f_gated" ${(e?e.stream_gated:true)?'checked':''} style="width:auto;"/> Излъчването е само за записани/платили</label>`:''}
+    <p class="muted" style="margin:4px 0 0;font-size:12px;">При „авто старт" стриймът се показва сам в часа на началото и тече до ръчно спиране, дори след заложения край. „Само за записани/платили" важи за събития с избрана аудитория — при „видимо за всички" стриймът е отворен.</p>
     <label>Видимо за (кой може да го вижда / гледа / запазва)</label>
     <div class="chips">${memCk}</div>
     ${bwSection(e)}
@@ -329,11 +331,12 @@ function grabForm(){
   const g=id=>{const el=document.getElementById(id);return el?el.value:null;};
   const live=document.getElementById('f_live');
   const auto=document.getElementById('f_auto');
+  const gated=document.getElementById('f_gated');
   const date=document.getElementById('f_date');
   const ed=document.getElementById('f_end_date');
   const bw={};document.querySelectorAll('.bwfield').forEach(el=>{bw[el.dataset.mem]=el.dataset.iso||'';});
   return {title:g('f_title'),format:g('f_format'),place:g('f_place'),time:g('f_time'),ends:g('f_ends'),
-    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),price:g('f_price'),stream:g('f_stream'),live:live?live.checked:false,auto:auto?auto.checked:false,bw};
+    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),price:g('f_price'),stream:g('f_stream'),live:live?live.checked:false,auto:auto?auto.checked:false,gated:gated?gated.checked:false,bw};
 }
 function putForm(v){
   if(!v)return;
@@ -347,6 +350,7 @@ function putForm(v){
   if(v.bw)Object.keys(v.bw).forEach(mem=>{const el=document.getElementById('f_bw_'+mem);if(el){el.dataset.iso=v.bw[mem]||'';el.value=v.bw[mem]?isoToBg(v.bw[mem]):'';}});
   const live=document.getElementById('f_live');if(live)live.checked=!!v.live;
   const auto=document.getElementById('f_auto');if(auto)auto.checked=!!v.auto;
+  const gated=document.getElementById('f_gated');if(gated)gated.checked=!!v.gated;
 }
 function toggleAud(id){
   const v=grabForm();
@@ -449,6 +453,7 @@ async function saveEvent(){
     stream_url:document.getElementById('f_stream').value.trim(),
     is_live:document.getElementById('f_live').checked,
     live_auto:document.getElementById('f_auto')?document.getElementById('f_auto').checked:false,
+    stream_gated:document.getElementById('f_gated')?document.getElementById('f_gated').checked:false,
     aud:draftAud.includes('all')?'all':draftAud.slice()};
   const r=editId?await DB.updateEvent(editId,obj):await DB.addEvent(obj);
   if(r&&r.error){alert('Събитието не се записа: '+r.error.message);return;}
