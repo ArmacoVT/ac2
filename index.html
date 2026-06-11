@@ -682,7 +682,7 @@ function liveView(){
       <div class="row" style="margin-top:10px;"><a class="chip ghost" href="${esc(e.stream_url)}" target="_blank" rel="noopener">${tr('openExt')}</a></div>
     </div>`).join('');
   }else{
-    const up=EVENTS.filter(canAccess).filter(e=>e.date).sort((a,b)=>a.date<b.date?-1:1)[0];
+    const up=EVENTS.filter(canAccess).filter(e=>e.date&&!isPast(e)).sort((a,b)=>a.date<b.date?-1:1)[0];
     body=`<div class="ev" style="text-align:center;padding:32px 18px;">
       <div style="font-size:34px;margin-bottom:8px;color:var(--gold-soft);">▶</div>
       <h3 style="font-size:18px;">${tr('noLiveTitle')}</h3>
