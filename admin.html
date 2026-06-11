@@ -214,12 +214,36 @@ function toggleEvRes(id){
   d.style.display=open?'none':'block';
   if(b)b.textContent=b.textContent.replace(open?'▴':'▾',open?'▾':'▴');
 }
+function admEvStartMs(e){
+  if(!e.date)return null;
+  const t=(e.time&&/^\d{1,2}:\d{2}/.test(e.time))?e.time.slice(0,5):'00:00';
+  const p=e.date.split('-').map(Number),tt=t.split(':').map(Number);
+  if(p.length<3)return null;
+  return new Date(p[0],p[1]-1,p[2],tt[0]||0,tt[1]||0,0).getTime();
+}
+function admIsPast(e){
+  const ed=e.end_date||e.date; if(!ed)return false;
+  const t=(e.ends&&/^\d{1,2}:\d{2}/.test(e.ends))?e.ends.slice(0,5):'23:59';
+  const p=ed.split('-').map(Number),tt=t.split(':').map(Number);
+  if(p.length<3)return false;
+  return Date.now()>new Date(p[0],p[1]-1,p[2],tt[0]||0,tt[1]||0,0).getTime()+2*3600000; // 2 ч след края
+}
+function admLiveNow(e){
+  if(!e.stream_url||e.live_ended||admIsPast(e))return false;
+  if(e.is_live)return true;
+  if(e.live_auto){const s=admEvStartMs(e);return s&&Date.now()>=s;}
+  return false;
+}
 function eventsView(){
   const evCard=e=>{
-    const liveBadge=e.is_live?'<span class="pill" style="border-color:#d98b6e;color:#d98b6e;">● НА ЖИВО</span>':(e.stream_url?'<span class="pill">стрийм готов</span>':'');
+    const liveNow=admLiveNow(e);
+    const waiting=e.stream_url&&e.live_auto&&!liveNow&&!e.live_ended&&!admIsPast(e);
+    const liveBadge=liveNow?'<span class="pill" style="border-color:#d98b6e;color:#d98b6e;">● НА ЖИВО</span>'
+      :(waiting?`<span class="pill">⏱ авто старт ${esc(e.time||'')}</span>`
+      :(e.stream_url?'<span class="pill">стрийм готов</span>':''));
     const liveBtn=e.stream_url
-      ? (e.is_live?`<button class="btn no sm" onclick="toggleLive('${e.id}',false)">Спри стрийма</button>`
-                  :`<button class="btn ok sm" onclick="toggleLive('${e.id}',true)">Пусни на живо</button>`)
+      ? (liveNow?`<button class="btn no sm" onclick="toggleLive('${e.id}',false)">Спри стрийма</button>`
+                  :`<button class="btn ok sm" onclick="toggleLive('${e.id}',true)">Пусни сега</button>`)
       : '';
     return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
@@ -232,10 +256,8 @@ function eventsView(){
         <button class="btn ghost sm" onclick="editEvent('${e.id}')">Редактирай</button>
         <button class="btn no sm" onclick="delEvent('${e.id}')">Изтрий</button></div>
     </div>${eventResList(e)}</div>`;};
-  const today=new Date().toISOString().slice(0,10);
-  const evEnd=e=>e.end_date||e.date||'';
-  const up=EVENTS.filter(e=>!evEnd(e)||evEnd(e)>=today).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1));
-  const past=EVENTS.filter(e=>evEnd(e)&&evEnd(e)<today).sort((a,b)=>(a.date<b.date?1:-1));
+  const up=EVENTS.filter(e=>!admIsPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1));
+  const past=EVENTS.filter(e=>admIsPast(e)).sort((a,b)=>(a.date<b.date?1:-1));
   let list=up.length?up.map(evCard).join(''):`<p class="empty">Няма предстоящи събития.</p>`;
   if(past.length){
     list+=`<button class="btn ghost" style="margin-top:10px;" onclick="togglePastAdm(this)">Изминали събития (${past.length}) ▾</button>
@@ -274,7 +296,10 @@ function formView(){
     <label style="margin-top:14px;">Линк за live stream (по желание — YouTube, Vimeo или друг)</label>
     <input id="f_stream" value="${esc(e?e.stream_url:'')}" placeholder="https://www.youtube.com/watch?v=..."/>
     <label style="display:flex;align-items:center;gap:10px;margin-top:12px;cursor:pointer;">
-      <input type="checkbox" id="f_live" ${e&&e.is_live?'checked':''} style="width:auto;"/> На живо сега (стриймът е активен)</label>
+      <input type="checkbox" id="f_auto" ${e&&e.live_auto?'checked':''} style="width:auto;"/> Пусни автоматично в часа на събитието</label>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:8px;cursor:pointer;">
+      <input type="checkbox" id="f_live" ${e&&e.is_live?'checked':''} style="width:auto;"/> На живо сега (ръчно пускане веднага)</label>
+    <p class="muted" style="margin:4px 0 0;font-size:12px;">При „авто старт" стриймът се показва сам в часа на началото и тече до ръчно спиране (бутон „Спри стрийма"), дори след заложения край.</p>
     <label>Видимо за (кой може да го вижда / гледа / запазва)</label>
     <div class="chips">${memCk}</div>
     ${bwSection(e)}
@@ -302,11 +327,12 @@ function bwSection(e){
 function grabForm(){
   const g=id=>{const el=document.getElementById(id);return el?el.value:null;};
   const live=document.getElementById('f_live');
+  const auto=document.getElementById('f_auto');
   const date=document.getElementById('f_date');
   const ed=document.getElementById('f_end_date');
   const bw={};document.querySelectorAll('.bwfield').forEach(el=>{bw[el.dataset.mem]=el.dataset.iso||'';});
   return {title:g('f_title'),format:g('f_format'),place:g('f_place'),time:g('f_time'),ends:g('f_ends'),
-    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),price:g('f_price'),stream:g('f_stream'),live:live?live.checked:false,bw};
+    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),price:g('f_price'),stream:g('f_stream'),live:live?live.checked:false,auto:auto?auto.checked:false,bw};
 }
 function putForm(v){
   if(!v)return;
@@ -319,6 +345,7 @@ function putForm(v){
   if(ed){ed.dataset.iso=v.endDateIso||'';ed.value=v.endDateIso?isoToBg(v.endDateIso):'';}
   if(v.bw)Object.keys(v.bw).forEach(mem=>{const el=document.getElementById('f_bw_'+mem);if(el){el.dataset.iso=v.bw[mem]||'';el.value=v.bw[mem]?isoToBg(v.bw[mem]):'';}});
   const live=document.getElementById('f_live');if(live)live.checked=!!v.live;
+  const auto=document.getElementById('f_auto');if(auto)auto.checked=!!v.auto;
 }
 function toggleAud(id){
   const v=grabForm();
@@ -420,6 +447,7 @@ async function saveEvent(){
     image_url:imgUrl,video_url:vidUrl,
     stream_url:document.getElementById('f_stream').value.trim(),
     is_live:document.getElementById('f_live').checked,
+    live_auto:document.getElementById('f_auto')?document.getElementById('f_auto').checked:false,
     aud:draftAud.includes('all')?'all':draftAud.slice()};
   const r=editId?await DB.updateEvent(editId,obj):await DB.addEvent(obj);
   if(r&&r.error){alert('Събитието не се записа: '+r.error.message);return;}
@@ -516,10 +544,8 @@ async function setRes(id,st){
 }
 
 function statsView(){
-  const today=new Date().toISOString().slice(0,10);
-  const evEnd=e=>e.end_date||e.date||'';
-  const upcoming=EVENTS.filter(e=>!evEnd(e)||evEnd(e)>=today);
-  const past=EVENTS.filter(e=>evEnd(e)&&evEnd(e)<today);
+  const upcoming=EVENTS.filter(e=>!admIsPast(e));
+  const past=EVENTS.filter(e=>admIsPast(e));
   const tickets=RES.filter(r=>r.event_id);
   const tables=RES.filter(r=>r.table_event_id);
   const cnt=s=>RES.filter(r=>(r.status||'requested')===s).length;
