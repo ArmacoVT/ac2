@@ -981,16 +981,19 @@ function NB(){
 }
 function bioEnabled(){return !!(NB()&&localStorage.getItem('acac_bio'));}
 async function saveBioCreds(email,pass){
-  const b=NB(); if(!b)return;
+  const isNative=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+  const b=NB();
+  if(!b){ if(isNative)alert('Face ID диагностика: плъгинът не е зареден (NativeBiometric липсва).'); return; }
   try{
-    const a=await b.isAvailable(); if(!a||!a.isAvailable)return;
+    const a=await b.isAvailable();
+    if(!a||!a.isAvailable){ alert('Face ID диагностика: isAvailable = '+JSON.stringify(a)); return; }
     try{await b.deleteCredentials({server:BIO_SERVER});}catch(_){} // чистим стар запис (оцелял от стара инсталация)
     await b.setCredentials({username:email,password:pass,server:BIO_SERVER});
-    localStorage.setItem('acac_bio','1');
+    localStorage.setItem('acac_bio','1'); // успех — бутонът за Face ID ще се появи при следващо влизане
   }catch(e){
     // втори опит: само изтриване + запис
     try{await b.deleteCredentials({server:BIO_SERVER});await b.setCredentials({username:email,password:pass,server:BIO_SERVER});localStorage.setItem('acac_bio','1');}
-    catch(e2){alert('Face ID не може да запази: '+((e2&&e2.message)||e2));}
+    catch(e2){alert('Face ID диагностика (запис в Keychain): '+((e2&&e2.message)||JSON.stringify(e2)));}
   }
 }
 async function bioLogin(){

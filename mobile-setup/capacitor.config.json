@@ -1,0 +1,8 @@
+{
+  "appId": "com.arcusclub.app",
+  "appName": "Arcus Club",
+  "webDir": "www",
+  "server": {
+    "url": "https://armacovt.github.io/ac2/"
+  }
+}
