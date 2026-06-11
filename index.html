@@ -108,7 +108,7 @@
     animation:spRing .9s cubic-bezier(.2,.8,.2,1) both;}
   #splash .sp-ring::after{content:"";position:absolute;width:128px;height:128px;border-radius:50%;border:2px solid var(--gold);
     opacity:0;animation:spPulse 1.8s ease-out .5s infinite;}
-  #splash .sp-ring img{width:128px;height:128px;border-radius:50%;object-fit:cover;animation:spLogo 1s ease .15s both;}
+  #splash .sp-ring img{width:92px;height:auto;object-fit:contain;animation:spLogo 1s ease .15s both;}
   #splash .sp-name{margin-top:26px;font-family:var(--serif);font-size:22px;line-height:1.25;text-align:center;color:var(--cream);
     letter-spacing:.5px;opacity:0;animation:spName .8s ease .5s both;}
   @keyframes spRing{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
@@ -266,7 +266,7 @@
 </head>
 <body>
 <div id="splash">
-  <div class="sp-ring"><img src="icon-512.png" alt="AC²"/></div>
+  <div class="sp-ring"><img src="cards/logo-ac2.webp" alt="AC²"/></div>
   <div class="sp-name">American College<br>Arcus Club</div>
 </div>
 <div id="app"></div>
