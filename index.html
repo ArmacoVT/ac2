@@ -383,7 +383,7 @@ let user=null;
 let RES=[],ANN=[];
 function annNewestSeen(){try{return localStorage.getItem('acac_ann_seen')||'';}catch(e){return '';}}
 function annUnseenCount(){const s=annNewestSeen();return (ANN||[]).filter(a=>(a.created_at||'')>s).length;}
-function markAnnSeen(){if(ANN&&ANN.length){try{localStorage.setItem('acac_ann_seen',ANN[0].created_at||new Date().toISOString());}catch(e){}}try{if(typeof appBadge==='function')appBadge();}catch(e){}}
+function markAnnSeen(){if(ANN&&ANN.length){try{localStorage.setItem('acac_ann_seen',ANN[0].created_at||new Date().toISOString());}catch(e){}}try{if(typeof appBadge==='function')appBadge();}catch(e){}try{if(typeof tabbar==='function')tabbar('home');}catch(e){}}
 function annHtml(){
   if(!ANN||!ANN.length)return '';
   const seen=annNewestSeen();
@@ -1449,7 +1449,9 @@ function appBadge(){
 function tabbar(active){
   const n=appBadge();
   const nb=n?`<span class="nb">${n}</span>`:'';
-  const items=[['','home',tr('home'),''],['events','events',tr('events'),''],['live','live',tr('live'),''],['reserve','reserve',tr('reserve'),''],[user?'profile':'login','profile',user?tr('profile'):tr('signin'),nb]];
+  const an=annUnseenCount();
+  const hb=an?`<span class="nb">${an}</span>`:'';
+  const items=[['','home',tr('home'),hb],['events','events',tr('events'),''],['live','live',tr('live'),''],['reserve','reserve',tr('reserve'),''],[user?'profile':'login','profile',user?tr('profile'):tr('signin'),nb]];
   document.getElementById('tabbar').innerHTML=items.map(i=>`<a onclick="hap('select');go('${i[0]}')" class="${active===(i[0]||'home')?'active':''}"><span class="ti">${ICN[i[1]]}${i[3]||''}</span>${i[2]}</a>`).join('');
 }
 function renderPath(path,q,parts){
