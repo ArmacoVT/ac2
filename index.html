@@ -1017,9 +1017,11 @@ function gate(){
   const bioBtn=bioEnabled()?`<button class="btn btn-ghost" style="margin-top:10px;" onclick="bioLogin()">${tr('bioLogin')}</button>`:'';
   const memChips=MEMBERS.concat([{id:'guest',t:'Guest'}]).map(m=>`<button type="button" class="chip ${pickedMem===m.id?'on':''}" onclick="pickMem(this)" data-m="${m.id}">${m.t}</button>`).join('');
   const fields=live
-    ? `<input id="l_email" type="email" autocapitalize="none" autocomplete="username" placeholder="${tr('email')}" onkeydown="if(event.key==='Enter')doAuth()"/>
-       <input id="l_pass" type="password" autocomplete="current-password" placeholder="${tr('pass')}" onkeydown="if(event.key==='Enter')doAuth()"/>
-       <button class="btn" onclick="doAuth()">${tr('enter')}</button>
+    ? `<form onsubmit="event.preventDefault();doAuth();return false;" autocomplete="on" style="margin:0;">
+       <input id="l_email" type="email" name="username" autocapitalize="none" autocorrect="off" autocomplete="username" placeholder="${tr('email')}"/>
+       <input id="l_pass" type="password" name="password" autocomplete="current-password" placeholder="${tr('pass')}"/>
+       <button class="btn" type="submit">${tr('enter')}</button>
+       </form>
        ${bioBtn}
        <div style="margin-top:14px;"><a style="color:var(--gold);font-size:13px;cursor:pointer;" onclick="doForgot()">${tr('forgot')}</a></div>
        <div style="margin-top:10px;color:var(--muted);font-size:12px;">${tr('inviteOnly')}</div>`
