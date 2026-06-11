@@ -59,6 +59,15 @@
   .evposter{width:100%;border-radius:12px;margin-bottom:12px;display:block;object-fit:cover;max-height:240px;}
   .evvideo{width:100%;border-radius:12px;margin:10px 0 4px;display:block;background:#000;max-height:300px;}
   .sec-sub{color:var(--muted);font-size:13px;padding:0 20px 10px;}
+  /* Предстоящи събития — редове с дата */
+  .fcard.dim{opacity:.5;}
+  .urow{display:flex;gap:13px;align-items:center;background:var(--surface);border-radius:13px;padding:10px 13px;margin:0 20px 9px;box-shadow:5px 5px 11px #d9cdb6,-5px -5px 11px #fffdf4;cursor:pointer;}
+  .urow .udate{flex:none;width:44px;text-align:center;line-height:1;}
+  .urow .udn{font-family:var(--serif);font-size:23px;color:var(--cream);}
+  .urow .udm{font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-top:3px;}
+  .urow .ucol{min-width:0;}
+  .urow .ucol h3{font-family:var(--serif);font-size:16px;color:var(--cream);margin:0;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .urow .ucol .m{color:var(--muted);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* Новини от клуба — вдълбана карта, без лого */
   .newswrap{padding:0 20px;}
   .newscard{position:relative;background:var(--bg);border-radius:16px;padding:14px 16px;margin-bottom:12px;
@@ -435,6 +444,16 @@ function topbar(title){
     </div></div>`;
 }
 
+function upRow(e){
+  const f=FORMATS.find(x=>x.id===e.format);
+  const fl=f?f.t:(e.format||''); const col=f?f.c:'var(--gold)';
+  const dt=e.date?new Date(e.date+'T00:00:00'):null;
+  const dn=dt?dt.getDate():''; const dm=dt?dt.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{month:'short'}).replace('.',''):'';
+  const meta=[e.time,e.place,fl].filter(Boolean).join(' · ');
+  return `<div class="urow" onclick="go('format/${e.format}')">
+    <div class="udate"><div class="udn">${dn}</div><div class="udm" style="color:${col}">${esc(dm)}</div></div>
+    <div class="ucol"><h3>${esc(e.title)}</h3><div class="m">${esc(meta)}</div></div></div>`;
+}
 function home(){
   const SIZE={culture:'wide',cinema:'tall',theater:'wide'};
   const MOTIF={
@@ -447,10 +466,11 @@ function home(){
     theater:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 24 c14 -4 22 2 22 16 c0 14 -8 22 -16 22 c-9 0 -14 -10 -14 -24 c0 -8 2 -12 8 -14 Z"/><path d="M24 38 q3 -3 6 0 M30 50 q-4 4 -9 1"/><path d="M62 24 c-14 -4 -22 2 -22 16 c0 14 8 22 16 22 c9 0 14 -10 14 -24 c0 -8 -2 -12 -8 -14 Z"/><path d="M56 38 q-3 -3 -6 0 M50 52 q4 4 9 1"/></g></svg>`,
     online:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="22" y="24" width="36" height="26" rx="4"/><path d="M34 58 h12 M40 50 v8"/></g><path d="M35 31 v12 l10 -6 Z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" opacity=".7"><path d="M16 30 q-6 8 0 16"/><path d="M64 30 q6 8 0 16"/></g></svg>`
   };
-  let cards=FORMATS.map(f=>{
-    const n=EVENTS.filter(e=>e.format===f.id&&canAccess(e)&&!isPast(e)).length;
+  const fmtN=FORMATS.map(f=>({f,n:EVENTS.filter(e=>e.format===f.id&&canAccess(e)&&!isPast(e)).length}));
+  fmtN.sort((a,b)=>((b.n>0)-(a.n>0))); // активните формати горе (стабилно, пази реда вътре)
+  let cards=fmtN.map(({f,n})=>{
     const badge=n?`<div class="evbadge"><span class="evdot" style="background:${f.c}"></span>${n} ${n===1?(lang==='bg'?'събитие':'event'):(lang==='bg'?'събития':'events')}</div>`:'';
-    return `<div class="fcard" onclick="go('format/${f.id}')">
+    return `<div class="fcard${n?'':' dim'}" onclick="go('format/${f.id}')">
     <div class="top"><div class="well" style="color:${f.c}">${MOTIF[f.id]||''}</div><div class="ac2" style="color:${f.c}">AC²</div></div>
     <div class="body"><div class="lab" style="color:${f.c}">${lang==='bg'?'Формат':'Format'}</div>
       <h3>${f.t.replace('AC² ','')}</h3><span>${tx(f.b).slice(0,2).join(' · ')}</span>${badge}</div>
@@ -464,12 +484,15 @@ function home(){
   const favs=(user&&user.fav_formats)||[];
   const forYou=favs.length?EVENTS.filter(e=>favs.includes(e.format)&&canAccess(e)&&!isPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1)):[];
   const forYouHtml=forYou.length?`<div class="sec-title">${tr('forYou')}</div><div class="sec-sub">${tr('forYouSub')}</div>${forYou.slice(0,4).map(eventCard).join('')}`:'';
+  const upcoming=EVENTS.filter(e=>canAccess(e)&&!isPast(e)&&e.date).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1)).slice(0,5);
+  const upcomingHtml=upcoming.length?`<div class="sec-title">${lang==='bg'?'Предстоящи':'Upcoming'}</div>${upcoming.map(upRow).join('')}`:'';
   return topbar('')+`
     <div class="hero"><img class="ac2" src="${AC2}" alt="AC²"/>
       <h1>American College<br>Arcus Club</h1>
       <img class="hero-illu" src="illustrations/hero.svg" alt="" />
       </div>
     ${annHtml()}
+    ${upcomingHtml}
     ${forYouHtml}
     <div class="sec-title">${tr('formats')}</div><div class="sec-sub">${tr('formatsSub')}</div>
     <div class="grid">${cards}</div>
