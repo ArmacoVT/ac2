@@ -350,9 +350,13 @@
     // списък с всички членове (само админ)
     async listMembers() {
       if (!LIVE) return [];
-      const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'members' } });
-      if (error || !data || data.error) return [];
-      return data.members || [];
+      try {
+        const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'members' } });
+        if (error) { try { const b = await error.context.json(); window.__membersErr = (b && b.error) || error.message; } catch (e) { window.__membersErr = error.message; } return []; }
+        if (!data || data.error) { window.__membersErr = (data && data.error) || 'няма отговор'; return []; }
+        window.__membersErr = '';
+        return data.members || [];
+      } catch (e) { window.__membersErr = String((e && e.message) || e); return []; }
     },
     // изтриване на член (само админ)
     async deleteMember(id) {

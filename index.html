@@ -454,7 +454,7 @@ function home(){
       <h3>${f.t.replace('AC² ','')}</h3><span>${tx(f.b).slice(0,2).join(' · ')}</span>${badge}</div>
     </div>`;
   }).join('');
-  const anyLive=EVENTS.some(e=>e.is_live&&e.stream_url&&canAccess(e));
+  const anyLive=EVENTS.some(e=>e.is_live&&e.stream_url&&canAccess(e)&&!isPast(e));
   const liveLabel=anyLive?`<span class="livedot"></span>${lang==='bg'?'На живо':'Live'}`:tr('live');
   const quick=[['events','events',tr('events'),'#2f6b63'],['live','live',liveLabel,'#b5532f'],['reserve','reserve',tr('reserve'),'#bf8a2e'],['membership','membership',tr('membership'),'#6b3a5b']];
   let tiles=quick.map(q=>`<div class="tile" onclick="go('${q[0]}')"><div class="ic" style="color:${q[3]}">${ICN[q[1]]}</div><div class="lb">${q[2]}</div></div>`).join('');
@@ -668,7 +668,7 @@ function streamEmbed(u){
   return u;
 }
 function liveView(){
-  const liveOnes=EVENTS.filter(e=>e.is_live&&e.stream_url&&canAccess(e));
+  const liveOnes=EVENTS.filter(e=>e.is_live&&e.stream_url&&canAccess(e)&&!isPast(e));
   let body;
   if(liveOnes.length){
     body=liveOnes.map(e=>`<div class="ev" style="border-color:#d98b6e;">

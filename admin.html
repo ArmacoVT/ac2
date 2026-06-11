@@ -131,9 +131,18 @@ async function annSetAud(v){
 }
 function annMemChipsHTML(){ return MEMBERS.map(m=>`<span class="annchip${annMemPicked.includes(m.id)?' on':''}" onclick="annToggleMem('${m.id}')">${m.t}</span>`).join(''); }
 function annToggleMem(id){ const i=annMemPicked.indexOf(id); if(i>-1)annMemPicked.splice(i,1); else annMemPicked.push(id); const c=document.getElementById('annMemChips'); if(c)c.innerHTML=annMemChipsHTML(); }
+async function annReloadUsers(){
+  PEOPLE=await DB.listMembers();
+  const l=document.getElementById('annUserList'); if(l)l.innerHTML=annUserListHTML();
+  const c=document.getElementById('annUserCount'); if(c)c.textContent=annUserPicked.length;
+}
 function annUserListHTML(){
   const people=(PEOPLE||[]);
-  if(!people.length) return '<div class="muted" style="padding:10px;">Зареждане…</div>';
+  if(!people.length){
+    const err=(typeof window!=='undefined'&&window.__membersErr)?window.__membersErr:'';
+    const msg=err?('Грешка при зареждане: '+esc(err)):'Зареждане…';
+    return '<div class="muted" style="padding:10px;">'+msg+' <button class="btn ghost sm" style="margin-left:8px;" onclick="annReloadUsers()">Опитай пак</button></div>';
+  }
   const q=(annUserFilter||'').toLowerCase().trim();
   const rows=people.filter(p=>((p.full_name||p.username||p.email||'').toLowerCase().indexOf(q)>-1));
   if(!rows.length) return '<div class="muted" style="padding:10px;">Няма съвпадение</div>';
