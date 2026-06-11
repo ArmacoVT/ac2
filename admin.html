@@ -570,9 +570,9 @@ async function exportCSV(kind){
 }
 // ---------- ОБЯВИ ----------
 function announcementsView(){
-  const memChecks=MEMBERS.map(m=>`<label class="pill" style="cursor:pointer;"><input type="checkbox" class="annMem" value="${m.id}" style="margin-right:5px;">${m.t}</label>`).join(' ');
+  const memOpts=MEMBERS.map(m=>`<option value="${m.id}">${m.t}</option>`).join('');
   const people=(PEOPLE||[]);
-  const memberChecks=people.length?people.map(p=>`<label style="display:block;padding:3px 0;cursor:pointer;"><input type="checkbox" class="annUser" value="${p.id}" style="margin-right:6px;">${esc(p.full_name||p.username||p.email||'')}<span class="muted"> · ${esc(memName(p.membership||'guest'))}</span></label>`).join(''):'<span class="muted">Зареждане…</span>';
+  const memberOpts=people.map(p=>`<option value="${p.id}">${esc(p.full_name||p.username||p.email||'')} · ${esc(memName(p.membership||'guest'))}</option>`).join('');
   const list=(ANN||[]).map(a=>{
     let aud='Всички';
     if(a.audience==='membership')aud='Категории: '+(a.memberships||[]).map(memName).join(', ');
@@ -587,11 +587,13 @@ function announcementsView(){
       <input id="annTitle" value="${esc(annTitleDraft)}" placeholder="Заглавие" style="width:100%;margin-bottom:8px;">
       <textarea id="annBody" placeholder="Текст на обявата" rows="4" style="width:100%;margin-bottom:10px;">${esc(annBodyDraft)}</textarea>
       <div style="font-weight:600;margin-bottom:6px;">До кого:</div>
-      <label style="display:block;margin-bottom:4px;cursor:pointer;"><input type="radio" name="annAud" value="all" ${annAud==='all'?'checked':''} onclick="annSetAud('all')" style="margin-right:6px;">Всички членове</label>
-      <label style="display:block;margin-bottom:4px;cursor:pointer;"><input type="radio" name="annAud" value="membership" ${annAud==='membership'?'checked':''} onclick="annSetAud('membership')" style="margin-right:6px;">Определени категории членство</label>
-      ${annAud==='membership'?`<div style="margin:4px 0 8px 22px;display:flex;flex-wrap:wrap;gap:6px;">${memChecks}</div>`:''}
-      <label style="display:block;margin-bottom:4px;cursor:pointer;"><input type="radio" name="annAud" value="specific" ${annAud==='specific'?'checked':''} onclick="annSetAud('specific')" style="margin-right:6px;">Определени членове</label>
-      ${annAud==='specific'?`<div style="margin:4px 0 8px 22px;max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:8px;">${memberChecks}</div>`:''}
+      <select id="annAudSel" onchange="annSetAud(this.value)" style="width:100%;margin-bottom:8px;">
+        <option value="all" ${annAud==='all'?'selected':''}>Всички членове</option>
+        <option value="membership" ${annAud==='membership'?'selected':''}>Определени категории членство</option>
+        <option value="specific" ${annAud==='specific'?'selected':''}>Определени членове</option>
+      </select>
+      ${annAud==='membership'?`<select multiple id="annMemSel" size="5" style="width:100%;margin-bottom:4px;">${memOpts}</select><div class="muted" style="font-size:11px;margin-bottom:8px;">Задръж Ctrl (Cmd на Mac), за да избереш няколко.</div>`:''}
+      ${annAud==='specific'?(people.length?`<select multiple id="annUserSel" size="8" style="width:100%;margin-bottom:4px;">${memberOpts}</select><div class="muted" style="font-size:11px;margin-bottom:8px;">Задръж Ctrl (Cmd на Mac), за да избереш няколко.</div>`:`<div class="muted" style="margin-bottom:8px;">Зареждане…</div>`):''}
       <button class="btn ok" style="margin-top:8px;" onclick="sendAnn()">Публикувай новината</button>
     </div>
     <h3 style="margin-top:20px;">Публикувани новини</h3>
@@ -602,8 +604,8 @@ async function sendAnn(){
   const body=(document.getElementById('annBody').value||'').trim();
   if(!title||!body){alert('Въведи заглавие и текст.');return;}
   const a={title,body,audience:annAud,memberships:[],user_ids:[]};
-  if(annAud==='membership'){a.memberships=[...document.querySelectorAll('.annMem:checked')].map(x=>x.value);if(!a.memberships.length){alert('Избери поне една категория.');return;}}
-  if(annAud==='specific'){a.user_ids=[...document.querySelectorAll('.annUser:checked')].map(x=>x.value);if(!a.user_ids.length){alert('Избери поне един член.');return;}}
+  if(annAud==='membership'){const s=document.getElementById('annMemSel');a.memberships=s?[...s.selectedOptions].map(o=>o.value):[];if(!a.memberships.length){alert('Избери поне една категория.');return;}}
+  if(annAud==='specific'){const s=document.getElementById('annUserSel');a.user_ids=s?[...s.selectedOptions].map(o=>o.value):[];if(!a.user_ids.length){alert('Избери поне един член.');return;}}
   const r=await DB.createAnnouncement(a);
   if(r&&r.error){alert('Грешка: '+(r.error.message||r.error));return;}
   await DB.logAudit('announcement_posted',title,a.audience==='all'?'до всички':(a.audience==='membership'?'категории: '+a.memberships.join(','):a.user_ids.length+' членове'));
