@@ -329,7 +329,11 @@
           if (s) { ins.proposer_id = s.user.id; ins.proposer_email = s.user.email; } } catch (e) {}
       }
       const { error } = await sb.from('applications').insert(ins);
-      return { error };
+      if (error) {
+        if (error.code === '23505' || /duplicate|unique|app_email_pending|app_bulstat_pending/i.test(error.message || '')) return { error: { dup: true } };
+        return { error };
+      }
+      return { error: null };
     },
     async listApplications() {
       if (!LIVE) return [];

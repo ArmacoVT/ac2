@@ -871,7 +871,10 @@ async function submitApp(nominate){
   const r=await DB.submitApplication({nominate,membership:m,name,email,phone,about,
     profession:v('ap_prof'),interests:v('ap_interests'),alumni_relation:alumni,
     corp_bulstat:v('ap_bulstat'),corp_size:v('ap_size'),corp_activity:v('ap_activity')});
-  if(r&&r.error){toast(r.error.message);return;}
+  if(r&&r.error){
+    if(r.error.dup){toast(lang==='bg'?'Вече има подадена кандидатура с този имейл или БУЛСТАТ. Изчакайте да я разгледаме.':'An application with this email or company ID already exists. Please wait for our review.');return;}
+    toast(r.error.message);return;
+  }
   hap('success');
   toast(lang==='bg'?'Благодарим! Кандидатурата е изпратена.':'Thank you! Your application was sent.');
   setTimeout(()=>{location.hash='';route();},900);
@@ -1180,14 +1183,14 @@ function profile(){
     ${(active&&user.membership==='corporate')?`<div class="ev" onclick="go('company')" style="margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><h3 style="font-size:15px;">${lang==='bg'?'Фирмени профили':'Company profiles'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'До 5 профила към членството':'Up to 5 profiles'}</div></div>
       <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
+    ${DB.live?`<div class="ev" onclick="go('account')" style="margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+      <div><h3 style="font-size:15px;">${lang==='bg'?'Управление на акаунта':'Account settings'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Парола · изтриване на акаунт':'Password · delete account'}</div></div>
+      <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
     <div class="sec-title" style="padding:24px 0 8px;">${tr('myEvents')}</div>
     ${sev.length?sev.map(e=>`<div class="ev" style="margin-bottom:8px;cursor:pointer;" onclick="go('format/${e.format}')"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m">${evMeta(e)}</div></div>`).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noEvents')}</p>`}
     <div class="sec-title" style="padding:22px 0 8px;">${tr('myRes')}</div>
     ${resSections(res)}
-    ${DB.live?`<div class="ev" style="margin-top:24px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="go('account')">
-      <div><h3 style="font-size:15px;">${lang==='bg'?'Управление на акаунта':'Account settings'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Парола · изтриване на акаунт':'Password · delete account'}</div></div>
-      <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
-    <button class="btn btn-ghost" style="margin-top:14px;" onclick="signout()">${tr('signout')}</button></div>`;
+    <button class="btn btn-ghost" style="margin-top:26px;" onclick="signout()">${tr('signout')}</button></div>`;
 }
 function accountView(){
   const bg=lang==='bg';
