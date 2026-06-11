@@ -99,7 +99,7 @@
   @keyframes spName{0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}
   @keyframes spPulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.5);opacity:0}}
   /* Pull-to-refresh индикатор */
-  #ptr{position:fixed;top:0;left:50%;transform:translate(-50%,-46px);z-index:1500;width:34px;height:34px;border-radius:50%;
+  #ptr{position:fixed;top:env(safe-area-inset-top,0px);left:50%;transform:translate(-50%,-46px);z-index:1500;width:34px;height:34px;border-radius:50%;
     background:var(--surface);box-shadow:0 4px 12px rgba(58,44,35,.18);display:flex;align-items:center;justify-content:center;
     transition:transform .2s ease,opacity .2s ease;opacity:0;color:var(--gold);}
   #ptr.show{opacity:1;}
