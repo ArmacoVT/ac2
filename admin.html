@@ -122,12 +122,25 @@ function animateCounts(){
     requestAnimationFrame(step);
   });
 }
-let PEOPLE=null,APPS=null,PHONES=null,ANN=null,AUDIT=null,annAud='all',annTitleDraft='',annBodyDraft='';
-function annSetAud(v){
+let PEOPLE=null,APPS=null,PHONES=null,ANN=null,AUDIT=null,annAud='all',annTitleDraft='',annBodyDraft='',annMemPicked=[],annUserPicked=[],annUserFilter='';
+async function annSetAud(v){
   const t=document.getElementById('annTitle'); if(t)annTitleDraft=t.value;
   const b=document.getElementById('annBody'); if(b)annBodyDraft=b.value;
   annAud=v; render();
+  if(v==='specific'&&(!PEOPLE||!PEOPLE.length)){ try{PEOPLE=await DB.listMembers();}catch(e){} render(); }
 }
+function annMemChipsHTML(){ return MEMBERS.map(m=>`<span class="annchip${annMemPicked.includes(m.id)?' on':''}" onclick="annToggleMem('${m.id}')">${m.t}</span>`).join(''); }
+function annToggleMem(id){ const i=annMemPicked.indexOf(id); if(i>-1)annMemPicked.splice(i,1); else annMemPicked.push(id); const c=document.getElementById('annMemChips'); if(c)c.innerHTML=annMemChipsHTML(); }
+function annUserListHTML(){
+  const people=(PEOPLE||[]);
+  if(!people.length) return '<div class="muted" style="padding:10px;">Зареждане…</div>';
+  const q=(annUserFilter||'').toLowerCase().trim();
+  const rows=people.filter(p=>((p.full_name||p.username||p.email||'').toLowerCase().indexOf(q)>-1));
+  if(!rows.length) return '<div class="muted" style="padding:10px;">Няма съвпадение</div>';
+  return rows.map(p=>`<div class="annrow" onclick="annToggleUser('${p.id}')"><span class="annbox${annUserPicked.includes(p.id)?' ck':''}"></span>${esc(p.full_name||p.username||p.email||'')} <span class="muted">· ${esc(memName(p.membership||'guest'))}</span></div>`).join('');
+}
+function annToggleUser(id){ const i=annUserPicked.indexOf(id); if(i>-1)annUserPicked.splice(i,1); else annUserPicked.push(id); const l=document.getElementById('annUserList'); if(l)l.innerHTML=annUserListHTML(); const c=document.getElementById('annUserCount'); if(c)c.textContent=annUserPicked.length; }
+function annFilterUsers(q){ annUserFilter=q; const l=document.getElementById('annUserList'); if(l)l.innerHTML=annUserListHTML(); }
 async function loadPhones(){
   try{const list=await DB.listMembers();const m={};list.forEach(p=>{m[p.id]={email:p.email||'',phone:p.phone||''};});PHONES=m;}catch(e){PHONES={};}
 }
@@ -570,9 +583,6 @@ async function exportCSV(kind){
 }
 // ---------- ОБЯВИ ----------
 function announcementsView(){
-  const memOpts=MEMBERS.map(m=>`<option value="${m.id}">${m.t}</option>`).join('');
-  const people=(PEOPLE||[]);
-  const memberOpts=people.map(p=>`<option value="${p.id}">${esc(p.full_name||p.username||p.email||'')} · ${esc(memName(p.membership||'guest'))}</option>`).join('');
   const list=(ANN||[]).map(a=>{
     let aud='Всички';
     if(a.audience==='membership')aud='Категории: '+(a.memberships||[]).map(memName).join(', ');
@@ -583,18 +593,33 @@ function announcementsView(){
       <div class="muted" style="font-size:12px;margin-top:6px;">${esc(aud)} · ${d}</div></div>`;
   }).join('')||'<p class="empty">Все още няма новини.</p>';
   return `<h2>Новини</h2>
+    <style>
+    .annseg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:11px;}
+    .annseg>div{flex:1;text-align:center;padding:9px 4px;font-size:13px;color:var(--text);cursor:pointer;}
+    .annseg>div.on{background:var(--gold);color:var(--bg);font-weight:600;}
+    .annchip{display:inline-block;border:1px solid var(--line);color:var(--text);border-radius:18px;padding:6px 12px;font-size:13px;margin:0 6px 6px 0;cursor:pointer;user-select:none;}
+    .annchip.on{background:var(--gold);color:var(--bg);border-color:var(--gold);}
+    .annsrch{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:14px;margin-bottom:8px;}
+    .annlist{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:9px;}
+    .annrow{display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer;user-select:none;}
+    .annbox{width:18px;height:18px;border-radius:5px;border:1.6px solid var(--gold-soft);flex:none;}
+    .annbox.ck{background:var(--gold);border-color:var(--gold);position:relative;}
+    .annbox.ck::after{content:"✓";color:var(--bg);font-size:12px;position:absolute;top:-2px;left:3px;}
+    </style>
     <div class="card">
       <input id="annTitle" value="${esc(annTitleDraft)}" placeholder="Заглавие" style="width:100%;margin-bottom:8px;">
       <textarea id="annBody" placeholder="Текст на обявата" rows="4" style="width:100%;margin-bottom:10px;">${esc(annBodyDraft)}</textarea>
       <div style="font-weight:600;margin-bottom:6px;">До кого:</div>
-      <select id="annAudSel" onchange="annSetAud(this.value)" style="width:100%;margin-bottom:8px;">
-        <option value="all" ${annAud==='all'?'selected':''}>Всички членове</option>
-        <option value="membership" ${annAud==='membership'?'selected':''}>Определени категории членство</option>
-        <option value="specific" ${annAud==='specific'?'selected':''}>Определени членове</option>
-      </select>
-      ${annAud==='membership'?`<select multiple id="annMemSel" size="5" style="width:100%;margin-bottom:4px;">${memOpts}</select><div class="muted" style="font-size:11px;margin-bottom:8px;">Задръж Ctrl (Cmd на Mac), за да избереш няколко.</div>`:''}
-      ${annAud==='specific'?(people.length?`<select multiple id="annUserSel" size="8" style="width:100%;margin-bottom:4px;">${memberOpts}</select><div class="muted" style="font-size:11px;margin-bottom:8px;">Задръж Ctrl (Cmd на Mac), за да избереш няколко.</div>`:`<div class="muted" style="margin-bottom:8px;">Зареждане…</div>`):''}
-      <button class="btn ok" style="margin-top:8px;" onclick="sendAnn()">Публикувай новината</button>
+      <div class="annseg">
+        <div class="${annAud==='all'?'on':''}" onclick="annSetAud('all')">Всички</div>
+        <div class="${annAud==='membership'?'on':''}" onclick="annSetAud('membership')">Категории</div>
+        <div class="${annAud==='specific'?'on':''}" onclick="annSetAud('specific')">Членове</div>
+      </div>
+      ${annAud==='membership'?`<div id="annMemChips" style="margin-bottom:8px;">${annMemChipsHTML()}</div>`:''}
+      ${annAud==='specific'?`<input class="annsrch" placeholder="Търси член…" value="${esc(annUserFilter)}" oninput="annFilterUsers(this.value)">
+        <div id="annUserList" class="annlist">${annUserListHTML()}</div>
+        <div class="muted" style="font-size:12px;margin-top:7px;">Избрани: <span id="annUserCount" style="color:var(--gold);font-weight:600;">${annUserPicked.length}</span></div>`:''}
+      <button class="btn ok" style="margin-top:12px;" onclick="sendAnn()">Публикувай новината</button>
     </div>
     <h3 style="margin-top:20px;">Публикувани новини</h3>
     ${list}`;
@@ -604,12 +629,12 @@ async function sendAnn(){
   const body=(document.getElementById('annBody').value||'').trim();
   if(!title||!body){alert('Въведи заглавие и текст.');return;}
   const a={title,body,audience:annAud,memberships:[],user_ids:[]};
-  if(annAud==='membership'){const s=document.getElementById('annMemSel');a.memberships=s?[...s.selectedOptions].map(o=>o.value):[];if(!a.memberships.length){alert('Избери поне една категория.');return;}}
-  if(annAud==='specific'){const s=document.getElementById('annUserSel');a.user_ids=s?[...s.selectedOptions].map(o=>o.value):[];if(!a.user_ids.length){alert('Избери поне един член.');return;}}
+  if(annAud==='membership'){a.memberships=annMemPicked.slice();if(!a.memberships.length){alert('Избери поне една категория.');return;}}
+  if(annAud==='specific'){a.user_ids=annUserPicked.slice();if(!a.user_ids.length){alert('Избери поне един член.');return;}}
   const r=await DB.createAnnouncement(a);
   if(r&&r.error){alert('Грешка: '+(r.error.message||r.error));return;}
   await DB.logAudit('announcement_posted',title,a.audience==='all'?'до всички':(a.audience==='membership'?'категории: '+a.memberships.join(','):a.user_ids.length+' членове'));
-  annAud='all';annTitleDraft='';annBodyDraft='';ANN=await DB.listAnnouncements();render();
+  annAud='all';annTitleDraft='';annBodyDraft='';annMemPicked=[];annUserPicked=[];annUserFilter='';ANN=await DB.listAnnouncements();render();
 }
 async function delAnn(id){
   if(!confirm('Да изтрия ли тази новина?'))return;
