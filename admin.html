@@ -94,7 +94,7 @@ function render(){
       <button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации${tabBadge(RES.filter(r=>!r.status||r.status==='requested').length)}</button>
       <button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>
       <button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge((APPS||[]).filter(a=>(a.status||'new')==='new').length)}</button>
-      <button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Обяви</button>
+      <button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>
       <button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>
       <button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>
       <button class="tab ${tab==='audit'?'on':''}" onclick="setTab('audit')">Журнал</button>
@@ -576,8 +576,8 @@ function announcementsView(){
     return `<div class="card" style="margin-top:8px;"><div style="display:flex;justify-content:space-between;gap:10px;"><b>${esc(a.title)}</b><button class="btn no sm" onclick="delAnn('${a.id}')">Изтрий</button></div>
       <div style="margin-top:4px;white-space:pre-wrap;">${esc(a.body)}</div>
       <div class="muted" style="font-size:12px;margin-top:6px;">${esc(aud)} · ${d}</div></div>`;
-  }).join('')||'<p class="empty">Все още няма обяви.</p>';
-  return `<h2>Обяви</h2>
+  }).join('')||'<p class="empty">Все още няма новини.</p>';
+  return `<h2>Новини</h2>
     <div class="card">
       <input id="annTitle" placeholder="Заглавие" style="width:100%;margin-bottom:8px;">
       <textarea id="annBody" placeholder="Текст на обявата" rows="4" style="width:100%;margin-bottom:10px;"></textarea>
@@ -587,9 +587,9 @@ function announcementsView(){
       ${annAud==='membership'?`<div style="margin:4px 0 8px 22px;display:flex;flex-wrap:wrap;gap:6px;">${memChecks}</div>`:''}
       <label style="display:block;margin-bottom:4px;cursor:pointer;"><input type="radio" name="annAud" value="specific" ${annAud==='specific'?'checked':''} onclick="annAud='specific';render();" style="margin-right:6px;">Определени членове</label>
       ${annAud==='specific'?`<div style="margin:4px 0 8px 22px;max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:8px;">${memberChecks}</div>`:''}
-      <button class="btn ok" style="margin-top:8px;" onclick="sendAnn()">Публикувай обявата</button>
+      <button class="btn ok" style="margin-top:8px;" onclick="sendAnn()">Публикувай новината</button>
     </div>
-    <h3 style="margin-top:20px;">Публикувани обяви</h3>
+    <h3 style="margin-top:20px;">Публикувани новини</h3>
     ${list}`;
 }
 async function sendAnn(){
@@ -605,7 +605,7 @@ async function sendAnn(){
   annAud='all';ANN=await DB.listAnnouncements();render();
 }
 async function delAnn(id){
-  if(!confirm('Да изтрия ли тази обява?'))return;
+  if(!confirm('Да изтрия ли тази новина?'))return;
   const r=await DB.deleteAnnouncement(id);
   if(r&&r.error){alert('Грешка: '+(r.error.message||r.error));return;}
   ANN=await DB.listAnnouncements();render();
@@ -614,7 +614,7 @@ async function delAnn(id){
 function auditView(){
   if(AUDIT===null)return `<h2>Журнал</h2><p class="empty">Зареждане…</p>`;
   if(!AUDIT.length)return `<h2>Журнал на действията</h2><p class="empty">Все още няма записи.</p>`;
-  const AL={reservation_confirmed:'потвърди резервация',reservation_declined:'отказа резервация',application_approved:'одобри кандидатура',application_declined:'отказа кандидатура',member_deleted:'изтри член',member_renewed:'поднови членство',membership_changed:'смени членство',phone_set:'смени телефон',phone_requested:'поиска нов телефон',member_invited:'покани член',announcement_posted:'публикува обява',event_deleted:'изтри събитие'};
+  const AL={reservation_confirmed:'потвърди резервация',reservation_declined:'отказа резервация',application_approved:'одобри кандидатура',application_declined:'отказа кандидатура',member_deleted:'изтри член',member_renewed:'поднови членство',membership_changed:'смени членство',phone_set:'смени телефон',phone_requested:'поиска нов телефон',member_invited:'покани член',announcement_posted:'публикува новина',event_deleted:'изтри събитие'};
   const rows=AUDIT.map(a=>{
     const d=a.created_at?new Date(a.created_at).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
     const act=AL[a.action]||a.action;

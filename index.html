@@ -366,7 +366,7 @@ let user=null;
 let RES=[],ANN=[];
 function annNewestSeen(){try{return localStorage.getItem('acac_ann_seen')||'';}catch(e){return '';}}
 function annUnseenCount(){const s=annNewestSeen();return (ANN||[]).filter(a=>(a.created_at||'')>s).length;}
-function markAnnSeen(){if(ANN&&ANN.length){try{localStorage.setItem('acac_ann_seen',ANN[0].created_at||new Date().toISOString());}catch(e){}}}
+function markAnnSeen(){if(ANN&&ANN.length){try{localStorage.setItem('acac_ann_seen',ANN[0].created_at||new Date().toISOString());}catch(e){}}try{if(typeof appBadge==='function')appBadge();}catch(e){}}
 function annHtml(){
   if(!ANN||!ANN.length)return '';
   const seen=annNewestSeen();
@@ -377,7 +377,7 @@ function annHtml(){
     const hl=isNew?`border:1px solid var(--gold);box-shadow:0 0 0 2px rgba(191,138,46,.15);`:'';
     return `<div class="ev" style="margin-bottom:8px;${hl}"><h3 style="font-size:15px;">${esc(a.title)}${tag}</h3><div style="margin-top:4px;white-space:pre-wrap;">${esc(a.body)}</div><div class="m" style="margin-top:6px;">${d}</div></div>`;
   }).join('');
-  return `<div class="sec-title">${lang==='bg'?'Обяви':'Announcements'}</div>${cards}`;
+  return `<div class="sec-title">${lang==='bg'?'Новини':'News'}</div>${cards}`;
 }
 let loginMode='login';
 const app=document.getElementById('app');
@@ -1400,12 +1400,23 @@ function markResSeen(){
   }catch(e){}
   appBadge();
 }
-// число върху иконата на приложението (където се поддържа — инсталирано PWA)
+// число върху иконата на приложението
+// нативно (iOS/Android) → плъгин @capawesome/capacitor-badge; иначе → Web Badging (PWA)
+function NativeBadge(){try{const C=window.Capacitor;if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return null;return (C.Plugins&&C.Plugins.Badge)||(C.registerPlugin&&C.registerPlugin('Badge'))||null;}catch(e){return null;}}
+async function setIconBadge(n){
+  const NB=NativeBadge();
+  if(NB){
+    try{
+      if(NB.checkPermissions){let p=await NB.checkPermissions();if((!p||p.display!=='granted')&&NB.requestPermissions)await NB.requestPermissions();}
+      if(n>0)await NB.set({count:n}); else (NB.clear?await NB.clear():await NB.set({count:0}));
+    }catch(e){}
+  }else{
+    try{ if('setAppBadge' in navigator){ if(n)navigator.setAppBadge(n); else navigator.clearAppBadge(); } }catch(e){}
+  }
+}
 function appBadge(){
   const n=notifCount();
-  try{
-    if('setAppBadge' in navigator){ if(n)navigator.setAppBadge(n); else navigator.clearAppBadge(); }
-  }catch(e){}
+  setIconBadge(n+annUnseenCount()); // иконата: нови резервации + непрочетени новини
   return n;
 }
 function tabbar(active){
