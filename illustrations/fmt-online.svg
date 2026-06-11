@@ -1,0 +1,17 @@
+<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Online">
+<style>.w{transform-box:fill-box;transform-origin:center;animation:w 3s ease-in-out infinite}@keyframes w{0%,100%{opacity:.3}50%{opacity:1}}</style>
+<g fill="none" stroke="#3d6b7d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+<rect x="150" y="48" width="100" height="66" rx="9"/>
+<line x1="184" y1="126" x2="216" y2="126"/>
+<line x1="200" y1="114" x2="200" y2="126"/>
+</g>
+<path d="M189 64 L189 98 L217 81 Z" fill="#3d6b7d"/>
+<g fill="none" stroke="#bf8a2e" stroke-width="4" stroke-linecap="round">
+<path class="w" d="M126 62 q-13 19 0 38"/>
+<path class="w" style="animation-delay:.5s" d="M106 50 q-23 31 0 62"/>
+<path class="w" d="M274 62 q13 19 0 38"/>
+<path class="w" style="animation-delay:.5s" d="M294 50 q23 31 0 62"/>
+</g>
+<g fill="#b5532f"><circle cx="150" cy="38" r="4"/><circle cx="250" cy="38" r="4"/></g>
+<path d="M40 140 H360" stroke="#3a2c23" stroke-width="2" opacity=".3"/>
+</svg>

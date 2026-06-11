@@ -61,7 +61,8 @@
 <script src="db.js"></script>
 <script>
 const MEMBERS=[{id:'founder',t:'Founder'},{id:'founding',t:'Founding Member'},{id:'club',t:'Club Member'},{id:'alumni',t:'Alumni Member'},{id:'corporate',t:'Corporate Member'}];
-const FORMATS=['culture','cinema','table','music','conversation','community','theater'];
+const FORMATS=['culture','cinema','table','music','conversation','community','theater','online'];
+const FMT_LABEL={culture:'AC² Culture',cinema:'AC² Cinema',table:'AC² Table',music:'AC² Music',conversation:'AC² Conversation',community:'AC² Community',theater:'AC² Theater',online:'AC² Online'};
 const VENUES=['Ресторант','Камерна зала','Онлайн','Изложбено фоайе','VIP зала'];
 const memName=id=>(MEMBERS.find(m=>m.id===id)||{t:id}).t;
 const esc=s=>(''+(s??'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
@@ -271,7 +272,7 @@ function formView(){
   const allOn=draftAud.includes('all');
   let memCk=`<div class="ck ${allOn?'on':''}" onclick="toggleAud('all')">✓ Всички членове</div>`+
     MEMBERS.map(m=>`<div class="ck ${(!allOn&&draftAud.includes(m.id))?'on':''}" onclick="toggleAud('${m.id}')">${m.t}</div>`).join('');
-  let fmtOpts=FORMATS.map(f=>`<option value="${f}" ${e&&e.format===f?'selected':''}>${f}</option>`).join('');
+  let fmtOpts=FORMATS.map(f=>`<option value="${f}" ${e&&e.format===f?'selected':''}>${FMT_LABEL[f]||f}</option>`).join('');
   let venOpts=VENUES.map(v=>`<option ${e&&e.place===v?'selected':''}>${v}</option>`).join('');
   if(e&&e.place&&!VENUES.includes(e.place))venOpts=`<option selected>${esc(e.place)}</option>`+venOpts;
   return `<div class="card" style="border-color:var(--gold-soft);">

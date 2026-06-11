@@ -316,7 +316,8 @@ const FORMATS=[
  {id:'music',t:'AC² Music',c:'#6f7a39',img:'cards/logo-music.webp',b:{bg:['камерни концерти','музикални вечери','солови изпълнения','гост-музиканти'],en:['chamber concerts','musical evenings','solo performances','guest musicians']}},
  {id:'conversation',t:'AC² Conversation',c:'#bf8a2e',img:'cards/logo-conversation.webp',b:{bg:['разговори с гости','образователни теми','професионални срещи','малки формати с внимателно подбрана публика'],en:['conversations with guests','educational topics','professional meetings','small formats with a carefully selected audience']}},
  {id:'community',t:'AC² Community',c:'#9c6b4a',img:'cards/logo-community.webp',b:{bg:['семейни поводи','alumni събития','училищно-свързани формати','дискретни срещи в по-лична среда'],en:['family occasions','alumni gatherings','school-related formats','discreet meetings in a more personal setting']}},
- {id:'theater',t:'AC² Theater',c:'#9c424c',img:'cards/logo-theater.webp',b:{bg:['камерни постановки','сценични четения','гост-актьори','формати с подбран артистичен характер'],en:['chamber productions','staged readings','guest actors','formats of selected artistic character']}}
+ {id:'theater',t:'AC² Theater',c:'#9c424c',img:'cards/logo-theater.webp',b:{bg:['камерни постановки','сценични четения','гост-актьори','формати с подбран артистичен характер'],en:['chamber productions','staged readings','guest actors','formats of selected artistic character']}},
+ {id:'online',t:'AC² Online',c:'#3d6b7d',img:'cards/logo-ac2.webp',b:{bg:['онлайн излъчвания','разговори на живо','лекции и прожекции','записи за гледане после'],en:['online broadcasts','live talks','lectures and screenings','recordings to watch later']}}
 ];
 // Събитията идват от общия слой db.js (Supabase когато е свързан, иначе демо).
 let EVENTS=[];
@@ -342,7 +343,7 @@ function fmtDay(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d
 function fmtPrice(n){n=Number(n)||0;const s=(n%1===0)?String(n):n.toFixed(2);return (lang==='bg'?s.replace('.',',')+' €':s+' €');}
 function evMeta(e){const ds=e.end_date&&e.end_date!==e.date?(fmtDay(e.date)+' – '+fmtDay(e.end_date)):fmtDay(e.date);const t=e.time?(e.time+(e.ends?('–'+e.ends):'')):'';return [ds,t,e.place].filter(Boolean).join(' · ');}
 // събитие, което приключва до 22:30 → предлагаме маса в ресторанта (AC² Table)
-function endsEarly(e){return e.ends && e.format!=='table' && e.ends<='22:30';}
+function endsEarly(e){return e.ends && e.format!=='table' && e.format!=='online' && e.ends<='22:30';}
 function audNames(aud){if(aud==='all'||(Array.isArray(aud)&&aud.length>=MEMBERSHIP_LIST.length))return lang==='bg'?'Всички членове':'All members';if(!Array.isArray(aud)||!aud.length)return '—';return aud.map(a=>MEMBERS.find(m=>m.id===a)?.t||a).join(', ');}
 const MEMBERS=[
  {id:'founder',t:'Founder',seats:8,disc:0,tag:{bg:'Основателски статус',en:'Founding status'},
@@ -443,7 +444,8 @@ function home(){
     music:`<svg viewBox="0 0 80 80"><g stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"><path d="M34 52 V20 l18 -5 V44"/><path d="M34 20 l18 -5"/></g><g fill="currentColor"><ellipse cx="28" cy="53" rx="7.5" ry="6" transform="rotate(-18 28 53)"/><ellipse cx="46" cy="48" rx="7.5" ry="6" transform="rotate(-18 46 48)"/></g></svg>`,
     conversation:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"><path d="M14 22 h30 a4 4 0 0 1 4 4 v14 a4 4 0 0 1 -4 4 H26 l-9 8 v-8 h-3 a4 4 0 0 1 -4 -4 V26 a4 4 0 0 1 4 -4 Z"/><path d="M54 38 h12 a4 4 0 0 1 4 4 v10 a4 4 0 0 1 -4 4 h-2 v6 l-7 -6 h-3 a4 4 0 0 1 -4 -4 V42 a4 4 0 0 1 4 -4 Z"/></g></svg>`,
     community:`<svg viewBox="0 0 80 80"><g fill="currentColor"><circle cx="28" cy="30" r="6.5"/><circle cx="52" cy="30" r="6.5"/><circle cx="40" cy="25" r="7"/></g><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M16 58 q9 -17 24 -17 q15 0 24 17"/></g></svg>`,
-    theater:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 24 c14 -4 22 2 22 16 c0 14 -8 22 -16 22 c-9 0 -14 -10 -14 -24 c0 -8 2 -12 8 -14 Z"/><path d="M24 38 q3 -3 6 0 M30 50 q-4 4 -9 1"/><path d="M62 24 c-14 -4 -22 2 -22 16 c0 14 8 22 16 22 c9 0 14 -10 14 -24 c0 -8 -2 -12 -8 -14 Z"/><path d="M56 38 q-3 -3 -6 0 M50 52 q4 4 9 1"/></g></svg>`
+    theater:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 24 c14 -4 22 2 22 16 c0 14 -8 22 -16 22 c-9 0 -14 -10 -14 -24 c0 -8 2 -12 8 -14 Z"/><path d="M24 38 q3 -3 6 0 M30 50 q-4 4 -9 1"/><path d="M62 24 c-14 -4 -22 2 -22 16 c0 14 8 22 16 22 c9 0 14 -10 14 -24 c0 -8 -2 -12 -8 -14 Z"/><path d="M56 38 q-3 -3 -6 0 M50 52 q4 4 9 1"/></g></svg>`,
+    online:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="22" y="24" width="36" height="26" rx="4"/><path d="M34 58 h12 M40 50 v8"/></g><path d="M35 31 v12 l10 -6 Z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" opacity=".7"><path d="M16 30 q-6 8 0 16"/><path d="M64 30 q6 8 0 16"/></g></svg>`
   };
   let cards=FORMATS.map(f=>{
     const n=EVENTS.filter(e=>e.format===f.id&&canAccess(e)&&!isPast(e)).length;
@@ -1159,10 +1161,21 @@ function profile(){
     ${sev.length?sev.map(e=>`<div class="ev" style="margin-bottom:8px;cursor:pointer;" onclick="go('format/${e.format}')"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m">${evMeta(e)}</div></div>`).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noEvents')}</p>`}
     <div class="sec-title" style="padding:22px 0 8px;">${tr('myRes')}</div>
     ${resSections(res)}
-    ${DB.live?`<button class="btn btn-ghost" style="margin-top:26px;" onclick="changePass()">${tr('changePass')}</button>`:''}
-    <button class="btn btn-ghost" style="margin-top:12px;" onclick="signout()">${tr('signout')}</button>
-    ${DB.live?`<button class="btn btn-ghost" style="margin-top:26px;color:#b5532f;border-color:rgba(181,83,47,.4);" onclick="deleteAccount()">${tr('delAcc')}</button>
-    <div class="m" style="text-align:center;margin-top:6px;">${lang==='bg'?'Изтрива профила и всички твои данни безвъзвратно.':'Permanently deletes your profile and all your data.'}</div>`:''}</div>`;
+    ${DB.live?`<div class="ev" style="margin-top:24px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="go('account')">
+      <div><h3 style="font-size:15px;">${lang==='bg'?'Управление на акаунта':'Account settings'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Парола · изтриване на акаунт':'Password · delete account'}</div></div>
+      <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
+    <button class="btn btn-ghost" style="margin-top:14px;" onclick="signout()">${tr('signout')}</button></div>`;
+}
+function accountView(){
+  const bg=lang==='bg';
+  return topbar(bg?'Управление на акаунта':'Account settings')+`<div class="page">
+    <div class="sec-title">${bg?'Сигурност':'Security'}</div>
+    ${DB.live?`<button class="btn btn-ghost" onclick="changePass()">${tr('changePass')}</button>`:''}
+    <div class="sec-title" style="padding-top:30px;color:#b5532f;">${bg?'Опасна зона':'Danger zone'}</div>
+    <div class="ev" style="border:1px solid rgba(181,83,47,.3);">
+      <div class="m" style="margin-bottom:10px;">${bg?'Изтриването премахва профила и всички твои данни (резервации, предпочитания) безвъзвратно.':'Deleting removes your profile and all your data (reservations, preferences) permanently.'}</div>
+      <button class="btn btn-ghost" style="color:#b5532f;border-color:rgba(181,83,47,.4);margin-top:0;" onclick="deleteAccount()">${tr('delAcc')}</button>
+    </div></div>`;
 }
 async function deleteAccount(){
   const bg=lang==='bg';
@@ -1474,6 +1487,7 @@ function renderPath(path,q,parts){
   else if(path==='reserve'){html=reserve(q||'');active='reserve';}
   else if(path==='membership'){html=membership();active='membership';}
   else if(path==='profile'){html=profile();active='profile';}
+  else if(path==='account'){html=accountView();active='profile';}
   else if(path==='nominate'){html=appForm('nominate');active='profile';}
   else if(path==='company'){html=companyView();active='profile';}
   else{html=home();}
