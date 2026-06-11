@@ -571,7 +571,7 @@ async function exportCSV(kind){
 // ---------- ОБЯВИ ----------
 function announcementsView(){
   const memChecks=MEMBERS.map(m=>`<label class="pill" style="cursor:pointer;"><input type="checkbox" class="annMem" value="${m.id}" style="margin-right:5px;">${m.t}</label>`).join(' ');
-  const people=(PEOPLE||[]).filter(p=>p.role!=='admin');
+  const people=(PEOPLE||[]);
   const memberChecks=people.length?people.map(p=>`<label style="display:block;padding:3px 0;cursor:pointer;"><input type="checkbox" class="annUser" value="${p.id}" style="margin-right:6px;">${esc(p.full_name||p.username||p.email||'')}<span class="muted"> · ${esc(memName(p.membership||'guest'))}</span></label>`).join(''):'<span class="muted">Зареждане…</span>';
   const list=(ANN||[]).map(a=>{
     let aud='Всички';
