@@ -300,9 +300,9 @@ function formView(){
       <input type="checkbox" id="f_auto" ${e&&e.live_auto?'checked':''} style="width:auto;"/> Пусни автоматично в часа на събитието</label>
     <label style="display:flex;align-items:center;gap:10px;margin-top:8px;cursor:pointer;">
       <input type="checkbox" id="f_live" ${e&&e.is_live?'checked':''} style="width:auto;"/> На живо сега (ръчно пускане веднага)</label>
-    ${!draftAud.includes('all')?`<label style="display:flex;align-items:center;gap:10px;margin-top:8px;cursor:pointer;">
-      <input type="checkbox" id="f_gated" ${(e?e.stream_gated:true)?'checked':''} style="width:auto;"/> Излъчването е само за записани/платили</label>`:''}
-    <p class="muted" style="margin:4px 0 0;font-size:12px;">При „авто старт" стриймът се показва сам в часа на началото и тече до ръчно спиране, дори след заложения край. „Само за записани/платили" важи за събития с избрана аудитория — при „видимо за всички" стриймът е отворен.</p>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:8px;cursor:pointer;">
+      <input type="checkbox" id="f_gated" ${(e?e.stream_gated:true)?'checked':''} style="width:auto;"/> Излъчването е само за записани/платили</label>
+    <p class="muted" style="margin:4px 0 0;font-size:12px;">При „авто старт" стриймът се показва сам в часа на началото и тече до ръчно спиране, дори след заложения край. „Само за записани/платили" значи, че членът трябва да има одобрена резервация (после — плащане/абонамент), за да гледа. Махни отметката, ако излъчването е свободно.</p>
     <label>Видимо за (кой може да го вижда / гледа / запазва)</label>
     <div class="chips">${memCk}</div>
     ${bwSection(e)}
