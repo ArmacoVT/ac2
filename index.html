@@ -59,21 +59,16 @@
   .evposter{width:100%;border-radius:12px;margin-bottom:12px;display:block;object-fit:cover;max-height:240px;}
   .evvideo{width:100%;border-radius:12px;margin:10px 0 4px;display:block;background:#000;max-height:300px;}
   .sec-sub{color:var(--muted);font-size:13px;padding:0 20px 10px;}
-  /* Новини — „писмо от клуба" с печат AC² */
+  /* Новини от клуба — вдълбана карта, без лого */
   .newswrap{padding:0 20px;}
-  .newscard{position:relative;background:var(--surface);border-radius:16px;padding:14px;margin-bottom:12px;display:flex;gap:12px;
-    box-shadow:6px 6px 13px #d9cdb6,-6px -6px 13px #fffdf4;overflow:hidden;}
-  .newscard .seal{flex:none;width:44px;height:44px;border-radius:50%;background:var(--medallion);display:flex;align-items:center;justify-content:center;}
-  .newscard .seal img{width:30px;height:auto;object-fit:contain;}
-  .newscard .ncol{flex:1;min-width:0;}
-  .newscard .nkick{display:flex;align-items:center;gap:7px;color:var(--gold);font-size:10px;letter-spacing:2px;text-transform:uppercase;}
-  .newscard h3{color:var(--cream);font-size:16px;margin:4px 0 0;font-family:var(--serif,Georgia,serif);font-weight:600;line-height:1.25;}
-  .newscard .ntext{color:var(--text);font-size:14px;line-height:1.5;margin-top:4px;white-space:pre-wrap;}
-  .newscard .ndate{color:var(--muted);font-size:12px;margin-top:8px;}
-  .newscard.fresh::before{content:"";position:absolute;inset:0;border-radius:16px;box-shadow:0 0 0 1.5px var(--gold) inset;opacity:0;animation:newsGlow 2.6s ease-in-out infinite;pointer-events:none;}
-  @keyframes newsGlow{0%,100%{opacity:0}50%{opacity:.5}}
-  .newsdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-left:auto;animation:badgePulse 1.4s ease-in-out infinite;}
-  .newtag{background:var(--gold);color:#fff7ea;font-size:9px;font-weight:700;border-radius:8px;padding:2px 6px;vertical-align:middle;margin-left:6px;}
+  .newscard{position:relative;background:var(--bg);border-radius:16px;padding:14px 16px;margin-bottom:12px;
+    box-shadow:inset 5px 5px 11px #d6c9b1, inset -5px -5px 11px #fffdf6;}
+  .newscard .nrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .newscard h3{color:var(--cream);font-size:17px;margin:0;font-family:var(--serif,Georgia,serif);font-weight:600;line-height:1.25;display:flex;align-items:center;gap:8px;min-width:0;}
+  .newscard .ntext{color:var(--text);font-size:13px;line-height:1.5;margin-top:5px;white-space:pre-wrap;}
+  .newscard .ndate{color:var(--muted);font-size:12px;white-space:nowrap;flex:none;}
+  .newsdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);flex:none;animation:newsBlink 1.2s ease-in-out infinite;}
+  @keyframes newsBlink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.2;transform:scale(.75)}}
   .newcount{color:var(--gold-bright);}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px;}
   .grid{gap:16px;}
@@ -390,21 +385,15 @@ function annHtml(){
   const unseen=annUnseenCount();
   const cards=ANN.slice(0,8).map(a=>{
     const isNew=(a.created_at||'')>seen;
-    const tag=isNew?`<span class="newtag">${lang==='bg'?'НОВО':'NEW'}</span>`:'';
     const dot=isNew?`<span class="newsdot"></span>`:'';
-    const d=a.created_at?new Date(a.created_at).toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{day:'2-digit',month:'long',year:'numeric'}):'';
+    const d=a.created_at?new Date(a.created_at).toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{day:'2-digit',month:'long'}):'';
     return `<div class="newscard${isNew?' fresh':''}">
-      <div class="seal"><img src="${AC2}" alt="AC²"/></div>
-      <div class="ncol">
-        <div class="nkick"><span>${lang==='bg'?'Новина от клуба':'Club news'}</span>${dot}</div>
-        <h3>${esc(a.title)}${tag}</h3>
-        <div class="ntext">${esc(a.body)}</div>
-        <div class="ndate">${d}</div>
-      </div>
+      <div class="nrow"><h3>${dot}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(a.title)}</span></h3><span class="ndate">${d}</span></div>
+      <div class="ntext">${esc(a.body)}</div>
     </div>`;
   }).join('');
   const count=unseen?` <span class="newcount">· ${unseen} ${lang==='bg'?(unseen===1?'нова':'нови'):'new'}</span>`:'';
-  return `<div class="sec-title">${lang==='bg'?'Новини':'News'}${count}</div><div class="newswrap">${cards}</div>`;
+  return `<div class="sec-title">${lang==='bg'?'Новини от клуба':'Club news'}${count}</div><div class="newswrap">${cards}</div>`;
 }
 let loginMode='login';
 const app=document.getElementById('app');
