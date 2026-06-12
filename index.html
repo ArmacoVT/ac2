@@ -695,7 +695,8 @@ function openBook(id){
   if(!membershipActive()){toast(tr('memberExpiredTitle'));go('profile');return;}
   const e=EVENTS.find(x=>x.id===id); if(!e)return;
   if(!canBookNow(e)){toast(tr('bookFrom')+' '+bookOpenISO(e).split('-').reverse().join('.'));return;}
-  closeBook();
+  const _ob=document.getElementById('booksheet'); if(_ob)_ob.remove();
+  const _obd=document.getElementById('sheetbd'); if(_obd)_obd.remove();
   const paid=e.price>0;
   const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
   const left=seatsLeft(e);
