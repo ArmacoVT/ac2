@@ -48,6 +48,7 @@
       try { const r = await sb.from('profiles').select('*').eq('id', s.user.id).single(); prof = r.data; } catch (e) {}
       return { id: s.user.id, email: s.user.email, username: prof ? prof.username : s.user.email,
         full_name: prof ? (prof.full_name || '') : '',
+        name_changed_at: prof ? (prof.name_changed_at || '') : '',
         phone: prof ? (prof.phone || '') : '',
         phone_recheck: prof ? !!prof.phone_recheck : false,
         fav_formats: prof && Array.isArray(prof.fav_formats) ? prof.fav_formats : [],
@@ -63,11 +64,13 @@
       return { error };
     },
     // запазване на име на потребителя в профила
-    async updateProfileName(name) {
+    async updateProfileName(name, initial) {
       if (!LIVE) { const u = jget(K.user, null) || {}; u.full_name = name; jset(K.user, u); return { error: null }; }
       const { data } = await sb.auth.getSession();
       const s = data.session; if (!s) return { error: { message: 'no session' } };
-      const { error } = await sb.from('profiles').update({ full_name: (name || '').trim() }).eq('id', s.user.id);
+      const upd = { full_name: (name || '').trim() };
+      if (!initial) upd.name_changed_at = new Date().toISOString(); // първоначалното задаване не пуска 3-месечния период
+      const { error } = await sb.from('profiles').update(upd).eq('id', s.user.id);
       return { error };
     },
     // запазване на телефон за контакт

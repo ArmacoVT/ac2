@@ -1421,7 +1421,7 @@ function accountView(){
     <div class="ev" style="margin-bottom:8px;"><div class="m">${bg?'Имейл':'Email'}</div><div style="color:var(--cream);font-size:15px;margin-top:2px;">${esc(user.email||'—')}</div></div>
     <div class="ev" onclick="editName()" style="margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><div class="m">${bg?'Име':'Name'}</div><div style="color:var(--cream);font-size:15px;margin-top:2px;">${esc(user.full_name||user.username||'—')}</div></div>
-      <span style="color:var(--gold);font-size:13px;">${bg?'Редактирай':'Edit'}</span></div>
+      <span style="color:${nameCooldownLeft()>0?'var(--muted)':'var(--gold)'};font-size:13px;white-space:nowrap;">${nameCooldownLeft()>0?(bg?'след '+nameCooldownLeft()+' дни':'in '+nameCooldownLeft()+'d'):(bg?'Редактирай':'Edit')}</span></div>
     <div class="ev" onclick="editPhone()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><div class="m">${bg?'Телефон':'Phone'}</div><div style="color:var(--cream);font-size:15px;margin-top:2px;">${user.phone?esc(user.phone):'—'}</div></div>
       <span style="color:var(--gold);font-size:13px;">${bg?'Редактирай':'Edit'}</span></div>
@@ -1594,7 +1594,15 @@ function askName(title,initial){
     ov.querySelector('#nmcancel').onclick=()=>{ov.remove();res(null);};
   });
 }
+function nameCooldownLeft(){
+  if(!user||!user.name_changed_at)return 0;
+  const last=new Date(user.name_changed_at).getTime(); if(isNaN(last))return 0;
+  const d=Math.ceil((last+90*86400000-Date.now())/86400000);
+  return d>0?d:0;
+}
 async function editName(){
+  const cd=nameCooldownLeft();
+  if(cd>0){toast(lang==='bg'?('Името се сменя веднъж на 3 месеца. Опитай след '+cd+(cd===1?' ден':' дни')+'.'):('Name can change once every 3 months. Try again in '+cd+' days.'));return;}
   const v=await askName(tr('editName'),user.full_name||user.username||'');
   if(!v)return;
   const r=await DB.updateProfileName(v);
@@ -1908,7 +1916,7 @@ async function promptInitialPassword(){
     try{user=await DB.getUser();}catch(e){}
     if(user&&!user.full_name){
       const nm=await askName(tr('yourName'),user.username||'');
-      if(nm){await DB.updateProfileName(nm);user.full_name=nm;route();}
+      if(nm){await DB.updateProfileName(nm,true);user.full_name=nm;route();}
     }
     if(user)await ensurePhone();
     route();
