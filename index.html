@@ -260,10 +260,19 @@
   @keyframes stampIn{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
   @keyframes vdash{to{stroke-dashoffset:0}}
   /* Пръстен на валидността */
-  .vring{display:flex;align-items:center;gap:14px;}
-  .vring svg{width:60px;height:60px;flex:none;}
-  .vrt b{font-family:var(--serif);font-size:22px;color:var(--cream);}
-  .vrt span{display:block;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+  .vrow{display:flex;align-items:center;gap:14px;background:var(--bg);border-radius:15px;box-shadow:inset 5px 5px 11px #d6c9b1, inset -5px -5px 11px #fffdf6;padding:15px 17px;margin-top:12px;}
+  .vwell{position:relative;flex:none;width:54px;height:54px;}
+  .vwell .vin{position:absolute;inset:0;border-radius:50%;box-shadow:inset 3px 3px 7px #d6c9b1, inset -3px -3px 7px #fffdf6;}
+  .vwell svg{position:absolute;inset:0;width:54px;height:54px;}
+  .vctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .vctr img{width:28px;height:auto;object-fit:contain;}
+  .vctr.num b{font-family:var(--serif);font-size:16px;line-height:1;color:#b5532f;}
+  .vctr.num span{font-size:8px;text-transform:uppercase;color:var(--muted);}
+  .vcol{flex:1;min-width:0;}
+  .vtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .vdt{font-family:var(--serif);font-size:16px;color:var(--cream);}
+  .vmuted{color:var(--muted);font-size:12px;white-space:nowrap;}
+  .vwarn{color:#b5532f;font-size:13px;margin-top:4px;}
   /* Изплуване при скрол */
   .sr{opacity:0;transform:translateY(16px);animation:none !important;}
   .sr.shown{opacity:1;transform:none;transition:opacity .55s cubic-bezier(.2,.7,.2,1),transform .55s cubic-bezier(.2,.7,.2,1);}
@@ -1295,12 +1304,20 @@ function validityRing(){
   const end=new Date(user.membership_until+'T00:00:00');
   const days=Math.max(0,Math.ceil((end-new Date())/86400000));
   const frac=Math.max(0,Math.min(1,days/365));
-  const R=26,C=2*Math.PI*R,off=C*(1-frac);
-  const col=days<=30?'#b5532f':'var(--gold)';
-  const lbl=lang==='bg'?(days===1?'ден':'дни'):'days';
-  return `<div class="ev vring" style="margin-top:12px;">
-    <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="${R}" fill="none" stroke="var(--line)" stroke-width="5"/><circle cx="32" cy="32" r="${R}" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 32 32)"/></svg>
-    <div class="vrt"><b>${days}</b><span>${lbl}</span><div style="font-size:12px;color:var(--mid);margin-top:3px;">${lang==='bg'?'валидно до':'valid until'} ${euDate(user.membership_until)}</div></div></div>`;
+  const warn=days<=45;
+  const col=warn?'#b5532f':'var(--gold)';
+  const R=25,C=2*Math.PI*R,off=C*(1-frac);
+  const center=warn
+    ? `<div class="vctr num"><b>${days}</b><span>${lang==='bg'?(days===1?'ден':'дни'):'days'}</span></div>`
+    : `<div class="vctr"><img src="${AC2}" alt="AC²"/></div>`;
+  const dateStr=(lang==='bg'?'до ':'until ')+euDate(user.membership_until);
+  const warnLine=warn?`<div class="vwarn">${lang==='bg'?('остават '+days+' '+(days===1?'ден':'дни')):(days+' days left')}</div>`:'';
+  return `<div class="vrow">
+    <div class="vwell"><div class="vin"></div>
+      <svg viewBox="0 0 56 56"><circle cx="28" cy="28" r="${R}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 28 28)"/></svg>
+      ${center}</div>
+    <div class="vcol"><div class="vtop"><span class="vdt">${lang==='bg'?'Активно членство':'Active membership'}</span><span class="vmuted">${dateStr}</span></div>${warnLine}</div>
+  </div>`;
 }
 function profile(){
   if(!user)return gate();
