@@ -6,7 +6,7 @@
 <script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#f6efe2" />
-<script>(function(){try{var t=localStorage.getItem('acac_theme')||'auto';var dark=t==='dark'||(t==='auto'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',dark?'dark':'light');if(localStorage.getItem('acac_textbig')==='1')document.documentElement.style.zoom='1.15';var mc=document.querySelector('meta[name=theme-color]');if(mc)mc.setAttribute('content',dark?'#1c1611':'#f6efe2');}catch(e){}})();</script>
+<script>(function(){try{if(localStorage.getItem('acac_textbig')==='1')document.documentElement.style.zoom='1.15';}catch(e){}})();</script>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <title>American College Arcus Club</title>
@@ -60,15 +60,19 @@
   .evposter{width:100%;border-radius:12px;margin-bottom:12px;display:block;object-fit:cover;max-height:240px;}
   .evvideo{width:100%;border-radius:12px;margin:10px 0 4px;display:block;background:#000;max-height:300px;}
   .sec-sub{color:var(--muted);font-size:13px;padding:0 20px 10px;}
-  /* Предстоящи събития — редове с дата */
+  /* Предстоящи — програма (timeline) във вдълбано поле */
   .fcard.dim{opacity:.5;}
-  .urow{display:flex;gap:13px;align-items:center;background:var(--surface);border-radius:13px;padding:10px 13px;margin:0 20px 9px;box-shadow:5px 5px 11px #d9cdb6,-5px -5px 11px #fffdf4;cursor:pointer;}
-  .urow .udate{flex:none;width:44px;text-align:center;line-height:1;}
-  .urow .udn{font-family:var(--serif);font-size:23px;color:var(--cream);}
-  .urow .udm{font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-top:3px;}
-  .urow .ucol{min-width:0;}
-  .urow .ucol h3{font-family:var(--serif);font-size:16px;color:var(--cream);margin:0;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .urow .ucol .m{color:var(--muted);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .upbox{margin:0 20px;background:var(--bg);border-radius:16px;padding:16px 16px 8px;box-shadow:inset 5px 5px 11px #d6c9b1, inset -5px -5px 11px #fffdf6;}
+  .uptl{position:relative;}
+  .uptl::before{content:"";position:absolute;left:55px;top:6px;bottom:16px;width:2px;background:var(--line);}
+  .uprow{position:relative;padding-left:60px;margin-bottom:16px;cursor:pointer;}
+  .uprow:last-child{margin-bottom:8px;}
+  .uprow .udt{position:absolute;left:0;top:-1px;width:42px;text-align:right;line-height:1;}
+  .uprow .udt .d{font-family:var(--serif);font-size:20px;color:var(--cream);}
+  .uprow .udt .mo{font-size:10px;color:var(--muted);margin-top:2px;}
+  .uprow .upt{position:absolute;left:50px;top:5px;width:11px;height:11px;border-radius:50%;border:2px solid var(--bg);box-sizing:border-box;}
+  .uprow h4{font-family:var(--serif);font-size:16px;color:var(--cream);margin:0 0 2px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .uprow .umt{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* Новини от клуба — вдълбана карта, без лого */
   .newswrap{padding:0 20px;}
   .newscard{position:relative;background:var(--bg);border-radius:16px;padding:14px 16px;margin-bottom:12px;
@@ -238,21 +242,6 @@
   .chip.hpop{animation:heartPop .42s cubic-bezier(.3,1.5,.5,1);}
   /* По-малко движение (достъпност) */
   @media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}}
-  /* ---------- ТЪМНА ТЕМА ---------- */
-  [data-theme="dark"]{
-    --bg:#1c1611; --surface:#261e17; --surface2:#2f261d;
-    --cream:#f2e7cf; --text:#d8c6b0; --mid:#b39c83; --muted:#97806a;
-    --line:rgba(242,231,207,0.15); --line-soft:rgba(242,231,207,0.07);
-    --medallion:#3a2c20;
-  }
-  [data-theme="dark"] .ev,[data-theme="dark"] .fcard,[data-theme="dark"] .tile,[data-theme="dark"] .urow,
-  [data-theme="dark"] .newscard,[data-theme="dark"] .sheet,[data-theme="dark"] .btn-ghost,
-  [data-theme="dark"] .contact{box-shadow:none !important;border:1px solid var(--line);background:var(--surface);}
-  [data-theme="dark"] .newscard{background:var(--surface2);}
-  [data-theme="dark"] .tableopt,[data-theme="dark"] .tablebox{background:var(--surface2);}
-  [data-theme="dark"] input,[data-theme="dark"] textarea,[data-theme="dark"] select{box-shadow:none !important;border:1px solid var(--line);background:var(--surface);color:var(--text);}
-  [data-theme="dark"] .pill{background:transparent;}
-  [data-theme="dark"] .sheetbd{background:rgba(0,0,0,.55);}
   .ev .tablebox input{margin-bottom:0;}
   .chip{border:none;border-radius:20px;padding:8px 14px;font-size:13px;color:var(--gold);background:var(--bg);cursor:pointer;
     white-space:nowrap;line-height:1;box-shadow:4px 4px 9px #d9cdb6,-4px -4px 9px #fffdf4;}
@@ -471,18 +460,9 @@ function hap(kind){
   }catch(e){}
 }
 function toggleLang(){lang=lang==='bg'?'en':'bg';localStorage.setItem('lang',lang);document.documentElement.lang=lang;route();}
-// ---------- Тема (светла/тъмна/авто) и размер на текста ----------
-function curTheme(){try{return localStorage.getItem('acac_theme')||'auto';}catch(e){return 'auto';}}
-function applyTheme(){
-  const t=curTheme();
-  const dark=t==='dark'||(t==='auto'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
-  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
-  const mc=document.querySelector('meta[name=theme-color]'); if(mc)mc.setAttribute('content',dark?'#1c1611':'#f6efe2');
-}
-function setTheme(t){try{localStorage.setItem('acac_theme',t);}catch(e){}applyTheme();if(typeof route==='function')route();}
+// ---------- Размер на текста (достъпност) ----------
 function textBig(){try{return localStorage.getItem('acac_textbig')==='1';}catch(e){return false;}}
 function setTextBig(on){try{localStorage.setItem('acac_textbig',on?'1':'0');}catch(e){}document.documentElement.style.zoom=on?'1.15':'';if(typeof route==='function')route();}
-try{if(window.matchMedia){window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(curTheme()==='auto')applyTheme();});}}catch(e){}
 function topbar(title){
   const left=title?`<span class="back" onclick="history.back()">‹</span>`:'';
   const center=title?`<span style="color:var(--cream);font-size:14px;letter-spacing:1px;">${title}</span>`:
@@ -501,9 +481,10 @@ function upRow(e){
   const dt=e.date?new Date(e.date+'T00:00:00'):null;
   const dn=dt?dt.getDate():''; const dm=dt?dt.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{month:'short'}).replace('.',''):'';
   const meta=[e.time,e.place,fl].filter(Boolean).join(' · ');
-  return `<div class="urow" onclick="go('format/${e.format}')">
-    <div class="udate"><div class="udn">${dn}</div><div class="udm" style="color:${col}">${esc(dm)}</div></div>
-    <div class="ucol"><h3>${esc(e.title)}</h3><div class="m">${esc(meta)}</div></div></div>`;
+  return `<div class="uprow" onclick="go('format/${e.format}')">
+    <div class="udt"><div class="d">${dn}</div><div class="mo">${esc(dm)}</div></div>
+    <span class="upt" style="background:${col}"></span>
+    <h4>${esc(e.title)}</h4><div class="umt">${esc(meta)}</div></div>`;
 }
 function home(){
   const SIZE={culture:'wide',cinema:'tall',theater:'wide'};
@@ -536,7 +517,7 @@ function home(){
   const forYou=favs.length?EVENTS.filter(e=>favs.includes(e.format)&&canAccess(e)&&!isPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1)):[];
   const forYouHtml=forYou.length?`<div class="sec-title">${tr('forYou')}</div><div class="sec-sub">${tr('forYouSub')}</div>${forYou.slice(0,4).map(eventCard).join('')}`:'';
   const upcoming=EVENTS.filter(e=>canAccess(e)&&!isPast(e)&&e.date).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1)).slice(0,5);
-  const upcomingHtml=upcoming.length?`<div class="sec-title">${lang==='bg'?'Предстоящи':'Upcoming'}</div>${upcoming.map(upRow).join('')}`:'';
+  const upcomingHtml=upcoming.length?`<div class="sec-title">${lang==='bg'?'Предстоящи':'Upcoming'}</div><div class="upbox"><div class="uptl">${upcoming.map(upRow).join('')}</div></div>`:'';
   return topbar('')+`
     <div class="hero"><img class="ac2" src="${AC2}" alt="AC²"/>
       <h1>American College<br>Arcus Club</h1>
@@ -1296,13 +1277,7 @@ function accountView(){
   return topbar(bg?'Управление на акаунта':'Account settings')+`<div class="page">
     <div class="sec-title">${bg?'Изглед':'Appearance'}</div>
     <div class="ev">
-      <div class="m" style="margin-bottom:8px;">${bg?'Тема':'Theme'}</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="chip ${curTheme()==='light'?'on':''}" onclick="setTheme('light')">${bg?'Светла':'Light'}</button>
-        <button class="chip ${curTheme()==='dark'?'on':''}" onclick="setTheme('dark')">${bg?'Тъмна':'Dark'}</button>
-        <button class="chip ${curTheme()==='auto'?'on':''}" onclick="setTheme('auto')">${bg?'Авто (като телефона)':'Auto (system)'}</button>
-      </div>
-      <label class="tcheck" style="margin-top:16px;" onclick="event.stopPropagation();"><input type="checkbox" ${textBig()?'checked':''} onchange="setTextBig(this.checked)"/><span>${bg?'По-голям текст':'Larger text'}</span></label>
+      <label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" ${textBig()?'checked':''} onchange="setTextBig(this.checked)"/><span>${bg?'По-голям текст':'Larger text'}</span></label>
     </div>
     <div class="sec-title" style="padding-top:28px;">${bg?'Сигурност':'Security'}</div>
     ${DB.live?`<button class="btn btn-ghost" onclick="changePass()">${tr('changePass')}</button>`:''}
