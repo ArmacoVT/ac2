@@ -208,12 +208,28 @@
   .ev .bookform .bookrow input{margin:0;width:90px;}
   .ev .bookform .bookrow .btn{margin:0;width:auto;padding:12px 20px;font-size:14px;}
   .ev .bookform small{display:block;color:var(--muted);font-size:11px;margin-top:7px;}
-  .ev .tableopt{margin-top:12px;padding:12px;border-radius:13px;background:var(--surface2);}
-  .ev .tcheck{display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0;}
-  .ev .tcheck input{width:auto;margin:2px 0 0;box-shadow:none;}
-  .ev .tcheck span{color:var(--text);font-size:14px;line-height:1.4;}
-  .ev .tcheck small{color:var(--muted);font-size:11px;}
-  .ev .tablebox{display:none;margin-top:10px;}
+  .tableopt{margin-top:12px;padding:12px;border-radius:13px;background:var(--surface2);}
+  .tcheck{display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0;}
+  .tcheck input{width:auto;margin:2px 0 0;box-shadow:none;}
+  .tcheck span{color:var(--text);font-size:14px;line-height:1.4;}
+  .tcheck small{color:var(--muted);font-size:11px;}
+  .tablebox{display:none;margin-top:10px;}
+  /* Bottom sheet (плъзгащ панел отдолу) */
+  .sheetbd{position:fixed;inset:0;background:rgba(40,30,22,.45);opacity:0;pointer-events:none;transition:opacity .28s ease;z-index:1800;}
+  .sheetbd.open{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:1900;background:var(--bg);border-radius:24px 24px 0 0;
+    padding:8px 20px calc(24px + env(safe-area-inset-bottom));transform:translateY(110%);
+    transition:transform .34s cubic-bezier(.2,.8,.2,1);box-shadow:0 -8px 26px rgba(58,44,35,.22);max-height:86vh;overflow:auto;}
+  .sheet.open{transform:translateY(0);}
+  .sheet .handle{width:42px;height:5px;border-radius:3px;background:var(--line);margin:6px auto 14px;}
+  .sheet h3{font-family:var(--serif);font-size:22px;color:var(--cream);font-weight:500;margin:0 0 2px;}
+  .sheet .ssub{color:var(--muted);font-size:13px;margin-bottom:16px;}
+  .sheet label{display:block;color:var(--mid);font-size:13px;margin:0 0 6px;}
+  .qrow{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line);}
+  .qrow>span{font-size:15px;color:var(--text);}
+  .qstep{display:flex;align-items:center;gap:18px;}
+  .qstep button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:21px;color:var(--gold);cursor:pointer;line-height:1;padding:0;}
+  .qstep b{font-size:18px;color:var(--cream);min-width:18px;text-align:center;}
   .ev .tablebox input{margin-bottom:0;}
   .chip{border:none;border-radius:20px;padding:8px 14px;font-size:13px;color:var(--gold);background:var(--bg);cursor:pointer;
     white-space:nowrap;line-height:1;box-shadow:4px 4px 9px #d9cdb6,-4px -4px 9px #fffdf4;}
@@ -577,7 +593,7 @@ function eventCard(e,i){
     :booked?`<button class="chip on${popCls}" onclick="event.stopPropagation();toast(tr('alreadyBooked'))">✓ ${tr('booked')}</button>`
     :locked?`<button class="chip locked" onclick="event.stopPropagation();toast(tr('bookFrom')+' '+'${lockEu}')">${lockSvg}${tr('bookFrom')} ${lockEu}</button>`
     :soldOut?`<button class="chip locked" onclick="event.stopPropagation();toast(lang==='bg'?'Изчерпано':'Sold out')">${lang==='bg'?'Изчерпано':'Sold out'}</button>`
-    :`<button class="chip" onclick="event.stopPropagation();toggleBook('${e.id}')">${tr('ticket')}</button>`);
+    :`<button class="chip" onclick="event.stopPropagation();openBook('${e.id}')">${e.price>0?(lang==='bg'?'Купи билет':'Buy ticket'):tr('ticket')}</button>`);
   const delay=`animation-delay:${((i||0)%8)*0.05}s;`;
   const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):1;
   const tableOpt=endsEarly(e)?`<div class="tableopt">
@@ -585,15 +601,7 @@ function eventCard(e,i){
         <span>${tr('addTable')} <small>· ${tr('afterEvent')} · ${e.ends}</small></span></label>
       <div class="tablebox" id="tbx_${e.id}"><label>${tr('tableParty')}</label>
         <input id="tbp_${e.id}" type="number" min="1" value="2"/></div></div>`:'';
-  const totalLine=e.price>0?`<div id="bt_${e.id}" style="margin-top:8px;color:var(--gold);font-weight:600;font-size:14px;">${lang==='bg'?'Общо: ':'Total: '}${fmtPrice(e.price*2)}</div>`:'';
-  const form=(booked||past||locked||expiredMember)?'':`<div class="bookform" id="bk_${e.id}">
-    <label>${tr('bookingName')}</label>
-    <input id="bn_${e.id}" type="text" value="${user?esc(user.full_name||user.username||''):''}"/>
-    <label>${tr('party')}</label>
-    <input id="bp_${e.id}" type="number" min="1" max="${left!==null?Math.min(seats,left):seats}" value="${left!==null?Math.min(2,seats,left||1):2}" oninput="updTotal('${e.id}',${e.price||0})"/>
-    ${totalLine}
-    ${tableOpt}
-    <button class="btn" style="margin-top:12px;" onclick="event.stopPropagation();confirmBook('${e.id}')">${tr('send')}</button></div>`;
+  const form='';
   const media=e.image_url?`<img class="evposter" src="${esc(e.image_url)}" alt="" loading="lazy"/>`:'';
   const vid=e.video_url?`<video class="evvideo" src="${esc(e.video_url)}" controls preload="metadata" playsinline></video>`:'';
   const cal=(!past&&e.date)?`<button class="chip" onclick="event.stopPropagation();addToCalendar('${e.id}')">${tr('addCal')}</button>`:'';
@@ -666,9 +674,48 @@ function events(){
   return topbar(tr('events'))+`<div class="page"><p style="color:var(--mid);font-size:14px;margin-bottom:14px;">${tr('program')}</p>${list}</div>`;
 }
 function setPreview(id){previewAs=id||null;route();}
-function toggleBook(id){
+function openBook(id){
   if(!user){needLogin();return;}
-  const f=document.getElementById('bk_'+id); if(f)f.classList.toggle('open');
+  if(!membershipActive()){toast(tr('memberExpiredTitle'));go('profile');return;}
+  const e=EVENTS.find(x=>x.id===id); if(!e)return;
+  if(!canBookNow(e)){toast(tr('bookFrom')+' '+bookOpenISO(e).split('-').reverse().join('.'));return;}
+  closeBook();
+  const paid=e.price>0;
+  const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
+  const left=seatsLeft(e);
+  const maxN=left!==null?Math.max(1,Math.min(seats,left)):seats;
+  const tableOpt=endsEarly(e)?`<div class="tableopt"><label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" id="tb_${e.id}" onchange="toggleTableOpt('${e.id}')"/><span>${tr('addTable')} <small>· ${tr('afterEvent')} · ${esc(e.ends||'')}</small></span></label><div class="tablebox" id="tbx_${e.id}"><label>${tr('tableParty')}</label><input id="tbp_${e.id}" type="number" min="1" value="2"/></div></div>`:'';
+  const bd=document.createElement('div'); bd.className='sheetbd'; bd.id='sheetbd'; bd.onclick=closeBook;
+  const sh=document.createElement('div'); sh.className='sheet'; sh.id='booksheet';
+  sh.innerHTML=`<div class="handle"></div>
+    <h3>${paid?(lang==='bg'?'Купи билет':'Buy ticket'):tr('ticket')}</h3>
+    <div class="ssub">${esc(e.title)}${paid?' · '+fmtPrice(e.price)+(lang==='bg'?' / билет':' / ticket'):''}</div>
+    <label>${tr('bookingName')}</label>
+    <input id="bn_${e.id}" type="text" value="${esc(user.full_name||user.username||'')}"/>
+    <div class="qrow"><span>${tr('party')}</span>
+      <div class="qstep"><button onclick="bookQty('${e.id}',-1,${maxN})">−</button><b id="bp_lbl_${e.id}">1</b><button onclick="bookQty('${e.id}',1,${maxN})">+</button></div></div>
+    <input id="bp_${e.id}" type="hidden" value="1"/>
+    ${paid?`<div class="qrow"><span>${lang==='bg'?'Общо':'Total'}</span><b id="bt_${e.id}" style="color:var(--gold);">${fmtPrice(e.price)}</b></div>`:''}
+    ${tableOpt}
+    <button class="btn" style="margin-top:18px;" onclick="confirmBook('${e.id}')">${paid?(lang==='bg'?'Купи билет':'Buy ticket'):(lang==='bg'?'Запази':'Book')}</button>`;
+  document.body.appendChild(bd); document.body.appendChild(sh);
+  document.body.style.overflow='hidden';
+  requestAnimationFrame(()=>{bd.classList.add('open');sh.classList.add('open');});
+}
+function closeBook(){
+  const bd=document.getElementById('sheetbd'),sh=document.getElementById('booksheet');
+  if(sh)sh.classList.remove('open'); if(bd)bd.classList.remove('open');
+  document.body.style.overflow='';
+  setTimeout(()=>{const b=document.getElementById('sheetbd'),s=document.getElementById('booksheet');if(b)b.remove();if(s)s.remove();},340);
+}
+function bookQty(id,delta,maxN){
+  const inp=document.getElementById('bp_'+id); if(!inp)return;
+  let n=(parseInt(inp.value||'1',10)||1)+delta;
+  if(n<1)n=1; if(maxN&&n>maxN)n=maxN;
+  inp.value=n;
+  const lbl=document.getElementById('bp_lbl_'+id); if(lbl)lbl.textContent=n;
+  const e=EVENTS.find(x=>x.id===id); const bt=document.getElementById('bt_'+id);
+  if(bt&&e&&e.price>0)bt.textContent=fmtPrice(e.price*n);
 }
 async function confirmBook(id){
   if(!user){needLogin();return;}
@@ -697,7 +744,7 @@ async function confirmBook(id){
       note:(lang==='bg'?'Маса след събитие: ':'Table after event: ')+e.title,
       res_name:bname,email:user.email,phone:user.phone||''});
   }
-  const f=document.getElementById('bk_'+id); if(f)f.classList.remove('open');
+  closeBook();
   try{RES=await DB.listReservations();}catch(err){}
   justBooked=id;setTimeout(()=>{justBooked=null;},800);
   hap('success');
