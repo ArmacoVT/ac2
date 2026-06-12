@@ -589,7 +589,6 @@ function updateCountdown(){
   const el=document.getElementById('cdtime'),box=document.getElementById('nextcd');
   if(!el||!box)return; const ms=parseInt(box.dataset.ms||'0',10); if(ms)el.textContent=cdText(ms);
 }
-setInterval(()=>{try{updateCountdown();}catch(e){}},30000);
 function greeting(){
   if(!user)return '';
   const h=new Date().getHours();
@@ -635,7 +634,6 @@ function home(){
       <img class="hero-illu" src="illustrations/hero.svg" alt="" />
       </div>
     ${greeting()}
-    ${countdownHtml()}
     ${annHtml()}
     ${upcomingHtml}
     ${forYouHtml}
