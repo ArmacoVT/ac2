@@ -238,9 +238,11 @@
   /* Натискане — лека обратна връзка */
   .btn,.chip,.tile,.qstep button,.fcard{transition:transform .09s ease;touch-action:manipulation;}
   button,.chip,.btn{touch-action:manipulation;}
-  .btn:active,.chip:active,.tile:active,.qstep button:active,.fcard:active{transform:scale(.97);}
-  @keyframes heartPop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
-  .chip.hpop{animation:heartPop .42s cubic-bezier(.3,1.5,.5,1);}
+  .btn:active,.chip:active,.tile:active,.qstep button:active,.fcard:active,.uprow:active{transform:scale(.94);opacity:.9;}
+  @keyframes heartPop{0%{transform:scale(1)}35%{transform:scale(1.55)}60%{transform:scale(.9)}100%{transform:scale(1)}}
+  .chip.hpop{animation:heartPop .5s cubic-bezier(.3,1.6,.5,1);}
+  @keyframes qbump{0%{transform:scale(1)}40%{transform:scale(1.3)}100%{transform:scale(1)}}
+  .qbump{animation:qbump .3s ease;}
   /* По-малко движение (достъпност) */
   @media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}}
   .ev .tablebox input{margin-bottom:0;}
@@ -730,17 +732,17 @@ function bookQty(id,delta,maxN){
   const inp=document.getElementById('bp_'+id); if(!inp)return;
   let n=(parseInt(inp.value||'1',10)||1)+delta;
   if(n<1)n=1; if(maxN&&n>maxN)n=maxN;
-  try{hap('select');}catch(e){}
+  try{hap('medium');}catch(e){}
   inp.value=n;
-  const lbl=document.getElementById('bp_lbl_'+id); if(lbl)lbl.textContent=n;
+  const lbl=document.getElementById('bp_lbl_'+id); if(lbl){lbl.textContent=n;lbl.classList.remove('qbump');void lbl.offsetWidth;lbl.classList.add('qbump');}
   const e=EVENTS.find(x=>x.id===id); const bt=document.getElementById('bt_'+id);
   if(bt&&e&&e.price>0)bt.textContent=fmtPrice(e.price*n);
 }
 function tblQty(id,delta){
   const inp=document.getElementById('tbp_'+id); if(!inp)return;
   let n=(parseInt(inp.value||'1',10)||1)+delta; if(n<1)n=1; if(n>20)n=20;
-  try{hap('select');}catch(e){}
-  inp.value=n; const lbl=document.getElementById('tbp_lbl_'+id); if(lbl)lbl.textContent=n;
+  try{hap('medium');}catch(e){}
+  inp.value=n; const lbl=document.getElementById('tbp_lbl_'+id); if(lbl){lbl.textContent=n;lbl.classList.remove('qbump');void lbl.offsetWidth;lbl.classList.add('qbump');}
 }
 async function confirmBook(id){
   if(!user){needLogin();return;}
@@ -851,7 +853,7 @@ async function toggleSave(id){
   const ev=EVENTS.find(e=>e.id===id);
   if(ev&&!canAccess(ev)){toast(tr('tierLocked'));return;}
   const now=await DB.toggleSaved(id);
-  hap('select');
+  hap(now?'medium':'select');
   if(now)toast(tr('savedToast'));
   saved=await DB.listSaved();
   // обновяваме само бутона за това събитие — без пречертаване и без скок нагоре
