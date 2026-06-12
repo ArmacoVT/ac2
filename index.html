@@ -339,7 +339,7 @@
 <script>
 const T={
   bg:{home:'Начало',events:'Събития',reserve:'Резервация',membership:'Членство',signin:'Вход',profile:'Профил',
-    formats:'Формати',formatsSub:'Седемте формата на клуба. Докосни карта.',quick:'Бързи действия',
+    formats:'Формати',formatsSub:'Форматите на клуба. Докосни карта.',quick:'Бързи действия',
     includes:'Какво включва',enquiry:'Запитване / резервация',seeEvents:'Виж събития',
     program:'Подбрана програма от вечери, прожекции и разговори.',save:'＋ Запази',saved:'✓ Запазено',reserve2:'Резервирай',
     memIntro:'Членството е чрез персонална покана и внимателно разглеждане на всяко предложение.',benefits:'Основни предимства',
@@ -356,7 +356,7 @@ const T={
     currentPass:'Текуща парола',wrongCurrent:'Грешна текуща парола',checking:'Проверка…',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими',
     resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души',pastRes:'Изминали',noUpcomingRes:'Няма предстоящи резервации.',yourName:'Вашето име',editName:'Редактирай име',nameSaved:'Името е запазено',bookingName:'Име на резервацията',bioLogin:'Влез с Face ID / отпечатък',bioReason:'Влизане в Arcus Club',bioNone:'Първо влез с парола веднъж',pastEvents:'Изминали събития',favFormats:'Любими формати',favHint:'Избери какво те интересува — показва се най-отгоре „За теб".',forYou:'За теб',forYouSub:'Подбрано според любимите ти формати.',addCal:'＋ Календар',bookFrom:'Билети от',memberUntil:'Членство до',memberExpired:'Членството изтече на',memberExpiredTitle:'Членството ви е изтекло',memberExpiredMsg:'Свържете се с клуба за подновяване на членството.',membershipOver:'Изтекло членство'},
   en:{home:'Home',events:'Events',reserve:'Reserve',membership:'Membership',signin:'Sign in',profile:'Profile',
-    formats:'Formats',formatsSub:'The seven formats of the club. Tap a card.',quick:'Quick actions',
+    formats:'Formats',formatsSub:'The club formats. Tap a card.',quick:'Quick actions',
     includes:'What it includes',enquiry:'Enquiry / reservation',seeEvents:'See events',
     program:'A selected programme of dinners, screenings and conversations.',save:'＋ Save',saved:'✓ Saved',reserve2:'Reserve',
     memIntro:'Membership is by personal invitation and careful review of each proposal.',benefits:'Key benefits',
@@ -784,6 +784,12 @@ function tblQty(id,delta){
   try{hap('medium');}catch(e){}
   inp.value=n; const lbl=document.getElementById('tbp_lbl_'+id); if(lbl){lbl.textContent=n;lbl.classList.remove('qbump');void lbl.offsetWidth;lbl.classList.add('qbump');}
 }
+function resQty(delta,maxN){
+  const inp=document.getElementById('r_party'); if(!inp)return;
+  let n=(parseInt(inp.value||'1',10)||1)+delta; if(n<1)n=1; if(maxN&&n>maxN)n=maxN;
+  try{hap('medium');}catch(e){}
+  inp.value=n; const l=document.getElementById('r_party_lbl'); if(l){l.textContent=n;l.classList.remove('qbump');void l.offsetWidth;l.classList.add('qbump');}
+}
 async function confirmBook(id){
   if(!user){needLogin();return;}
   if(!membershipActive()){toast(tr('memberExpiredTitle'));go('profile');return;}
@@ -1052,7 +1058,9 @@ function reserve(q){
     <label>${tr('placeChoose')} *</label><div class="selrow" id="vensel">${vsel}</div>
     <label>${tr('date')} *</label><input id="r_date" readonly placeholder="дд.мм.гггг" data-iso="" onclick="openResCal()" style="cursor:pointer;"/>
     <label>${tr('time')} *</label><input id="r_time" placeholder="19:30"/>
-    <label>${tr('party')} *</label><input id="r_party" type="number" value="2" min="1" max="${seats}"/>
+    <label>${tr('party')} *</label>
+    <div class="qrow" style="border:none;padding:2px 0 0;"><span style="color:var(--muted);font-size:13px;">${lang==='bg'?'Места':'Seats'}</span><div class="qstep"><button type="button" onclick="resQty(-1,${seats})">−</button><b id="r_party_lbl">1</b><button type="button" onclick="resQty(1,${seats})">+</button></div></div>
+    <input id="r_party" type="hidden" value="1"/>
     <label>${tr('contactEmail')} *</label><input id="r_email" type="email" autocapitalize="none" value="${user?esc(user.email||''):''}"/>
     <label>${tr('contactPhone')} *</label><input id="r_phone" type="tel" placeholder="+359 ..."/>
     <label>${tr('note')} *</label><textarea id="r_note" rows="3" placeholder="${tr('notePlaceholder')}"></textarea>
@@ -1685,7 +1693,7 @@ function applyReveal(){
     if(_revealIO)_revealIO.disconnect();
     _revealIO=new IntersectionObserver(es=>{es.forEach(en=>{if(en.isIntersecting){en.target.classList.add('shown');_revealIO.unobserve(en.target);}});},{threshold:0.06});
     const vh=window.innerHeight||800;
-    document.querySelectorAll('#app .ev, #app .fcard, #app .uprow').forEach(el=>{
+    document.querySelectorAll('#app .ev, #app .uprow').forEach(el=>{
       if(el.classList.contains('sr')||el.classList.contains('shown'))return;
       const r=el.getBoundingClientRect();
       if(r.top < vh*0.9)return; // вече се вижда → без скрол-анимация
