@@ -247,6 +247,19 @@
   .qbump{animation:qbump .3s ease;}
   /* Поздрав */
   .greet{font-family:var(--serif);color:var(--mid);font-size:19px;padding:4px 20px 6px;}
+  /* Отброяване до следващото събитие */
+  .nextcd{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:0 20px 10px;font-size:13px;cursor:pointer;}
+  .nextcd .cdlab{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);}
+  .nextcd .cdname{font-family:var(--serif);color:var(--cream);font-size:15px;}
+  .nextcd .cdsep{color:var(--muted);}
+  .nextcd b{color:var(--gold-bright);font-weight:600;}
+  /* Празни екрани */
+  .empty2{text-align:center;padding:34px 20px;}
+  .empty2 .ei{color:var(--gold-soft);margin-bottom:12px;}
+  .empty2 .ei svg{width:42px;height:42px;}
+  .empty2 h4{font-family:var(--serif);color:var(--cream);font-size:19px;font-weight:500;margin-bottom:5px;}
+  .empty2 p{color:var(--muted);font-size:13px;margin:0 auto 16px;max-width:240px;line-height:1.5;}
+  .empty2 .btn{max-width:220px;margin:0 auto;}
   /* Blur-up на снимки */
   .evposter{opacity:0;filter:blur(8px);transition:opacity .5s ease,filter .6s ease;}
   .evposter.imgloaded{opacity:1;filter:none;}
@@ -530,6 +543,53 @@ function upRow(e){
     <span class="upt" style="background:${col}"></span>
     <h4>${esc(e.title)}</h4><div class="umt">${esc(meta)}</div></div>`;
 }
+function emptyState(icon,title,sub,ctaLabel,ctaAction){
+  const cta=ctaLabel?`<button class="btn" onclick="${ctaAction}">${ctaLabel}</button>`:'';
+  return `<div class="empty2"><div class="ei">${icon||''}</div><h4>${title}</h4>${sub?`<p>${sub}</p>`:''}${cta}</div>`;
+}
+const EICON={
+  cal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`,
+  heart:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 21l8.8-8.3a5 5 0 0 0 0-7.1Z"/></svg>`,
+  ticket:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4Z"/><path d="M13 6v12" stroke-dasharray="2 2"/></svg>`
+};
+function evStartMsOf(e){
+  if(!e.date)return null;
+  const t=(e.time&&/^\d{1,2}:\d{2}/.test(e.time))?e.time.slice(0,5):'19:00';
+  const p=e.date.split('-').map(Number),tt=t.split(':').map(Number);
+  if(p.length<3)return null;
+  return new Date(p[0],p[1]-1,p[2],tt[0]||0,tt[1]||0,0).getTime();
+}
+function nextEvent(){
+  const now=Date.now();
+  return EVENTS.filter(e=>canAccess(e)&&e.date).map(e=>({e,ms:evStartMsOf(e)})).filter(o=>o.ms&&o.ms>now).sort((a,b)=>a.ms-b.ms)[0];
+}
+function cdText(ms){
+  const d=ms-Date.now(); const bg=lang==='bg';
+  if(d<=0)return bg?'започва сега':'starting now';
+  const days=Math.floor(d/86400000),hrs=Math.floor((d%86400000)/3600000),mins=Math.floor((d%3600000)/60000);
+  if(bg){
+    if(days>0)return 'след '+days+(days===1?' ден':' дни')+(hrs>0?' '+hrs+' ч':'');
+    if(hrs>0)return 'след '+hrs+' ч'+(mins>0?' '+mins+' мин':'');
+    if(mins>0)return 'след '+mins+' мин';
+    return 'започва всеки момент';
+  }
+  if(days>0)return 'in '+days+'d'+(hrs>0?' '+hrs+'h':'');
+  if(hrs>0)return 'in '+hrs+'h'+(mins>0?' '+mins+'m':'');
+  if(mins>0)return 'in '+mins+'m';
+  return 'starting soon';
+}
+function countdownHtml(){
+  const nx=nextEvent(); if(!nx)return '';
+  return `<div class="nextcd" id="nextcd" data-ms="${nx.ms}" onclick="go('format/${nx.e.format}')">
+    <span class="cdlab">${lang==='bg'?'Следващо':'Next'}</span>
+    <span class="cdname">${esc(nx.e.title)}</span>
+    <span class="cdsep">·</span><b id="cdtime">${cdText(nx.ms)}</b></div>`;
+}
+function updateCountdown(){
+  const el=document.getElementById('cdtime'),box=document.getElementById('nextcd');
+  if(!el||!box)return; const ms=parseInt(box.dataset.ms||'0',10); if(ms)el.textContent=cdText(ms);
+}
+setInterval(()=>{try{updateCountdown();}catch(e){}},30000);
 function greeting(){
   if(!user)return '';
   const h=new Date().getHours();
@@ -575,6 +635,7 @@ function home(){
       <img class="hero-illu" src="illustrations/hero.svg" alt="" />
       </div>
     ${greeting()}
+    ${countdownHtml()}
     ${annHtml()}
     ${upcomingHtml}
     ${forYouHtml}
@@ -637,7 +698,7 @@ function canBookNow(e){const d=bookOpenISO(e);return !d||d<=todayISO();}
 function eventsHtml(list,emptyMsg){
   const up=list.filter(e=>!isPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1));
   const past=list.filter(isPast).sort((a,b)=>(a.date<b.date?1:-1));
-  let h=up.length?up.map(eventCard).join(''):`<p style="color:var(--muted);font-style:italic;">${emptyMsg}</p>`;
+  let h=up.length?up.map(eventCard).join(''):emptyState(EICON.cal,emptyMsg,lang==='bg'?'Очаквай скоро нови събития в програмата.':'New events will appear here soon.');
   if(past.length){
     h+=`<button class="btn btn-ghost" style="margin-top:10px;" onclick="togglePastEv(this)">${tr('pastEvents')} (${past.length}) ▾</button>
       <div id="pastev" style="display:none;margin-top:10px;">${past.map(eventCard).join('')}</div>`;
@@ -1350,7 +1411,7 @@ function profile(){
       <div><h3 style="font-size:15px;">${lang==='bg'?'Управление на акаунта':'Account settings'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Парола · изтриване на акаунт':'Password · delete account'}</div></div>
       <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
     <div class="sec-title" style="padding:24px 0 8px;">${tr('myEvents')}</div>
-    ${sev.length?sev.map(e=>`<div class="ev" style="margin-bottom:8px;cursor:pointer;" onclick="go('format/${e.format}')"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m">${evMeta(e)}</div></div>`).join(''):`<p style="color:var(--muted);font-style:italic;">${tr('noEvents')}</p>`}
+    ${sev.length?sev.map(e=>`<div class="ev" style="margin-bottom:8px;cursor:pointer;" onclick="go('format/${e.format}')"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m">${evMeta(e)}</div></div>`).join(''):emptyState(EICON.heart,tr('noEvents'),lang==='bg'?'Докосни ♥ на събитие, за да го запазиш тук.':'Tap ♥ on an event to save it here.',lang==='bg'?'Разгледай събития':'Browse events',"go('events')")}
     <div class="sec-title" style="padding:22px 0 8px;">${tr('myRes')}</div>
     ${resSections(res)}
     <button class="btn btn-ghost" style="margin-top:26px;" onclick="signout()">${tr('signout')}</button></div>`;
@@ -1495,7 +1556,7 @@ function toggleDay(id){
 }
 // предстоящи + изминали, групирани по дата
 function resSections(res){
-  if(!res.length)return `<p style="color:var(--muted);font-style:italic;">${tr('noRes')}</p>`;
+  if(!res.length)return emptyState(EICON.ticket,tr('noRes'),lang==='bg'?'Запази билет за събитие и ще се появи тук.':'Book a ticket and it will show up here.',lang==='bg'?'Разгледай събития':'Browse events',"go('events')");
   const t=new Date();
   const todayIso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
   const upcoming=res.filter(r=>!r.date||r.date>=todayIso).sort((a,b)=>((a.date||'9999-99-99')<(b.date||'9999-99-99'))?-1:1);
@@ -1742,6 +1803,32 @@ function applyReveal(){
       setTimeout(()=>cancelRes(_id),90);
     }
     active=false;
+  },{passive:true});
+})();
+// плъзгане наляво/надясно между основните табове
+(function(){
+  const TABS=['','events','live','reserve','profile'];
+  let sx=0,sy=0,tracking=false;
+  document.addEventListener('touchstart',e=>{
+    tracking=false;
+    if(!user||e.touches.length>1)return;
+    const t=e.touches[0];
+    if(t.clientX<28)return; // запазваме edge-back жеста
+    if(document.getElementById('booksheet'))return; // отворен панел
+    if(e.target.closest&&e.target.closest('.sheet,.selrow,[data-swipecancel],input,textarea,select,.annlist,video'))return;
+    const p=location.hash.replace(/^#/,'').split('?')[0];
+    if(TABS.indexOf(p)<0)return;
+    sx=t.clientX;sy=t.clientY;tracking=true;
+  },{passive:true});
+  document.addEventListener('touchend',e=>{
+    if(!tracking)return; tracking=false;
+    const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+    if(Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.8)return;
+    const p=location.hash.replace(/^#/,'').split('?')[0];
+    let i=TABS.indexOf(p); if(i<0)return;
+    if(dx<0&&i<TABS.length-1)i++; else if(dx>0&&i>0)i--; else return;
+    try{hap('select');}catch(_){}
+    go(TABS[i]);
   },{passive:true});
 })();
 let dataSig='',dataReady=false;
