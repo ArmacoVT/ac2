@@ -222,10 +222,10 @@
   /* Bottom sheet (плъзгащ панел отдолу) */
   .sheetbd{position:fixed;inset:0;background:rgba(40,30,22,.45);opacity:0;pointer-events:none;transition:opacity .28s ease;z-index:1800;}
   .sheetbd.open{opacity:1;pointer-events:auto;}
-  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:1900;background:var(--bg);border-radius:24px 24px 0 0;
-    padding:8px 20px calc(24px + env(safe-area-inset-bottom));transform:translateY(110%);
+  .sheet{position:fixed;left:50%;bottom:0;z-index:1900;width:100%;max-width:480px;background:var(--bg);border-radius:24px 24px 0 0;
+    padding:8px 20px calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,110%);
     transition:transform .34s cubic-bezier(.2,.8,.2,1);box-shadow:0 -8px 26px rgba(58,44,35,.22);max-height:86vh;overflow:auto;}
-  .sheet.open{transform:translateY(0);}
+  .sheet.open{transform:translate(-50%,0);}
   .sheet .handle{width:42px;height:5px;border-radius:3px;background:var(--line);margin:6px auto 14px;}
   .sheet h3{font-family:var(--serif);font-size:22px;color:var(--cream);font-weight:500;margin:0 0 2px;}
   .sheet .ssub{color:var(--muted);font-size:13px;margin-bottom:16px;}
@@ -236,7 +236,8 @@
   .qstep button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:21px;color:var(--gold);cursor:pointer;line-height:1;padding:0;}
   .qstep b{font-size:18px;color:var(--cream);min-width:18px;text-align:center;}
   /* Натискане — лека обратна връзка */
-  .btn,.chip,.tile,.qstep button,.fcard{transition:transform .09s ease;}
+  .btn,.chip,.tile,.qstep button,.fcard{transition:transform .09s ease;touch-action:manipulation;}
+  button,.chip,.btn{touch-action:manipulation;}
   .btn:active,.chip:active,.tile:active,.qstep button:active,.fcard:active{transform:scale(.97);}
   @keyframes heartPop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
   .chip.hpop{animation:heartPop .42s cubic-bezier(.3,1.5,.5,1);}
@@ -327,7 +328,7 @@ const T={
     newPassTitle:'Нова парола',passConfirm:'Потвърди паролата',passMismatch:'Паролите не съвпадат',pwSave:'Запази',cancelBtn:'Отказ',
     setPassTitle:'Задай своята парола',passSet:'Паролата е създадена успешно. Добре дошъл!',
     currentPass:'Текуща парола',wrongCurrent:'Грешна текуща парола',checking:'Проверка…',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими',
-    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души',pastRes:'Изминали',noUpcomingRes:'Няма предстоящи резервации.',yourName:'Вашето име',editName:'Редактирай име',nameSaved:'Името е запазено',bookingName:'На кое име',bioLogin:'Влез с Face ID / отпечатък',bioReason:'Влизане в Arcus Club',bioNone:'Първо влез с парола веднъж',pastEvents:'Изминали събития',favFormats:'Любими формати',favHint:'Избери какво те интересува — показва се най-отгоре „За теб".',forYou:'За теб',forYouSub:'Подбрано според любимите ти формати.',addCal:'＋ Календар',bookFrom:'Билети от',memberUntil:'Членство до',memberExpired:'Членството изтече на',memberExpiredTitle:'Членството ви е изтекло',memberExpiredMsg:'Свържете се с клуба за подновяване на членството.',membershipOver:'Изтекло членство'},
+    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души',pastRes:'Изминали',noUpcomingRes:'Няма предстоящи резервации.',yourName:'Вашето име',editName:'Редактирай име',nameSaved:'Името е запазено',bookingName:'Име на резервацията',bioLogin:'Влез с Face ID / отпечатък',bioReason:'Влизане в Arcus Club',bioNone:'Първо влез с парола веднъж',pastEvents:'Изминали събития',favFormats:'Любими формати',favHint:'Избери какво те интересува — показва се най-отгоре „За теб".',forYou:'За теб',forYouSub:'Подбрано според любимите ти формати.',addCal:'＋ Календар',bookFrom:'Билети от',memberUntil:'Членство до',memberExpired:'Членството изтече на',memberExpiredTitle:'Членството ви е изтекло',memberExpiredMsg:'Свържете се с клуба за подновяване на членството.',membershipOver:'Изтекло членство'},
   en:{home:'Home',events:'Events',reserve:'Reserve',membership:'Membership',signin:'Sign in',profile:'Profile',
     formats:'Formats',formatsSub:'The seven formats of the club. Tap a card.',quick:'Quick actions',
     includes:'What it includes',enquiry:'Enquiry / reservation',seeEvents:'See events',
@@ -701,7 +702,7 @@ function openBook(id){
   const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
   const left=seatsLeft(e);
   const maxN=left!==null?Math.max(1,Math.min(seats,left)):seats;
-  const tableOpt=endsEarly(e)?`<div class="tableopt"><label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" id="tb_${e.id}" onchange="toggleTableOpt('${e.id}')"/><span>${tr('addTable')} <small>· ${tr('afterEvent')} · ${esc(e.ends||'')}</small></span></label><div class="tablebox" id="tbx_${e.id}"><label>${tr('tableParty')}</label><input id="tbp_${e.id}" type="number" min="1" value="2"/></div></div>`:'';
+  const tableOpt=endsEarly(e)?`<div class="tableopt"><label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" id="tb_${e.id}" onchange="toggleTableOpt('${e.id}')"/><span>${tr('addTable')} <small>· ${tr('afterEvent')} · ${esc(e.ends||'')}</small></span></label><div class="tablebox" id="tbx_${e.id}"><div class="qrow" style="border-bottom:none;padding:8px 0 0;"><span>${tr('tableParty')}</span><div class="qstep"><button onclick="tblQty('${e.id}',-1)">−</button><b id="tbp_lbl_${e.id}">1</b><button onclick="tblQty('${e.id}',1)">+</button></div></div><input id="tbp_${e.id}" type="hidden" value="1"/></div></div>`:'';
   const bd=document.createElement('div'); bd.className='sheetbd'; bd.id='sheetbd'; bd.onclick=closeBook;
   const sh=document.createElement('div'); sh.className='sheet'; sh.id='booksheet';
   sh.innerHTML=`<div class="handle"></div>
@@ -734,6 +735,12 @@ function bookQty(id,delta,maxN){
   const lbl=document.getElementById('bp_lbl_'+id); if(lbl)lbl.textContent=n;
   const e=EVENTS.find(x=>x.id===id); const bt=document.getElementById('bt_'+id);
   if(bt&&e&&e.price>0)bt.textContent=fmtPrice(e.price*n);
+}
+function tblQty(id,delta){
+  const inp=document.getElementById('tbp_'+id); if(!inp)return;
+  let n=(parseInt(inp.value||'1',10)||1)+delta; if(n<1)n=1; if(n>20)n=20;
+  try{hap('select');}catch(e){}
+  inp.value=n; const lbl=document.getElementById('tbp_lbl_'+id); if(lbl)lbl.textContent=n;
 }
 async function confirmBook(id){
   if(!user){needLogin();return;}
