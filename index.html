@@ -6,6 +6,7 @@
 <script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#f6efe2" />
+<script>(function(){try{var t=localStorage.getItem('acac_theme')||'auto';var dark=t==='dark'||(t==='auto'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',dark?'dark':'light');if(localStorage.getItem('acac_textbig')==='1')document.documentElement.style.zoom='1.15';var mc=document.querySelector('meta[name=theme-color]');if(mc)mc.setAttribute('content',dark?'#1c1611':'#f6efe2');}catch(e){}})();</script>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <title>American College Arcus Club</title>
@@ -230,6 +231,28 @@
   .qstep{display:flex;align-items:center;gap:18px;}
   .qstep button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:21px;color:var(--gold);cursor:pointer;line-height:1;padding:0;}
   .qstep b{font-size:18px;color:var(--cream);min-width:18px;text-align:center;}
+  /* Натискане — лека обратна връзка */
+  .btn,.chip,.tile,.qstep button,.fcard{transition:transform .09s ease;}
+  .btn:active,.chip:active,.tile:active,.qstep button:active,.fcard:active{transform:scale(.97);}
+  @keyframes heartPop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+  .chip.hpop{animation:heartPop .42s cubic-bezier(.3,1.5,.5,1);}
+  /* По-малко движение (достъпност) */
+  @media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}}
+  /* ---------- ТЪМНА ТЕМА ---------- */
+  [data-theme="dark"]{
+    --bg:#1c1611; --surface:#261e17; --surface2:#2f261d;
+    --cream:#f2e7cf; --text:#d8c6b0; --mid:#b39c83; --muted:#97806a;
+    --line:rgba(242,231,207,0.15); --line-soft:rgba(242,231,207,0.07);
+    --medallion:#3a2c20;
+  }
+  [data-theme="dark"] .ev,[data-theme="dark"] .fcard,[data-theme="dark"] .tile,[data-theme="dark"] .urow,
+  [data-theme="dark"] .newscard,[data-theme="dark"] .sheet,[data-theme="dark"] .btn-ghost,
+  [data-theme="dark"] .contact{box-shadow:none !important;border:1px solid var(--line);background:var(--surface);}
+  [data-theme="dark"] .newscard{background:var(--surface2);}
+  [data-theme="dark"] .tableopt,[data-theme="dark"] .tablebox{background:var(--surface2);}
+  [data-theme="dark"] input,[data-theme="dark"] textarea,[data-theme="dark"] select{box-shadow:none !important;border:1px solid var(--line);background:var(--surface);color:var(--text);}
+  [data-theme="dark"] .pill{background:transparent;}
+  [data-theme="dark"] .sheetbd{background:rgba(0,0,0,.55);}
   .ev .tablebox input{margin-bottom:0;}
   .chip{border:none;border-radius:20px;padding:8px 14px;font-size:13px;color:var(--gold);background:var(--bg);cursor:pointer;
     white-space:nowrap;line-height:1;box-shadow:4px 4px 9px #d9cdb6,-4px -4px 9px #fffdf4;}
@@ -448,6 +471,18 @@ function hap(kind){
   }catch(e){}
 }
 function toggleLang(){lang=lang==='bg'?'en':'bg';localStorage.setItem('lang',lang);document.documentElement.lang=lang;route();}
+// ---------- Тема (светла/тъмна/авто) и размер на текста ----------
+function curTheme(){try{return localStorage.getItem('acac_theme')||'auto';}catch(e){return 'auto';}}
+function applyTheme(){
+  const t=curTheme();
+  const dark=t==='dark'||(t==='auto'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  const mc=document.querySelector('meta[name=theme-color]'); if(mc)mc.setAttribute('content',dark?'#1c1611':'#f6efe2');
+}
+function setTheme(t){try{localStorage.setItem('acac_theme',t);}catch(e){}applyTheme();if(typeof route==='function')route();}
+function textBig(){try{return localStorage.getItem('acac_textbig')==='1';}catch(e){return false;}}
+function setTextBig(on){try{localStorage.setItem('acac_textbig',on?'1':'0');}catch(e){}document.documentElement.style.zoom=on?'1.15':'';if(typeof route==='function')route();}
+try{if(window.matchMedia){window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(curTheme()==='auto')applyTheme();});}}catch(e){}
 function topbar(title){
   const left=title?`<span class="back" onclick="history.back()">‹</span>`:'';
   const center=title?`<span style="color:var(--cream);font-size:14px;letter-spacing:1px;">${title}</span>`:
@@ -712,6 +747,7 @@ function bookQty(id,delta,maxN){
   const inp=document.getElementById('bp_'+id); if(!inp)return;
   let n=(parseInt(inp.value||'1',10)||1)+delta;
   if(n<1)n=1; if(maxN&&n>maxN)n=maxN;
+  try{hap('select');}catch(e){}
   inp.value=n;
   const lbl=document.getElementById('bp_lbl_'+id); if(lbl)lbl.textContent=n;
   const e=EVENTS.find(x=>x.id===id); const bt=document.getElementById('bt_'+id);
@@ -833,6 +869,7 @@ async function toggleSave(id){
   document.querySelectorAll('[data-fav="'+id+'"]').forEach(b=>{
     b.classList.toggle('on',now);
     b.innerHTML=(now?'♥':'♡')+' '+tr('fav');
+    if(now){b.classList.remove('hpop');void b.offsetWidth;b.classList.add('hpop');}
   });
 }
 function membership(){
@@ -1257,7 +1294,17 @@ function profile(){
 function accountView(){
   const bg=lang==='bg';
   return topbar(bg?'Управление на акаунта':'Account settings')+`<div class="page">
-    <div class="sec-title">${bg?'Сигурност':'Security'}</div>
+    <div class="sec-title">${bg?'Изглед':'Appearance'}</div>
+    <div class="ev">
+      <div class="m" style="margin-bottom:8px;">${bg?'Тема':'Theme'}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="chip ${curTheme()==='light'?'on':''}" onclick="setTheme('light')">${bg?'Светла':'Light'}</button>
+        <button class="chip ${curTheme()==='dark'?'on':''}" onclick="setTheme('dark')">${bg?'Тъмна':'Dark'}</button>
+        <button class="chip ${curTheme()==='auto'?'on':''}" onclick="setTheme('auto')">${bg?'Авто (като телефона)':'Auto (system)'}</button>
+      </div>
+      <label class="tcheck" style="margin-top:16px;" onclick="event.stopPropagation();"><input type="checkbox" ${textBig()?'checked':''} onchange="setTextBig(this.checked)"/><span>${bg?'По-голям текст':'Larger text'}</span></label>
+    </div>
+    <div class="sec-title" style="padding-top:28px;">${bg?'Сигурност':'Security'}</div>
     ${DB.live?`<button class="btn btn-ghost" onclick="changePass()">${tr('changePass')}</button>`:''}
     <div class="sec-title" style="padding-top:30px;color:#b5532f;">${bg?'Опасна зона':'Danger zone'}</div>
     <div class="ev" style="border:1px solid rgba(181,83,47,.3);">
