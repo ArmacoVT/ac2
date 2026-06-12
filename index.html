@@ -1393,8 +1393,8 @@ function profile(){
   return topbar(tr('profile'))+`<div class="page">
     ${expiredBanner}
     ${memberCard()}
-    <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:10px;">${esc(user.email)} · <a style="color:var(--gold);cursor:pointer;" onclick="editName()">${tr('editName')}</a></div>
-    <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:4px;">${lang==='bg'?'Телефон':'Phone'}: ${user.phone?esc(user.phone):(lang==='bg'?'—':'—')} · <a style="color:var(--gold);cursor:pointer;" onclick="editPhone()">${lang==='bg'?'Редактирай':'Edit'}</a></div>
+    <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:10px;">${esc(user.email)}</div>
+    <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:4px;">${lang==='bg'?'Телефон':'Phone'}: ${user.phone?esc(user.phone):'—'}</div>
     ${membershipActive()?validityRing():untilLine}
     <div style="text-align:center;color:var(--mid);font-size:12px;margin-top:6px;">${EVENTS.filter(canAccess).length} ${lang==='bg'?'налични събития':'available events'}</div>
     ${favSection()}
@@ -1419,7 +1419,15 @@ function profile(){
 function accountView(){
   const bg=lang==='bg';
   return topbar(bg?'Управление на акаунта':'Account settings')+`<div class="page">
-    <div class="sec-title">${bg?'Изглед':'Appearance'}</div>
+    <div class="sec-title">${bg?'Профил':'Profile'}</div>
+    <div class="ev" style="margin-bottom:8px;"><div class="m">${bg?'Имейл':'Email'}</div><div style="color:var(--cream);font-size:15px;margin-top:2px;">${esc(user.email||'—')}</div></div>
+    <div class="ev" onclick="editName()" style="margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+      <div><div class="m">${bg?'Име':'Name'}</div><div style="color:var(--cream);font-size:15px;margin-top:2px;">${esc(user.full_name||user.username||'—')}</div></div>
+      <span style="color:var(--gold);font-size:13px;">${bg?'Редактирай':'Edit'}</span></div>
+    <div class="ev" onclick="editPhone()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+      <div><div class="m">${bg?'Телефон':'Phone'}</div><div style="color:var(--cream);font-size:15px;margin-top:2px;">${user.phone?esc(user.phone):'—'}</div></div>
+      <span style="color:var(--gold);font-size:13px;">${bg?'Редактирай':'Edit'}</span></div>
+    <div class="sec-title" style="padding-top:28px;">${bg?'Изглед':'Appearance'}</div>
     <div class="ev">
       <label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" ${textBig()?'checked':''} onchange="setTextBig(this.checked)"/><span>${bg?'По-голям текст':'Larger text'}</span></label>
     </div>
