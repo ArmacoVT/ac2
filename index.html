@@ -463,20 +463,6 @@ function hap(kind){
   }catch(e){}
 }
 function toggleLang(){lang=lang==='bg'?'en':'bg';localStorage.setItem('lang',lang);document.documentElement.lang=lang;route();}
-// ---------- Диагностика на вибрацията ----------
-async function testHaptic(){
-  const bg=lang==='bg';
-  const C=window.Capacitor;
-  const isNative=!!(C&&C.isNativePlatform&&C.isNativePlatform());
-  if(!isNative){alert(bg?'Вибрацията работи само в приложението на телефона — не в браузър.':'Haptics only work in the phone app, not in a browser.');return;}
-  let H=null;
-  try{H=(C.Plugins&&C.Plugins.Haptics)||(C.registerPlugin&&C.registerPlugin('Haptics'))||null;}catch(e){}
-  if(!H){alert(bg?'Диагностика: Haptics плъгинът не е зареден (липсва в нативния проект).':'Diagnostic: Haptics plugin not loaded.');return;}
-  try{
-    await H.impact({style:'HEAVY'});
-    setTimeout(()=>alert(bg?'Изпратен силен импулс. Усети ли вибрация?':'Sent a strong impulse. Did you feel it?'),300);
-  }catch(e){alert((bg?'Грешка при вибрация: ':'Haptics error: ')+((e&&e.message)||JSON.stringify(e)));}
-}
 // ---------- Размер на текста (достъпност) ----------
 function textBig(){try{return localStorage.getItem('acac_textbig')==='1';}catch(e){return false;}}
 function setTextBig(on){try{localStorage.setItem('acac_textbig',on?'1':'0');}catch(e){}document.documentElement.style.zoom=on?'1.15':'';if(typeof route==='function')route();}
@@ -1119,19 +1105,15 @@ function NB(){
 }
 function bioEnabled(){return !!(NB()&&localStorage.getItem('acac_bio'));}
 async function saveBioCreds(email,pass){
-  const isNative=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
-  const b=NB();
-  if(!b){ if(isNative)alert('Face ID диагностика: плъгинът не е зареден (NativeBiometric липсва).'); return; }
+  const b=NB(); if(!b)return;
   try{
-    const a=await b.isAvailable();
-    if(!a||!a.isAvailable){ alert('Face ID диагностика: isAvailable = '+JSON.stringify(a)); return; }
+    const a=await b.isAvailable(); if(!a||!a.isAvailable)return;
     try{await b.deleteCredentials({server:BIO_SERVER});}catch(_){} // чистим стар запис (оцелял от стара инсталация)
     await b.setCredentials({username:email,password:pass,server:BIO_SERVER});
-    localStorage.setItem('acac_bio','1'); // успех — бутонът за Face ID ще се появи при следващо влизане
+    localStorage.setItem('acac_bio','1');
   }catch(e){
     // втори опит: само изтриване + запис
-    try{await b.deleteCredentials({server:BIO_SERVER});await b.setCredentials({username:email,password:pass,server:BIO_SERVER});localStorage.setItem('acac_bio','1');}
-    catch(e2){alert('Face ID диагностика (запис в Keychain): '+((e2&&e2.message)||JSON.stringify(e2)));}
+    try{await b.deleteCredentials({server:BIO_SERVER});await b.setCredentials({username:email,password:pass,server:BIO_SERVER});localStorage.setItem('acac_bio','1');}catch(e2){}
   }
 }
 async function bioLogin(){
@@ -1302,7 +1284,6 @@ function accountView(){
     <div class="sec-title">${bg?'Изглед':'Appearance'}</div>
     <div class="ev">
       <label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" ${textBig()?'checked':''} onchange="setTextBig(this.checked)"/><span>${bg?'По-голям текст':'Larger text'}</span></label>
-      <button class="btn btn-ghost" style="margin-top:14px;" onclick="testHaptic()">${bg?'Тест на вибрацията':'Test haptics'}</button>
     </div>
     <div class="sec-title" style="padding-top:28px;">${bg?'Сигурност':'Security'}</div>
     ${DB.live?`<button class="btn btn-ghost" onclick="changePass()">${tr('changePass')}</button>`:''}
