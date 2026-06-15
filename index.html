@@ -1435,7 +1435,7 @@ function accountView(){
     <div class="sec-title" style="padding-top:30px;color:#b5532f;">${bg?'Опасна зона':'Danger zone'}</div>
     <div class="ev" style="border:1px solid rgba(181,83,47,.3);">
       <div class="m" style="margin-bottom:10px;">${bg?'Изтриването премахва профила и всички твои данни (резервации, предпочитания) безвъзвратно.':'Deleting removes your profile and all your data (reservations, preferences) permanently.'}</div>
-      <button class="btn btn-ghost" style="color:#b5532f;border-color:rgba(181,83,47,.4);margin-top:0;" onclick="deleteAccount()">${tr('delAcc')}</button>
+      <button class="btn" style="background:rgba(181,83,47,.12);color:#b5532f;border:1px solid rgba(181,83,47,.5);box-shadow:none;margin-top:0;" onclick="deleteAccount()">${tr('delAcc')}</button>
     </div></div>`;
 }
 async function deleteAccount(){
