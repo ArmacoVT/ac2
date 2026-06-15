@@ -802,6 +802,10 @@ function peopleView(){
         <div><button class="btn ghost sm" onclick="changeMembership('${esc(p.email)}','${p.id}')">Промени членството</button></div>
       </div>
       <div class="row2" style="margin-top:8px;align-items:center;">
+        <div><label style="margin-bottom:4px;">Име</label><input id="nmf_${p.id}" value="${esc(p.full_name||p.username||'')}" placeholder="Име Фамилия"/></div>
+        <div><button class="btn ghost sm" onclick="changeName('${p.id}')">Запази името</button></div>
+      </div>
+      <div class="row2" style="margin-top:8px;align-items:center;">
         <div><label style="margin-bottom:4px;">Телефон</label><input id="phf_${p.id}" value="${esc(p.phone||'')}" placeholder="+359 ..."/></div>
         <div style="display:flex;flex-direction:column;gap:6px;"><button class="btn ghost sm" onclick="savePhone('${p.id}')">Запази телефона</button>
           <button class="btn ghost sm" onclick="requestPhone('${p.id}','${esc(nm)}')">Поискай нов телефон</button></div>
@@ -869,6 +873,15 @@ async function deletePerson(id,name,subCount){
   if(error){alert('Грешка: '+error.message);return;}
   DB.logAudit('member_deleted',name||'',subCount>0?('фирма, +'+subCount+' профила'):'');
   toast('Изтрито');
+  PEOPLE=await DB.listMembers();render();
+}
+async function changeName(id){
+  const f=document.getElementById('nmf_'+id);if(!f)return;
+  const v=f.value.trim();if(!v){alert('Въведи име');return;}
+  const {error}=await DB.adminSetName(id,v);
+  if(error){alert('Грешка: '+error.message);return;}
+  try{DB.logAudit('member_name_changed',v,'');}catch(e){}
+  toast('Името е обновено');
   PEOPLE=await DB.listMembers();render();
 }
 async function savePhone(id){

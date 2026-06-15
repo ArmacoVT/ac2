@@ -1412,7 +1412,7 @@ function profile(){
     ${sev.length?sev.map(e=>`<div class="ev" style="margin-bottom:8px;cursor:pointer;" onclick="go('format/${e.format}')"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m">${evMeta(e)}</div></div>`).join(''):emptyState(EICON.heart,tr('noEvents'),lang==='bg'?'Докосни ♥ на събитие, за да го запазиш тук.':'Tap ♥ on an event to save it here.',lang==='bg'?'Разгледай събития':'Browse events',"go('events')")}
     <div class="sec-title" style="padding:22px 0 8px;">${tr('myRes')}</div>
     ${resSections(res)}
-    <button class="btn btn-ghost" style="margin-top:26px;" onclick="signout()">${tr('signout')}</button></div>`;
+    </div>`;
 }
 function accountView(){
   const bg=lang==='bg';
@@ -1421,7 +1421,7 @@ function accountView(){
     <div class="ev" style="margin-bottom:8px;"><div class="m">${bg?'Имейл':'Email'}</div><div style="color:var(--cream);font-size:15px;margin-top:2px;">${esc(user.email||'—')}</div></div>
     <div class="ev" onclick="editName()" style="margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><div class="m">${bg?'Име':'Name'}</div><div style="color:var(--cream);font-size:15px;margin-top:2px;">${esc(user.full_name||user.username||'—')}</div></div>
-      <span style="color:${nameCooldownLeft()>0?'var(--muted)':'var(--gold)'};font-size:13px;white-space:nowrap;">${nameCooldownLeft()>0?(bg?'след '+nameCooldownLeft()+' дни':'in '+nameCooldownLeft()+'d'):(bg?'Редактирай':'Edit')}</span></div>
+      <span style="color:var(--gold);font-size:13px;white-space:nowrap;">${bg?'Редактирай':'Edit'}</span></div>
     <div class="ev" onclick="editPhone()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><div class="m">${bg?'Телефон':'Phone'}</div><div style="color:var(--cream);font-size:15px;margin-top:2px;">${user.phone?esc(user.phone):'—'}</div></div>
       <span style="color:var(--gold);font-size:13px;">${bg?'Редактирай':'Edit'}</span></div>
@@ -1431,6 +1431,7 @@ function accountView(){
     </div>
     <div class="sec-title" style="padding-top:28px;">${bg?'Сигурност':'Security'}</div>
     ${DB.live?`<button class="btn btn-ghost" onclick="changePass()">${tr('changePass')}</button>`:''}
+    <button class="btn btn-ghost" style="margin-top:12px;" onclick="signout()">${tr('signout')}</button>
     <div class="sec-title" style="padding-top:30px;color:#b5532f;">${bg?'Опасна зона':'Danger zone'}</div>
     <div class="ev" style="border:1px solid rgba(181,83,47,.3);">
       <div class="m" style="margin-bottom:10px;">${bg?'Изтриването премахва профила и всички твои данни (резервации, предпочитания) безвъзвратно.':'Deleting removes your profile and all your data (reservations, preferences) permanently.'}</div>
@@ -1601,8 +1602,7 @@ function nameCooldownLeft(){
   return d>0?d:0;
 }
 async function editName(){
-  const cd=nameCooldownLeft();
-  if(cd>0){toast(lang==='bg'?('Името се сменя веднъж на 3 месеца. Опитай след '+cd+(cd===1?' ден':' дни')+'.'):('Name can change once every 3 months. Try again in '+cd+' days.'));return;}
+  if(nameCooldownLeft()>0){toast(lang==='bg'?'Името вече е сменяно скоро. За корекция се свържи с клуба.':'Name was changed recently. Contact the club for a correction.');return;}
   const v=await askName(tr('editName'),user.full_name||user.username||'');
   if(!v)return;
   const r=await DB.updateProfileName(v);

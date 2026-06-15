@@ -270,6 +270,12 @@
       return { error: null };
     },
     // искане за нов телефон (само админ) — членът ще бъде подканен при следващо влизане
+    // админ сменя името на член (нулира 3-месечния период)
+    async adminSetName(id, name) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.from('profiles').update({ full_name: (name || '').trim(), name_changed_at: null }).eq('id', id);
+      return { error };
+    },
     async adminRequestPhone(id) {
       if (!LIVE) return { error: { message: 'demo' } };
       const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'request_phone', id } });
