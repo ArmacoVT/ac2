@@ -244,6 +244,18 @@
       if (LIVE && sb) sb.auth.onAuthStateChange((ev) => { if (ev === 'PASSWORD_RECOVERY') cb(); });
     },
 
+    // Реалтайм: известява мигновено, когато събитие се промени (вкл. тръгване/спиране на живо).
+    // Изисква в Supabase: realtime да е включен за таблица events (виж sql/realtime_events.sql).
+    onLiveChange(cb) {
+      if (!(LIVE && sb)) return null;
+      try {
+        return sb.channel('events-live')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'events' },
+            (payload) => { try { cb(payload.new || payload.old || null); } catch (e) {} })
+          .subscribe();
+      } catch (e) { return null; }
+    },
+
     // ---------- ПОКАНИ (само админ; през Edge Function) ----------
     async inviteMember(email, username, membership, validFrom) {
       if (!LIVE) return { error: { message: 'demo' } };

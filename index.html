@@ -947,6 +947,7 @@ function playLive(id){
   const e=EVENTS.find(x=>x.id===id); if(!e)return;
   if(streamGated(e)&&!hasConfirmedTicket(e)){toast(lang==='bg'?'Достъпно само за записани/платили':'Only for booked / paid members');return;}
   const w=document.getElementById('lw_'+id); if(!w)return;
+  livePlaying=id; // маркираме, че гледаме този стрийм → пазим плеъра от пре-рисуване
   const box='position:relative;padding-top:56.25%;margin-top:12px;border-radius:10px;overflow:hidden;background:#000;';
   const VP=VideoPlugin();
   // 1) Телефон + директен/HLS стрийм → нативен плеър (PiP + фон)
@@ -961,9 +962,25 @@ function playLive(id){
       style="position:absolute;inset:0;width:100%;height:100%;background:#000;"></video></div>`;
     return;
   }
-  // 3) Vimeo/YouTube и др. → вграден плеър (iframe)
+  // 3) Vimeo/YouTube/Twitch и др. → вграден плеър (iframe)
   w.innerHTML=`<div style="${box}"><iframe src="${esc(streamEmbed(e.stream_url))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen
     style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>`;
+}
+// ----- Realtime: автоматично обновяване при тръгване/спиране на живо -----
+let _liveSub=null,_liveHintAt=0;
+function subscribeLive(){ if(_liveSub||!DB.onLiveChange)return; _liveSub=DB.onLiveChange(handleLiveChange); }
+async function handleLiveChange(row){
+  try{EVENTS=await DB.listEvents();}catch(e){}
+  const path=location.hash.replace(/^#/,'').split('?')[0];
+  if(path==='live'){
+    // чакалнята сама се превръща в стрийма — без ръчно опресняване
+    if(!isWatchingLive())renderPath('live');
+  }else if(row&&row.is_live&&!row.live_ended){
+    // на друг таб → дискретна подсказка (макс. веднъж/минута)
+    const now=Date.now(); if(now-_liveHintAt>60000){_liveHintAt=now;
+      try{hap('success');}catch(e){}
+      toast(lang==='bg'?'● Предаването започна — отвори „На живо“':'● The stream has started — open “Live”');}
+  }
 }
 function needLogin(){toast(tr('signinSave'));setTimeout(()=>go('login'),800);}
 async function toggleSave(id){
@@ -1849,7 +1866,9 @@ function applyReveal(){
     go(TABS[i]);
   },{passive:true});
 })();
-let dataSig='',dataReady=false;
+let dataSig='',dataReady=false,livePlaying=null;
+// гледаме ли в момента стрийм (има реален плеър в DOM)?
+function isWatchingLive(){return livePlaying&&document.querySelector('#lw_'+livePlaying+' iframe, #lw_'+livePlaying+' video');}
 const skel=n=>('<div class="skel"></div>').repeat(n);
 async function route(){
   const tb=document.getElementById('tabbar');
@@ -1880,7 +1899,9 @@ async function route(){
       const sig=JSON.stringify([ev,sv,rs,tk,an]);
       EVENTS=ev;saved=sv;RES=rs;TAKEN=tk||{};ANN=an||[];const wasReady=dataReady;dataReady=true;
       const cur=location.hash.replace(/^#/,'').split('?')[0];
-      if(cur===path&&(sig!==dataSig||!wasReady)){dataSig=sig;renderPath(path,q,parts);}
+      if(cur===path&&(sig!==dataSig||!wasReady)){dataSig=sig;
+        // не пре-рисуваме живия екран, докато гледаме — иначе плеърът се рестартира
+        if(!(path==='live'&&isWatchingLive()))renderPath(path,q,parts);}
     }catch(e){}
   }
 }
@@ -1942,6 +1963,7 @@ DB.onRecovery(promptInitialPassword);
     RES=await DB.listReservations();
     checkUnlocks();
     scheduleLocalNotifs();
+    subscribeLive(); // реалтайм за живите предавания
     const p0=location.hash.replace(/^#/,'').split('?')[0];
     tabbar(p0===''?'home':(p0.split('/')[0]==='format'?'home':p0));
     const n=notifCount();
