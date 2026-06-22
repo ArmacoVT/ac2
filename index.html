@@ -1811,6 +1811,7 @@ function tabbar(active){
   document.getElementById('tabbar').innerHTML=items.map(i=>`<a onclick="hap('select');go('${i[0]}')" class="${active===(i[0]||'home')?'active':''}"><span class="ti">${ICN[i[1]]}${i[3]||''}</span>${i[2]}</a>`).join('');
 }
 function renderPath(path,q,parts){
+  parts=parts||String(path||'').split('/'); q=q||''; // защита при извикване само с път
   let html,active='home';
   if(path===''||path==='home'){html=home();active='home';setTimeout(markAnnSeen,1200);}
   else if(parts[0]==='format'){html=formatPage(parts[1]);active='home';}
