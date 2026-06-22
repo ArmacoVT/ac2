@@ -894,12 +894,16 @@ async function confirmBook(id){
 function streamEmbed(u){
   if(!u)return '';
   let m;
-  if((m=u.match(/(?:youtube\.com\/.*[?&]v=|youtu\.be\/|youtube\.com\/live\/)([\w-]{6,})/)))return 'https://www.youtube.com/embed/'+m[1]+'?autoplay=1';
+  // YouTube канал (винаги текущото предаване на канала — не сменяш линка всеки път)
+  if((m=u.match(/youtube\.com\/(?:channel\/)?(UC[\w-]{20,})/)))return 'https://www.youtube.com/embed/live_stream?channel='+m[1]+'&autoplay=1&playsinline=1';
+  if((m=u.match(/(?:youtube\.com\/.*[?&]v=|youtu\.be\/|youtube\.com\/live\/)([\w-]{6,})/)))return 'https://www.youtube.com/embed/'+m[1]+'?autoplay=1&playsinline=1&rel=0&modestbranding=1';
   if((m=u.match(/vimeo\.com\/(\d+)/)))return 'https://player.vimeo.com/video/'+m[1]+'?autoplay=1';
   // Twitch — изисква parent с домейна, на който е вграден плеърът
   const parent=location.hostname||'armacovt.github.io';
   if((m=u.match(/twitch\.tv\/videos\/(\d+)/)))return 'https://player.twitch.tv/?video='+m[1]+'&parent='+parent+'&autoplay=true';
   if((m=u.match(/twitch\.tv\/([A-Za-z0-9_]{3,25})(?:[/?]|$)/)))return 'https://player.twitch.tv/?channel='+m[1]+'&parent='+parent+'&autoplay=true';
+  // Kick — вграждаем плеър по име на канала (kick.com/име или player.kick.com/име)
+  if((m=u.match(/(?:player\.)?kick\.com\/([A-Za-z0-9_]{2,30})/)))return 'https://player.kick.com/'+m[1]+'?autoplay=true';
   return u;
 }
 function hasConfirmedTicket(e){return RES.some(r=>r.event_id===e.id&&r.status==='confirmed');}
