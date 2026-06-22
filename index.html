@@ -1835,9 +1835,7 @@ function renderPath(path,q,parts){
     markResSeen();
   }
   tabbar(active);
-  // на „На живо" се опреснява всяка минута, за да се появи стриймът сам в часа на началото
-  try{clearTimeout(window.__liveTimer);}catch(e){}
-  if(active==='live'){window.__liveTimer=setTimeout(()=>{if((location.hash.replace(/^#/,'').split('?')[0])==='live')renderPath('live','',['live']);},60000);}
+  // (авто-появата на стрийма я поема startLiveTimer/tickLive, който пази активния плеър)
   try{requestAnimationFrame(applyReveal);}catch(e){}
 }
 let _revealIO;
@@ -1926,8 +1924,8 @@ async function route(){
   const parts=path.split('/');
   // 1) Рисуваме веднага с наличните данни (без чакане → без забавяне)
   if(path==='company')COMPANY=null;
-  renderPath(path,q,parts);
-  window.scrollTo(0,0);
+  // но ако вече гледаме стрийм на „На живо" — не пипаме екрана (иначе плеърът се рестартира)
+  if(!(path==='live'&&isWatchingLive())){renderPath(path,q,parts);window.scrollTo(0,0);}
   // фирмени профили — зареждаме във фон
   if(path==='company'&&user&&user.membership==='corporate'){
     try{COMPANY=await DB.companyMembers();}catch(e){COMPANY={members:[],max:5};}
