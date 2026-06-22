@@ -1002,6 +1002,27 @@ function showLiveSwitch(n){
     :'● '+n+' more stream'+(n>1?'s':'')+' live — tap to view';
 }
 function clearLiveSwitch(){const b=document.getElementById('liveswitch');if(b)b.remove();}
+// таймер: авто-стартът е по часовник (не е промяна в базата), затова сами преоценяваме
+let _liveIds=null,_liveTimer=null;
+function liveSig(){return EVENTS.filter(e=>canAccess(e)&&isLiveNow(e)).map(e=>e.id).sort().join(',');}
+function tickLive(){
+  if(!user)return;
+  const sig=liveSig();
+  if(_liveIds===null){_liveIds=sig;return;} // първо засичане — без подсказки
+  if(sig===_liveIds)return;
+  const prev=_liveIds.split(',').filter(Boolean);
+  const grew=sig.split(',').filter(Boolean).some(id=>!prev.includes(id));
+  _liveIds=sig;
+  const path=location.hash.replace(/^#/,'').split('?')[0];
+  if(path==='live'){
+    if(!isWatchingLive()){renderPath('live');clearLiveSwitch();}
+    else{const others=EVENTS.filter(e=>canAccess(e)&&isLiveNow(e)&&e.id!==livePlaying);if(others.length)showLiveSwitch(others.length);else clearLiveSwitch();}
+  }else if(grew){
+    const now=Date.now(); if(now-_liveHintAt>60000){_liveHintAt=now;try{hap('success');}catch(e){}
+      toast(lang==='bg'?'● Предаването започна — отвори „На живо“':'● The stream has started — open “Live”');}
+  }
+}
+function startLiveTimer(){ if(_liveTimer)return; _liveIds=liveSig(); _liveTimer=setInterval(tickLive,15000); }
 function needLogin(){toast(tr('signinSave'));setTimeout(()=>go('login'),800);}
 async function toggleSave(id){
   if(!user){needLogin();return;}
@@ -1983,7 +2004,8 @@ DB.onRecovery(promptInitialPassword);
     RES=await DB.listReservations();
     checkUnlocks();
     scheduleLocalNotifs();
-    subscribeLive(); // реалтайм за живите предавания
+    subscribeLive(); // реалтайм за ръчно пускане/спиране
+    startLiveTimer(); // часовников авто-старт
     const p0=location.hash.replace(/^#/,'').split('?')[0];
     tabbar(p0===''?'home':(p0.split('/')[0]==='format'?'home':p0));
     const n=notifCount();
