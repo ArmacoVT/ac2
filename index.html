@@ -973,8 +973,14 @@ async function handleLiveChange(row){
   try{EVENTS=await DB.listEvents();}catch(e){}
   const path=location.hash.replace(/^#/,'').split('?')[0];
   if(path==='live'){
-    // чакалнята сама се превръща в стрийма — без ръчно опресняване
-    if(!isWatchingLive())renderPath('live');
+    if(!isWatchingLive()){
+      // не гледаме нищо → чакалнята сама се превръща в стрийма
+      renderPath('live');clearLiveSwitch();
+    }else{
+      // гледаме едно предаване, но има ли ДРУГО живо, което не се вижда?
+      const others=EVENTS.filter(e=>canAccess(e)&&isLiveNow(e)&&e.id!==livePlaying);
+      if(others.length)showLiveSwitch(others.length);else clearLiveSwitch();
+    }
   }else if(row&&row.is_live&&!row.live_ended){
     // на друг таб → дискретна подсказка (макс. веднъж/минута)
     const now=Date.now(); if(now-_liveHintAt>60000){_liveHintAt=now;
@@ -982,6 +988,20 @@ async function handleLiveChange(row){
       toast(lang==='bg'?'● Предаването започна — отвори „На живо“':'● The stream has started — open “Live”');}
   }
 }
+// лента отгоре, когато гледаш едно, а друго предаване също е на живо
+function showLiveSwitch(n){
+  let b=document.getElementById('liveswitch');
+  if(!b){
+    b=document.createElement('div');b.id='liveswitch';
+    b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top));z-index:60;max-width:480px;width:calc(100% - 28px);background:#d98b6e;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.22);font-size:14px;font-weight:600;text-align:center;cursor:pointer;';
+    b.onclick=function(){clearLiveSwitch();livePlaying=null;renderPath('live');window.scrollTo(0,0);};
+    document.body.appendChild(b);
+  }
+  b.textContent=lang==='bg'
+    ?'● Още '+(n>1?n+' предавания са':'едно предаване е')+' на живо — докосни, за да видиш'
+    :'● '+n+' more stream'+(n>1?'s':'')+' live — tap to view';
+}
+function clearLiveSwitch(){const b=document.getElementById('liveswitch');if(b)b.remove();}
 function needLogin(){toast(tr('signinSave'));setTimeout(()=>go('login'),800);}
 async function toggleSave(id){
   if(!user){needLogin();return;}
@@ -1905,7 +1925,7 @@ async function route(){
     }catch(e){}
   }
 }
-window.addEventListener('hashchange',()=>{loginMode='login';route();});
+window.addEventListener('hashchange',()=>{loginMode='login';if(typeof clearLiveSwitch==='function')clearLiveSwitch();route();});
 document.documentElement.lang=lang;
 // долната лента се смалява при скрол и се връща при покой (като Instagram)
 let tbTimer;
