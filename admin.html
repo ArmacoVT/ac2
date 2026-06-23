@@ -282,8 +282,8 @@ function formView(){
       <div><label>Място / зала</label><select id="f_place">${venOpts}</select></div></div>
     <div class="row2"><div><label>Начална дата</label><input id="f_date" readonly placeholder="дд.мм.гггг" value="${e&&e.date?isoToBg(e.date):''}" data-iso="${esc(e?(e.date||''):'')}" onclick="openCal('f_date')" style="cursor:pointer;"/></div>
       <div><label>Крайна дата (по желание)</label><input id="f_end_date" readonly placeholder="дд.мм.гггг" value="${e&&e.end_date?isoToBg(e.end_date):''}" data-iso="${esc(e?(e.end_date||''):'')}" onclick="openCal('f_end_date')" style="cursor:pointer;"/></div></div>
-    <div class="row2"><div><label>Начало (час)</label><input id="f_time" type="time" value="${esc(e?e.time:'')}"/></div>
-      <div><label>Край (час)</label><input id="f_ends" type="time" value="${esc(e?e.ends:'')}"/></div></div>
+    <div class="row2"><div><label>Начало (час)</label>${timePickerHTML('f_time',e?e.time:'')}</div>
+      <div><label>Край (час)</label>${timePickerHTML('f_ends',e?e.ends:'')}</div></div>
     <div class="row2"><div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}"/></div>
       <div><label>Места на маса след събитието</label><input id="f_tcap" type="number" min="0" value="${e&&e.table_capacity?e.table_capacity:''}" placeholder="по желание"/></div></div>
     <div class="row2"><div><label>Цена на билет (€) — 0 = безплатно</label><input id="f_price" type="number" min="0" step="0.01" value="${e&&e.price?e.price:0}"/></div><div></div></div>
@@ -338,10 +338,36 @@ function grabForm(){
   return {title:g('f_title'),format:g('f_format'),place:g('f_place'),time:g('f_time'),ends:g('f_ends'),
     dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),price:g('f_price'),stream:g('f_stream'),live:live?live.checked:false,auto:auto?auto.checked:false,gated:gated?gated.checked:false,bw};
 }
+// Избирачка за час: 24-часов (00–23) + минути през 5; пази стойност HH:MM в скрито поле
+function timePickerHTML(id,val){
+  val=(val||'').trim();
+  let h='',m='';const mt=val.match(/^(\d{1,2}):(\d{2})/);
+  if(mt){h=String(+mt[1]).padStart(2,'0');m=String(Math.round(+mt[2]/5)*5%60).padStart(2,'0');}
+  let ho='<option value="">--</option>';
+  for(let i=0;i<24;i++){const v=String(i).padStart(2,'0');ho+=`<option value="${v}"${v===h?' selected':''}>${v}</option>`;}
+  let mo='<option value="">--</option>';
+  for(let i=0;i<60;i+=5){const v=String(i).padStart(2,'0');mo+=`<option value="${v}"${v===m?' selected':''}>${v}</option>`;}
+  return `<div style="display:flex;align-items:center;gap:6px;">
+    <select id="${id}_h" onchange="syncTime('${id}')" style="flex:1;">${ho}</select>
+    <b style="opacity:.5;">:</b>
+    <select id="${id}_m" onchange="syncTime('${id}')" style="flex:1;">${mo}</select>
+    <input type="hidden" id="${id}" value="${val}"></div>`;
+}
+function syncTime(id){
+  const h=document.getElementById(id+'_h').value,m=document.getElementById(id+'_m').value;
+  document.getElementById(id).value=h?(h+':'+(m||'00')):'';
+}
+function setTimeField(id,val){
+  const el=document.getElementById(id);if(!el)return;el.value=val||'';
+  const mt=(val||'').match(/^(\d{1,2}):(\d{2})/);
+  const hs=document.getElementById(id+'_h'),ms=document.getElementById(id+'_m');
+  if(hs)hs.value=mt?String(+mt[1]).padStart(2,'0'):'';
+  if(ms)ms.value=mt?String(Math.round(+mt[2]/5)*5%60).padStart(2,'0'):'';
+}
 function putForm(v){
   if(!v)return;
   const s=(id,val)=>{const el=document.getElementById(id);if(el&&val!=null)el.value=val;};
-  s('f_title',v.title);s('f_format',v.format);s('f_place',v.place);s('f_time',v.time);s('f_ends',v.ends);
+  s('f_title',v.title);s('f_format',v.format);s('f_place',v.place);setTimeField('f_time',v.time);setTimeField('f_ends',v.ends);
   s('f_cap',v.cap);s('f_tcap',v.tcap);s('f_price',v.price);s('f_stream',v.stream);
   const date=document.getElementById('f_date');
   if(date){date.dataset.iso=v.dateIso||'';date.value=v.dateIso?isoToBg(v.dateIso):'';}

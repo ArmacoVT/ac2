@@ -913,11 +913,19 @@ function liveView(){
   if(liveOnes.length){
     body=liveOnes.map(e=>{
       const locked=streamGated(e)&&!hasConfirmedTicket(e);
+      const pending=RES.some(r=>r.event_id===e.id&&r.status==='pending');
+      const lockMsg=pending
+        ? (lang==='bg'?'Заявката ти за това събитие чака потвърждение от клуба. Щом я одобрят, предаването ще тръгне тук автоматично.':'Your request for this event is awaiting club approval. Once approved, the stream will start here automatically.')
+        : e.price>0
+          ? (lang==='bg'?'Предаването е на живо, но е достъпно само с платен билет за това събитие. Купи билет, за да гледаш.':'This stream is live, but only available with a paid ticket for this event. Buy a ticket to watch.')
+          : (lang==='bg'?'Предаването е на живо, но е достъпно само ако си запазил място за това събитие. Запази безплатно, за да гледаш.':'This stream is live, but only available if you have booked a place. Book for free to watch.');
+      const lockBtn=pending?'':`<button class="btn" style="margin:12px auto 0;max-width:240px;" onclick="go('format/${e.format}')">${e.price>0?(lang==='bg'?'Купи билет':'Buy a ticket'):(lang==='bg'?'Запази, за да гледаш':'Book to watch')}</button>`;
       const inner=locked
         ? `<div style="text-align:center;padding:20px 14px;margin-top:12px;border-radius:12px;background:var(--surface2);color:var(--gold-soft);">
             ${lock}
-            <div style="margin-top:8px;color:var(--cream);font-weight:500;font-size:14px;">${lang==='bg'?'Това излъчване е само за записани/платили.':'This stream is for booked / paid members only.'}</div>
-            <button class="btn" style="margin:12px auto 0;max-width:240px;" onclick="go('format/${e.format}')">${e.price>0?(lang==='bg'?'Купи билет':'Buy a ticket'):(lang==='bg'?'Запази, за да гледаш':'Book to watch')}</button>
+            <div style="margin-top:8px;color:var(--cream);font-weight:600;font-size:14px;">${pending?(lang==='bg'?'● На живо · чака одобрение':'● Live · awaiting approval'):(lang==='bg'?'● На живо · заключено':'● Live · locked')}</div>
+            <div style="margin-top:6px;color:var(--text);font-weight:400;font-size:13px;line-height:1.45;">${lockMsg}</div>
+            ${lockBtn}
           </div>`
         : `<div class="livewrap" id="lw_${e.id}">
             <div class="liveposter" onclick="playLive('${e.id}')">
@@ -1007,14 +1015,18 @@ function showLiveSwitch(n){
 function clearLiveSwitch(){const b=document.getElementById('liveswitch');if(b)b.remove();}
 // таймер: авто-стартът е по часовник (не е промяна в базата), затова сами преоценяваме
 let _liveIds=null,_liveTimer=null;
-function liveSig(){return EVENTS.filter(e=>canAccess(e)&&isLiveNow(e)).map(e=>e.id).sort().join(',');}
-function tickLive(){
+// подписът включва и дали предаването е заключено за теб (L) или отключено (O) — за авто-отключване
+function liveSig(){return EVENTS.filter(e=>canAccess(e)&&isLiveNow(e)).map(e=>e.id+((streamGated(e)&&!hasConfirmedTicket(e))?'L':'O')).sort().join(',');}
+async function tickLive(){
   if(!user)return;
+  // ако има заключено живо предаване → опресни резервациите (за да се отключи само щом одобрят заявката)
+  if(EVENTS.some(e=>canAccess(e)&&isLiveNow(e)&&streamGated(e)&&!hasConfirmedTicket(e))){try{RES=await DB.listReservations();}catch(e){}}
   const sig=liveSig();
   if(_liveIds===null){_liveIds=sig;return;} // първо засичане — без подсказки
   if(sig===_liveIds)return;
-  const prev=_liveIds.split(',').filter(Boolean);
-  const grew=sig.split(',').filter(Boolean).some(id=>!prev.includes(id));
+  const base=s=>s.replace(/[LO]$/,'');
+  const prev=_liveIds.split(',').filter(Boolean).map(base);
+  const grew=sig.split(',').filter(Boolean).map(base).some(id=>!prev.includes(id));
   _liveIds=sig;
   refreshTabbar(); // светва/гасне червената точка на таб „На живо"
   const path=location.hash.replace(/^#/,'').split('?')[0];
@@ -1593,7 +1605,13 @@ function resCard(r,dim){
   const canCancel=resCancellable(r);
   const cancelBtn=canCancel?`<button onclick="event.stopPropagation();cancelRes('${r.id}')" style="margin-top:6px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;">${lang==='bg'?'Откажи резервацията':'Cancel reservation'}</button>`:'';
   const swipe=canCancel?` data-swipecancel="${r.id}"`:'';
-  return `<div class="ev"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${esc(r.place||r.fmt)} · ${r.party} ${tr('seats')}${newTag}</h3><div class="m">${tm}<b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div>${priceLine}${cancelBtn}</div>`;
+  const fmtObj=ev?FORMATS.find(f=>f.id===ev.format):null;
+  const fmtName=fmtObj?fmtObj.t:(r.fmt||'');
+  const venue=ev?(ev.place||''):(r.place||'');
+  const heading=ev?esc(ev.title):esc(r.place||r.fmt||(lang==='bg'?'Резервация':'Reservation'));
+  const ctx=[fmtName,venue].filter(Boolean).join(' · ');
+  const ctxLine=ctx?`<div class="m" style="color:var(--gold-soft);margin-bottom:2px;">${esc(ctx)}</div>`:'';
+  return `<div class="ev"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${r.party} ${tr('seats')} · <b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div>${priceLine}${cancelBtn}</div>`;
 }
 // заглавие на дата: „петък, 6 юни 2026"
 function resDayLabel(iso){
