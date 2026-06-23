@@ -403,8 +403,8 @@ const FORMATS=[
  {id:'table',t:'AC² Table',c:'#2f6b63',img:'cards/logo-table.webp',b:{bg:['вечери','разговори','гастрономически събития','частни резервации','по-лични срещи около масата'],en:['dinners','conversations','gastronomic events','private reservations','more personal encounters at the table']}},
  {id:'music',t:'AC² Music',c:'#6f7a39',img:'cards/logo-music.webp',b:{bg:['камерни концерти','музикални вечери','солови изпълнения','гост-музиканти'],en:['chamber concerts','musical evenings','solo performances','guest musicians']}},
  {id:'conversation',t:'AC² Conversation',c:'#bf8a2e',img:'cards/logo-conversation.webp',b:{bg:['разговори с гости','образователни теми','професионални срещи','малки формати с внимателно подбрана публика'],en:['conversations with guests','educational topics','professional meetings','small formats with a carefully selected audience']}},
- {id:'community',t:'AC² Community',c:'#9c6b4a',img:'cards/logo-community.webp',b:{bg:['семейни поводи','alumni събития','училищно-свързани формати','дискретни срещи в по-лична среда'],en:['family occasions','alumni gatherings','school-related formats','discreet meetings in a more personal setting']}},
- {id:'theater',t:'AC² Theater',c:'#9c424c',img:'cards/logo-theater.webp',b:{bg:['камерни постановки','сценични четения','гост-актьори','формати с подбран артистичен характер'],en:['chamber productions','staged readings','guest actors','formats of selected artistic character']}},
+ {id:'community',t:'AC² Community',c:'#7d6553',img:'cards/logo-community.webp',b:{bg:['семейни поводи','alumni събития','училищно-свързани формати','дискретни срещи в по-лична среда'],en:['family occasions','alumni gatherings','school-related formats','discreet meetings in a more personal setting']}},
+ {id:'theater',t:'AC² Theater',c:'#7d2e3f',img:'cards/logo-theater.webp',b:{bg:['камерни постановки','сценични четения','гост-актьори','формати с подбран артистичен характер'],en:['chamber productions','staged readings','guest actors','formats of selected artistic character']}},
  {id:'online',t:'AC² Online',c:'#3d6b7d',img:'cards/logo-ac2.webp',b:{bg:['онлайн излъчвания','разговори на живо','лекции и прожекции','записи за гледане после'],en:['online broadcasts','live talks','lectures and screenings','recordings to watch later']}}
 ];
 // Събитията идват от общия слой db.js (Supabase когато е свързан, иначе демо).
@@ -945,8 +945,22 @@ function liveView(){
       <div style="font-size:34px;margin-bottom:8px;color:var(--gold-soft);">▶</div>
       <h3 style="font-size:18px;">${tr('noLiveTitle')}</h3>
       <div class="m" style="margin-top:6px;">${tr('noLiveSub')}</div></div>`;
-    if(up)body+=`<div class="sec-title" style="padding:14px 0 8px;">${tr('nextUp')}</div>
-      <div class="ev"><div class="t">${up.format}</div><h3>${esc(up.title)}</h3><div class="m">${evMeta(up)}</div></div>`;
+    if(up){
+      const willStream=!!up.stream_url||up.format==='online';
+      const upPending=RES.some(r=>r.event_id===up.id&&r.status==='pending');
+      const upConfirmed=hasConfirmedTicket(up);
+      let cta='';
+      if(willStream&&streamGated(up)&&!upConfirmed){
+        cta=upPending
+          ? `<div class="m" style="margin-top:10px;color:var(--gold-soft);">${lang==='bg'?'Заявката ти чака одобрение от клуба. Щом я потвърдят, ще можеш да гледаш на живо тук.':'Your request is awaiting club approval. Once confirmed, you can watch live here.'}</div>`
+          : `<div class="m" style="margin-top:10px;">${up.price>0?(lang==='bg'?'Това събитие ще се излъчва на живо. За да гледаш, купи билет предварително.':'This event will be streamed live. To watch, buy a ticket in advance.'):(lang==='bg'?'Това събитие ще се излъчва на живо. За да гледаш, запази мястото си предварително.':'This event will be streamed live. To watch, book your place in advance.')}</div>
+            <button class="btn" style="margin:10px auto 0;max-width:240px;" onclick="event.stopPropagation();go('format/${up.format}')">${up.price>0?(lang==='bg'?'Купи билет':'Buy a ticket'):(lang==='bg'?'Запази, за да гледаш':'Book to watch')}</button>`;
+      }else if(willStream&&upConfirmed){
+        cta=`<div class="m" style="margin-top:10px;color:#4f7a43;">${lang==='bg'?'✓ Имаш достъп — ще можеш да гледаш на живо тук.':'✓ You have access — you can watch live here.'}</div>`;
+      }
+      body+=`<div class="sec-title" style="padding:14px 0 8px;">${tr('nextUp')}</div>
+        <div class="ev" style="cursor:pointer;" onclick="go('format/${up.format}')"><div class="t">${up.format}</div><h3>${esc(up.title)}</h3><div class="m">${evMeta(up)}</div>${cta}</div>`;
+    }
   }
   return topbar(tr('live'))+`<div class="page">${liveOnes.length>1?`<p style="color:var(--mid);font-size:13px;margin-bottom:12px;">${lang==='bg'?'Има няколко излъчвания — докосни това, което искаш да гледаш.':'Several streams are live — tap the one you want to watch.'}</p>`:''}${body}</div>`;
 }
