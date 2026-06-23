@@ -1534,12 +1534,12 @@ function profile(){
     ${membershipActive()?validityRing():untilLine}
     <div style="text-align:center;color:var(--mid);font-size:12px;margin-top:6px;">${EVENTS.filter(canAccess).length} ${lang==='bg'?'налични събития':'available events'}</div>
     ${favSection()}
-    <div class="ev" onclick="go('membership')" style="margin-top:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+    ${EVENTS.some(e=>canAccess(e)&&e.recording_url)?`<div class="ev" onclick="go('archive')" style="margin-top:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-left:3px solid var(--gold);background:var(--surface2);">
+      <div><h3 style="font-size:15px;color:var(--gold);">▶ ${lang==='bg'?'Видео архив':'Video archive'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Записи от минали събития':'Recordings from past events'}</div></div>
+      <span style="color:var(--gold);font-size:20px;">›</span></div>`:''}
+    <div class="ev" onclick="go('membership')" style="margin-top:${EVENTS.some(e=>canAccess(e)&&e.recording_url)?'8px':'12px'};cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><h3 style="font-size:15px;">${tr('membership')}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Категории и предимства':'Categories and benefits'}</div></div>
       <span style="color:var(--muted);font-size:20px;">›</span></div>
-    ${EVENTS.some(e=>canAccess(e)&&e.recording_url)?`<div class="ev" onclick="go('archive')" style="margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-      <div><h3 style="font-size:15px;">${lang==='bg'?'Видео архив':'Video archive'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Записи от минали събития':'Recordings from past events'}</div></div>
-      <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
     ${canNominate()?`<div class="ev" onclick="go('nominate')" style="margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><h3 style="font-size:15px;">${lang==='bg'?'Предложи член':'Propose a member'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Препоръчай човек или фирма':'Recommend a person or company'}</div></div>
       <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
