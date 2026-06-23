@@ -96,6 +96,7 @@ function render(){
       <button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>
       <button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge((APPS||[]).filter(a=>(a.status||'new')==='new').length)}</button>
       <button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>
+      <button class="tab ${tab==='archive'?'on':''}" onclick="setTab('archive')">Архив</button>
       <button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>
       <button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>
       <button class="tab ${tab==='audit'?'on':''}" onclick="setTab('audit')">Журнал</button>
@@ -105,6 +106,7 @@ function render(){
   else if(tab==='people')h+=peopleView();
   else if(tab==='apps')h+=appsView();
   else if(tab==='ann')h+=announcementsView();
+  else if(tab==='archive')h+=archiveAdminView();
   else if(tab==='stats')h+=statsView();
   else if(tab==='audit')h+=auditView();
   else h+=membersView();
@@ -153,6 +155,49 @@ function annToggleUser(id){ const i=annUserPicked.indexOf(id); if(i>-1)annUserPi
 function annFilterUsers(q){ annUserFilter=q; const l=document.getElementById('annUserList'); if(l)l.innerHTML=annUserListHTML(); }
 async function loadPhones(){
   try{const list=await DB.listMembers();const m={};list.forEach(p=>{m[p.id]={email:p.email||'',phone:p.phone||''};});PHONES=m;}catch(e){PHONES={};}
+}
+function archiveAdminView(){
+  const evs=(EVENTS||[]).slice().sort((a,b)=>((a.date||'')<(b.date||'')?1:-1));
+  if(!evs.length)return '<p class="muted">Няма събития.</p>';
+  const rows=evs.map(e=>{
+    const has=e.recording_url?'<span class="pill" style="border-color:#4f7a43;color:#4f7a43;">има запис</span>':'';
+    return `<div class="card" style="margin-bottom:12px;">
+      <h3>${esc(e.title)} ${has}</h3>
+      <div class="muted" style="margin:3px 0 10px;font-size:12px;">${isoToBg(e.date)} · ${esc(e.format)} · видимо за: ${audLabel(e.aud)}</div>
+      <label>Име на записа</label>
+      <input id="rt_${e.id}" value="${esc(e.rec_title||'')}" placeholder="напр. Пълен запис"/>
+      <label style="margin-top:8px;">Линк за запис (YouTube/Vimeo/файл)</label>
+      <input id="ru_${e.id}" value="${esc(e.recording_url||'')}" placeholder="https://..."/>
+      <div class="row2" style="margin-top:8px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="rg_${e.id}" ${e.rec_gated?'checked':''} style="width:auto;"/> Само за посетили събитието</label>
+        <div><label>Цена (€) — 0 = безплатно</label><input id="rp_${e.id}" type="number" min="0" step="0.01" value="${e.rec_price||0}"/></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn ok sm" onclick="recSave('${e.id}')">Запази записа</button>
+        ${e.recording_url?`<button class="btn no sm" onclick="recClear('${e.id}')">Премахни записа</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  return `<p class="muted" style="margin-bottom:12px;">Добави запис към събитие. Появява се при членовете в „На живо → Записи", с достъпа на самото събитие (същите членски категории). Не изчезва след 30 дни.</p>`+rows;
+}
+async function recSave(id){
+  const rec={
+    rec_title:document.getElementById('rt_'+id).value.trim(),
+    recording_url:document.getElementById('ru_'+id).value.trim(),
+    rec_gated:document.getElementById('rg_'+id).checked,
+    rec_price:parseFloat(document.getElementById('rp_'+id).value||'0')||0
+  };
+  const r=await DB.setRecording(id,rec);
+  if(r&&r.error){alert('Записът не се запази: '+r.error.message);return;}
+  try{await DB.logAudit('recording_set',rec.rec_title||rec.recording_url||'',id);}catch(e){}
+  await refresh();render();
+}
+async function recClear(id){
+  if(!confirm('Да премахна ли записа от това събитие? (събитието остава)'))return;
+  const r=await DB.setRecording(id,{rec_title:'',recording_url:'',rec_gated:false,rec_price:0});
+  if(r&&r.error){alert('Грешка: '+r.error.message);return;}
+  try{await DB.logAudit('recording_cleared','',id);}catch(e){}
+  await refresh();render();
 }
 async function setTab(t){tab=t;editId=null;await refresh();render();
   if(t==='people'){PEOPLE=null;render();PEOPLE=await DB.listMembers();render();}
@@ -303,14 +348,6 @@ function formView(){
     <label style="display:flex;align-items:center;gap:10px;margin-top:8px;cursor:pointer;">
       <input type="checkbox" id="f_gated" ${(e?e.stream_gated:true)?'checked':''} style="width:auto;"/> Излъчването е само за записани/платили</label>
     <p class="muted" style="margin:4px 0 0;font-size:12px;">При „авто старт" стриймът се показва сам в часа на началото и тече до ръчно спиране, дори след заложения край. „Само за записани/платили" значи, че членът трябва да има одобрена резервация (после — плащане/абонамент), за да гледа. Махни отметката, ако излъчването е свободно.</p>
-    <label style="margin-top:16px;">Линк за запис (архив — YouTube/Kick VOD, Vimeo или файл)</label>
-    <input id="f_recording" value="${esc(e?(e.recording_url||''):'')}" placeholder="https://... (показва се в раздел „Архив")"/>
-    <div class="row2" style="margin-top:8px;">
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-        <input type="checkbox" id="f_rec_gated" ${e&&e.rec_gated?'checked':''} style="width:auto;"/> Записът само за посетили събитието</label>
-      <div><label>Цена за записа (€) — 0 = безплатно</label><input id="f_rec_price" type="number" min="0" step="0.01" value="${e&&e.rec_price?e.rec_price:0}"/></div>
-    </div>
-    <p class="muted" style="margin:4px 0 0;font-size:12px;">Записът наследява достъпа на събитието (същите членски категории по-долу). Появява се в „Архив" след събитието и не изчезва след 30 дни.</p>
     <label>Видимо за (кой може да го вижда / гледа / запазва)</label>
     <div class="chips">${memCk}</div>
     ${bwSection(e)}
@@ -342,11 +379,9 @@ function grabForm(){
   const gated=document.getElementById('f_gated');
   const date=document.getElementById('f_date');
   const ed=document.getElementById('f_end_date');
-  const recGated=document.getElementById('f_rec_gated');
   const bw={};document.querySelectorAll('.bwfield').forEach(el=>{bw[el.dataset.mem]=el.dataset.iso||'';});
   return {title:g('f_title'),format:g('f_format'),place:g('f_place'),time:g('f_time'),ends:g('f_ends'),
-    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),price:g('f_price'),stream:g('f_stream'),live:live?live.checked:false,auto:auto?auto.checked:false,gated:gated?gated.checked:false,
-    recording:g('f_recording'),recGated:recGated?recGated.checked:false,recPrice:g('f_rec_price'),bw};
+    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),price:g('f_price'),stream:g('f_stream'),live:live?live.checked:false,auto:auto?auto.checked:false,gated:gated?gated.checked:false,bw};
 }
 // Избирачка за час: 24-часов (00–23) + минути през 5; пази стойност HH:MM в скрито поле
 function timePickerHTML(id,val){
@@ -387,8 +422,6 @@ function putForm(v){
   const live=document.getElementById('f_live');if(live)live.checked=!!v.live;
   const auto=document.getElementById('f_auto');if(auto)auto.checked=!!v.auto;
   const gated=document.getElementById('f_gated');if(gated)gated.checked=!!v.gated;
-  s('f_recording',v.recording);s('f_rec_price',v.recPrice);
-  const recGated=document.getElementById('f_rec_gated');if(recGated)recGated.checked=!!v.recGated;
 }
 function toggleAud(id){
   const v=grabForm();
@@ -492,9 +525,6 @@ async function saveEvent(){
     is_live:document.getElementById('f_live').checked,
     live_auto:document.getElementById('f_auto')?document.getElementById('f_auto').checked:false,
     stream_gated:document.getElementById('f_gated')?document.getElementById('f_gated').checked:false,
-    recording_url:document.getElementById('f_recording')?document.getElementById('f_recording').value.trim():'',
-    rec_gated:document.getElementById('f_rec_gated')?document.getElementById('f_rec_gated').checked:false,
-    rec_price:parseFloat((document.getElementById('f_rec_price')||{}).value||'0')||0,
     aud:draftAud.includes('all')?'all':draftAud.slice()};
   const r=editId?await DB.updateEvent(editId,obj):await DB.addEvent(obj);
   if(r&&r.error){alert('Събитието не се записа: '+r.error.message);return;}
