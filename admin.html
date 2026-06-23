@@ -156,12 +156,32 @@ function annFilterUsers(q){ annUserFilter=q; const l=document.getElementById('an
 async function loadPhones(){
   try{const list=await DB.listMembers();const m={};list.forEach(p=>{m[p.id]={email:p.email||'',phone:p.phone||''};});PHONES=m;}catch(e){PHONES={};}
 }
+function recArchiveFilter(){
+  const q=((document.getElementById('recSearch')||{}).value||'').toLowerCase().trim();
+  const y=(document.getElementById('recYear')||{}).value||'';
+  const f=(document.getElementById('recFmt')||{}).value||'';
+  const h=(document.getElementById('recHas')||{}).value||'';
+  document.querySelectorAll('#recRows .recrow').forEach(el=>{
+    const ok=(!q||el.dataset.title.includes(q))&&(!y||el.dataset.year===y)&&(!f||el.dataset.fmt===f)&&(!h||el.dataset.has===h);
+    el.style.display=ok?'':'none';
+  });
+}
 function archiveAdminView(){
   const evs=(EVENTS||[]).slice().sort((a,b)=>((a.date||'')<(b.date||'')?1:-1));
   if(!evs.length)return '<p class="muted">Няма събития.</p>';
+  const years=[...new Set(evs.map(e=>(e.date||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  const fmts=[...new Set(evs.map(e=>e.format).filter(Boolean))];
+  const yearOpts='<option value="">Всички години</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  const fmtOpts='<option value="">Всички формати</option>'+fmts.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+  const controls=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <input id="recSearch" oninput="recArchiveFilter()" placeholder="Търси по заглавие…" style="flex:1;min-width:160px;"/>
+    <select id="recYear" onchange="recArchiveFilter()" style="width:auto;">${yearOpts}</select>
+    <select id="recFmt" onchange="recArchiveFilter()" style="width:auto;">${fmtOpts}</select>
+    <select id="recHas" onchange="recArchiveFilter()" style="width:auto;"><option value="">Всички</option><option value="yes">Само със запис</option><option value="no">Без запис</option></select>
+  </div>`;
   const rows=evs.map(e=>{
     const has=e.recording_url?'<span class="pill" style="border-color:#4f7a43;color:#4f7a43;">има запис</span>':'';
-    return `<div class="card" style="margin-bottom:12px;">
+    return `<div class="card recrow" data-title="${esc((e.title||'').toLowerCase())}" data-year="${(e.date||'').slice(0,4)}" data-fmt="${esc(e.format||'')}" data-has="${e.recording_url?'yes':'no'}" style="margin-bottom:12px;">
       <h3>${esc(e.title)} ${has}</h3>
       <div class="muted" style="margin:3px 0 10px;font-size:12px;">${isoToBg(e.date)} · ${esc(e.format)} · видимо за: ${audLabel(e.aud)}</div>
       <label>Име на записа</label>
@@ -178,7 +198,7 @@ function archiveAdminView(){
       </div>
     </div>`;
   }).join('');
-  return `<p class="muted" style="margin-bottom:12px;">Добави запис към събитие. Появява се при членовете в „На живо → Записи", с достъпа на самото събитие (същите членски категории). Не изчезва след 30 дни.</p>`+rows;
+  return `<p class="muted" style="margin-bottom:12px;">Добави запис към събитие. Появява се при членовете в „Профил → Видео архив", с достъпа на самото събитие (същите членски категории). Не изчезва след 30 дни.</p>`+controls+`<div id="recRows">${rows}</div>`;
 }
 async function recSave(id){
   const rec={
