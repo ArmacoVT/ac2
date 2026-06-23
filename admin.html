@@ -198,7 +198,40 @@ function archiveAdminView(){
       </div>
     </div>`;
   }).join('');
-  return `<p class="muted" style="margin-bottom:12px;">Добави запис към събитие. Появява се при членовете в „Профил → Видео архив", с достъпа на самото събитие (същите членски категории). Не изчезва след 30 дни.</p>`+controls+`<div id="recRows">${rows}</div>`;
+  const naForm=`<div style="margin-bottom:14px;">
+    <button class="btn ok sm" onclick="naToggle()">+ Нов запис в архива</button>
+    <div id="naForm" style="display:none;border:0.5px solid #e7d9c0;border-radius:10px;padding:12px;margin-top:10px;">
+      <p class="muted" style="margin:0 0 8px;font-size:12px;">Самостоятелен запис (обобщен, без реално събитие) — показва се само във „Видео архив".</p>
+      <label>Заглавие</label><input id="na_title" placeholder="напр. Най-доброто от 2025"/>
+      <div class="row2" style="margin-top:8px;">
+        <div><label>Дата</label><input id="na_date" type="date"/></div>
+        <div><label>Формат (за цвят)</label><select id="na_format">${FORMATS.map(f=>`<option value="${f}">${FMT_LABEL[f]||f}</option>`).join('')}</select></div>
+      </div>
+      <label style="margin-top:8px;">Видимо за</label>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">${MEMBERS.map(m=>`<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" id="na_aud_${m.id}" checked style="width:auto;"/> ${m.t}</label>`).join('')}</div>
+      <label style="margin-top:8px;">Линк за запис</label><input id="na_url" placeholder="https://..."/>
+      <div class="row2" style="margin-top:8px;">
+        <div><label>Име на записа</label><input id="na_rt" placeholder="напр. Пълен запис"/></div>
+        <div><label>Цена (€) — 0 = безплатно</label><input id="na_price" type="number" min="0" step="0.01" value="0"/></div>
+      </div>
+      <button class="btn ok sm" style="margin-top:10px;" onclick="naCreate()">Създай запис</button>
+    </div></div>`;
+  return `<p class="muted" style="margin-bottom:12px;">Добави запис към събитие, или създай самостоятелен. Показва се при членовете в „Профил → Видео архив", с достъпа на събитието (членски категории). Не изчезва след 30 дни.</p>`+naForm+controls+`<div id="recRows">${rows}</div>`;
+}
+function naToggle(){const f=document.getElementById('naForm');if(f)f.style.display=f.style.display==='none'?'block':'none';}
+async function naCreate(){
+  const title=(document.getElementById('na_title').value||'').trim();
+  if(!title){alert('Въведи заглавие');return;}
+  const picked=MEMBERS.filter(m=>{const el=document.getElementById('na_aud_'+m.id);return el&&el.checked;}).map(m=>m.id);
+  const aud=(picked.length===0||picked.length===MEMBERS.length)?'all':picked;
+  const r=await DB.addArchiveEntry({
+    title, date:document.getElementById('na_date').value||'', format:document.getElementById('na_format').value, aud,
+    recording_url:(document.getElementById('na_url').value||'').trim(), rec_title:(document.getElementById('na_rt').value||'').trim(),
+    rec_price:parseFloat(document.getElementById('na_price').value||'0')||0
+  });
+  if(r&&r.error){alert('Записът не се създаде: '+r.error.message);return;}
+  try{await DB.logAudit('archive_entry_added',title,'');}catch(e){}
+  await refresh();render();
 }
 async function recSave(id){
   const rec={

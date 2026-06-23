@@ -563,7 +563,7 @@ function evStartMsOf(e){
 }
 function nextEvent(){
   const now=Date.now();
-  return EVENTS.filter(e=>canAccess(e)&&e.date).map(e=>({e,ms:evStartMsOf(e)})).filter(o=>o.ms&&o.ms>now).sort((a,b)=>a.ms-b.ms)[0];
+  return EVENTS.filter(e=>canAccess(e)&&!e.archive_only&&e.date).map(e=>({e,ms:evStartMsOf(e)})).filter(o=>o.ms&&o.ms>now).sort((a,b)=>a.ms-b.ms)[0];
 }
 function cdText(ms){
   const d=ms-Date.now(); const bg=lang==='bg';
@@ -610,7 +610,7 @@ function home(){
     theater:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 24 c14 -4 22 2 22 16 c0 14 -8 22 -16 22 c-9 0 -14 -10 -14 -24 c0 -8 2 -12 8 -14 Z"/><path d="M24 38 q3 -3 6 0 M30 50 q-4 4 -9 1"/><path d="M62 24 c-14 -4 -22 2 -22 16 c0 14 8 22 16 22 c9 0 14 -10 14 -24 c0 -8 -2 -12 -8 -14 Z"/><path d="M56 38 q-3 -3 -6 0 M50 52 q4 4 9 1"/></g></svg>`,
     online:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="22" y="24" width="36" height="26" rx="4"/><path d="M34 58 h12 M40 50 v8"/></g><path d="M35 31 v12 l10 -6 Z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" opacity=".7"><path d="M16 30 q-6 8 0 16"/><path d="M64 30 q6 8 0 16"/></g></svg>`
   };
-  const fmtN=FORMATS.map(f=>({f,n:EVENTS.filter(e=>e.format===f.id&&canAccess(e)&&!isPast(e)).length}));
+  const fmtN=FORMATS.map(f=>({f,n:EVENTS.filter(e=>e.format===f.id&&canAccess(e)&&!e.archive_only&&!isPast(e)).length}));
   fmtN.sort((a,b)=>((b.n>0)-(a.n>0))); // активните формати горе (стабилно, пази реда вътре)
   let cards=fmtN.map(({f,n})=>{
     const badge=n?`<div class="evbadge"><span class="evdot" style="background:${f.c}"></span>${n} ${n===1?(lang==='bg'?'събитие':'event'):(lang==='bg'?'събития':'events')}</div>`:'';
@@ -622,9 +622,9 @@ function home(){
   }).join('');
   // „За теб" — предстоящи събития в любимите формати
   const favs=(user&&user.fav_formats)||[];
-  const forYou=favs.length?EVENTS.filter(e=>favs.includes(e.format)&&canAccess(e)&&!isPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1)):[];
+  const forYou=favs.length?EVENTS.filter(e=>favs.includes(e.format)&&canAccess(e)&&!e.archive_only&&!isPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1)):[];
   const forYouHtml=forYou.length?`<div class="sec-title">${tr('forYou')}</div><div class="sec-sub">${tr('forYouSub')}</div>${forYou.slice(0,4).map(eventCard).join('')}`:'';
-  const upcoming=EVENTS.filter(e=>canAccess(e)&&!isPast(e)&&e.date).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1)).slice(0,5);
+  const upcoming=EVENTS.filter(e=>canAccess(e)&&!e.archive_only&&!isPast(e)&&e.date).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1)).slice(0,5);
   const upcomingHtml=upcoming.length?`<div class="sec-title">${lang==='bg'?'Предстоящи':'Upcoming'}</div><div class="upbox"><div class="uptl">${upcoming.map(upRow).join('')}</div></div>`:'';
   return topbar('')+`
     <div class="hero"><img class="ac2" src="${AC2}" alt="AC²"/>
@@ -643,7 +643,7 @@ function home(){
 function formatPage(id){
   const f=FORMATS.find(x=>x.id===id); if(!f)return home();
   let bul=tx(f.b).map(b=>`<div class="bul"><span class="d">◆</span><span class="x">${b}</span></div>`).join('');
-  const fevents=EVENTS.filter(e=>e.format===f.id&&canAccess(e));
+  const fevents=EVENTS.filter(e=>e.format===f.id&&canAccess(e)&&!e.archive_only);
   const prog=(!dataReady&&!EVENTS.length)?skel(3):eventsHtml(fevents,lang==='bg'?'Все още няма обявени събития.':'No events announced yet.');
   return topbar(f.t)+`<div class="page">
     <div class="fbanner" style="border-color:${f.c}33"><img src="illustrations/fmt-${f.id}.svg" alt=""/><h2 style="color:${f.c}">${f.t}</h2></div>
@@ -794,7 +794,7 @@ function toggleTableOpt(id){
   if(box)box.style.display=ck&&ck.checked?'block':'none';
 }
 function events(){
-  const mine=EVENTS.filter(canAccess);
+  const mine=EVENTS.filter(e=>canAccess(e)&&!e.archive_only);
   const list=(!dataReady&&!mine.length)?skel(4):eventsHtml(mine,tr('noEvents'));
   return topbar(tr('events'))+`<div class="page"><p style="color:var(--mid);font-size:14px;margin-bottom:14px;">${tr('program')}</p>${list}</div>`;
 }
@@ -940,7 +940,7 @@ function liveView(){
       </div>`;
     }).join('');
   }else{
-    const up=EVENTS.filter(canAccess).filter(e=>e.date&&!isPast(e)).sort((a,b)=>a.date<b.date?-1:1)[0];
+    const up=EVENTS.filter(e=>canAccess(e)&&!e.archive_only).filter(e=>e.date&&!isPast(e)).sort((a,b)=>a.date<b.date?-1:1)[0];
     body=`<div class="ev" style="text-align:center;padding:32px 18px;">
       <div style="font-size:34px;margin-bottom:8px;color:var(--gold-soft);">▶</div>
       <h3 style="font-size:18px;">${tr('noLiveTitle')}</h3>
@@ -1532,7 +1532,7 @@ function profile(){
     <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:10px;">${esc(user.email)}</div>
     <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:4px;">${lang==='bg'?'Телефон':'Phone'}: ${user.phone?esc(user.phone):'—'}</div>
     ${membershipActive()?validityRing():untilLine}
-    <div style="text-align:center;color:var(--mid);font-size:12px;margin-top:6px;">${EVENTS.filter(canAccess).length} ${lang==='bg'?'налични събития':'available events'}</div>
+    <div style="text-align:center;color:var(--mid);font-size:12px;margin-top:6px;">${EVENTS.filter(e=>canAccess(e)&&!e.archive_only).length} ${lang==='bg'?'налични събития':'available events'}</div>
     ${favSection()}
     ${EVENTS.some(e=>canAccess(e)&&e.recording_url)?`<div class="ev" onclick="go('archive')" style="margin-top:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-left:3px solid var(--gold);background:var(--surface2);">
       <div><h3 style="font-size:15px;color:var(--gold);">▶ ${lang==='bg'?'Видео архив':'Video archive'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Записи от минали събития':'Recordings from past events'}</div></div>

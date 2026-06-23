@@ -122,7 +122,7 @@
         booking_windows: e.booking_windows || null,
         image_url: e.image_url || '', video_url: e.video_url || '',
         stream_url: e.stream_url || '', is_live: !!e.is_live, live_auto: !!e.live_auto, live_ended: !!e.live_ended, stream_gated: !!e.stream_gated,
-        recording_url: e.recording_url || '', rec_title: e.rec_title || '', rec_gated: !!e.rec_gated, rec_price: e.rec_price || 0 }));
+        recording_url: e.recording_url || '', rec_title: e.rec_title || '', rec_gated: !!e.rec_gated, rec_price: e.rec_price || 0, archive_only: !!e.archive_only }));
     },
     // всички събития (за админ панела — без филтър по членство; в live разчита на admin RLS)
     async listAllEvents() { return this.listEvents(); },
@@ -155,6 +155,15 @@
         booking_windows: o.booking_windows || null,
         image_url: o.image_url || null, video_url: o.video_url || null,
         stream_url: o.stream_url || null, is_live: !!o.is_live, live_auto: !!o.live_auto, stream_gated: !!o.stream_gated }).eq('id', id);
+      return { error };
+    },
+    // самостоятелен архивен запис (скрито „събитие", показва се само във Видео архив)
+    async addArchiveEntry(o) {
+      if (!LIVE) { const e = seedDemo(); o.id = 'a' + Date.now(); o.archive_only = true; e.unshift(o); jset(K.ev, e); return { error: null }; }
+      const { error } = await sb.from('events').insert({ title: o.title, format: o.format || 'culture', place: o.place || null,
+        date: o.date || null, capacity: 0, price: 0, audience: toAudience(o.aud), archive_only: true,
+        recording_url: (o.recording_url || '').trim() || null, rec_title: (o.rec_title || '').trim() || null,
+        rec_gated: !!o.rec_gated, rec_price: o.rec_price || 0 });
       return { error };
     },
     // запис/архив на събитие (управлява се отделно, за да не се пипа събитието)
