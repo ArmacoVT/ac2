@@ -324,6 +324,8 @@
   .tabbar a .ti{display:flex;align-items:center;justify-content:center;position:relative;}
   .tabbar a .ti svg{width:23px;height:23px;}
   .nb{position:absolute;top:-7px;right:-11px;background:#b5532f;color:#fffdf4;font-size:10px;line-height:1;font-weight:700;padding:3px 5px;border-radius:10px;min-width:9px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.25);animation:badgePulse 1.6s ease-in-out infinite;}
+  .livetab{position:absolute;top:-4px;right:-7px;width:9px;height:9px;border-radius:50%;background:#e0301e;box-shadow:0 0 0 2px var(--surface);animation:heartbeat 1.4s ease-in-out infinite;}
+  @media (prefers-reduced-motion:reduce){.livetab{animation:none;}}
   .tabbar a.active{color:var(--gold);}
   .tabbar a.active .ti{background:#f1e8d6;border-radius:50%;box-shadow:3px 3px 6px #d3c6ad,-3px -3px 6px #fff;padding:7px;margin-top:-2px;}
   @keyframes ac2In{from{opacity:0;transform:scale(.7);}to{opacity:1;transform:scale(1);}}
@@ -618,10 +620,6 @@ function home(){
       <h3>${f.t.replace('AC² ','')}</h3><span>${tx(f.b).slice(0,2).join(' · ')}</span>${badge}</div>
     </div>`;
   }).join('');
-  const anyLive=EVENTS.some(e=>canAccess(e)&&isLiveNow(e));
-  const liveLabel=anyLive?`<span class="livedot"></span>${lang==='bg'?'На живо':'Live'}`:tr('live');
-  const quick=[['events','events',tr('events'),'#2f6b63'],['live','live',liveLabel,'#b5532f'],['reserve','reserve',tr('reserve'),'#bf8a2e'],['membership','membership',tr('membership'),'#6b3a5b']];
-  let tiles=quick.map(q=>`<div class="tile" onclick="go('${q[0]}')"><div class="ic" style="color:${q[3]}">${ICN[q[1]]}</div><div class="lb">${q[2]}</div></div>`).join('');
   // „За теб" — предстоящи събития в любимите формати
   const favs=(user&&user.fav_formats)||[];
   const forYou=favs.length?EVENTS.filter(e=>favs.includes(e.format)&&canAccess(e)&&!isPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1)):[];
@@ -639,8 +637,6 @@ function home(){
     ${forYouHtml}
     <div class="sec-title">${tr('formats')}</div><div class="sec-sub">${tr('formatsSub')}</div>
     <div class="grid">${cards}</div>
-    <div class="sec-title">${tr('quick')}</div>
-    <div class="grid" style="margin-top:4px;">${tiles}</div>
     <div class="contact"><div class="tag">${lang==='bg'?'Култура · Общност · Споделени стандарти':'Culture · Community · Shared Standards'}</div>
       info@arcusclub.bg<br>+359 (0) 000 000<br>${lang==='bg'?'София, България':'Sofia, Bulgaria'}</div>`;
 }
@@ -671,6 +667,8 @@ function seatInfoText(e){
 function todayISO(){const t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');}
 const evEnd=e=>e.end_date||e.date||'';
 const PAST_BUFFER_MS=2*3600000; // 2 часа след края → „Изминали"
+const PAST_VISIBLE_DAYS=30; // изминали се виждат до 30 дни назад (после се скриват, но остават в базата)
+function pastVisible(e){const ed=e.end_date||e.date;if(!ed)return false;return new Date(ed+'T23:59:59').getTime()>=Date.now()-PAST_VISIBLE_DAYS*86400000;}
 function isPast(e){
   const ed=e.end_date||e.date; if(!ed)return false;
   const t=(e.ends&&/^\d{1,2}:\d{2}/.test(e.ends))?e.ends.slice(0,5):'23:59';
@@ -695,7 +693,7 @@ function canBookNow(e){const d=bookOpenISO(e);return !d||d<=todayISO();}
 // разделяне на предстоящи/изминали + сгъваема секция за изминалите
 function eventsHtml(list,emptyMsg){
   const up=list.filter(e=>!isPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1));
-  const past=list.filter(isPast).sort((a,b)=>(a.date<b.date?1:-1));
+  const past=list.filter(e=>isPast(e)&&pastVisible(e)).sort((a,b)=>(a.date<b.date?1:-1));
   let h=up.length?up.map(eventCard).join(''):emptyState(EICON.cal,emptyMsg,lang==='bg'?'Очаквай скоро нови събития в програмата.':'New events will appear here soon.');
   if(past.length){
     h+=`<button class="btn btn-ghost" style="margin-top:10px;" onclick="togglePastEv(this)">${tr('pastEvents')} (${past.length}) ▾</button>
@@ -975,6 +973,7 @@ let _liveSub=null,_liveHintAt=0;
 function subscribeLive(){ if(_liveSub||!DB.onLiveChange)return; _liveSub=DB.onLiveChange(handleLiveChange); }
 async function handleLiveChange(row){
   try{EVENTS=await DB.listEvents();}catch(e){}
+  refreshTabbar(); // светва/гасне червената точка на таб „На живо"
   const path=location.hash.replace(/^#/,'').split('?')[0];
   if(path==='live'){
     if(!isWatchingLive()){
@@ -1017,6 +1016,7 @@ function tickLive(){
   const prev=_liveIds.split(',').filter(Boolean);
   const grew=sig.split(',').filter(Boolean).some(id=>!prev.includes(id));
   _liveIds=sig;
+  refreshTabbar(); // светва/гасне червената точка на таб „На живо"
   const path=location.hash.replace(/^#/,'').split('?')[0];
   if(path==='live'){
     if(!isWatchingLive()){renderPath('live');clearLiveSwitch();}
@@ -1806,12 +1806,16 @@ function appBadge(){
   setIconBadge(n+annUnseenCount()); // иконата: нови резервации + непрочетени новини
   return n;
 }
+let _activeTab='home';
+function refreshTabbar(){try{tabbar(_activeTab);}catch(e){}}
 function tabbar(active){
+  _activeTab=active;
   const n=appBadge();
   const nb=n?`<span class="nb">${n}</span>`:'';
   const an=annUnseenCount();
   const hb=an?`<span class="nb">${an}</span>`:'';
-  const items=[['','home',tr('home'),hb],['events','events',tr('events'),''],['live','live',tr('live'),''],['reserve','reserve',tr('reserve'),''],[user?'profile':'login','profile',user?tr('profile'):tr('signin'),nb]];
+  const live=EVENTS.some(e=>canAccess(e)&&isLiveNow(e))?`<span class="livetab"></span>`:'';
+  const items=[['','home',tr('home'),hb],['events','events',tr('events'),''],['live','live',tr('live'),live],['reserve','reserve',tr('reserve'),''],[user?'profile':'login','profile',user?tr('profile'):tr('signin'),nb]];
   document.getElementById('tabbar').innerHTML=items.map(i=>`<a onclick="hap('select');go('${i[0]}')" class="${active===(i[0]||'home')?'active':''}"><span class="ti">${ICN[i[1]]}${i[3]||''}</span>${i[2]}</a>`).join('');
 }
 function renderPath(path,q,parts){
