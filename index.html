@@ -962,9 +962,7 @@ function liveView(){
         <div class="ev" style="cursor:pointer;" onclick="go('format/${up.format}')"><div class="t">${up.format}</div><h3>${esc(up.title)}</h3><div class="m">${evMeta(up)}</div>${cta}</div>`;
     }
   }
-  const arch=archiveListHtml();
-  const archSec=arch?`<div class="sec-title" style="padding:20px 0 8px;">${lang==='bg'?'Записи':'Recordings'}</div><div class="sec-sub" style="margin:0 0 10px;">${lang==='bg'?'Записи от минали събития — гледай по всяко време.':'Recordings from past events — watch anytime.'}</div>${arch}`:'';
-  return topbar(tr('live'))+`<div class="page">${liveOnes.length>1?`<p style="color:var(--mid);font-size:13px;margin-bottom:12px;">${lang==='bg'?'Има няколко излъчвания — докосни това, което искаш да гледаш.':'Several streams are live — tap the one you want to watch.'}</p>`:''}${body}${archSec}</div>`;
+  return topbar(tr('live'))+`<div class="page">${liveOnes.length>1?`<p style="color:var(--mid);font-size:13px;margin-bottom:12px;">${lang==='bg'?'Има няколко излъчвания — докосни това, което искаш да гледаш.':'Several streams are live — tap the one you want to watch.'}</p>`:''}${body}</div>`;
 }
 // ---------- АРХИВ (записи на минали събития) — показва се в таб „На живо" ----------
 function hasRecording(e){return !!e.recording_url;}
@@ -987,15 +985,29 @@ function archiveListHtml(){
   const recs=EVENTS.filter(e=>canAccess(e)&&hasRecording(e)).sort((a,b)=>((a.date||'')<(b.date||'')?1:-1));
   return recs.map(recCard).join('');
 }
+function archiveView(){
+  const arch=archiveListHtml();
+  const body=arch||emptyState(EICON.cal,lang==='bg'?'Още няма записи':'No recordings yet',lang==='bg'?'Записите от минали събития ще се появяват тук.':'Recordings from past events will appear here.');
+  return topbar(lang==='bg'?'Видео архив':'Video archive')+`<div class="page"><div class="sec-sub" style="margin:0 0 12px;">${lang==='bg'?'Записи от минали събития — гледай по всяко време.':'Recordings from past events — watch anytime.'}</div>${body}</div>`;
+}
 function playRec(id){
   const e=EVENTS.find(x=>x.id===id); if(!e||!e.recording_url)return;
   if(e.rec_gated&&!hasConfirmedTicket(e)){toast(lang==='bg'?'Записът е само за посетили събитието':'Recording is for attendees only');return;}
   const w=document.getElementById('rec_'+id); if(!w)return;
   const box='position:relative;padding-top:56.25%;margin-top:12px;border-radius:10px;overflow:hidden;background:#000;';
+  const VP=VideoPlugin();
+  // телефон + директно видео (MP4/HLS) → нативен плеър с PiP + фонов режим
+  if(VP&&isDirectVideo(e.recording_url)){
+    try{VP.initPlayer({mode:'fullscreen',url:e.recording_url,playerId:'fullscreen',pipEnabled:true,bkmodeEnabled:true,exitOnEnd:false,showControls:true});}catch(err){}
+    w.innerHTML=`<div class="liveposter" onclick="playRec('${id}')"><div class="playbtn">▶</div><div class="pl">${lang==='bg'?'Отвори отново':'Open again'}</div></div>`;
+    return;
+  }
+  // браузър + директно видео → истинско <video> (PiP/фон според устройството)
   if(isDirectVideo(e.recording_url)){
     w.innerHTML=`<div style="${box}"><video src="${esc(e.recording_url)}" controls autoplay playsinline webkit-playsinline style="position:absolute;inset:0;width:100%;height:100%;background:#000;"></video></div>`;
     return;
   }
+  // YouTube/Vimeo/Kick → вграден плеър (без фон/PiP — ограничение на платформите)
   w.innerHTML=`<div style="${box}"><iframe src="${esc(streamEmbed(e.recording_url))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>`;
 }
 function isDirectVideo(u){return /\.(mp4|m3u8|webm|mov)(\?|$)/i.test(u||'');}
@@ -1525,6 +1537,9 @@ function profile(){
     <div class="ev" onclick="go('membership')" style="margin-top:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><h3 style="font-size:15px;">${tr('membership')}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Категории и предимства':'Categories and benefits'}</div></div>
       <span style="color:var(--muted);font-size:20px;">›</span></div>
+    ${EVENTS.some(e=>canAccess(e)&&e.recording_url)?`<div class="ev" onclick="go('archive')" style="margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+      <div><h3 style="font-size:15px;">${lang==='bg'?'Видео архив':'Video archive'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Записи от минали събития':'Recordings from past events'}</div></div>
+      <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
     ${canNominate()?`<div class="ev" onclick="go('nominate')" style="margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><h3 style="font-size:15px;">${lang==='bg'?'Предложи член':'Propose a member'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Препоръчай човек или фирма':'Recommend a person or company'}</div></div>
       <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
@@ -1893,6 +1908,7 @@ function renderPath(path,q,parts){
   else if(parts[0]==='format'){html=formatPage(parts[1]);active='home';}
   else if(path==='events'){html=events();active='events';}
   else if(path==='live'){html=liveView();active='live';}
+  else if(path==='archive'){html=archiveView();active='profile';}
   else if(path==='reserve'){html=reserve(q||'');active='reserve';}
   else if(path==='membership'){html=membership();active='membership';}
   else if(path==='profile'){html=profile();active='profile';}
