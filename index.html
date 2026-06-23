@@ -818,8 +818,8 @@ function openBook(id){
     <div class="ssub">${esc(e.title)}${paid?' · '+fmtPrice(e.price)+(lang==='bg'?' / билет':' / ticket'):''}</div>
     <label>${tr('bookingName')}</label>
     <input id="bn_${e.id}" type="text" value="${esc(user.full_name||user.username||'')}"/>
-    <div class="qrow"><span>${tr('party')}</span>
-      <div class="qstep"><button onclick="bookQty('${e.id}',-1,${maxN})">−</button><b id="bp_lbl_${e.id}">1</b><button onclick="bookQty('${e.id}',1,${maxN})">+</button></div></div>
+    ${e.format==='online'?`<div class="qrow"><span>${lang==='bg'?'Достъп':'Access'}</span><b style="color:var(--muted);">${lang==='bg'?'Лично · 1 устройство':'Personal · 1 device'}</b></div>`:`<div class="qrow"><span>${tr('party')}</span>
+      <div class="qstep"><button onclick="bookQty('${e.id}',-1,${maxN})">−</button><b id="bp_lbl_${e.id}">1</b><button onclick="bookQty('${e.id}',1,${maxN})">+</button></div></div>`}
     <input id="bp_${e.id}" type="hidden" value="1"/>
     ${paid?`<div class="qrow"><span>${lang==='bg'?'Общо':'Total'}</span><b id="bt_${e.id}" style="color:var(--gold);">${fmtPrice(e.price)}</b></div>`:''}
     ${tableOpt}
