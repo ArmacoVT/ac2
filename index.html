@@ -626,6 +626,10 @@ function home(){
   const forYouHtml=forYou.length?`<div class="sec-title">${tr('forYou')}</div><div class="sec-sub">${tr('forYouSub')}</div>${forYou.slice(0,4).map(eventCard).join('')}`:'';
   const upcoming=EVENTS.filter(e=>canAccess(e)&&!isPast(e)&&e.date).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1)).slice(0,5);
   const upcomingHtml=upcoming.length?`<div class="sec-title">${lang==='bg'?'Предстоящи':'Upcoming'}</div><div class="upbox"><div class="uptl">${upcoming.map(upRow).join('')}</div></div>`:'';
+  const recsN=EVENTS.filter(e=>canAccess(e)&&e.recording_url).length;
+  const archiveHtml=recsN?`<div class="ev" onclick="go('archive')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-top:14px;">
+      <div><h3 style="font-size:15px;">${lang==='bg'?'Архив със записи':'Recordings archive'}</h3><div class="m">${recsN} ${lang==='bg'?(recsN===1?'запис за гледане':'записа за гледане'):(recsN===1?'recording to watch':'recordings to watch')}</div></div>
+      <span style="color:var(--gold);font-size:18px;">›</span></div>`:'';
   return topbar('')+`
     <div class="hero"><img class="ac2" src="${AC2}" alt="AC²"/>
       <h1>American College<br>Arcus Club</h1>
@@ -637,6 +641,7 @@ function home(){
     ${forYouHtml}
     <div class="sec-title">${tr('formats')}</div><div class="sec-sub">${tr('formatsSub')}</div>
     <div class="grid">${cards}</div>
+    ${archiveHtml}
     <div class="contact"><div class="tag">${lang==='bg'?'Култура · Общност · Споделени стандарти':'Culture · Community · Shared Standards'}</div>
       info@arcusclub.bg<br>+359 (0) 000 000<br>${lang==='bg'?'София, България':'Sofia, Bulgaria'}</div>`;
 }
@@ -963,6 +968,42 @@ function liveView(){
     }
   }
   return topbar(tr('live'))+`<div class="page">${liveOnes.length>1?`<p style="color:var(--mid);font-size:13px;margin-bottom:12px;">${lang==='bg'?'Има няколко излъчвания — докосни това, което искаш да гледаш.':'Several streams are live — tap the one you want to watch.'}</p>`:''}${body}</div>`;
+}
+// ---------- АРХИВ (записи на минали събития) ----------
+function hasRecording(e){return !!e.recording_url;}
+function archiveView(){
+  const recs=EVENTS.filter(e=>canAccess(e)&&hasRecording(e)).sort((a,b)=>((a.date||'')<(b.date||'')?1:-1));
+  const lock=`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
+  let body;
+  if(!recs.length){
+    body=emptyState(EICON.cal,lang==='bg'?'Още няма записи':'No recordings yet',lang==='bg'?'Записите от минали събития ще се появяват тук.':'Recordings from past events will appear here.');
+  }else{
+    body=recs.map(e=>{
+      const f=FORMATS.find(x=>x.id===e.format); const col=f?f.c:'var(--gold)';
+      const locked=e.rec_gated&&!hasConfirmedTicket(e);
+      const priceTag=e.rec_price>0?` · <span style="color:${col};">${fmtPrice(e.rec_price)}</span>`:'';
+      const inner=locked
+        ? `<div style="text-align:center;padding:18px 14px;margin-top:12px;border-radius:12px;background:var(--surface2);color:var(--gold-soft);">${lock}
+            <div style="margin-top:8px;color:var(--text);font-size:13px;line-height:1.45;">${lang==='bg'?'Записът е достъпен само за посетилите това събитие.':'This recording is available only to those who attended this event.'}</div></div>`
+        : `<div class="livewrap" id="rec_${e.id}"><div class="liveposter" onclick="playRec('${e.id}')"><div class="playbtn">▶</div><div class="pl">${lang==='bg'?'Гледай записа':'Watch recording'}</div></div></div>`;
+      return `<div class="ev" style="border-left:3px solid ${col};">
+        <div class="t" style="color:${col};">${f?f.t:e.format}${priceTag}</div>
+        <h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>
+        ${inner}</div>`;
+    }).join('');
+  }
+  return topbar(lang==='bg'?'Архив':'Archive')+`<div class="page"><div class="sec-sub" style="margin:0 0 12px;">${lang==='bg'?'Записи от минали събития — гледай по всяко време.':'Recordings from past events — watch anytime.'}</div>${body}</div>`;
+}
+function playRec(id){
+  const e=EVENTS.find(x=>x.id===id); if(!e||!e.recording_url)return;
+  if(e.rec_gated&&!hasConfirmedTicket(e)){toast(lang==='bg'?'Записът е само за посетили събитието':'Recording is for attendees only');return;}
+  const w=document.getElementById('rec_'+id); if(!w)return;
+  const box='position:relative;padding-top:56.25%;margin-top:12px;border-radius:10px;overflow:hidden;background:#000;';
+  if(isDirectVideo(e.recording_url)){
+    w.innerHTML=`<div style="${box}"><video src="${esc(e.recording_url)}" controls autoplay playsinline webkit-playsinline style="position:absolute;inset:0;width:100%;height:100%;background:#000;"></video></div>`;
+    return;
+  }
+  w.innerHTML=`<div style="${box}"><iframe src="${esc(streamEmbed(e.recording_url))}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>`;
 }
 function isDirectVideo(u){return /\.(mp4|m3u8|webm|mov)(\?|$)/i.test(u||'');}
 // нативен видео-плеър (само в приложението) — истинско PiP + фон
@@ -1859,6 +1900,7 @@ function renderPath(path,q,parts){
   else if(parts[0]==='format'){html=formatPage(parts[1]);active='home';}
   else if(path==='events'){html=events();active='events';}
   else if(path==='live'){html=liveView();active='live';}
+  else if(path==='archive'){html=archiveView();active='';}
   else if(path==='reserve'){html=reserve(q||'');active='reserve';}
   else if(path==='membership'){html=membership();active='membership';}
   else if(path==='profile'){html=profile();active='profile';}
@@ -1974,7 +2016,7 @@ async function route(){
     if((location.hash.replace(/^#/,'').split('?')[0])==='company')renderPath(path,q,parts);
   }
   // 2) Във фон опресняваме (паралелно) и пре-рисуваме само ако нещо се е променило
-  const needsData=['','home','events','profile','live'].includes(path)||parts[0]==='format';
+  const needsData=['','home','events','profile','live','archive'].includes(path)||parts[0]==='format';
   if(needsData){
     try{
       const [ev,sv,rs,tk,an]=await Promise.all([DB.listEvents(),DB.listSaved(),DB.listReservations(),DB.listEventTaken(),DB.listAnnouncements()]);

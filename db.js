@@ -121,7 +121,8 @@
         price: e.price || 0, table_capacity: e.table_capacity || 0, aud: toAud(e.audience),
         booking_windows: e.booking_windows || null,
         image_url: e.image_url || '', video_url: e.video_url || '',
-        stream_url: e.stream_url || '', is_live: !!e.is_live, live_auto: !!e.live_auto, live_ended: !!e.live_ended, stream_gated: !!e.stream_gated }));
+        stream_url: e.stream_url || '', is_live: !!e.is_live, live_auto: !!e.live_auto, live_ended: !!e.live_ended, stream_gated: !!e.stream_gated,
+        recording_url: e.recording_url || '', rec_gated: !!e.rec_gated, rec_price: e.rec_price || 0 }));
     },
     // всички събития (за админ панела — без филтър по членство; в live разчита на admin RLS)
     async listAllEvents() { return this.listEvents(); },
@@ -143,7 +144,8 @@
         price: o.price || 0, table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
         booking_windows: o.booking_windows || null,
         image_url: o.image_url || null, video_url: o.video_url || null,
-        stream_url: o.stream_url || null, is_live: !!o.is_live, live_auto: !!o.live_auto, live_ended: false, stream_gated: !!o.stream_gated });
+        stream_url: o.stream_url || null, is_live: !!o.is_live, live_auto: !!o.live_auto, live_ended: false, stream_gated: !!o.stream_gated,
+        recording_url: o.recording_url || null, rec_gated: !!o.rec_gated, rec_price: o.rec_price || 0 });
       return { error };
     },
     async updateEvent(id, o) {
@@ -153,7 +155,8 @@
         price: o.price || 0, table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
         booking_windows: o.booking_windows || null,
         image_url: o.image_url || null, video_url: o.video_url || null,
-        stream_url: o.stream_url || null, is_live: !!o.is_live, live_auto: !!o.live_auto, stream_gated: !!o.stream_gated }).eq('id', id);
+        stream_url: o.stream_url || null, is_live: !!o.is_live, live_auto: !!o.live_auto, stream_gated: !!o.stream_gated,
+        recording_url: o.recording_url || null, rec_gated: !!o.rec_gated, rec_price: o.rec_price || 0 }).eq('id', id);
       return { error };
     },
     // бърз превключвател „на живо": включи → старт; изключи → ръчно спиране (важи и за авто)
