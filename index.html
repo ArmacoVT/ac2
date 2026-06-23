@@ -1521,7 +1521,7 @@ function profile(){
   newResSet=computeNewRes();
   const m=MEMBERS.find(x=>x.id===user.membership);
   const seats=m?m.seats:1;
-  const sev=saved.map(id=>EVENTS.find(e=>e.id===id)).filter(Boolean);
+  const sev=saved.map(id=>EVENTS.find(e=>e.id===id)).filter(Boolean).filter(e=>!isPast(e));
   const res=RES;
   const active=membershipActive();
   const untilLine=user.membership_until?`<div style="text-align:center;font-size:12px;margin-top:6px;color:${active?'var(--mid)':'#b5532f'};">${active?tr('memberUntil'):tr('memberExpired')} ${euDate(user.membership_until)}</div>`:'';
@@ -1550,7 +1550,7 @@ function profile(){
       <div><h3 style="font-size:15px;">${lang==='bg'?'Управление на акаунта':'Account settings'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Парола · изтриване на акаунт':'Password · delete account'}</div></div>
       <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
     <div class="sec-title" style="padding:24px 0 8px;">${tr('myEvents')}</div>
-    ${sev.length?sev.map(e=>`<div class="ev" style="margin-bottom:8px;cursor:pointer;" onclick="go('format/${e.format}')"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m">${evMeta(e)}</div></div>`).join(''):emptyState(EICON.heart,tr('noEvents'),lang==='bg'?'Докосни ♥ на събитие, за да го запазиш тук.':'Tap ♥ on an event to save it here.',lang==='bg'?'Разгледай събития':'Browse events',"go('events')")}
+    ${sev.length?sev.map(e=>{const f=FORMATS.find(x=>x.id===e.format);const col=f?f.c:'var(--gold)';return `<div class="ev" style="margin-bottom:8px;cursor:pointer;" onclick="go('format/${e.format}')"><h3 style="font-size:15px;">${esc(e.title)}</h3><div class="m" style="margin-top:2px;"><span style="color:${col};">●</span> ${f?esc(f.t):esc(e.format)} · ${esc(evMeta(e))}</div></div>`;}).join(''):emptyState(EICON.heart,tr('noEvents'),lang==='bg'?'Докосни ♥ на събитие, за да го запазиш тук.':'Tap ♥ on an event to save it here.',lang==='bg'?'Разгледай събития':'Browse events',"go('events')")}
     <div class="sec-title" style="padding:22px 0 8px;">${tr('myRes')}</div>
     ${resSections(res)}
     </div>`;
@@ -1684,31 +1684,33 @@ function resDayLabel(iso){
   const d=new Date(iso+'T00:00:00');
   return d.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 }
-// групиране по дата (подредено по дата); при повече от 1 за деня — целият ден е сгъваем
+// групиране по дата — всеки ден е сгъваем (по подразбиране разгънат)
 function resGroups(list,dim,prefix){
   const groups=[],idx={};
   list.forEach(r=>{const k=r.date||'';if(idx[k]==null){idx[k]=groups.length;groups.push({k,items:[]});}groups[idx[k]].items.push(r);});
-  const word=lang==='bg'?'отвори':'open';
   return groups.map((g,gi)=>{
-    const lbl=esc(resDayLabel(g.k));
-    if(g.items.length<=1) return `<div class="resday">${lbl}</div>`+g.items.map(r=>resCard(r,dim)).join('');
     const id=(prefix||'rg')+gi;
-    const cnt=g.items.length+' '+(lang==='bg'?'резервации':'reservations');
-    const hasNew=g.items.some(r=>newResSet&&newResSet[r.id]); // ден с ново известие → отворен
-    return `<div class="resday">${lbl}</div>
-      <div class="ev" id="dh_${id}" onclick="toggleDay('${id}')" style="margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;${dim?'opacity:.6;':''}">
-        <h3 style="font-size:15px;">${cnt}</h3>
-        <span class="dayarrow" style="color:var(--gold);font-size:14px;white-space:nowrap;">${hasNew?(lang==='bg'?'затвори':'close')+' ▴':word+' ▾'}</span></div>
-      <div id="${id}" class="daybody" style="display:${hasNew?'block':'none'};">${g.items.map(r=>resCard(r,dim)).join('')}</div>`;
+    const lbl=esc(resDayLabel(g.k));
+    return `<div class="resday" onclick="toggleDay('${id}')" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;${dim?'opacity:.6;':''}">
+        <span>${lbl} <span style="color:var(--muted);font-weight:400;">· ${g.items.length}</span></span>
+        <span class="dayarrow" data-day="${id}" style="color:var(--gold);font-size:13px;">▴</span></div>
+      <div id="${id}" class="daybody" style="display:block;">${g.items.map(r=>resCard(r,dim)).join('')}</div>`;
   }).join('');
 }
 function toggleDay(id){
-  const d=document.getElementById(id),h=document.getElementById('dh_'+id);
-  if(!d)return;
+  const d=document.getElementById(id);if(!d)return;
   const open=d.style.display!=='none';
   d.style.display=open?'none':'block';
-  const ar=h&&h.querySelector('.dayarrow');
-  if(ar)ar.textContent=open?(lang==='bg'?'отвори':'open')+' ▾':(lang==='bg'?'затвори':'close')+' ▴';
+  const ar=document.querySelector('.dayarrow[data-day="'+id+'"]');
+  if(ar)ar.textContent=open?'▾':'▴';
+}
+function toggleAllRes(btn){
+  const bodies=document.querySelectorAll('#upres .daybody');
+  if(!bodies.length)return;
+  const anyOpen=[...bodies].some(b=>b.style.display!=='none');
+  bodies.forEach(b=>{b.style.display=anyOpen?'none':'block';});
+  document.querySelectorAll('#upres .dayarrow').forEach(a=>{a.textContent=anyOpen?'▾':'▴';});
+  if(btn)btn.textContent=anyOpen?(lang==='bg'?'разгъни всички':'expand all'):(lang==='bg'?'свий всички':'collapse all');
 }
 // предстоящи + изминали, групирани по дата
 function resSections(res){
@@ -1717,7 +1719,13 @@ function resSections(res){
   const todayIso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
   const upcoming=res.filter(r=>!r.date||r.date>=todayIso).sort((a,b)=>((a.date||'9999-99-99')<(b.date||'9999-99-99'))?-1:1);
   const past=res.filter(r=>r.date&&r.date<todayIso).sort((a,b)=>a.date<b.date?1:-1);
-  let h=upcoming.length?resGroups(upcoming,false,'up'):`<p style="color:var(--muted);font-style:italic;">${tr('noUpcomingRes')}</p>`;
+  let h;
+  if(upcoming.length){
+    const collapseAll=upcoming.length>1?`<div style="display:flex;justify-content:flex-end;margin-bottom:4px;"><span onclick="toggleAllRes(this)" style="font-size:12px;color:var(--gold);cursor:pointer;">${lang==='bg'?'свий всички':'collapse all'}</span></div>`:'';
+    h=collapseAll+`<div id="upres">${resGroups(upcoming,false,'up')}</div>`;
+  }else{
+    h=`<p style="color:var(--muted);font-style:italic;">${tr('noUpcomingRes')}</p>`;
+  }
   if(past.length){
     h+=`<button class="btn btn-ghost" style="margin-top:10px;" onclick="togglePast(this)">${tr('pastRes')} (${past.length}) ▾</button>
       <div id="pastres" style="display:none;margin-top:10px;">${resGroups(past,true,'pa')}</div>`;
