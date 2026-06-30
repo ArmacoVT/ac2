@@ -118,7 +118,9 @@
       const { data } = await sb.from('events').select('*').order('date', { ascending: true });
       return (data || []).map(e => ({ id: e.id, title: e.title, format: e.format, place: e.place,
         date: e.date, end_date: e.end_date || '', time: e.time, ends: e.ends || '', capacity: e.capacity,
-        price: e.price || 0, table_capacity: e.table_capacity || 0, aud: toAud(e.audience),
+        price: e.price || 0, price_online: e.price_online || 0, price_archive: e.price_archive || 0,
+        offer_physical: e.offer_physical !== false, offer_online: !!e.offer_online, offer_archive: !!e.offer_archive,
+        table_capacity: e.table_capacity || 0, aud: toAud(e.audience),
         booking_windows: e.booking_windows || null,
         image_url: e.image_url || '', video_url: e.video_url || '',
         stream_url: e.stream_url || '', is_live: !!e.is_live, live_auto: !!e.live_auto, live_ended: !!e.live_ended, stream_gated: !!e.stream_gated,
@@ -141,7 +143,9 @@
       if (!LIVE) { const e = seedDemo(); o.id = 'e' + Date.now(); e.unshift(o); jset(K.ev, e); return { error: null }; }
       const { error } = await sb.from('events').insert({ title: o.title, format: o.format, place: o.place, date: o.date || null,
         end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0,
-        price: o.price || 0, table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
+        price: o.price || 0, price_online: o.price_online || 0, price_archive: o.price_archive || 0,
+        offer_physical: o.offer_physical !== false, offer_online: !!o.offer_online, offer_archive: !!o.offer_archive,
+        table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
         booking_windows: o.booking_windows || null,
         image_url: o.image_url || null, video_url: o.video_url || null,
         stream_url: o.stream_url || null, is_live: !!o.is_live, live_auto: !!o.live_auto, live_ended: false, stream_gated: !!o.stream_gated });
@@ -151,7 +155,9 @@
       if (!LIVE) { let e = seedDemo().map(x => x.id === id ? { ...x, ...o } : x); jset(K.ev, e); return { error: null }; }
       const { error } = await sb.from('events').update({ title: o.title, format: o.format, place: o.place, date: o.date || null,
         end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0,
-        price: o.price || 0, table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
+        price: o.price || 0, price_online: o.price_online || 0, price_archive: o.price_archive || 0,
+        offer_physical: o.offer_physical !== false, offer_online: !!o.offer_online, offer_archive: !!o.offer_archive,
+        table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
         booking_windows: o.booking_windows || null,
         image_url: o.image_url || null, video_url: o.video_url || null,
         stream_url: o.stream_url || null, is_live: !!o.is_live, live_auto: !!o.live_auto, stream_gated: !!o.stream_gated }).eq('id', id);
@@ -196,6 +202,7 @@
       return (data || []).map(r => ({ id: r.id, user_id: r.user_id || null, event_id: r.event_id || null, table_event_id: r.table_event_id || null,
         who: r.who || '', membership: r.membership || '', fmt: r.format,
         place: r.place, date: r.date, time: r.time, party: r.party_size, note: r.note, status: r.status,
+        kind: r.kind || '', paid: !!r.paid,
         name: r.res_name || '', email: r.contact_email || '', phone: r.contact_phone || '' }));
     },
     async addReservation(o) {

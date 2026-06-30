@@ -6,5 +6,7 @@
 // ============================================================
 window.ACAC_CONFIG = {
   SUPABASE_URL: "https://twcxfqgknhqicxqghcrx.supabase.co",
-  SUPABASE_ANON_KEY: "sb_publishable_rE--I_P0IobbEwZweCMbsw_6ERycjQv"
+  SUPABASE_ANON_KEY: "sb_publishable_rE--I_P0IobbEwZweCMbsw_6ERycjQv",
+  // Stripe публичен ключ (безопасен за клиента). Тестов е, докато е pk_test_…
+  STRIPE_PK: "pk_test_51To1PvLM77iTWPGYLqXxWRPsObwEVrUEw20d9vIb9TWdv2aOJZuFqarlUZExFImpxD5C42NA4dAOVad0F98GdBUv00oiIMDhFj"
 };

@@ -384,7 +384,18 @@ function formView(){
       <div><label>Край (час)</label>${timePickerHTML('f_ends',e?e.ends:'')}</div></div>
     <div class="row2"><div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}"/></div>
       <div><label>Места на маса след събитието</label><input id="f_tcap" type="number" min="0" value="${e&&e.table_capacity?e.table_capacity:''}" placeholder="по желание"/></div></div>
-    <div class="row2"><div><label>Цена на билет (€) — 0 = безплатно</label><input id="f_price" type="number" min="0" step="0.01" value="${e&&e.price?e.price:0}"/></div><div></div></div>
+    <label style="margin-top:6px;">Какво се предлага за това събитие (отметни нивото + сложи цена; 0 = безплатно)</label>
+    <div class="row2" style="margin-top:4px;">
+      <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_phys" ${(e?e.offer_physical:true)?'checked':''} style="width:auto;"/> Присъствие в клуба</label>
+        <input id="f_price" type="number" min="0" step="0.01" value="${e&&e.price?e.price:0}" placeholder="€ (0 = безплатно)"/></div>
+      <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_online" ${(e&&e.offer_online)?'checked':''} style="width:auto;"/> Онлайн гледане</label>
+        <input id="f_price_online" type="number" min="0" step="0.01" value="${e&&e.price_online?e.price_online:0}" placeholder="€"/></div>
+    </div>
+    <div class="row2" style="margin-top:4px;">
+      <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_archive" ${(e&&e.offer_archive)?'checked':''} style="width:auto;"/> Само архив (запис)</label>
+        <input id="f_price_archive" type="number" min="0" step="0.01" value="${e&&e.price_archive?e.price_archive:0}" placeholder="€"/></div><div></div>
+    </div>
+    <p class="muted" style="margin:2px 0 0;font-size:12px;">Стълбица: присъствие включва онлайн + архив; онлайн включва архив. Неотметнато ниво = не се предлага (напр. онлайн събитие без присъствие). 0 = безплатно.</p>
     <label>Постер / снимка на събитието (по желание)</label>
     ${e&&e.image_url?`<div style="margin-bottom:8px;"><img src="${esc(e.image_url)}" style="max-width:100%;border-radius:10px;"/><div><a href="#" onclick="clearMedia('img');return false;" style="color:#b5532f;font-size:12px;">Премахни снимката</a></div></div>`:''}
     <input id="f_img" type="file" accept="image/*"/>
@@ -434,7 +445,11 @@ function grabForm(){
   const ed=document.getElementById('f_end_date');
   const bw={};document.querySelectorAll('.bwfield').forEach(el=>{bw[el.dataset.mem]=el.dataset.iso||'';});
   return {title:g('f_title'),format:g('f_format'),place:g('f_place'),time:g('f_time'),ends:g('f_ends'),
-    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),price:g('f_price'),stream:g('f_stream'),live:live?live.checked:false,auto:auto?auto.checked:false,gated:gated?gated.checked:false,bw};
+    dateIso:date?(date.dataset.iso||''):'',endDateIso:ed?(ed.dataset.iso||''):'',cap:g('f_cap'),tcap:g('f_tcap'),price:g('f_price'),price_online:g('f_price_online'),price_archive:g('f_price_archive'),
+    offer_physical:!!(document.getElementById('f_offer_phys')&&document.getElementById('f_offer_phys').checked),
+    offer_online:!!(document.getElementById('f_offer_online')&&document.getElementById('f_offer_online').checked),
+    offer_archive:!!(document.getElementById('f_offer_archive')&&document.getElementById('f_offer_archive').checked),
+    stream:g('f_stream'),live:live?live.checked:false,auto:auto?auto.checked:false,gated:gated?gated.checked:false,bw};
 }
 // Избирачка за час: 24-часов (00–23) + минути през 5; пази стойност HH:MM в скрито поле
 function timePickerHTML(id,val){
@@ -466,7 +481,10 @@ function putForm(v){
   if(!v)return;
   const s=(id,val)=>{const el=document.getElementById(id);if(el&&val!=null)el.value=val;};
   s('f_title',v.title);s('f_format',v.format);s('f_place',v.place);setTimeField('f_time',v.time);setTimeField('f_ends',v.ends);
-  s('f_cap',v.cap);s('f_tcap',v.tcap);s('f_price',v.price);s('f_stream',v.stream);
+  s('f_cap',v.cap);s('f_tcap',v.tcap);s('f_price',v.price);s('f_price_online',v.price_online);s('f_price_archive',v.price_archive);s('f_stream',v.stream);
+  const _op=document.getElementById('f_offer_phys');if(_op)_op.checked=!!v.offer_physical;
+  const _oo=document.getElementById('f_offer_online');if(_oo)_oo.checked=!!v.offer_online;
+  const _oa=document.getElementById('f_offer_archive');if(_oa)_oa.checked=!!v.offer_archive;
   const date=document.getElementById('f_date');
   if(date){date.dataset.iso=v.dateIso||'';date.value=v.dateIso?isoToBg(v.dateIso):'';}
   const ed=document.getElementById('f_end_date');
@@ -572,6 +590,11 @@ async function saveEvent(){
     capacity:parseInt(document.getElementById('f_cap').value||'0',10),
     table_capacity:parseInt(document.getElementById('f_tcap').value||'0',10),
     price:parseFloat(document.getElementById('f_price').value||'0')||0,
+    price_online:parseFloat((document.getElementById('f_price_online')||{}).value||'0')||0,
+    price_archive:parseFloat((document.getElementById('f_price_archive')||{}).value||'0')||0,
+    offer_physical:!!(document.getElementById('f_offer_phys')&&document.getElementById('f_offer_phys').checked),
+    offer_online:!!(document.getElementById('f_offer_online')&&document.getElementById('f_offer_online').checked),
+    offer_archive:!!(document.getElementById('f_offer_archive')&&document.getElementById('f_offer_archive').checked),
     booking_windows:(()=>{const bw={};document.querySelectorAll('.bwfield').forEach(el=>{if(el.dataset.iso)bw[el.dataset.mem]=el.dataset.iso;});return Object.keys(bw).length?bw:null;})(),
     image_url:imgUrl,video_url:vidUrl,
     stream_url:document.getElementById('f_stream').value.trim(),
