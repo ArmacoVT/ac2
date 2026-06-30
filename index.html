@@ -1045,10 +1045,7 @@ function mountYouTube(holderId,url){
       window._ytp[holderId]=new YT.Player(holderId+'_yt',{
         videoId:yt.id,
         playerVars:{autoplay:1,playsinline:0,rel:0,modestbranding:1,fs:1},
-        events:{onReady:function(ev){try{ev.target.playVideo();}catch(_){}
-          const fr=document.querySelector('#'+holderId+' iframe');
-          if(fr){try{(fr.requestFullscreen||fr.webkitRequestFullscreen||function(){}).call(fr);}catch(_){}}
-        }}
+        events:{onReady:function(ev){try{ev.target.playVideo();}catch(_){}}}
       });
     }catch(e){}
   });
