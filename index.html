@@ -1389,13 +1389,16 @@ function reserve(q){
     <input id="r_party" type="hidden" value="1"/>
     <label>${tr('contactEmail')} *</label><input id="r_email" type="email" autocapitalize="none" value="${user?esc(user.email||''):''}"/>
     <label>${tr('contactPhone')} *</label><input id="r_phone" type="tel" placeholder="+359 ..."/>
-    <label>${lang==='bg'?'Алергени / хранителни ограничения':'Allergens / dietary'} *</label>
-    <div class="selrow" id="algsel">${(lang==='bg'?['Нямам алергии','Глутен','Мляко/лактоза','Яйца','Ядки','Фъстъци','Риба','Ракообразни','Соя','Сусам','Целина','Синап','Сулфити']:['No allergies','Gluten','Milk/lactose','Eggs','Tree nuts','Peanuts','Fish','Crustaceans','Soy','Sesame','Celery','Mustard','Sulphites']).map((a,i)=>`<button type="button" class="chip" data-alg="${esc(a)}"${i===0?' data-none="1"':''} onclick="toggleAlg(this)">${a}</button>`).join('')}</div>
+    <div id="algwrap" style="display:${preV==='restaurant'?'':'none'};">
+      <label>${lang==='bg'?'Алергени / хранителни ограничения':'Allergens / dietary'} *</label>
+      <div class="selrow" id="algsel">${(lang==='bg'?['Нямам алергии','Глутен','Мляко/лактоза','Яйца','Ядки','Фъстъци','Риба','Ракообразни','Соя','Сусам','Целина','Синап','Сулфити']:['No allergies','Gluten','Milk/lactose','Eggs','Tree nuts','Peanuts','Fish','Crustaceans','Soy','Sesame','Celery','Mustard','Sulphites']).map((a,i)=>`<button type="button" class="chip" data-alg="${esc(a)}"${i===0?' data-none="1"':''} onclick="toggleAlg(this)">${a}</button>`).join('')}</div>
+    </div>
     <label>${tr('note')}</label><textarea id="r_note" rows="2" placeholder="${tr('notePlaceholder')}"></textarea>
     <button class="btn" onclick="sendRes(${seats})">${tr('send')}</button></div>`;
 }
 let pickedVenue=null;
-function selVenue(b){document.querySelectorAll('#vensel .chip').forEach(c=>c.classList.remove('on'));b.classList.add('on');pickedVenue=b.dataset.v;}
+function selVenue(b){document.querySelectorAll('#vensel .chip').forEach(c=>c.classList.remove('on'));b.classList.add('on');pickedVenue=b.dataset.v;
+  const aw=document.getElementById('algwrap');if(aw)aw.style.display=(pickedVenue==='restaurant')?'':'none';}
 function toggleAlg(btn){
   try{hap('select');}catch(e){}
   if(btn.dataset.none){document.querySelectorAll('#algsel .chip').forEach(c=>{if(c!==btn)c.classList.remove('on');});}
@@ -1466,11 +1469,14 @@ async function sendRes(seats){
   if(n>seats){toast((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast(tr('reqEmail'));return;}
   if(!phone){toast(tr('reqPhone'));return;}
-  const algOn=[...document.querySelectorAll('#algsel .chip.on')];
-  if(!algOn.length){toast(lang==='bg'?'Изберете алергени (или „Нямам алергии")':'Select allergens (or "No allergies")');return;}
-  const noneSel=algOn.some(c=>c.dataset.none);
-  const algLine=noneSel?(lang==='bg'?'Без алергии':'No allergies'):(lang==='bg'?'Алергени: ':'Allergens: ')+algOn.map(c=>c.dataset.alg).join(', ');
-  const fullNote=algLine+(note?' · '+note:'');
+  let fullNote=note;
+  if(venue==='restaurant'){
+    const algOn=[...document.querySelectorAll('#algsel .chip.on')];
+    if(!algOn.length){toast(lang==='bg'?'Изберете алергени (или „Нямам алергии")':'Select allergens (or "No allergies")');return;}
+    const noneSel=algOn.some(c=>c.dataset.none);
+    const algLine=noneSel?(lang==='bg'?'Без алергии':'No allergies'):(lang==='bg'?'Алергени: ':'Allergens: ')+algOn.map(c=>c.dataset.alg).join(', ');
+    fullNote=algLine+(note?' · '+note:'');
+  }
   await DB.addReservation({fmt:venue,place:venueLabel(venue),date:rdate,time:rtime,party:n,note:fullNote,res_name:name,email,phone});
   hap('success');
   toast(tr('resToast'));setTimeout(()=>go('profile'),700);
