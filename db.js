@@ -221,6 +221,18 @@
         res_name: o.res_name || null, contact_email: o.email || null, contact_phone: o.phone || null });
       return { error };
     },
+    // Stripe: създава плащане за билет (тип physical|online|archive). Връща {client_secret} или {free:true}.
+    async createPayment(event_id, kind, party) {
+      if (!LIVE) return { error: { message: 'Налично след свързване на Supabase' } };
+      const { data, error } = await sb.functions.invoke('create-payment', { body: { event_id, kind, party: party || 1 } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return data;
+    },
     async setReservationStatus(id, status) {
       if (!LIVE) { let r = jget(K.res, []); r = r.map(x => x.id === id ? { ...x, status } : x); jset(K.res, r); return { error: null }; }
       const { error } = await sb.from('reservations').update({ status }).eq('id', id);

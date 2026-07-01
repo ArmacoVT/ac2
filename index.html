@@ -359,6 +359,7 @@
 <nav class="tabbar" id="tabbar"></nav>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.stripe.com/v3/"></script>
 <script src="config.js"></script>
 <script src="db.js"></script>
 <script>
@@ -800,34 +801,61 @@ function events(){
   return topbar(tr('events'))+`<div class="page"><p style="color:var(--mid);font-size:14px;margin-bottom:14px;">${tr('program')}</p>${list}</div>`;
 }
 function setPreview(id){previewAs=id||null;route();}
+let bookTier='physical';
+// нивата (стълбица), които се предлагат за събитието
+function eventTiers(e){
+  const t=[];
+  if(e.offer_physical!==false&&e.format!=='online') t.push({kind:'physical',label:(lang==='bg'?'Присъствие в клуба':'In-club'),price:e.price||0});
+  if(e.offer_online) t.push({kind:'online',label:(lang==='bg'?'Онлайн гледане':'Online'),price:e.price_online||0});
+  if(e.offer_archive) t.push({kind:'archive',label:(lang==='bg'?'Само запис (архив)':'Recording only'),price:e.price_archive||0});
+  return t;
+}
+function tierPrice(e,kind){return kind==='online'?(e.price_online||0):kind==='archive'?(e.price_archive||0):(e.price||0);}
 function openBook(id){
   if(!user){needLogin();return;}
   if(!membershipActive()){toast(tr('memberExpiredTitle'));go('profile');return;}
   const e=EVENTS.find(x=>x.id===id); if(!e)return;
   if(!canBookNow(e)){toast(tr('bookFrom')+' '+bookOpenISO(e).split('-').reverse().join('.'));return;}
-  const _ob=document.getElementById('booksheet'); if(_ob)_ob.remove();
-  const _obd=document.getElementById('sheetbd'); if(_obd)_obd.remove();
-  const paid=e.price>0;
+  document.getElementById('booksheet')?.remove();
+  document.getElementById('sheetbd')?.remove();
+  const tiers=eventTiers(e);
+  if(!tiers.length){toast(lang==='bg'?'Няма налична опция за това събитие':'No option for this event');return;}
+  bookTier=tiers[0].kind;
   const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
   const left=seatsLeft(e);
   const maxN=left!==null?Math.max(1,Math.min(seats,left)):seats;
+  const tierChips=tiers.length>1?tiers.map(t=>`<label class="tieropt" data-kind="${t.kind}" onclick="selectTier('${e.id}','${t.kind}')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:12px;cursor:pointer;margin-top:8px;"><span>${t.label}</span><b style="color:var(--gold);">${t.price>0?fmtPrice(t.price):(lang==='bg'?'Безплатно':'Free')}</b></label>`).join(''):'';
   const tableOpt=endsEarly(e)?`<div class="tableopt"><label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" id="tb_${e.id}" onchange="toggleTableOpt('${e.id}')"/><span>${tr('addTable')} <small>· ${tr('afterEvent')} · ${esc(e.ends||'')}</small></span></label><div class="tablebox" id="tbx_${e.id}"><div class="qrow" style="border-bottom:none;padding:8px 0 0;"><span>${tr('tableParty')}</span><div class="qstep"><button onclick="tblQty('${e.id}',-1)">−</button><b id="tbp_lbl_${e.id}">1</b><button onclick="tblQty('${e.id}',1)">+</button></div></div><input id="tbp_${e.id}" type="hidden" value="1"/></div></div>`:'';
+  const partyInner=`<div class="qrow"><span>${tr('party')}</span><div class="qstep"><button onclick="bookQty('${e.id}',-1,${maxN})">−</button><b id="bp_lbl_${e.id}">1</b><button onclick="bookQty('${e.id}',1,${maxN})">+</button></div></div>${tableOpt}`;
   const bd=document.createElement('div'); bd.className='sheetbd'; bd.id='sheetbd'; bd.onclick=closeBook;
   const sh=document.createElement('div'); sh.className='sheet'; sh.id='booksheet';
   sh.innerHTML=`<div class="handle"></div>
-    <h3>${paid?(lang==='bg'?'Купи билет':'Buy ticket'):tr('ticket')}</h3>
-    <div class="ssub">${esc(e.title)}${paid?' · '+fmtPrice(e.price)+(lang==='bg'?' / билет':' / ticket'):''}</div>
+    <h3>${lang==='bg'?'Билет':'Ticket'}</h3>
+    <div class="ssub">${esc(e.title)}</div>
     <label>${tr('bookingName')}</label>
     <input id="bn_${e.id}" type="text" value="${esc(user.full_name||user.username||'')}"/>
-    ${e.format==='online'?`<div class="qrow"><span>${lang==='bg'?'Достъп':'Access'}</span><b style="color:var(--muted);">${lang==='bg'?'Лично · 1 устройство':'Personal · 1 device'}</b></div>`:`<div class="qrow"><span>${tr('party')}</span>
-      <div class="qstep"><button onclick="bookQty('${e.id}',-1,${maxN})">−</button><b id="bp_lbl_${e.id}">1</b><button onclick="bookQty('${e.id}',1,${maxN})">+</button></div></div>`}
+    ${tierChips}
+    <div id="partyrow_${e.id}">${partyInner}</div>
     <input id="bp_${e.id}" type="hidden" value="1"/>
-    ${paid?`<div class="qrow"><span>${lang==='bg'?'Общо':'Total'}</span><b id="bt_${e.id}" style="color:var(--gold);">${fmtPrice(e.price)}</b></div>`:''}
-    ${tableOpt}
-    <button class="btn" style="margin-top:18px;" onclick="confirmBook('${e.id}')">${paid?(lang==='bg'?'Купи билет':'Buy ticket'):(lang==='bg'?'Запази':'Book')}</button>`;
+    <div class="qrow"><span>${lang==='bg'?'Общо':'Total'}</span><b id="bt_${e.id}" style="color:var(--gold);">—</b></div>
+    <button class="btn" id="buybtn_${e.id}" style="margin-top:18px;" onclick="confirmBuy('${e.id}')">—</button>
+    <div id="paybox_${e.id}" style="margin-top:14px;"></div>`;
   document.body.appendChild(bd); document.body.appendChild(sh);
   document.body.style.overflow='hidden';
-  requestAnimationFrame(()=>{bd.classList.add('open');sh.classList.add('open');});
+  requestAnimationFrame(()=>{bd.classList.add('open');sh.classList.add('open');selectTier(e.id,bookTier);});
+}
+function selectTier(id,kind){
+  bookTier=kind; try{hap('select');}catch(e){}
+  document.querySelectorAll('#booksheet .tieropt').forEach(el=>{const on=el.dataset.kind===kind;el.style.borderColor=on?'var(--gold)':'var(--line)';el.style.background=on?'var(--surface2)':'transparent';});
+  const pr=document.getElementById('partyrow_'+id); if(pr)pr.style.display=(kind==='physical')?'':'none';
+  updateBuy(id);
+}
+function updateBuy(id){
+  const e=EVENTS.find(x=>x.id===id); if(!e)return;
+  const party=(bookTier==='physical')?(parseInt(document.getElementById('bp_'+id)?.value||'1',10)||1):1;
+  const total=tierPrice(e,bookTier)*party;
+  const bt=document.getElementById('bt_'+id); if(bt)bt.textContent=total>0?fmtPrice(total):(lang==='bg'?'Безплатно':'Free');
+  const btn=document.getElementById('buybtn_'+id); if(btn){btn.disabled=false;btn.onclick=()=>confirmBuy(id);btn.textContent=total>0?(lang==='bg'?'Купи билет · '+fmtPrice(total):'Buy · '+fmtPrice(total)):(lang==='bg'?'Запази':'Book');}
 }
 function closeBook(){
   const bd=document.getElementById('sheetbd'),sh=document.getElementById('booksheet');
@@ -842,8 +870,7 @@ function bookQty(id,delta,maxN){
   try{hap('medium');}catch(e){}
   inp.value=n;
   const lbl=document.getElementById('bp_lbl_'+id); if(lbl){lbl.textContent=n;lbl.classList.remove('qbump');void lbl.offsetWidth;lbl.classList.add('qbump');}
-  const e=EVENTS.find(x=>x.id===id); const bt=document.getElementById('bt_'+id);
-  if(bt&&e&&e.price>0)bt.textContent=fmtPrice(e.price*n);
+  updateBuy(id);
 }
 function tblQty(id,delta){
   const inp=document.getElementById('tbp_'+id); if(!inp)return;
@@ -857,38 +884,64 @@ function resQty(delta,maxN){
   try{hap('medium');}catch(e){}
   inp.value=n; const l=document.getElementById('r_party_lbl'); if(l){l.textContent=n;l.classList.remove('qbump');void l.offsetWidth;l.classList.add('qbump');}
 }
-async function confirmBook(id){
+let _tblPending=null;
+async function confirmBuy(id){
   if(!user){needLogin();return;}
   if(!membershipActive()){toast(tr('memberExpiredTitle'));go('profile');return;}
   const e=EVENTS.find(x=>x.id===id); if(!e)return;
   if(!canBookNow(e)){toast(tr('bookFrom')+' '+bookOpenISO(e).split('-').reverse().join('.'));return;}
-  const inp=document.getElementById('bp_'+id); const n=parseInt((inp&&inp.value)||'1',10);
+  const kind=bookTier;
+  const party=(kind==='physical')?(parseInt(document.getElementById('bp_'+id)?.value||'1',10)||1):1;
   const bname=(document.getElementById('bn_'+id)?.value||'').trim()||user.full_name||user.username||user.email;
-  const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
-  if(n<1){toast(tr('party'));return;}
-  if(n>seats){toast((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
-  // проверка за свободни места
-  const left=seatsLeft(e);
-  if(left!==null&&n>left){toast(left<=0?(lang==='bg'?'Изчерпано':'Sold out'):(lang==='bg'?('Остават само '+left+' места'):('Only '+left+' seats left')));return;}
-  // искаме ли и маса след събитието?
-  const wantTable=endsEarly(e)&&document.getElementById('tb_'+id)?.checked;
-  const tp=parseInt(document.getElementById('tbp_'+id)?.value||'2',10);
-  // само една активна заявка на член за събитие
+  if(kind==='physical'){
+    const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
+    if(party>seats){toast((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
+    const left=seatsLeft(e);
+    if(left!==null&&party>left){toast(left<=0?(lang==='bg'?'Изчерпано':'Sold out'):(lang==='bg'?('Остават само '+left+' места'):('Only '+left+' seats left')));return;}
+  }
   try{RES=await DB.listReservations();}catch(err){}
   if(hasBooking(id)){toast(tr('alreadyBooked'));route();return;}
-  const r=await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:e.time,party:n,note:'Билет / ticket',res_name:bname,email:user.email,phone:user.phone||''});
-  if(r&&r.error){toast(/duplicate|unique/i.test(r.error.message)?tr('alreadyBooked'):r.error.message);return;}
-  if(wantTable){
-    await DB.addReservation({fmt:'restaurant',place:venueLabel('restaurant'),date:e.date,time:e.ends||e.time,party:tp>0?tp:2,
-      table_event_id:e.id,
-      note:(lang==='bg'?'Маса след събитие: ':'Table after event: ')+e.title,
-      res_name:bname,email:user.email,phone:user.phone||''});
+  // маса след събитие (само при присъствие)
+  _tblPending=(kind==='physical'&&endsEarly(e)&&document.getElementById('tb_'+id)?.checked)
+    ?{id,tp:parseInt(document.getElementById('tbp_'+id)?.value||'2',10),bname}:null;
+  const btn=document.getElementById('buybtn_'+id); if(btn){btn.disabled=true;btn.textContent=lang==='bg'?'Момент…':'One moment…';}
+  const r=await DB.createPayment(e.id,kind,party);
+  if(r&&r.error){toast(r.error.message);if(btn)updateBuy(id);return;}
+  if(r&&r.free){ await finishBooking(id,bname); return; }
+  if(r&&r.client_secret){ await mountPayment(id,r.client_secret); return; }
+  toast(lang==='bg'?'Възникна грешка':'Something went wrong');if(btn)updateBuy(id);
+}
+// маса (ако е избрана) + затваряне + успех
+async function finishBooking(id,bname){
+  const e=EVENTS.find(x=>x.id===id);
+  if(_tblPending&&_tblPending.id===id&&e){
+    try{await DB.addReservation({fmt:'restaurant',place:venueLabel('restaurant'),date:e.date,time:e.ends||e.time,party:_tblPending.tp>0?_tblPending.tp:2,
+      table_event_id:e.id,note:(lang==='bg'?'Маса след събитие: ':'Table after event: ')+e.title,res_name:_tblPending.bname||bname,email:user.email,phone:user.phone||''});}catch(_){}
   }
+  _tblPending=null;
   closeBook();
   try{RES=await DB.listReservations();}catch(err){}
   justBooked=id;setTimeout(()=>{justBooked=null;},800);
   hap('success');showStamp();
-  toast(wantTable?(lang==='bg'?'Билетът и масата са заявени':'Ticket and table requested'):tr('ticketToast'));route();
+  toast(lang==='bg'?'Готово!':'Done!');setTimeout(()=>route(),900);
+}
+// вграденото плащане (Stripe Payment Element + Apple Pay)
+async function mountPayment(id,clientSecret){
+  const box=document.getElementById('paybox_'+id),btn=document.getElementById('buybtn_'+id);
+  if(!box){return;}
+  if(!window.Stripe||!(window.ACAC_CONFIG&&ACAC_CONFIG.STRIPE_PK)){toast('Stripe не е зареден');if(btn)updateBuy(id);return;}
+  const stripe=Stripe(ACAC_CONFIG.STRIPE_PK);
+  const elements=stripe.elements({clientSecret,appearance:{theme:'flat',variables:{colorPrimary:'#c8643c'}}});
+  const pe=elements.create('payment'); pe.mount('#paybox_'+id);
+  if(btn){btn.disabled=false;btn.textContent=lang==='bg'?'Плати':'Pay';
+    btn.onclick=async function(){
+      btn.disabled=true;btn.textContent=lang==='bg'?'Плащане…':'Paying…';
+      const {error}=await stripe.confirmPayment({elements,redirect:'if_required'});
+      if(error){toast(error.message||(lang==='bg'?'Грешка при плащане':'Payment error'));btn.disabled=false;btn.textContent=lang==='bg'?'Плати':'Pay';return;}
+      const bname=(document.getElementById('bn_'+id)?.value||'').trim()||user.full_name||user.username||user.email;
+      await finishBooking(id,bname); // webhook потвърждава в базата; ние просто опресняваме
+    };
+  }
 }
 function streamEmbed(u){
   if(!u)return '';
