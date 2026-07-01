@@ -805,11 +805,16 @@ let bookTier='physical';
 // нивата (стълбица), които се предлагат за събитието
 function eventTiers(e){
   const t=[];
-  if(e.offer_physical!==false&&e.format!=='online') t.push({kind:'physical',label:(lang==='bg'?'Присъствие в клуба':'In-club'),price:e.price||0});
-  if(e.offer_online) t.push({kind:'online',label:(lang==='bg'?'Онлайн гледане':'Online'),price:e.price_online||0});
-  if(e.offer_archive) t.push({kind:'archive',label:(lang==='bg'?'Само запис (архив)':'Recording only'),price:e.price_archive||0});
+  if(e.offer_physical!==false&&e.format!=='online') t.push({kind:'physical',label:(lang==='bg'?'Присъствие в клуба':'In-club'),short:(lang==='bg'?'Присъствие':'In-club'),price:e.price||0});
+  if(e.offer_online) t.push({kind:'online',label:(lang==='bg'?'Онлайн гледане':'Online'),short:(lang==='bg'?'Онлайн':'Online'),price:e.price_online||0});
+  if(e.offer_archive) t.push({kind:'archive',label:(lang==='bg'?'Само запис (архив)':'Recording only'),short:(lang==='bg'?'Архив':'Recording'),price:e.price_archive||0});
   return t;
 }
+const TIERICON={
+  physical:`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V8l7-4 7 4v13"/><path d="M9.5 21v-5h5v5"/></svg>`,
+  online:`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><path d="M11 8.5l3 1.5-3 1.5z" fill="currentColor" stroke="none"/></svg>`,
+  archive:`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z" fill="currentColor" stroke="none"/></svg>`
+};
 function tierPrice(e,kind){return kind==='online'?(e.price_online||0):kind==='archive'?(e.price_archive||0):(e.price||0);}
 function openBook(id){
   if(!user){needLogin();return;}
@@ -824,7 +829,7 @@ function openBook(id){
   const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
   const left=seatsLeft(e);
   const maxN=left!==null?Math.max(1,Math.min(seats,left)):seats;
-  const tierChips=tiers.length>1?tiers.map(t=>`<label class="tieropt" data-kind="${t.kind}" onclick="selectTier('${e.id}','${t.kind}')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:12px;cursor:pointer;margin-top:8px;"><span>${t.label}</span><b style="color:var(--gold);">${t.price>0?fmtPrice(t.price):(lang==='bg'?'Безплатно':'Free')}</b></label>`).join(''):'';
+  const tierChips=tiers.length>1?`<div style="display:flex;gap:8px;margin-top:8px;">${tiers.map(t=>`<div class="tieropt" data-kind="${t.kind}" onclick="selectTier('${e.id}','${t.kind}')" style="flex:1;text-align:center;padding:12px 6px;border:1px solid var(--line);border-radius:12px;cursor:pointer;"><div style="color:var(--gold);display:flex;justify-content:center;">${TIERICON[t.kind]||''}</div><div style="font-size:12px;margin-top:5px;color:var(--text);">${t.short}</div><b style="color:var(--gold);font-size:13px;">${t.price>0?fmtPrice(t.price):(lang==='bg'?'Безпл.':'Free')}</b></div>`).join('')}</div>`:'';
   const tableOpt=endsEarly(e)?`<div class="tableopt"><label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" id="tb_${e.id}" onchange="toggleTableOpt('${e.id}')"/><span>${tr('addTable')} <small>· ${tr('afterEvent')} · ${esc(e.ends||'')}</small></span></label><div class="tablebox" id="tbx_${e.id}"><div class="qrow" style="border-bottom:none;padding:8px 0 0;"><span>${tr('tableParty')}</span><div class="qstep"><button onclick="tblQty('${e.id}',-1)">−</button><b id="tbp_lbl_${e.id}">1</b><button onclick="tblQty('${e.id}',1)">+</button></div></div><input id="tbp_${e.id}" type="hidden" value="1"/></div></div>`:'';
   const partyInner=`<div class="qrow"><span>${tr('party')}</span><div class="qstep"><button onclick="bookQty('${e.id}',-1,${maxN})">−</button><b id="bp_lbl_${e.id}">1</b><button onclick="bookQty('${e.id}',1,${maxN})">+</button></div></div>${tableOpt}`;
   const bd=document.createElement('div'); bd.className='sheetbd'; bd.id='sheetbd'; bd.onclick=closeBook;
@@ -905,14 +910,21 @@ async function confirmBuy(id){
   _tblPending=(kind==='physical'&&endsEarly(e)&&document.getElementById('tb_'+id)?.checked)
     ?{id,tp:parseInt(document.getElementById('tbp_'+id)?.value||'2',10),bname}:null;
   const btn=document.getElementById('buybtn_'+id); if(btn){btn.disabled=true;btn.textContent=lang==='bg'?'Момент…':'One moment…';}
+  // безплатно ниво → заявка за одобрение от админ (стария поток)
+  if(tierPrice(e,kind)<=0){
+    const rr=await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:e.time,party,note:'Билет / ticket',res_name:bname,email:user.email,phone:user.phone||'',kind});
+    if(rr&&rr.error){toast(/duplicate|unique/i.test(rr.error.message)?tr('alreadyBooked'):rr.error.message);if(btn)updateBuy(id);return;}
+    await finishBooking(id,bname,true); return;
+  }
+  // платено → Stripe
   const r=await DB.createPayment(e.id,kind,party);
   if(r&&r.error){toast(r.error.message);if(btn)updateBuy(id);return;}
-  if(r&&r.free){ await finishBooking(id,bname); return; }
   if(r&&r.client_secret){ await mountPayment(id,r.client_secret); return; }
+  if(r&&r.free){ await finishBooking(id,bname,true); return; }
   toast(lang==='bg'?'Възникна грешка':'Something went wrong');if(btn)updateBuy(id);
 }
 // маса (ако е избрана) + затваряне + успех
-async function finishBooking(id,bname){
+async function finishBooking(id,bname,pending){
   const e=EVENTS.find(x=>x.id===id);
   if(_tblPending&&_tblPending.id===id&&e){
     try{await DB.addReservation({fmt:'restaurant',place:venueLabel('restaurant'),date:e.date,time:e.ends||e.time,party:_tblPending.tp>0?_tblPending.tp:2,
@@ -923,7 +935,7 @@ async function finishBooking(id,bname){
   try{RES=await DB.listReservations();}catch(err){}
   justBooked=id;setTimeout(()=>{justBooked=null;},800);
   hap('success');showStamp();
-  toast(lang==='bg'?'Готово!':'Done!');setTimeout(()=>route(),900);
+  toast(pending?(lang==='bg'?'Заявката е изпратена — чака одобрение':'Request sent — awaiting approval'):(lang==='bg'?'Готово!':'Done!'));setTimeout(()=>route(),900);
 }
 // вграденото плащане (Stripe Payment Element + Apple Pay)
 async function mountPayment(id,clientSecret){
@@ -1348,6 +1360,15 @@ async function addCompanyMember(){
   hap('success');toast(lang==='bg'?'Поканата е изпратена':'Invitation sent');
   COMPANY=await DB.companyMembers();route();
 }
+// избирачка за час: 24-часов + минути през 5 (пази HH:MM в скрито поле)
+function timePicker(id,val){
+  val=(val||'').trim();let h='',m='';const mt=val.match(/^(\d{1,2}):(\d{2})/);
+  if(mt){h=String(+mt[1]).padStart(2,'0');m=String(Math.round(+mt[2]/5)*5%60).padStart(2,'0');}
+  let ho='<option value="">--</option>';for(let i=0;i<24;i++){const v=String(i).padStart(2,'0');ho+=`<option value="${v}"${v===h?' selected':''}>${v}</option>`;}
+  let mo='<option value="">--</option>';for(let i=0;i<60;i+=5){const v=String(i).padStart(2,'0');mo+=`<option value="${v}"${v===m?' selected':''}>${v}</option>`;}
+  return `<div style="display:flex;align-items:center;gap:8px;"><select id="${id}_h" onchange="syncTP('${id}')" style="flex:1;">${ho}</select><b style="opacity:.5;">:</b><select id="${id}_m" onchange="syncTP('${id}')" style="flex:1;">${mo}</select><input type="hidden" id="${id}" value="${esc(val)}"></div>`;
+}
+function syncTP(id){const h=document.getElementById(id+'_h').value,m=document.getElementById(id+'_m').value;document.getElementById(id).value=h?(h+':'+(m||'00')):'';}
 function reserve(q){
   if(user&&!membershipActive())return topbar(tr('reserve'))+`<div class="page"><div class="ev" style="border:1px solid #b5532f;"><h3 style="font-size:15px;color:#b5532f;">${tr('memberExpiredTitle')}</h3><div class="m" style="color:#b5532f;margin-top:3px;">${tr('memberExpiredMsg')}</div></div></div>`;
   const preV=new URLSearchParams(q).get('v')||'';
@@ -1362,7 +1383,7 @@ function reserve(q){
     <label>${tr('resName')} *</label><input id="r_name" value="${user?esc(user.full_name||user.username||''):''}"/>
     <label>${tr('placeChoose')} *</label><div class="selrow" id="vensel">${vsel}</div>
     <label>${tr('date')} *</label><input id="r_date" readonly placeholder="дд.мм.гггг" data-iso="" onclick="openResCal()" style="cursor:pointer;"/>
-    <label>${tr('time')} *</label><input id="r_time" placeholder="19:30"/>
+    <label>${tr('time')} *</label>${timePicker('r_time','')}
     <label>${tr('party')} *</label>
     <div class="qrow" style="border:none;padding:2px 0 0;"><span style="color:var(--muted);font-size:13px;">${lang==='bg'?'Места':'Seats'}</span><div class="qstep"><button type="button" onclick="resQty(-1,${seats})">−</button><b id="r_party_lbl">1</b><button type="button" onclick="resQty(1,${seats})">+</button></div></div>
     <input id="r_party" type="hidden" value="1"/>

@@ -218,6 +218,7 @@
         table_event_id: o.table_event_id || null,
         who: u.username || u.email, membership: u.membership, format: o.fmt,
         place: o.place, date: o.date || null, time: o.time, party_size: o.party || 1, note: o.note, status: 'requested',
+        kind: o.kind || null,
         res_name: o.res_name || null, contact_email: o.email || null, contact_phone: o.phone || null });
       return { error };
     },
