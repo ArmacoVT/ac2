@@ -391,11 +391,7 @@ function formView(){
       <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_online" ${(e&&e.offer_online)?'checked':''} style="width:auto;"/> Онлайн гледане</label>
         <input id="f_price_online" type="number" min="0" step="0.01" value="${e&&e.price_online?e.price_online:0}" placeholder="€"/></div>
     </div>
-    <div class="row2" style="margin-top:4px;">
-      <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_archive" ${(e&&e.offer_archive)?'checked':''} style="width:auto;"/> Само архив (запис)</label>
-        <input id="f_price_archive" type="number" min="0" step="0.01" value="${e&&e.price_archive?e.price_archive:0}" placeholder="€"/></div><div></div>
-    </div>
-    <p class="muted" style="margin:2px 0 0;font-size:12px;">Стълбица: присъствие включва онлайн + архив; онлайн включва архив. Неотметнато ниво = не се предлага (напр. онлайн събитие без присъствие). 0 = безплатно.</p>
+    <p class="muted" style="margin:2px 0 0;font-size:12px;">Присъствие включва и онлайн + архива; онлайн включва архива. Неотметнато ниво = не се предлага. 0 = безплатно. Цената за архива се задава в таб „Архив".</p>
     <label>Постер / снимка на събитието (по желание)</label>
     ${e&&e.image_url?`<div style="margin-bottom:8px;"><img src="${esc(e.image_url)}" style="max-width:100%;border-radius:10px;"/><div><a href="#" onclick="clearMedia('img');return false;" style="color:#b5532f;font-size:12px;">Премахни снимката</a></div></div>`:''}
     <input id="f_img" type="file" accept="image/*"/>
