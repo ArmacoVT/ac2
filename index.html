@@ -1753,7 +1753,7 @@ async function cancelRes(id){
   if(typeof dataSig!=='undefined')dataSig=''; if(typeof route==='function')route();
 }
 function resCard(r,dim){
-  const SL={requested:lang==='bg'?'чакаща':'pending',confirmed:lang==='bg'?'одобрена':'approved',declined:lang==='bg'?'отказана':'declined',cancelled:lang==='bg'?'отменена':'cancelled'};
+  const SL={requested:lang==='bg'?'чакаща':'pending',confirmed:lang==='bg'?'одобрена':'approved',declined:lang==='bg'?'отказана':'declined',cancelled:lang==='bg'?'отменена':'cancelled',pending_payment:lang==='bg'?'чака плащане':'awaiting payment'};
   const SC={confirmed:'#4f7a43',declined:'#b5532f'};
   const tm=r.time?(r.time+' · '):'';
   const evId=r.event_id||r.table_event_id;
@@ -1775,7 +1775,7 @@ function resCard(r,dim){
   const ctx=[fmtName,venue].filter(Boolean).join(' · ');
   const ctxLine=ctx?`<div class="m" style="color:${col||'var(--gold-soft)'};margin-bottom:2px;font-weight:600;">${esc(ctx)}</div>`:'';
   const accent=(col&&!hl)?`border-left:3px solid ${col};`:'';
-  return `<div class="ev"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${accent}${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${r.party} ${tr('seats')} · <b style="color:${SC[r.status]||'var(--muted)'};">${SL[r.status]||r.status}</b></div>${priceLine}${cancelBtn}</div>`;
+  return `<div class="ev"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${accent}${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${r.party} ${tr('seats')} · <b style="color:${r.paid?'#4f7a43':(SC[r.status]||'var(--muted)')};">${r.paid?(lang==='bg'?'платена':'paid'):(SL[r.status]||r.status)}</b></div>${priceLine}${cancelBtn}</div>`;
 }
 // заглавие на дата: „петък, 6 юни 2026"
 function resDayLabel(iso){
