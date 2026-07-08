@@ -1865,8 +1865,10 @@ function resSections(res){
   if(!res.length)return emptyState(EICON.ticket,tr('noRes'),lang==='bg'?'Запази билет за събитие и ще се появи тук.':'Book a ticket and it will show up here.',lang==='bg'?'Разгледай събития':'Browse events',"go('events')");
   const t=new Date();
   const todayIso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
-  const upcoming=res.filter(r=>!r.date||r.date>=todayIso).sort((a,b)=>((a.date||'9999-99-99')<(b.date||'9999-99-99'))?-1:1);
-  const past=res.filter(r=>r.date&&r.date<todayIso).sort((a,b)=>a.date<b.date?1:-1);
+  // за многодневни събития гледаме КРАЙНАТА дата на събитието (ако е свързано), не началната на резервацията
+  const resEnd=r=>{const ev=r.event_id?EVENTS.find(x=>x.id===r.event_id):null;return (ev&&(ev.end_date||ev.date))||r.date||'';};
+  const upcoming=res.filter(r=>{const d=resEnd(r);return !d||d>=todayIso;}).sort((a,b)=>((a.date||'9999-99-99')<(b.date||'9999-99-99'))?-1:1);
+  const past=res.filter(r=>{const d=resEnd(r);return d&&d<todayIso;}).sort((a,b)=>a.date<b.date?1:-1);
   let h;
   if(upcoming.length){
     const collapseAll=upcoming.length>1?`<div style="display:flex;justify-content:flex-end;margin-bottom:4px;"><span onclick="toggleAllRes(this)" style="font-size:12px;color:var(--gold);cursor:pointer;">${lang==='bg'?'свий всички':'collapse all'}</span></div>`:'';
