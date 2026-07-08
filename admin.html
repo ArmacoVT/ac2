@@ -566,7 +566,11 @@ function clearMedia(which){
   if(which==='img')keep.dataset.img='';else keep.dataset.vid='';
   alert(which==='img'?'Снимката ще се премахне при запис.':'Видеото ще се премахне при запис.');
 }
+let _savingEvent=false;
 async function saveEvent(){
+  if(_savingEvent)return; _savingEvent=true;
+  try{
+  const eid=editId; // запомняме кое се редактира (да не се загуби)
   const title=document.getElementById('f_title').value.trim();
   if(!title){alert('Въведи заглавие');return;}
   // качване на снимка/видео, ако са избрани
@@ -598,9 +602,10 @@ async function saveEvent(){
     live_auto:document.getElementById('f_auto')?document.getElementById('f_auto').checked:false,
     stream_gated:document.getElementById('f_gated')?document.getElementById('f_gated').checked:false,
     aud:draftAud.includes('all')?'all':draftAud.slice()};
-  const r=editId?await DB.updateEvent(editId,obj):await DB.addEvent(obj);
+  const r=eid?await DB.updateEvent(eid,obj):await DB.addEvent(obj);
   if(r&&r.error){alert('Събитието не се записа: '+r.error.message);return;}
   editId=null;draftAud=['all'];await refresh();render();window.scrollTo(0,0);
+  } finally { _savingEvent=false; }
 }
 
 let resFilter='all';
@@ -669,10 +674,17 @@ function toast(msg,bad){
 }
 async function delRes(id){
   if(!confirm('Да изтрия ли тази резервация? Действието е необратимо.'))return;
+  const rr=RES.find(x=>x.id===id);
   const r=await DB.deleteReservation(id);
   if(r&&r.error){alert('Грешка при изтриване: '+r.error.message);return;}
-  RES=RES.filter(x=>x.id!==id);
-  const c=document.getElementById('rescard_'+id);if(c)c.remove();
+  // проверяваме реално дали се изтри (RLS може тихо да върне 0 реда)
+  try{
+    const fresh=await DB.listReservations();
+    if(fresh.some(x=>x.id===id)){ RES=fresh; render(); alert('Резервацията НЕ се изтри (проблем с права в базата). Кажи ми — ще проверя политиките.'); return; }
+    RES=fresh;
+  }catch(e){ RES=RES.filter(x=>x.id!==id); }
+  try{await DB.logAudit('reservation_deleted',(rr&&(rr.name||rr.who||rr.place))||'',(rr&&rr.date)||'');}catch(e){}
+  render();
   toast('Резервацията е изтрита');
 }
 async function setRes(id,st){
