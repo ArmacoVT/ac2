@@ -654,7 +654,8 @@ function formatPage(id){
     </div>`;
 }
 // има ли вече активна заявка (чакаща или одобрена) за това събитие
-const hasBooking=id=>RES.some(r=>r.event_id===id&&(!r.status||r.status==='requested'||r.status==='confirmed'));
+const isMine=r=>!!(user&&r.user_id===user.id); // само МОИТЕ резервации (важно за админ, който вижда всички)
+const hasBooking=id=>RES.some(r=>isMine(r)&&r.event_id===id&&(!r.status||r.status==='requested'||r.status==='confirmed'||r.status==='pending_payment'));
 let justBooked=null; // за bounce ефекта на бутона след заявка
 let TAKEN={}; // заети места по събитие (само число)
 // свободни места: null = без лимит; иначе оставащи
@@ -970,7 +971,7 @@ function streamEmbed(u){
   if((m=u.match(/(?:player\.)?kick\.com\/([A-Za-z0-9_]{2,30})/)))return 'https://player.kick.com/'+m[1]+'?autoplay=true';
   return u;
 }
-function hasConfirmedTicket(e){return RES.some(r=>r.event_id===e.id&&r.status==='confirmed');}
+function hasConfirmedTicket(e){return RES.some(r=>isMine(r)&&r.event_id===e.id&&r.status==='confirmed');}
 function streamGated(e){return !!e.stream_gated;}
 function liveView(){
   const liveOnes=EVENTS.filter(e=>canAccess(e)&&isLiveNow(e));
@@ -979,7 +980,7 @@ function liveView(){
   if(liveOnes.length){
     body=liveOnes.map(e=>{
       const locked=streamGated(e)&&!hasConfirmedTicket(e);
-      const pending=RES.some(r=>r.event_id===e.id&&r.status==='pending');
+      const pending=RES.some(r=>isMine(r)&&r.event_id===e.id&&(r.status==='requested'||r.status==='pending_payment'));
       const lockMsg=pending
         ? (lang==='bg'?'Заявката ти за това събитие чака потвърждение от клуба. Щом я одобрят, предаването ще тръгне тук автоматично.':'Your request for this event is awaiting club approval. Once approved, the stream will start here automatically.')
         : e.price>0
@@ -1013,7 +1014,7 @@ function liveView(){
       <div class="m" style="margin-top:6px;">${tr('noLiveSub')}</div></div>`;
     if(up){
       const willStream=!!up.stream_url||up.format==='online';
-      const upPending=RES.some(r=>r.event_id===up.id&&r.status==='pending');
+      const upPending=RES.some(r=>isMine(r)&&r.event_id===up.id&&(r.status==='requested'||r.status==='pending_payment'));
       const upConfirmed=hasConfirmedTicket(up);
       let cta='';
       if(willStream&&streamGated(up)&&!upConfirmed){
@@ -1669,7 +1670,7 @@ function profile(){
   const m=MEMBERS.find(x=>x.id===user.membership);
   const seats=m?m.seats:1;
   const sev=saved.map(id=>EVENTS.find(e=>e.id===id)).filter(Boolean).filter(e=>!isPast(e));
-  const res=RES;
+  const res=RES.filter(isMine);
   const active=membershipActive();
   const untilLine=user.membership_until?`<div style="text-align:center;font-size:12px;margin-top:6px;color:${active?'var(--mid)':'#b5532f'};">${active?tr('memberUntil'):tr('memberExpired')} ${euDate(user.membership_until)}</div>`:'';
   const expiredBanner=(!active&&user.membership_until)?`<div class="ev" style="border:1px solid #b5532f;margin-bottom:12px;"><h3 style="font-size:15px;color:#b5532f;">${tr('memberExpiredTitle')}</h3><div class="m" style="color:#b5532f;margin-top:3px;">${tr('memberExpiredMsg')}</div></div>`:'';
@@ -2005,7 +2006,7 @@ async function signout(){await DB.signOut();user=null;saved=[];RES=[];go('');}
 function notifCount(){
   try{
     const seen=JSON.parse(localStorage.getItem('acac_seen_res')||'{}');
-    return RES.filter(r=>(r.status==='confirmed'||r.status==='declined')&&seen[r.id]!==r.status).length;
+    return RES.filter(r=>isMine(r)&&(r.status==='confirmed'||r.status==='declined')&&seen[r.id]!==r.status).length;
   }catch(e){return 0;}
 }
 // кои резервации са с НОВ (невиждан) статус — за подчертаване в профила
@@ -2013,14 +2014,14 @@ let newResSet={};
 function computeNewRes(){
   const s={};
   try{const seen=JSON.parse(localStorage.getItem('acac_seen_res')||'{}');
-    RES.forEach(r=>{if((r.status==='confirmed'||r.status==='declined')&&seen[r.id]!==r.status)s[r.id]=true;});}catch(e){}
+    RES.forEach(r=>{if(isMine(r)&&(r.status==='confirmed'||r.status==='declined')&&seen[r.id]!==r.status)s[r.id]=true;});}catch(e){}
   return s;
 }
 // отбелязва всичко като видяно (при отваряне на профила)
 function markResSeen(){
   try{
     const seen=JSON.parse(localStorage.getItem('acac_seen_res')||'{}');
-    RES.forEach(r=>{seen[r.id]=r.status;});
+    RES.forEach(r=>{if(isMine(r))seen[r.id]=r.status;});
     localStorage.setItem('acac_seen_res',JSON.stringify(seen));
   }catch(e){}
   appBadge();
