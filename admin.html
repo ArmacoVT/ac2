@@ -637,7 +637,7 @@ function resView(){
   }
   let rows=shown.map(r=>{
     const st=r.status||'requested';
-    const badge=st==='confirmed'?'<span class="pill audAll">потвърдена</span>':st==='declined'?'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>':'<span class="pill">чакаща</span>';
+    const badge=st==='confirmed'?'<span class="pill audAll">потвърдена</span>':st==='declined'?'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>':st==='cancelled'?'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отменена от член</span>':st==='pending_payment'?'<span class="pill">чака плащане</span>':'<span class="pill">чакаща</span>';
     const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null;
     const cap=ev&&ev.capacity?` ${seatsInfo(ev)}`:'';
     const nm=r.name||r.who||'член';
@@ -652,8 +652,10 @@ function resView(){
       : st==='declined'
       ? `<button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Одобри</button>
          <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`
-      : `<button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button>
-         <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`;
+      : st==='confirmed'
+      ? `<button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button>
+         <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`
+      : `<button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`;
     return `<div class="card" id="rescard_${r.id}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
         <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}</div>
