@@ -89,7 +89,7 @@ function render(){
   const badge=DB.live?`<span class="badge live">Свързан Supabase</span>`:`<span class="badge">Демо режим</span>`;
   let h=`<div class="wrap">
     <div class="top"><div class="b">AC² · Админ панел<br><small>American College Arcus Club</small></div>
-      <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
+      <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn ghost sm" id="refreshBtn" onclick="adminRefresh()">↻ Опресни</button><button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
     <div class="tabs">
       <button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>
       <button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации${tabBadge(RES.filter(r=>!r.status||r.status==='requested').length)}</button>
@@ -649,7 +649,11 @@ function resView(){
       ? `<button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Потвърди</button>
          <button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button>
          <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`
-      : `<button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`;
+      : st==='declined'
+      ? `<button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Одобри</button>
+         <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`
+      : `<button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button>
+         <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`;
     return `<div class="card" id="rescard_${r.id}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
         <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}</div>
@@ -671,6 +675,12 @@ function toast(msg,bad){
   t.style.background=bad?'#b05b3f':'#3f6b5e';
   t.textContent=msg;t.style.opacity='1';
   clearTimeout(t._h);t._h=setTimeout(()=>{t.style.opacity='0';},3500);
+}
+async function adminRefresh(){
+  const b=document.getElementById('refreshBtn'); if(b){b.disabled=true;b.textContent='↻ …';}
+  try{await refresh();}catch(e){}
+  render();
+  toast('Обновено');
 }
 async function delRes(id){
   if(!confirm('Да изтрия ли тази резервация? Действието е необратимо.'))return;
