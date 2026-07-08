@@ -1254,19 +1254,14 @@ function toggleMem(i){const b=document.getElementById('mb'+i),c=document.getElem
   const open=b.style.display==='block';b.style.display=open?'none':'block';c.textContent=open?'+':'−';}
 // кои категории може да предлага даден член (своето ниво и по-надолу; корпоративен само корпоративен)
 function allowedNominateTargets(prop){
-  if(prop==='founder')return ['founder','founding','club','alumni','corporate']; // основателят може всеки тип
-  if(prop==='corporate')return ['corporate']; // корпоративен → само корпоративен
-  const rank={founding:3,club:2,alumni:1};
-  const r=rank[prop]||0;
-  if(!r)return []; // guest/без членство не предлага
-  // своето ниво и по-надолу сред индивидуалните + винаги може и фирма
-  return ['founding','club','alumni'].filter(t=>rank[t]<=r).concat('corporate');
+  if(prop==='founder')return ['founder','founding','club','alumni','corporate']; // Founder → всяка категория
+  if(prop==='founding')return ['founding']; // Founding member → само Founding member
+  return []; // всички останали не могат да предлагат
 }
 // може ли този член изобщо да предлага
 function canNominate(){
   if(!user||!membershipActive())return false;
-  if(user.membership==='corporate')return !!(user.company_id&&user.company_id===user.id); // само основният фирмен профил
-  return allowedNominateTargets(user.membership).length>0;
+  return allowedNominateTargets(user.membership).length>0; // само Founder и Founding member
 }
 // форма за кандидатстване / предлагане на член
 function appForm(mode){
@@ -1313,6 +1308,7 @@ async function submitApp(nominate){
   if(nominate&&!canNominate()){toast(lang==='bg'?'Нямате възможност да предлагате членове':'You cannot propose members');return;}
   const v=id=>(document.getElementById(id)?.value||'').trim();
   const m=v('ap_mem'),name=v('ap_name'),email=v('ap_email'),phone=v('ap_phone'),about=v('ap_about');
+  if(nominate&&!allowedNominateTargets(user&&user.membership).includes(m)){toast(lang==='bg'?'Нямате право да предлагате тази категория':'You cannot propose this category');return;}
   if(!name){toast(lang==='bg'?'Въведете име':'Enter a name');return;}
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast(lang==='bg'?'Въведете валиден имейл':'Enter a valid email');return;}
   if(!phone){toast(lang==='bg'?'Въведете телефон за контакт':'Enter a contact phone');return;}
