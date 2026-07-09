@@ -1329,7 +1329,7 @@ function appForm(mode){
   const nominate=mode==='nominate';
   const title=nominate?(bg?'Предложи член':'Propose a member'):(bg?'Кандидатствай за членство':'Apply for membership');
   if(nominate&&!canNominate())return topbar(title)+`<div class="page"><div class="ev"><h3 style="font-size:15px;">${bg?'Нямате възможност да предлагате членове':'You cannot propose members'}</h3><div class="m" style="margin-top:3px;">${bg?'Свържете се с клуба за повече информация.':'Please contact the club for more information.'}</div></div></div>`;
-  const allow=nominate?allowedNominateTargets(user&&user.membership):['founding','club','alumni','corporate'];
+  const allow=nominate?allowedNominateTargets(user&&user.membership):['club','alumni','corporate'];
   const memOpts=MEMBERS.filter(m=>allow.includes(m.id)).map(m=>`<option value="${m.id}">${m.t}</option>`).join('');
   const back=nominate?`<span class="back" onclick="go('profile')">‹</span>`:`<span class="back" onclick="location.hash='';route()">‹</span>`;
   const top=`<div class="topbar"><div style="display:flex;align-items:center;gap:6px;">${back}<span style="color:var(--cream);font-size:14px;letter-spacing:1px;">${title}</span></div>
@@ -1369,6 +1369,7 @@ async function submitApp(nominate){
   const v=id=>(document.getElementById(id)?.value||'').trim();
   const m=v('ap_mem'),name=v('ap_name'),email=v('ap_email'),phone=v('ap_phone'),about=v('ap_about');
   if(nominate&&!allowedNominateTargets(user&&user.membership).includes(m)){toast(lang==='bg'?'Нямате право да предлагате тази категория':'You cannot propose this category');return;}
+  if(!nominate&&!['club','alumni','corporate'].includes(m)){toast(lang==='bg'?'Тази категория е само с покана':'This category is by invitation only');return;}
   if(!name){toast(lang==='bg'?'Въведете име':'Enter a name');return;}
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast(lang==='bg'?'Въведете валиден имейл':'Enter a valid email');return;}
   if(!phone){toast(lang==='bg'?'Въведете телефон за контакт':'Enter a contact phone');return;}
