@@ -62,6 +62,16 @@
 <script>
 const MEMBERS=[{id:'founder',t:'Founder'},{id:'founding',t:'Founding Member'},{id:'club',t:'Club Member'},{id:'alumni',t:'Alumni Member'},{id:'corporate',t:'Corporate Member'}];
 const FORMATS=['culture','cinema','table','music','conversation','community','theater','online'];
+const EVTAGS=[
+  {id:'lang_bg',g:'Език',t:'На български'},{id:'lang_en',g:'Език',t:'На английски'},{id:'lang_bi',g:'Език',t:'Двуезично / с превод'},
+  {id:'acc_wheel',g:'Достъпност',t:'Достъпно с количка'},{id:'acc_blind',g:'Достъпност',t:'За незрящи'},
+  {id:'acc_deaf',g:'Достъпност',t:'За глухи (субтитри)'},{id:'acc_hearing',g:'Достъпност',t:'Асистивно слушане'},
+  {id:'aud_18',g:'Публика',t:'Само 18+'},{id:'aud_family',g:'Публика',t:'Семейно'},{id:'aud_limited',g:'Публика',t:'Ограничени места'},
+  {id:'set_outdoor',g:'Обстановка',t:'На открито'},{id:'set_formal',g:'Обстановка',t:'Дрес код: официален'},
+  {id:'set_smart',g:'Обстановка',t:'Дрес код: smart casual'},{id:'set_nophoto',g:'Обстановка',t:'Без снимки'},
+  {id:'set_parking',g:'Обстановка',t:'Паркинг на място'},
+  {id:'cat_dinner',g:'Кетъринг',t:'Вечеря включена'},{id:'cat_drinks',g:'Кетъринг',t:'Коктейл / напитки'},{id:'cat_veg',g:'Кетъринг',t:'Веге / веган опции'}
+];
 const FMT_LABEL={culture:'AC² Culture',cinema:'AC² Cinema',table:'AC² Table',music:'AC² Music',conversation:'AC² Conversation',community:'AC² Community',theater:'AC² Theater',online:'AC² Online'};
 const VENUES=['Ресторант','Камерна зала','Онлайн','Изложбено фоайе','VIP зала'];
 const memName=id=>(MEMBERS.find(m=>m.id===id)||{t:id}).t;
@@ -376,7 +386,15 @@ function formView(){
   return `<div class="card" style="border-color:var(--gold-soft);">
     <h3>${e?'Редакция на събитие':'Ново събитие'}</h3>
     <label>Заглавие</label><input id="f_title" value="${esc(e?e.title:'')}" placeholder="Напр. Гастрономическа вечер"/>
-    <div class="row2"><div><label>Формат</label><select id="f_format">${fmtOpts}</select></div>
+    <label>Описание (по желание)</label><textarea id="f_desc" rows="3" placeholder="Кратко описание — показва се под заглавието на картата.">${esc(e?(e.description||''):'')}</textarea>
+    <label style="margin-top:10px;">Етикети (отметни само относимите)</label>
+    <div id="f_tags" style="border:0.5px solid #e7d9c0;border-radius:10px;padding:10px 12px;">
+      ${[...new Set(EVTAGS.map(t=>t.g))].map(g=>`<div style="margin-bottom:8px;">
+        <div class="muted" style="font-size:11px;letter-spacing:1px;margin-bottom:4px;">${g.toUpperCase()}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">${EVTAGS.filter(t=>t.g===g).map(t=>`<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" id="f_tag_${t.id}" data-tag="${t.id}" ${(e&&Array.isArray(e.tags)&&e.tags.includes(t.id))?'checked':''} style="width:auto;"/> ${t.t}</label>`).join('')}</div>
+      </div>`).join('')}
+    </div>
+    <div class="row2" style="margin-top:10px;"><div><label>Формат</label><select id="f_format">${fmtOpts}</select></div>
       <div><label>Място / зала</label><select id="f_place">${venOpts}</select></div></div>
     <div class="row2"><div><label>Начална дата</label><input id="f_date" readonly placeholder="дд.мм.гггг" value="${e&&e.date?isoToBg(e.date):''}" data-iso="${esc(e?(e.date||''):'')}" onclick="openCal('f_date')" style="cursor:pointer;"/></div>
       <div><label>Крайна дата (по желание)</label><input id="f_end_date" readonly placeholder="дд.мм.гггг" value="${e&&e.end_date?isoToBg(e.end_date):''}" data-iso="${esc(e?(e.end_date||''):'')}" onclick="openCal('f_end_date')" style="cursor:pointer;"/></div></div>
@@ -445,7 +463,8 @@ function grabForm(){
     offer_physical:!!(document.getElementById('f_offer_phys')&&document.getElementById('f_offer_phys').checked),
     offer_online:!!(document.getElementById('f_offer_online')&&document.getElementById('f_offer_online').checked),
     offer_archive:!!(document.getElementById('f_offer_archive')&&document.getElementById('f_offer_archive').checked),
-    stream:g('f_stream'),live:live?live.checked:false,auto:auto?auto.checked:false,gated:gated?gated.checked:false,bw};
+    stream:g('f_stream'),live:live?live.checked:false,auto:auto?auto.checked:false,gated:gated?gated.checked:false,
+    desc:g('f_desc'),tags:[...document.querySelectorAll('#f_tags input[data-tag]:checked')].map(c=>c.dataset.tag),bw};
 }
 // Избирачка за час: 24-часов (00–23) + минути през 5; пази стойност HH:MM в скрито поле
 function timePickerHTML(id,val){
@@ -478,6 +497,8 @@ function putForm(v){
   const s=(id,val)=>{const el=document.getElementById(id);if(el&&val!=null)el.value=val;};
   s('f_title',v.title);s('f_format',v.format);s('f_place',v.place);setTimeField('f_time',v.time);setTimeField('f_ends',v.ends);
   s('f_cap',v.cap);s('f_tcap',v.tcap);s('f_price',v.price);s('f_price_online',v.price_online);s('f_price_archive',v.price_archive);s('f_stream',v.stream);
+  s('f_desc',v.desc);
+  if(Array.isArray(v.tags))document.querySelectorAll('#f_tags input[data-tag]').forEach(c=>{c.checked=v.tags.includes(c.dataset.tag);});
   const _op=document.getElementById('f_offer_phys');if(_op)_op.checked=!!v.offer_physical;
   const _oo=document.getElementById('f_offer_online');if(_oo)_oo.checked=!!v.offer_online;
   const _oa=document.getElementById('f_offer_archive');if(_oa)_oa.checked=!!v.offer_archive;
@@ -585,7 +606,10 @@ async function saveEvent(){
   const dIso=document.getElementById('f_date').dataset.iso||'';
   const edIso=document.getElementById('f_end_date').dataset.iso||'';
   if(edIso&&dIso&&edIso<dIso){alert('Крайната дата е преди началната');return;}
-  const obj={title,format:document.getElementById('f_format').value,place:document.getElementById('f_place').value.trim(),
+  const obj={title,
+    description:(document.getElementById('f_desc')?document.getElementById('f_desc').value.trim():''),
+    tags:[...document.querySelectorAll('#f_tags input[data-tag]:checked')].map(c=>c.dataset.tag),
+    format:document.getElementById('f_format').value,place:document.getElementById('f_place').value.trim(),
     date:dIso,end_date:edIso,time:document.getElementById('f_time').value.trim(),ends:document.getElementById('f_ends').value.trim(),
     capacity:parseInt(document.getElementById('f_cap').value||'0',10),
     table_capacity:parseInt(document.getElementById('f_tcap').value||'0',10),
