@@ -1052,7 +1052,7 @@ function liveView(){
               <div class="playbtn">▶</div>
               <div class="pl">${lang==='bg'?'Докосни, за да гледаш':'Tap to watch'}</div>
             </div></div>
-          <div class="row" style="margin-top:10px;"><a class="chip ghost" href="${esc(e.stream_url)}" target="_blank" rel="noopener">${tr('openExt')}</a></div>`;
+          ${streamGated(e)?'':`<div class="row" style="margin-top:10px;"><a class="chip ghost" href="${esc(e.stream_url)}" target="_blank" rel="noopener">${tr('openExt')}</a></div>`}`;
       return `<div class="ev" style="border-color:#d98b6e;">
         <div class="t" style="color:#d98b6e;">● ${tr('liveTag')} · ${e.format}</div>
         <h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>
@@ -1177,7 +1177,14 @@ function mountYouTube(holderId,url,live){
         playerVars:{autoplay:1,playsinline:inApp?0:1,rel:0,modestbranding:1,fs:1},
         events:{
           onReady:function(ev){try{ev.target.playVideo();}catch(_){}},
-          onStateChange:live?function(ev){ // живо: при пауза (напр. след изход от цял екран) продължаваме веднага
+          onStateChange:live?function(ev){
+            // 0 = ENDED → предаването е приключило: НЕ го пускаме отначало
+            if(ev&&ev.data===0){
+              const h=document.getElementById(holderId);
+              if(h)h.innerHTML=`<div style="text-align:center;padding:26px 14px;margin-top:12px;border-radius:12px;background:var(--surface2);color:var(--muted);font-size:14px;">${lang==='bg'?'Предаването приключи.':'The broadcast has ended.'}</div>`;
+              livePlaying=null; return;
+            }
+            // 2 = PAUSED (напр. след изход от цял екран) → продължаваме веднага
             if(ev&&ev.data===2){try{ev.target.playVideo();}catch(_){}setTimeout(function(){try{ev.target.playVideo();}catch(_){}},120);}
           }:undefined
         }
