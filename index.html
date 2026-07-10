@@ -2396,11 +2396,20 @@ async function promptInitialPassword(){
   const p=await askNewPassword(isInvite?tr('setPassTitle'):tr('newPassTitle'));
   if(p){const r=await DB.updatePassword(p);toast(r&&r.error?r.error.message:(isInvite?tr('passSet'):tr('passChanged')));
     if(!(r&&r.error)){try{const u=await DB.getUser();if(u&&u.email)saveBioCreds(u.email,p);}catch(e){}}}
-  // при покана питаме и за име
+  // при покана питаме за име и телефон САМО ако кандидатурата не ги е донесла
   if(isInvite){
-    try{user=await DB.getUser();}catch(e){}
+    // Профилът се дописва от Edge функцията малко след поканата (име, телефон,
+    // членство). Ако попитаме веднага, виждаме празен профил и досаждаме на
+    // човека за неща, които вече е попълнил. Затова изчакваме да се появят.
+    for(let i=0;i<4;i++){
+      try{const u=await DB.getUser(); if(u)user=u;}catch(e){}
+      if(user&&user.full_name&&user.phone)break;
+      await new Promise(r=>setTimeout(r,600));
+    }
     if(user&&!user.full_name){
-      const nm=await askName(tr('yourName'),user.username||'');
+      // подсказваме с username само ако той не е просто частта преди @
+      const guess=(user.username&&user.email&&user.username!==user.email.split('@')[0])?user.username:'';
+      const nm=await askName(tr('yourName'),guess);
       if(nm){await DB.updateProfileName(nm,true);user.full_name=nm;route();}
     }
     if(user)await ensurePhone();
