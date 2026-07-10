@@ -554,6 +554,15 @@ const app=document.getElementById('app');
 const tr=k=>T[lang][k];
 const tx=o=>o[lang];
 const esc=s=>(''+(s??'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+// Телефон: НЕ проверяваме дали е български — чуждестранните членове трябва да минават.
+// Позволени знаци: цифри, интервал, тире, точка, скоби и водещ +. Между 7 и 15 цифри (E.164).
+function validPhone(v){
+  const s=(v||'').trim();
+  if(!/^\+?[0-9 ()\-.]+$/.test(s))return false;
+  const d=s.replace(/\D/g,'');
+  return d.length>=7&&d.length<=15;
+}
 function go(h){location.hash=h;}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1900);}
 function showStamp(){
@@ -1402,7 +1411,7 @@ function appForm(mode){
     <select id="ap_mem" onchange="appToggle()">${memOpts}</select>
     <label id="ap_nameL">${bg?'Име':'Name'} *</label><input id="ap_name"/>
     <label>${bg?'Имейл':'Email'} *</label><input id="ap_email" type="email" autocapitalize="none"/>
-    <label>${bg?'Телефон':'Phone'} *</label><input id="ap_phone" type="tel" placeholder="+359 ..."/>
+    <label>${bg?'Телефон':'Phone'} *</label><input id="ap_phone" type="tel" placeholder="${bg?'Въведете телефонен номер':'Enter phone number'}"/>
     <div id="ap_profBox"><label>${bg?'Професия':'Profession'}</label><input id="ap_prof"/></div>
     <div id="ap_alumniBox" style="display:none;"><label>${bg?'Връзка с Американски колеж Аркус':'Connection to American College Arcus'} *</label>
       <div class="selrow" id="ap_alumniChips">${(bg?['Родител на настоящ ученик','Родител на възпитаник','Възпитаник','Учител / служител / партньор','Приятел на Arcus общността','Поканен от настоящ член']:['Parent of a current student','Parent of an alumnus','Alumnus','Teacher / staff / partner','Friend of the Arcus community','Invited by a current member']).map(o=>`<button type="button" class="chip" data-v="${o}" onclick="chipToggle(this)">${o}</button>`).join('')}</div>
@@ -1436,6 +1445,7 @@ async function submitApp(nominate){
   if(!name){toast(lang==='bg'?'Въведете име':'Enter a name');return;}
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast(lang==='bg'?'Въведете валиден имейл':'Enter a valid email');return;}
   if(!phone){toast(lang==='bg'?'Въведете телефон за контакт':'Enter a contact phone');return;}
+  if(!validPhone(phone)){toast(lang==='bg'?'Въведете валиден телефонен номер':'Enter a valid phone number');return;}
   const interests=v('ap_interests');
   if(!interests){toast(lang==='bg'?'Попълнете интереси':'Fill in interests');return;}
   if(m==='corporate'){
@@ -1523,7 +1533,7 @@ function reserve(q){
     <div class="qrow" style="border:none;padding:2px 0 0;"><span style="color:var(--muted);font-size:13px;">${lang==='bg'?'Места':'Seats'}</span><div class="qstep"><button type="button" onclick="resQty(-1,${seats})">−</button><b id="r_party_lbl">1</b><button type="button" onclick="resQty(1,${seats})">+</button></div></div>
     <input id="r_party" type="hidden" value="1"/>
     <label>${tr('contactEmail')} *</label><input id="r_email" type="email" autocapitalize="none" value="${user?esc(user.email||''):''}"/>
-    <label>${tr('contactPhone')} *</label><input id="r_phone" type="tel" placeholder="+359 ..."/>
+    <label>${tr('contactPhone')} *</label><input id="r_phone" type="tel" placeholder="${lang==='bg'?'Въведете телефонен номер':'Enter phone number'}"/>
     <div id="algwrap" style="display:${preV==='restaurant'?'':'none'};">
       <label>${lang==='bg'?'Алергени / хранителни ограничения':'Allergens / dietary'} *</label>
       <div class="selrow" id="algsel">${(lang==='bg'?['Нямам алергии','Глутен','Мляко/лактоза','Яйца','Ядки','Фъстъци','Риба','Ракообразни','Соя','Сусам','Целина','Синап','Сулфити']:['No allergies','Gluten','Milk/lactose','Eggs','Tree nuts','Peanuts','Fish','Crustaceans','Soy','Sesame','Celery','Mustard','Sulphites']).map((a,i)=>`<button type="button" class="chip" data-alg="${esc(a)}"${i===0?' data-none="1"':''} onclick="toggleAlg(this)">${a}</button>`).join('')}</div>
@@ -1604,6 +1614,7 @@ async function sendRes(seats){
   if(n>seats){toast((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast(tr('reqEmail'));return;}
   if(!phone){toast(tr('reqPhone'));return;}
+  if(!validPhone(phone)){toast(lang==='bg'?'Въведете валиден телефонен номер':'Enter a valid phone number');return;}
   let fullNote=note;
   if(venue==='restaurant'){
     const algOn=[...document.querySelectorAll('#algsel .chip.on')];
@@ -2059,13 +2070,13 @@ function askPhone(initial,required){
     const ov=document.createElement('div');ov.className='pwov';
     ov.innerHTML=`<div class="pwcard"><h3>${bg?'Телефон за контакт':'Contact phone'}</h3>
       <p style="color:var(--muted);font-size:12px;margin:0 0 8px;">${bg?'Нужен е за връзка с теб от клуба.':'Needed so the club can reach you.'}</p>
-      <input id="ph1" type="tel" value="${esc(initial||'')}" placeholder="+359 ..."/>
+      <input id="ph1" type="tel" value="${esc(initial||'')}" placeholder="${bg?'Въведете телефонен номер':'Enter phone number'}"/>
       <div class="pwerr" id="pherr"></div>
       <button class="btn" id="phok">${tr('pwSave')}</button>
       ${required?'':`<button class="btn btn-ghost" id="phcancel">${tr('cancelBtn')}</button>`}</div>`;
     document.body.appendChild(ov);
     ov.querySelector('#phok').onclick=()=>{const val=ov.querySelector('#ph1').value.trim();
-      if(val.replace(/\D/g,'').length<6){ov.querySelector('#pherr').textContent=bg?'Въведете валиден телефон':'Enter a valid phone';return;}
+      if(!validPhone(val)){ov.querySelector('#pherr').textContent=bg?'Въведете валиден телефонен номер':'Enter a valid phone number';return;}
       ov.remove();res(val);};
     const c=ov.querySelector('#phcancel');if(c)c.onclick=()=>{ov.remove();res(null);};
   });

@@ -1012,7 +1012,7 @@ function peopleView(){
         <div><button class="btn ghost sm" onclick="changeName('${p.id}')">Запази името</button></div>
       </div>
       <div class="row2" style="margin-top:8px;align-items:center;">
-        <div><label style="margin-bottom:4px;">Телефон</label><input id="phf_${p.id}" value="${esc(p.phone||'')}" placeholder="+359 ..."/></div>
+        <div><label style="margin-bottom:4px;">Телефон</label><input id="phf_${p.id}" value="${esc(p.phone||'')}" placeholder="Въведете телефонен номер"/></div>
         <div style="display:flex;flex-direction:column;gap:6px;"><button class="btn ghost sm" onclick="savePhone('${p.id}')">Запази телефона</button>
           <button class="btn ghost sm" onclick="requestPhone('${p.id}')">Поискай нов телефон</button></div>
       </div>
