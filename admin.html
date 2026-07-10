@@ -669,6 +669,28 @@ async function saveEvent(){
 
 let resFilter='all';
 function setResFilter(id){resFilter=id;render();}
+
+// Бутоните и баджът се смятат на ЕДНО място. Преди setRes() пренаписваше
+// бутоните ръчно и оставяше само „Изтрий" — затова отказана по погрешка
+// резервация не можеше да се одобри обратно, макар правилото да съществуваше.
+function resActs(id,st){
+  const del=`<button class="btn ghost sm" onclick="delRes('${id}')">Изтрий</button>`;
+  const mail=s=>`<button class="btn ghost sm" onclick="resendMail('${id}','${s}')">✉ Изпрати отново</button>`;
+  if(st==='requested')return `<button class="btn ok sm" onclick="setRes('${id}','confirmed')">Потвърди</button>
+    <button class="btn no sm" onclick="setRes('${id}','declined')">Откажи</button>${del}`;
+  if(st==='declined')return `<button class="btn ok sm" onclick="setRes('${id}','confirmed')">Одобри</button>${mail('declined')}${del}`;
+  if(st==='confirmed')return `<button class="btn no sm" onclick="setRes('${id}','declined')">Откажи</button>${mail('confirmed')}${del}`;
+  if(st==='cancelled')return del;              // членът сам е отказал
+  if(st==='pending_payment')return del;        // чака плащане — не пипаме
+  return del;
+}
+function resBadge(st){
+  if(st==='confirmed')return '<span class="pill audAll">потвърдена</span>';
+  if(st==='declined')return '<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>';
+  if(st==='cancelled')return '<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отменена от член</span>';
+  if(st==='pending_payment')return '<span class="pill">чака плащане</span>';
+  return '<span class="pill">чакаща</span>';
+}
 function resView(){
   if(!RES.length)return `<h2>Резервации</h2><p class="empty">Все още няма запитвания за резервация.</p>`;
   // групиране по събитие
@@ -696,7 +718,7 @@ function resView(){
   }
   let rows=shown.map(r=>{
     const st=r.status||'requested';
-    const badge=st==='confirmed'?'<span class="pill audAll">потвърдена</span>':st==='declined'?'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>':st==='cancelled'?'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отменена от член</span>':st==='pending_payment'?'<span class="pill">чака плащане</span>':'<span class="pill">чакаща</span>';
+    const badge=resBadge(st);
     const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null;
     const cap=ev&&ev.capacity?` ${seatsInfo(ev)}`:'';
     const nm=r.name||r.who||'член';
@@ -704,19 +726,7 @@ function resView(){
     const em=r.email||(info&&info.email)||'';
     const ph=r.phone||(info&&info.phone)||'';
     const contact=[em,ph].filter(Boolean).map(esc).join(' · ');
-    const acts=st==='requested'
-      ? `<button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Потвърди</button>
-         <button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button>
-         <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`
-      : st==='declined'
-      ? `<button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Одобри</button>
-         <button class="btn ghost sm" onclick="resendMail('${r.id}','declined')">✉ Изпрати отново</button>
-         <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`
-      : st==='confirmed'
-      ? `<button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button>
-         <button class="btn ghost sm" onclick="resendMail('${r.id}','confirmed')">✉ Изпрати отново</button>
-         <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`
-      : `<button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`;
+    const acts=resActs(r.id,st);
     return `<div class="card" id="rescard_${r.id}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
         <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}</div>
@@ -766,9 +776,10 @@ async function setRes(id,st){
   // обновяваме само картата — без пречертаване, без скок
   const rr=RES.find(x=>x.id===id);if(rr)rr.status=st;
   DB.logAudit(st==='confirmed'?'reservation_confirmed':'reservation_declined',(rr&&(rr.name||rr.who||rr.place))||'',(rr&&rr.date)||'');
-  const badge=st==='confirmed'?'<span class="pill audAll">потвърдена</span>':'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>';
-  const be=document.getElementById('resbadge_'+id);if(be)be.innerHTML=badge;
-  const ae=document.getElementById('resact_'+id);if(ae)ae.innerHTML=`<button class="btn ghost sm" onclick="delRes('${id}')">Изтрий</button>`;
+  const ev=rr&&rr.event_id?EVENTS.find(e=>e.id===rr.event_id):null;
+  const cap=ev&&ev.capacity?` ${seatsInfo(ev)}`:'';
+  const be=document.getElementById('resbadge_'+id);if(be)be.innerHTML=resBadge(st)+cap;
+  const ae=document.getElementById('resact_'+id);if(ae)ae.innerHTML=resActs(id,st);
   if(st==='confirmed'||st==='declined'){
     toast('Изпращане на имейл до члена…');
     const n=await DB.notifyReservation(id,st);
