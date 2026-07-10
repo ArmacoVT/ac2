@@ -727,7 +727,10 @@ function formatPage(id){
 }
 // има ли вече активна заявка (чакаща или одобрена) за това събитие
 const isMine=r=>!!(user&&r.user_id===user.id); // само МОИТЕ резервации (важно за админ, който вижда всички)
-const hasBooking=id=>RES.some(r=>isMine(r)&&r.event_id===id&&(!r.status||r.status==='requested'||r.status==='confirmed'||r.status==='pending_payment'));
+// ВНИМАНИЕ: pending_payment НЕ се брои за „запазен билет". Ако човек затвори
+// приложението насред плащане, той трябва да може да опита пак. Сървърът разчиства
+// стария опит (и отменя намерението в Stripe), преди да създаде ново.
+const hasBooking=id=>RES.some(r=>isMine(r)&&r.event_id===id&&(!r.status||r.status==='requested'||r.status==='confirmed'));
 let justBooked=null; // за bounce ефекта на бутона след заявка
 let TAKEN={}; // заети места по събитие (само число)
 // свободни места: null = без лимит; иначе оставащи
@@ -1000,6 +1003,8 @@ async function confirmBuy(id){
   // платено → Stripe
   const r=await DB.createPayment(e.id,kind,party);
   if(r&&r.error){toast(r.error.message);if(btn)updateBuy(id);return;}
+  // предишният опит всъщност е минал (webhook-ът е закъснял) — не плащаме втори път
+  if(r&&r.already_paid){ toast(lang==='bg'?'Плащането вече е получено. Билетът е потвърден.':'Payment already received. Your ticket is confirmed.'); await finishBooking(id,bname,false); return; }
   if(r&&r.client_secret){ await mountPayment(id,r.client_secret); return; }
   if(r&&r.free){ await finishBooking(id,bname,true); return; }
   toast(lang==='bg'?'Възникна грешка':'Something went wrong');if(btn)updateBuy(id);
