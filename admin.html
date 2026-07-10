@@ -2,6 +2,17 @@
 <html lang="bg">
 <head>
 <meta charset="UTF-8" />
+<!-- ЗАЩИТА: тук е най-важно. Админският панел държи най-силната сесия в системата.
+     connect-src спира изнасянето на данни към чужд сървър, дори при вмъкнат скрипт. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js-de.sentry-cdn.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' data: https://fonts.gstatic.com;
+  img-src 'self' data: blob: https:;
+  connect-src 'self' https://twcxfqgknhqicxqghcrx.supabase.co wss://twcxfqgknhqicxqghcrx.supabase.co https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io;
+  frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';
+" />
 <!-- Sentry — мониторинг на грешки -->
 <script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -56,7 +67,7 @@
 </head>
 <body>
 <div id="root" style="padding:40px;text-align:center;color:var(--muted);">Зареждане…</div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="db.js"></script>
 <script>
@@ -75,7 +86,10 @@ const EVTAGS=[
 const FMT_LABEL={culture:'AC² Culture',cinema:'AC² Cinema',table:'AC² Table',music:'AC² Music',conversation:'AC² Conversation',community:'AC² Community',theater:'AC² Theater',online:'AC² Online'};
 const VENUES=['Ресторант','Камерна зала','Онлайн','Изложбено фоайе','VIP зала'];
 const memName=id=>(MEMBERS.find(m=>m.id===id)||{t:id}).t;
-const esc=s=>(''+(s??'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const esc=s=>(''+(s??'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+// ВАЖНО: никога не вграждай текст от потребител в onclick="f('...')" — там HTML се декодира
+// ПРЕДИ да се изпълни JS, значи ' се измъква от кавичките. Подавай само id и търси обекта.
+const byId=(arr,id)=>(arr||[]).find(x=>x.id===id)||{};
 
 let tab='events', editId=null, draftAud=['all'], admin=false;
 let EVENTS=[], RES=[];
@@ -905,7 +919,7 @@ function appsView(){
     if(isCorp){const c=[a.corp_bulstat&&('БУЛСТАТ '+a.corp_bulstat),a.corp_size&&(a.corp_size+' служители'),a.corp_activity].filter(Boolean).map(esc).join(' · ');if(c)lines.push(c);}
     if(a.type==='nomination'&&a.proposer_email)lines.push('Предложен от: '+esc(a.proposer_email));
     const acts=st==='new'
-      ? `<button class="btn ok sm" onclick="approveApp('${a.id}','${esc(a.email||'')}','${esc(a.membership||'guest')}','${esc(a.name||'')}')">Одобри и покани</button>
+      ? `<button class="btn ok sm" onclick="approveApp('${a.id}')">Одобри и покани</button>
          <button class="btn no sm" onclick="setApp('${a.id}','declined')">Откажи</button>
          <button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button>`
       : `<button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button>`;
@@ -930,7 +944,8 @@ function appMark(id,status){
   const be=document.getElementById('appbadge_'+id);if(be)be.innerHTML=badge;
   const ae=document.getElementById('appact_'+id);if(ae)ae.innerHTML=`<button class="btn ghost sm" onclick="delApp('${id}')">Изтрий</button>`;
 }
-async function approveApp(id,email,membership,name){
+async function approveApp(id){
+  const a=byId(APPS,id); const email=a.email||'', membership=a.membership||'guest', name=a.name||'';
   if(!email){alert('Кандидатурата няма имейл');return;}
   if(!confirm('Да поканя ли '+email+' като член ('+( (MEMBERS.find(m=>m.id===membership)||{t:membership}).t )+')?'))return;
   const {error}=await DB.inviteMember(email,name,membership,'');
@@ -986,11 +1001,11 @@ function peopleView(){
       </div>
       <div class="row2" style="margin-top:10px;align-items:center;">
         <div><input id="${fid}" readonly placeholder="удължи от дата (по подразб. днес)" data-iso="" onclick="openCal('${fid}')" style="cursor:pointer;"/></div>
-        <div><button class="btn sm" onclick="renewPerson('${esc(p.email)}','${fid}')">Поднови с 1 година</button></div>
+        <div><button class="btn sm" onclick="renewPerson('${p.id}','${fid}')">Поднови с 1 година</button></div>
       </div>
       <div class="row2" style="margin-top:8px;align-items:center;">
         <div><label style="margin-bottom:4px;">Членство</label><select id="${mid}">${memOpts}</select></div>
-        <div><button class="btn ghost sm" onclick="changeMembership('${esc(p.email)}','${p.id}')">Промени членството</button></div>
+        <div><button class="btn ghost sm" onclick="changeMembership('${p.id}')">Промени членството</button></div>
       </div>
       <div class="row2" style="margin-top:8px;align-items:center;">
         <div><label style="margin-bottom:4px;">Име</label><input id="nmf_${p.id}" value="${esc(p.full_name||p.username||'')}" placeholder="Име Фамилия"/></div>
@@ -999,9 +1014,9 @@ function peopleView(){
       <div class="row2" style="margin-top:8px;align-items:center;">
         <div><label style="margin-bottom:4px;">Телефон</label><input id="phf_${p.id}" value="${esc(p.phone||'')}" placeholder="+359 ..."/></div>
         <div style="display:flex;flex-direction:column;gap:6px;"><button class="btn ghost sm" onclick="savePhone('${p.id}')">Запази телефона</button>
-          <button class="btn ghost sm" onclick="requestPhone('${p.id}','${esc(nm)}')">Поискай нов телефон</button></div>
+          <button class="btn ghost sm" onclick="requestPhone('${p.id}')">Поискай нов телефон</button></div>
       </div>
-      ${p.role==='admin'?'':`<button class="btn no sm" style="margin-top:8px;" onclick="deletePerson('${p.id}','${esc(nm)}',${(p.company_id&&p.company_id===p.id)?PEOPLE.filter(x=>x.company_id===p.id&&x.id!==p.id).length:0})">Изтрий члена</button>`}</div>`;
+      ${p.role==='admin'?'':`<button class="btn no sm" style="margin-top:8px;" onclick="deletePerson('${p.id}',${(p.company_id&&p.company_id===p.id)?PEOPLE.filter(x=>x.company_id===p.id&&x.id!==p.id).length:0})">Изтрий члена</button>`}</div>`;
   };
   // за корпоративните: основен профил + вложени под-профили
   const corpBlock=list=>{
@@ -1047,7 +1062,8 @@ function toggleCo(id,btn){
   d.style.display=open?'none':'block';
   if(btn)btn.textContent=btn.textContent.replace(open?'▴':'▾',open?'▾':'▴');
 }
-async function renewPerson(email,fieldId){
+async function renewPerson(id,fieldId){
+  const email=byId(PEOPLE,id).email||'';
   const f=document.getElementById(fieldId);
   const from=f?(f.dataset.iso||''):'';
   const {error,until}=await DB.renewMembership(email,from);
@@ -1056,7 +1072,8 @@ async function renewPerson(email,fieldId){
   toast('Членството е подновено до '+(until?isoToBg(until):'—'));
   PEOPLE=await DB.listMembers();render();
 }
-async function deletePerson(id,name,subCount){
+async function deletePerson(id,subCount){
+  const pp=byId(PEOPLE,id); const name=pp.full_name||pp.username||pp.email||'член';
   let msg='Да изтрия ли „'+name+'"? Това трие акаунта, резервациите и достъпа му. Действието е необратимо.';
   if(subCount>0)msg='„'+name+'" е основен фирмен профил. Изтриването ще премахне И '+subCount+' свързани профила (цялата фирма). Сигурни ли сте? Действието е необратимо.';
   if(!confirm(msg))return;
@@ -1083,14 +1100,16 @@ async function savePhone(id){
   toast('Телефонът е обновен');
   PEOPLE=await DB.listMembers();render();
 }
-async function requestPhone(id,name){
+async function requestPhone(id){
+  const pp=byId(PEOPLE,id); const name=pp.full_name||pp.username||pp.email||'член';
   if(!confirm('Да поискам ли нов телефон от „'+name+'"? Ще му излезе подкана при следващо влизане.'))return;
   const {error}=await DB.adminRequestPhone(id);
   if(error){alert('Грешка: '+error.message);return;}
   DB.logAudit('phone_requested',name||'','');
   toast('Поискан е нов телефон от члена');
 }
-async function changeMembership(email,id){
+async function changeMembership(id){
+  const email=byId(PEOPLE,id).email||'';
   const sel=document.getElementById('mch_'+id); if(!sel)return;
   const m=sel.value;
   const label=(MEMBERS.find(x=>x.id===m)||{t:m}).t;

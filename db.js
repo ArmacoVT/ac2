@@ -372,29 +372,32 @@
     },
 
     // ---------- КАНДИДАТУРИ / ПРЕДЛОЖЕНИЯ ----------
+    // Кандидатурата вече НЕ се записва директно в базата. Минава през Edge функция,
+    // която първо проверява captcha-та при Cloudflare. Иначе всеки бот можеше да
+    // напълни таблицата с милиони записи.
     async submitApplication(o) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const ins = {
-        type: o.nominate ? 'nomination' : 'application',
-        kind: o.membership === 'corporate' ? 'corporate' : 'individual',
-        membership: o.membership || null,
-        name: o.name || null, email: (o.email || '').trim() || null, phone: o.phone || null,
-        profession: o.profession || null, interests: o.interests || null, about: o.about || null,
-        alumni_relation: o.alumni_relation || null,
-        corp_bulstat: o.corp_bulstat || null, corp_size: o.corp_size || null, corp_activity: o.corp_activity || null,
-        status: 'new'
-      };
-      if (o.nominate && sb) {
-        try { const { data } = await sb.auth.getSession(); const s = data.session;
-          if (s) { ins.proposer_id = s.user.id; ins.proposer_email = s.user.email; } } catch (e) {}
-      }
-      const { error } = await sb.from('applications').insert(ins);
+      const { data, error } = await sb.functions.invoke('submit-application', {
+        body: {
+          captcha_token: o.captcha_token || '',
+          nominate: !!o.nominate,
+          membership: o.membership || null,
+          name: o.name || null, email: (o.email || '').trim() || null, phone: o.phone || null,
+          profession: o.profession || null, interests: o.interests || null, about: o.about || null,
+          alumni_relation: o.alumni_relation || null,
+          corp_bulstat: o.corp_bulstat || null, corp_size: o.corp_size || null, corp_activity: o.corp_activity || null
+        }
+      });
       if (error) {
-        const msg = error.message || '';
-        if (/cooldown_30/i.test(msg)) return { error: { cooldown: true } };
-        if (error.code === '23505' || /duplicate|unique|app_email_pending|app_bulstat_pending/i.test(msg)) return { error: { dup: true } };
-        return { error };
+        // тялото на грешката носи причината
+        let reason = '';
+        try { reason = (await error.context.json()).error || ''; } catch (e) {}
+        if (reason === 'cooldown') return { error: { cooldown: true } };
+        if (reason === 'dup') return { error: { dup: true } };
+        if (reason === 'captcha') return { error: { captcha: true } };
+        return { error: { message: reason || error.message } };
       }
+      if (data && data.error) return { error: { message: data.error } };
       return { error: null };
     },
     async listApplications() {

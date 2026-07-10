@@ -2,6 +2,20 @@
 <html lang="bg">
 <head>
 <meta charset="UTF-8" />
+<!-- ЗАЩИТА: Content-Security-Policy. Най-важното е connect-src — дори ако някой успее
+     да вмъкне свой скрипт, той не може да изпрати откраднати данни към чужд сървър.
+     Ако нещо спре да работи, виж Console за "Refused to ..." и добави домейна тук. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com https://js-de.sentry-cdn.com https://www.youtube.com https://s.ytimg.com https://challenges.cloudflare.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' data: https://fonts.gstatic.com;
+  img-src 'self' data: blob: https:;
+  media-src 'self' blob: https:;
+  connect-src 'self' https://twcxfqgknhqicxqghcrx.supabase.co wss://twcxfqgknhqicxqghcrx.supabase.co https://api.stripe.com https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://challenges.cloudflare.com;
+  frame-src https://js.stripe.com https://hooks.stripe.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://player.twitch.tv https://player.kick.com https://challenges.cloudflare.com;
+  object-src 'none'; base-uri 'self'; form-action 'self';
+" />
 <!-- Sentry — мониторинг на грешки (зарежда се рано, за да улавя всичко) -->
 <script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -358,7 +372,11 @@
 <div id="ptr"><img src="cards/logo-ac2.webp" alt="AC²"/></div>
 <nav class="tabbar" id="tabbar"></nav>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- ЗАЩИТА: точни версии. "@2" тегли най-новото — ако някой компрометира пакета,
+     зловредният код влиза автоматично. Фиксираната версия не се променя зад гърба ти. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <script src="https://js.stripe.com/v3/"></script>
 <script src="config.js"></script>
 <script src="db.js"></script>
@@ -535,7 +553,7 @@ let loginMode='login';
 const app=document.getElementById('app');
 const tr=k=>T[lang][k];
 const tx=o=>o[lang];
-const esc=s=>(''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const esc=s=>(''+(s??'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 function go(h){location.hash=h;}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1900);}
 function showStamp(){
@@ -1324,8 +1342,22 @@ function canNominate(){
   return allowedNominateTargets(user.membership).length>0; // само Founder и Founding member
 }
 // форма за кандидатстване / предлагане на член
+// ---- Cloudflare Turnstile (captcha пред публичната форма) ----
+let _tsWidget=null;
+function mountCaptcha(){
+  const holder=document.getElementById('ap_captcha');
+  if(!holder||!window.turnstile||!window.ACAC_CONFIG.TURNSTILE_SITE_KEY)return;
+  holder.innerHTML='';
+  _tsWidget=turnstile.render(holder,{sitekey:window.ACAC_CONFIG.TURNSTILE_SITE_KEY,theme:'light'});
+}
+function captchaToken(){
+  try{ return (_tsWidget!==null&&window.turnstile)?turnstile.getResponse(_tsWidget):''; }catch(e){ return ''; }
+}
+function resetCaptcha(){ try{ if(_tsWidget!==null)turnstile.reset(_tsWidget); }catch(e){} }
+
 function appForm(mode){
   const bg=lang==='bg';
+  setTimeout(mountCaptcha,0); // джаджата се рисува веднага след като HTML-ът влезе в страницата
   const nominate=mode==='nominate';
   const title=nominate?(bg?'Предложи член':'Propose a member'):(bg?'Кандидатствай за членство':'Apply for membership');
   if(nominate&&!canNominate())return topbar(title)+`<div class="page"><div class="ev"><h3 style="font-size:15px;">${bg?'Нямате възможност да предлагате членове':'You cannot propose members'}</h3><div class="m" style="margin-top:3px;">${bg?'Свържете се с клуба за повече информация.':'Please contact the club for more information.'}</div></div></div>`;
@@ -1352,6 +1384,7 @@ function appForm(mode){
     <label>${bg?'Интереси':'Interests'} *</label><input id="ap_interests" placeholder="${bg?'напр. кино, музика, изкуство':'e.g. cinema, music, art'}"/>
     <label>${bg?'Защо кандидатствате / мотивация':'Why are you applying / motivation'} *</label>
     <textarea id="ap_about" rows="3" placeholder="${bg?'Няколко реда за вас и интереса ви към клуба.':'A few lines about you and your interest in the club.'}"></textarea>
+    <div id="ap_captcha" style="margin-top:14px;"></div>
     <button class="btn" style="margin-top:16px;" onclick="submitApp(${nominate?'true':'false'})">${nominate?(bg?'Изпрати предложение':'Send proposal'):(bg?'Изпрати кандидатура':'Send application')}</button>
     <div style="height:30px;"></div></div>`;
 }
@@ -1387,12 +1420,17 @@ async function submitApp(nominate){
     alumni=parts.join(', ');
     if(!alumni){toast(lang==='bg'?'Изберете връзка с колежа':'Select your connection to the college');return;}
   }
+  const ctok=captchaToken();
+  if(window.ACAC_CONFIG.TURNSTILE_SITE_KEY&&!ctok){toast(lang==='bg'?'Моля, потвърдете че не сте робот.':'Please confirm you are not a robot.');return;}
   const r=await DB.submitApplication({nominate,membership:m,name,email,phone,about,
     profession:v('ap_prof'),interests:v('ap_interests'),alumni_relation:alumni,
-    corp_bulstat:v('ap_bulstat'),corp_size:v('ap_size'),corp_activity:v('ap_activity')});
+    corp_bulstat:v('ap_bulstat'),corp_size:v('ap_size'),corp_activity:v('ap_activity'),
+    captcha_token:ctok});
   if(r&&r.error){
+    resetCaptcha(); // токенът е за еднократна употреба
     if(r.error.cooldown){toast(lang==='bg'?'Скорошна кандидатура с този имейл/БУЛСТАТ беше отказана. Може да опитате отново след 30 дни.':'A recent application with this email/company ID was declined. You can re-apply after 30 days.');return;}
     if(r.error.dup){toast(lang==='bg'?'Вече има подадена кандидатура с този имейл или БУЛСТАТ. Изчакайте да я разгледаме.':'An application with this email or company ID already exists. Please wait for our review.');return;}
+    if(r.error.captcha){toast(lang==='bg'?'Проверката за робот не мина. Опитайте пак.':'Captcha check failed. Please try again.');return;}
     toast(r.error.message);return;
   }
   hap('success');
@@ -1797,13 +1835,24 @@ async function deleteAccount(){
   alert(bg?'Акаунтът е изтрит. Благодарим ти!':'Your account has been deleted. Thank you!');
   go('');
 }
+// QR кодът се рисува ЛОКАЛНО. Преди това пращахме user.id на api.qrserver.com —
+// тоест на чужд сървър при всяко отваряне на картата. Вече нищо не напуска устройството.
+function qrDataUri(txt,bg,fg){
+  try{
+    const q=qrcode(0,'M'); q.addData(txt); q.make();
+    const n=q.getModuleCount(); let p='';
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))p+=`M${c} ${r}h1v1h-1z`;
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges"><rect width="${n}" height="${n}" fill="${bg}"/><path d="${p}" fill="${fg}"/></svg>`;
+    return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+  }catch(e){ return ''; }
+}
 // дигитална членска карта
 function memberCard(){
   const m=MEMBERS.find(x=>x.id===user.membership);
   const lvl=m?m.t:'Guest';
   const disc=m&&m.disc?m.disc:0;
   const no=user.id?user.id.replace(/[^a-z0-9]/gi,'').slice(0,8).toUpperCase():'--------';
-  const qr='https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&bgcolor=43352b&color=ecdcb6&data='+encodeURIComponent('AC2:'+(user.id||''));
+  const qr=qrDataUri('AC2:'+(user.id||''),'#43352b','#ecdcb6');
   return `<div class="memcard">
     <div class="mc-top"><img src="${AC2}" alt="AC²"/><span>American College Arcus Club</span></div>
     <div class="mc-name">${esc(user.full_name||user.username||user.email)}</div>
