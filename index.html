@@ -1343,12 +1343,23 @@ function canNominate(){
 }
 // форма за кандидатстване / предлагане на член
 // ---- Cloudflare Turnstile (captcha пред публичната форма) ----
+// Скриптът на Cloudflare се зарежда async, значи може още да го няма, когато
+// рисуваме формата. Затова изчакваме, вместо да се откажем мълчаливо.
 let _tsWidget=null;
-function mountCaptcha(){
+function mountCaptcha(tries){
+  tries=tries||0;
   const holder=document.getElementById('ap_captcha');
-  if(!holder||!window.turnstile||!window.ACAC_CONFIG.TURNSTILE_SITE_KEY)return;
+  if(!holder)return;                                   // не сме на тази страница
+  if(!window.ACAC_CONFIG.TURNSTILE_SITE_KEY)return;    // captcha изключена
+  if(!window.turnstile){
+    if(tries<40){ setTimeout(()=>mountCaptcha(tries+1),150); return; }  // ~6 сек.
+    holder.innerHTML='<div style="color:var(--muted);font-size:12px;">Проверката за робот не се зареди. Презаредете страницата.</div>';
+    return;
+  }
+  if(holder.dataset.rendered==='1')return;             // вече е нарисувана
   holder.innerHTML='';
   _tsWidget=turnstile.render(holder,{sitekey:window.ACAC_CONFIG.TURNSTILE_SITE_KEY,theme:'light'});
+  holder.dataset.rendered='1';
 }
 function captchaToken(){
   try{ return (_tsWidget!==null&&window.turnstile)?turnstile.getResponse(_tsWidget):''; }catch(e){ return ''; }
