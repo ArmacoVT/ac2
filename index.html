@@ -1362,7 +1362,13 @@ function mountCaptcha(tries){
   holder.dataset.rendered='1';
 }
 function captchaToken(){
-  try{ return (_tsWidget!==null&&window.turnstile)?turnstile.getResponse(_tsWidget):''; }catch(e){ return ''; }
+  // 1) нашият widget
+  try{ if(_tsWidget!==null&&window.turnstile){ const t=turnstile.getResponse(_tsWidget); if(t)return t; } }catch(e){}
+  // 2) скритото поле, което Turnstile сам слага в кутията (работи с всеки widget)
+  try{ const i=document.querySelector('#ap_captcha input[name="cf-turnstile-response"]'); if(i&&i.value)return i.value; }catch(e){}
+  // 3) последен опит — първият widget на страницата
+  try{ if(window.turnstile){ const t=turnstile.getResponse(); if(t)return t; } }catch(e){}
+  return '';
 }
 function resetCaptcha(){ try{ if(_tsWidget!==null)turnstile.reset(_tsWidget); }catch(e){} }
 
