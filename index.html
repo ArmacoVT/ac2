@@ -736,6 +736,8 @@ let TAKEN={}; // заети места по събитие (само число)
 // свободни места: null = без лимит; иначе оставащи
 function seatsLeft(e){if(!e.capacity)return null;return Math.max(0,e.capacity-(TAKEN[e.id]||0));}
 function seatInfoText(e){
+  // Който вече има билет, няма нужда да чете „Изчерпано" — мястото му е запазено.
+  if(user&&hasBooking(e.id))return '';
   const l=seatsLeft(e); if(l===null)return '';
   if(l<=0)return lang==='bg'?'Изчерпано':'Sold out';
   if(l<=10)return lang==='bg'?('Остават '+l+' места'):(l+' seats left');
