@@ -12,5 +12,5 @@ window.ACAC_CONFIG = {
   // Cloudflare Turnstile — ПУБЛИЧНИЯТ ключ (Site Key). Безопасен е за клиента.
   // Тайният (Secret Key) отива САМО в Supabase → Edge Functions → Secrets, като TURNSTILE_SECRET_KEY.
   // Докато този ред е празен, captcha-та не се показва и формата работи както преди.
-  TURNSTILE_SITE_KEY: ""
+  TURNSTILE_SITE_KEY: "0x4AAAAAADzBXlrVTbWnEJn9с"
 };
