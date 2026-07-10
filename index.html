@@ -1356,9 +1356,22 @@ function mountCaptcha(tries){
     holder.innerHTML='<div style="color:var(--muted);font-size:12px;">Проверката за робот не се зареди. Презаредете страницата.</div>';
     return;
   }
-  if(holder.dataset.rendered==='1')return;             // вече е нарисувана
+  if(holder.dataset.rendered==='1'&&holder.querySelector('iframe'))return;  // вече е жива
+
+  // Ако страницата се е пре-рисувала, старият widget още виси в паметта на
+  // Cloudflare, а неговият iframe е изтрит от DOM-а → показва грешка.
+  // Затова първо го премахваме както трябва.
+  try{ if(_tsWidget!==null)turnstile.remove(_tsWidget); }catch(e){}
+  _tsWidget=null;
   holder.innerHTML='';
-  _tsWidget=turnstile.render(holder,{sitekey:window.ACAC_CONFIG.TURNSTILE_SITE_KEY,theme:'light'});
+
+  _tsWidget=turnstile.render(holder,{
+    sitekey: window.ACAC_CONFIG.TURNSTILE_SITE_KEY,
+    theme: 'light',
+    retry: 'auto',                 // сам опитва пак при мрежов проблем
+    'refresh-expired': 'auto',     // токенът живее 5 мин.; подновява се сам
+    'error-callback': () => { try{ turnstile.reset(_tsWidget); }catch(e){} return true; }
+  });
   holder.dataset.rendered='1';
 }
 function captchaToken(){
