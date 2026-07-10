@@ -95,11 +95,31 @@ let tab='events', editId=null, draftAud=['all'], admin=false;
 let EVENTS=[], RES=[];
 const root=document.getElementById('root');
 
+// ---- Изтекла сесия ----
+// Преди това администраторът нямаше как да разбере: бутоните просто мълчаха.
+let _sessionLost=false;
+function sessionLost(){
+  if(_sessionLost)return; _sessionLost=true;
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(30,22,16,.72);display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:var(--card,#fffdf4);border-radius:16px;padding:24px;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <h3 style="margin:0 0 8px;">Сесията изтече</h3>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 16px;">Не сте вписан вече. Промените, които направите сега, няма да се запазят.</p>
+    <button class="btn" style="width:100%;" onclick="location.reload()">Влез отново</button></div>`;
+  document.body.appendChild(ov);
+}
+async function checkSession(){ if(!_sessionLost && !(await DB.sessionAlive())) sessionLost(); }
+
 async function boot(){
   if(DB.live){ const u=await DB.getUser(); admin=!!(u&&u.role==='admin'); }
   else { admin=localStorage.getItem('acac_admin')==='1'; }
   if(admin) await refresh();
   render();
+  if(DB.live&&admin){
+    DB.onSessionLost(sessionLost);
+    setInterval(checkSession,60000);                 // на всяка минута
+    document.addEventListener('visibilitychange',()=>{ if(!document.hidden)checkSession(); });
+  }
 }
 async function refresh(){
   try{ EVENTS=await DB.listEvents(); }catch(e){ EVENTS=[]; }
@@ -276,8 +296,9 @@ async function recClear(id){
   try{await DB.logAudit('recording_cleared','',id);}catch(e){}
   await refresh();render();
 }
+async function reloadPeople(){ window.__membersErr=''; PEOPLE=null; render(); PEOPLE=await DB.listMembers(); render(); }
 async function setTab(t){tab=t;editId=null;await refresh();render();
-  if(t==='people'){PEOPLE=null;render();PEOPLE=await DB.listMembers();render();}
+  if(t==='people'){await reloadPeople();}
   if((t==='res'||t==='events')&&!PHONES){await loadPhones();render();}
   if(t==='ann'){ANN=await DB.listAnnouncements();if(!PEOPLE)PEOPLE=await DB.listMembers();render();}
   if(t==='audit'){AUDIT=await DB.listAudit(300);render();}
@@ -689,9 +710,11 @@ function resView(){
          <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`
       : st==='declined'
       ? `<button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Одобри</button>
+         <button class="btn ghost sm" onclick="resendMail('${r.id}','declined')">✉ Изпрати отново</button>
          <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`
       : st==='confirmed'
       ? `<button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button>
+         <button class="btn ghost sm" onclick="resendMail('${r.id}','confirmed')">✉ Изпрати отново</button>
          <button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`
       : `<button class="btn ghost sm" onclick="delRes('${r.id}')">Изтрий</button>`;
     return `<div class="card" id="rescard_${r.id}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
@@ -749,9 +772,26 @@ async function setRes(id,st){
   if(st==='confirmed'||st==='declined'){
     toast('Изпращане на имейл до члена…');
     const n=await DB.notifyReservation(id,st);
-    if(n&&n.error){toast('Статусът е сменен, но имейлът не тръгна: '+n.error.message,true);}
-    else{toast(st==='confirmed'?'Резервацията е одобрена · имейлът до члена е изпратен ✓':'Резервацията е отказана · имейлът до члена е изпратен ✓');}
+    if(n&&n.error){
+      toast('Статусът е сменен, но имейлът НЕ тръгна: '+n.error.message+' — ползвай „Изпрати отново".',true);
+    } else {
+      toast(st==='confirmed'?'Резервацията е одобрена · имейлът е изпратен ✓':'Резервацията е отказана · имейлът е изпратен ✓');
+    }
   }
+}
+
+// Имейлът тръгва през SMTP от Edge функция и понякога пада (заспал контейнер,
+// таймаут към пощенския сървър). Статусът обаче вече е сменен, затова тук
+// пращаме САМО имейла, без да пипаме резервацията.
+async function resendMail(id,st){
+  const r=byId(RES,id);
+  const who=r.name||r.who||'члена';
+  if(!confirm('Да изпратя ли отново имейла до „'+who+'"?'))return;
+  toast('Изпращане…');
+  const n=await DB.notifyReservation(id,st);
+  if(n&&n.error){alert('Имейлът пак не тръгна:\n\n'+n.error.message+'\n\nПровери SMTP настройките в Supabase → Edge Functions → Secrets.');return;}
+  try{await DB.logAudit('reservation_mail_resent',who,st);}catch(e){}
+  toast('Имейлът е изпратен ✓');
 }
 
 function statsView(){
@@ -971,7 +1011,16 @@ async function delApp(id){
   toast('Изтрита');
 }
 function peopleView(){
-  if(PEOPLE===null)return `<h2>Членове</h2><p class="empty">Зареждане…</p>`;
+  // NULL = зареждаме или сме гръмнали. Различаваме ги по __membersErr.
+  if(PEOPLE===null){
+    if(window.__membersErr)return `<h2>Членове</h2>
+      <div class="card" style="border-color:var(--warn);">
+        <b style="color:#d98b6e;">Списъкът не се зареди</b>
+        <div class="muted" style="margin-top:4px;">${esc(window.__membersErr)}</div>
+        <button class="btn sm" style="margin-top:10px;" onclick="reloadPeople()">Опитай пак</button>
+      </div>`;
+    return `<h2>Членове</h2><p class="empty">Зареждане…</p>`;
+  }
   if(!PEOPLE.length)return `<h2>Членове</h2><p class="empty">Все още няма членове.</p>`;
   const today=new Date().toISOString().slice(0,10);
   const cats=MEMBERS.slice();

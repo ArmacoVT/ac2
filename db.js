@@ -39,6 +39,21 @@
     live: LIVE,
     urlType: URLTYPE,
 
+    // Известява, когато сесията изчезне (изтекла или отнета).
+    // Без това администраторът просто вижда как бутоните спират да работят.
+    onSessionLost(cb) {
+      if (!LIVE) return;
+      sb.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT' || (!session && event !== 'INITIAL_SESSION')) cb();
+      });
+    },
+    // Активна проверка — auth събитието понякога не идва, ако табът е бил заспал.
+    async sessionAlive() {
+      if (!LIVE) return true;
+      try { const { data } = await sb.auth.getSession(); return !!(data && data.session); }
+      catch (e) { return true; }   // мрежов проблем ≠ изтекла сесия
+    },
+
     // ---------- AUTH (член) ----------
     async getUser() {
       if (!LIVE) return jget(K.user, null);
@@ -417,15 +432,29 @@
     },
 
     // списък с всички членове (само админ)
+    // Връща масив при успех, или NULL при грешка. Празен масив значи "наистина няма членове".
+    // Преди връщаше [] и при двете — затова при трепване на мрежата пишеше "Все още няма членове".
     async listMembers() {
       if (!LIVE) return [];
-      try {
-        const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'members' } });
-        if (error) { try { const b = await error.context.json(); window.__membersErr = (b && b.error) || error.message; } catch (e) { window.__membersErr = error.message; } return []; }
-        if (!data || data.error) { window.__membersErr = (data && data.error) || 'няма отговор'; return []; }
-        window.__membersErr = '';
-        return data.members || [];
-      } catch (e) { window.__membersErr = String((e && e.message) || e); return []; }
+      window.__membersErr = '';
+      // Edge функциите заспиват; първото извикване понякога пада. Опитваме два пъти.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'members' } });
+          if (error) {
+            let msg = error.message;
+            try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+            window.__membersErr = msg;
+          } else if (!data || data.error) {
+            window.__membersErr = (data && data.error) || 'няма отговор от сървъра';
+          } else {
+            window.__membersErr = '';
+            return data.members || [];
+          }
+        } catch (e) { window.__membersErr = String((e && e.message) || e); }
+        if (attempt === 0) await new Promise(r => setTimeout(r, 700));
+      }
+      return null;
     },
     // изтриване на член (само админ)
     async deleteMember(id) {
