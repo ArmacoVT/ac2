@@ -996,10 +996,11 @@ function appMark(id,status){
   const ae=document.getElementById('appact_'+id);if(ae)ae.innerHTML=`<button class="btn ghost sm" onclick="delApp('${id}')">Изтрий</button>`;
 }
 async function approveApp(id){
-  const a=byId(APPS,id); const email=a.email||'', membership=a.membership||'guest', name=a.name||'';
+  const a=byId(APPS,id); const email=a.email||'', membership=a.membership||'guest', name=a.name||'', phone=a.phone||'';
   if(!email){alert('Кандидатурата няма имейл');return;}
   if(!confirm('Да поканя ли '+email+' като член ('+( (MEMBERS.find(m=>m.id===membership)||{t:membership}).t )+')?'))return;
-  const {error}=await DB.inviteMember(email,name,membership,'');
+  // името и телефонът от кандидатурата влизат направо в профила
+  const {error}=await DB.inviteMember(email,'',membership,'',name,phone);
   if(error){alert('Грешка при поканата: '+error.message);return;}
   await DB.setApplicationStatus(id,'approved');
   DB.logAudit('application_approved',name||email,memName(membership));

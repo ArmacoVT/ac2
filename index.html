@@ -1742,12 +1742,16 @@ async function doForgot(){
   if(error){toast(error.message);return;}
   toast(tr('resetSent'));
 }
+// Правилата трябва да СЪВПАДАТ с Supabase → Authentication → Email:
+// минимум 8 знака, малка + главна буква, цифра и символ.
+// Ако се разминат, човекът минава проверката тук и получава грешка от сървъра.
 function pwPolicy(p){
   const bg=lang==='bg';
-  if(p.length<6)return bg?'Поне 6 знака':'At least 6 characters';
+  if(p.length<8)return bg?'Поне 8 знака':'At least 8 characters';
   if(!/[a-z]/.test(p))return bg?'Трябва малка буква':'Need a lowercase letter';
   if(!/[A-Z]/.test(p))return bg?'Трябва главна буква':'Need an uppercase letter';
   if(!/[0-9]/.test(p))return bg?'Трябва цифра':'Need a digit';
+  if(!/[^A-Za-z0-9]/.test(p))return bg?'Трябва символ (напр. ! ? # @)':'Need a symbol (e.g. ! ? # @)';
   return '';
 }
 function askNewPassword(title,requireCurrent){

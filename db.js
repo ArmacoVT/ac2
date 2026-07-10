@@ -311,10 +311,13 @@
     },
 
     // ---------- ПОКАНИ (само админ; през Edge Function) ----------
-    async inviteMember(email, username, membership, validFrom) {
+    // fullName и phone идват от кандидатурата — пренасяме ги в профила,
+    // за да не пита приложението за тях след първото влизане.
+    async inviteMember(email, username, membership, validFrom, fullName, phone) {
       if (!LIVE) return { error: { message: 'demo' } };
       const { data, error } = await sb.functions.invoke('invite-member',
-        { body: { email: (email || '').trim(), username: (username || '').trim(), membership: membership || 'guest', valid_from: validFrom || null } });
+        { body: { email: (email || '').trim(), username: (username || '').trim(), membership: membership || 'guest',
+                  valid_from: validFrom || null, full_name: (fullName || '').trim(), phone: (phone || '').trim() } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
