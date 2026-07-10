@@ -2086,6 +2086,8 @@ function askPhone(initial,required){
       <button class="btn" id="phok">${tr('pwSave')}</button>
       ${required?'':`<button class="btn btn-ghost" id="phcancel">${tr('cancelBtn')}</button>`}</div>`;
     document.body.appendChild(ov);
+    // грешката изчезва, щом човекът поправи нещо — не виси до следващото натискане
+    ov.querySelector('#ph1').addEventListener('input',()=>{ov.querySelector('#pherr').textContent='';});
     ov.querySelector('#phok').onclick=()=>{const val=ov.querySelector('#ph1').value.trim();
       if(!validPhone(val)){ov.querySelector('#pherr').textContent=bg?'Въведете валиден телефонен номер':'Enter a valid phone number';return;}
       ov.remove();res(val);};
@@ -2103,6 +2105,16 @@ async function editPhone(){
 async function ensurePhone(){
   if(!user||!membershipActive())return;
   if(user.phone&&!user.phone_recheck)return;
+  // При първо влизане през покана профилът може още да не е прочетен (сесията
+  // тъкмо се установява) и телефонът да изглежда празен, макар да е записан.
+  // Питаме базата още веднъж, преди да досаждаме на човека.
+  if(!user.phone){
+    for(let i=0;i<2&&!user.phone;i++){
+      if(i)await new Promise(r=>setTimeout(r,700));   // профилът се дописва малко след поканата
+      try{ const fresh=await DB.getUser(); if(fresh)user=fresh; }catch(e){}
+    }
+    if(user.phone&&!user.phone_recheck)return;
+  }
   // празно поле (без стария номер), за да въведе нов
   const v=await askPhone('',true);
   if(v){await DB.updateProfilePhone(v);user.phone=v;user.phone_recheck=false;}
