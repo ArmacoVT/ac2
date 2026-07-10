@@ -6,7 +6,7 @@
      connect-src спира изнасянето на данни към чужд сървър, дори при вмъкнат скрипт. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
-  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js-de.sentry-cdn.com;
+  script-src 'self' 'unsafe-inline' https://js-de.sentry-cdn.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' data: https://fonts.gstatic.com;
   img-src 'self' data: blob: https:;
@@ -67,7 +67,7 @@
 </head>
 <body>
 <div id="root" style="padding:40px;text-align:center;color:var(--muted);">Зареждане…</div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<script src="vendor/supabase.js"></script>
 <script src="config.js"></script>
 <script src="db.js"></script>
 <script>

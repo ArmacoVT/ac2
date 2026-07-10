@@ -7,7 +7,7 @@
      Ако нещо спре да работи, виж Console за "Refused to ..." и добави домейна тук. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
-  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com https://js-de.sentry-cdn.com https://www.youtube.com https://s.ytimg.com https://challenges.cloudflare.com;
+  script-src 'self' 'unsafe-inline' https://js.stripe.com https://js-de.sentry-cdn.com https://www.youtube.com https://s.ytimg.com https://challenges.cloudflare.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' data: https://fonts.gstatic.com;
   img-src 'self' data: blob: https:;
@@ -28,7 +28,6 @@
 <link rel="apple-touch-icon" href="icon-192.png" />
 <link rel="manifest" href="manifest.json" />
 <link rel="preconnect" href="https://twcxfqgknhqicxqghcrx.supabase.co" crossorigin />
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -372,10 +371,11 @@
 <div id="ptr"><img src="cards/logo-ac2.webp" alt="AC²"/></div>
 <nav class="tabbar" id="tabbar"></nav>
 
-<!-- ЗАЩИТА: точни версии. "@2" тегли най-новото — ако някой компрометира пакета,
-     зловредният код влиза автоматично. Фиксираната версия не се променя зад гърба ти. -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<!-- ЗАЩИТА: библиотеките се зареждат от НАШИЯ сървър, не от чужд CDN.
+     Обновяват се ръчно с download-vendor.ps1. Ако някой компрометира jsDelivr,
+     това приложение не го засяга. (OWASP A03:2025 — Software Supply Chain) -->
+<script src="vendor/supabase.js"></script>
+<script src="vendor/qrcode.js"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <script src="https://js.stripe.com/v3/"></script>
 <script src="config.js"></script>
