@@ -1533,7 +1533,7 @@ function reserve(q){
     <div class="qrow" style="border:none;padding:2px 0 0;"><span style="color:var(--muted);font-size:13px;">${lang==='bg'?'Места':'Seats'}</span><div class="qstep"><button type="button" onclick="resQty(-1,${seats})">−</button><b id="r_party_lbl">1</b><button type="button" onclick="resQty(1,${seats})">+</button></div></div>
     <input id="r_party" type="hidden" value="1"/>
     <label>${tr('contactEmail')} *</label><input id="r_email" type="email" autocapitalize="none" value="${user?esc(user.email||''):''}"/>
-    <label>${tr('contactPhone')} *</label><input id="r_phone" type="tel" placeholder="${lang==='bg'?'Въведете телефонен номер':'Enter phone number'}"/>
+    <label>${tr('contactPhone')} *</label><input id="r_phone" type="tel" value="${user?esc(user.phone||''):''}" placeholder="${lang==='bg'?'Въведете телефонен номер':'Enter phone number'}"/>
     <div id="algwrap" style="display:${preV==='restaurant'?'':'none'};">
       <label>${lang==='bg'?'Алергени / хранителни ограничения':'Allergens / dietary'} *</label>
       <div class="selrow" id="algsel">${(lang==='bg'?['Нямам алергии','Глутен','Мляко/лактоза','Яйца','Ядки','Фъстъци','Риба','Ракообразни','Соя','Сусам','Целина','Синап','Сулфити']:['No allergies','Gluten','Milk/lactose','Eggs','Tree nuts','Peanuts','Fish','Crustaceans','Soy','Sesame','Celery','Mustard','Sulphites']).map((a,i)=>`<button type="button" class="chip" data-alg="${esc(a)}"${i===0?' data-none="1"':''} onclick="toggleAlg(this)">${a}</button>`).join('')}</div>
