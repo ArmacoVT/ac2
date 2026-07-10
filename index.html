@@ -670,7 +670,7 @@ function greeting(){
   const h=new Date().getHours();
   const g=lang==='bg'?(h<11?'Добро утро':h<18?'Добър ден':'Добър вечер'):(h<5?'Good night':h<11?'Good morning':h<18?'Good afternoon':'Good evening');
   const nm=esc((user.full_name||user.username||'').split(' ')[0]);
-  return `<div class="greet">${g}${nm?', '+nm:''}</div>`;
+  return `<div class="greet">${g}${nm?', '+nm+'!':'!'}</div>`;
 }
 function home(){
   const SIZE={culture:'wide',cinema:'tall',theater:'wide'};
@@ -1877,9 +1877,11 @@ function accountView(){
 async function deleteAccount(){
   const bg=lang==='bg';
   if(!confirm(bg?'Сигурен ли си? Това ще изтрие акаунта и всички твои данни безвъзвратно.':'Are you sure? This permanently deletes your account and all your data.'))return;
-  const word=bg?'ИЗТРИЙ':'DELETE';
-  const ans=prompt(bg?`За потвърждение напиши: ${word}`:`To confirm, type: ${word}`);
-  if((ans||'').trim().toUpperCase()!==word){toast(bg?'Отказано':'Cancelled');return;}
+  // Иска се собственият имейл, а не дума. Написването на „ИЗТРИЙ" е рефлекс;
+  // написването на собствения имейл кара човека да спре и да помисли чий акаунт трие.
+  const mine=(user&&user.email||'').trim().toLowerCase();
+  const ans=prompt(bg?`За потвърждение напиши имейла си:\n${mine}`:`To confirm, type your email address:\n${mine}`);
+  if((ans||'').trim().toLowerCase()!==mine){toast(bg?'Отказано':'Cancelled');return;}
   const res=await DB.deleteSelfAccount();
   if(res&&res.error){toast(res.error.message||(bg?'Грешка':'Error'));return;}
   try{localStorage.removeItem('acac_bio');}catch(e){}
