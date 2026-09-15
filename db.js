@@ -97,14 +97,29 @@
       return { error };
     },
     // качване на снимка/видео за събитие в Supabase Storage (bucket: event-media)
-    async uploadMedia(file) {
+    async uploadMedia(file, folder) {
       if (!LIVE) return { error: { message: 'demo' } };
       const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
-      const path = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+      const path = (folder ? folder.replace(/\/+$/, '') + '/' : '') + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
       const up = await sb.storage.from('event-media').upload(path, file, { upsert: true, contentType: file.type });
       if (up.error) return { error: up.error };
       const { data } = sb.storage.from('event-media').getPublicUrl(path);
       return { url: data.publicUrl };
+    },
+
+    // ---------- ПУБЛИЧНА ВИТРИНА (landing) ----------
+    // Един JSON ред; чете се и без вход. Празен обект = вградените текстове по подразбиране.
+    async getSiteContent() {
+      if (!LIVE) return {};
+      try {
+        const { data } = await sb.from('site_content').select('data').eq('id', 'landing').maybeSingle();
+        return (data && data.data) || {};
+      } catch (e) { return {}; }
+    },
+    async saveSiteContent(obj) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.from('site_content').upsert({ id: 'landing', data: obj || {} });
+      return { error };
     },
     async signIn(email, password) {
       if (!LIVE) return { error: { message: 'demo' } };

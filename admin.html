@@ -140,6 +140,7 @@ function render(){
       <button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>
       <button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge((APPS||[]).filter(a=>(a.status||'new')==='new').length)}</button>
       <button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>
+      <button class="tab ${tab==='site'?'on':''}" onclick="setTab('site')">Сайт</button>
       <button class="tab ${tab==='archive'?'on':''}" onclick="setTab('archive')">Архив</button>
       <button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>
       <button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>
@@ -150,6 +151,7 @@ function render(){
   else if(tab==='people')h+=peopleView();
   else if(tab==='apps')h+=appsView();
   else if(tab==='ann')h+=announcementsView();
+  else if(tab==='site')h+=siteView();
   else if(tab==='archive')h+=archiveAdminView();
   else if(tab==='stats')h+=statsView();
   else if(tab==='audit')h+=auditView();
@@ -301,6 +303,7 @@ async function setTab(t){tab=t;editId=null;await refresh();render();
   if(t==='people'){await reloadPeople();}
   if((t==='res'||t==='events')&&!PHONES){await loadPhones();render();}
   if(t==='ann'){ANN=await DB.listAnnouncements();if(!PEOPLE)PEOPLE=await DB.listMembers();render();}
+  if(t==='site'){SITEC=await DB.getSiteContent();render();}
   if(t==='audit'){AUDIT=await DB.listAudit(300);render();}
 }
 
@@ -954,6 +957,130 @@ function auditView(){
       <tr style="text-align:left;color:var(--muted);"><th>Дата</th><th>Кой</th><th>Действие</th><th>Към</th></tr>
       ${rows}</table></div>`;
 }
+// ================= ПУБЛИЧНА ВИТРИНА (таб „Сайт") =================
+// Редактира текстовете и снимките на публичната страница (само уеб).
+// Всичко се пази като един JSON в site_content. Празно поле = текст по подразбиране.
+let SITEC=null;
+const sGet=(p)=>p.split('.').reduce((a,k)=>(a&&a[k]!==undefined)?a[k]:undefined,SITEC||{});
+const sSet=(p,v)=>{const ks=p.split('.');let o=SITEC=SITEC||{};ks.slice(0,-1).forEach(k=>{o=o[k]=o[k]||{};});o[ks[ks.length-1]]=v;};
+const sid=p=>'s_'+p.replace(/\./g,'_');
+// двуезично поле: BG и EN едно до друго
+function sBi(label,path,rows){
+  const v=sGet(path)||{};
+  const inp=(l,val)=>rows
+    ?`<textarea id="${sid(path)}_${l}" rows="${rows}" placeholder="${l.toUpperCase()}">${esc(val||'')}</textarea>`
+    :`<input id="${sid(path)}_${l}" placeholder="${l.toUpperCase()}" value="${esc(val||'')}"/>`;
+  return `<label style="margin-top:10px;">${esc(label)}</label>
+    <div class="row2">${inp('bg',v.bg)}${inp('en',v.en)}</div>`;
+}
+// поле за снимка: показва текущата, качва нова веднага, може да се махне
+function sImg(label,path){
+  const url=sGet(path)||'';
+  return `<label style="margin-top:10px;">${esc(label)}</label>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      ${url?`<img src="${esc(url)}" style="height:64px;border-radius:10px;object-fit:cover;"/>`:'<span class="muted">няма</span>'}
+      <input type="file" accept="image/*" onchange="siteUpload(this,'${path}')"/>
+      ${url?`<button class="btn ghost sm" onclick="sSet('${path}','');render()">Премахни</button>`:''}
+    </div>`;
+}
+function siteView(){
+  if(SITEC===null)return `<h2>Сайт</h2><p class="empty">Зареждане…</p>`;
+  const gal=(sGet('gallery.images')||[]);
+  const memBlock=(id,label)=>`<div class="card" style="margin-top:10px;"><b>${label}</b>
+    ${sBi('Годишна цена (напр. „1 200 €")','memberships.items.'+id+'.price')}
+    ${sBi('Описание (празно = вграденото)','memberships.items.'+id+'.desc',3)}
+    ${sBi('Ползи — по една на ред (празно = вградените)','memberships.items.'+id+'.benefits',5)}
+  </div>`;
+  return `<h2>Публична страница (сайт)</h2>
+  <p class="muted" style="margin-top:-6px;">Това е витрината, която нечленовете виждат на уеб адреса. В iOS приложението не се показва. Празно поле = текстът по подразбиране.</p>
+
+  <div class="card"><b>Начало</b>
+    ${sBi('Заглавие','hero.title')}
+    ${sBi('Подзаглавие','hero.subtitle',3)}
+    ${sImg('Голяма снимка под заглавието (по избор)','hero.image')}
+  </div>
+
+  <div class="card" style="margin-top:10px;"><b>Кои сме ние</b>
+    ${sBi('Заглавие','about.title')}
+    ${sBi('Текст (празен ред = нов абзац)','about.body',7)}
+    ${sImg('Снимка до текста (по избор)','about.image')}
+  </div>
+
+  <div class="card" style="margin-top:10px;"><b>Какво предлагаме</b>
+    <p class="muted">Осемте формата се показват автоматично с описанията от приложението. Тук е само уводът.</p>
+    ${sBi('Заглавие','offer.title')}
+    ${sBi('Увод','offer.body',3)}
+  </div>
+
+  <div class="card" style="margin-top:10px;"><b>Членство</b>
+    <p class="muted">Показват се Club, Alumni и Corporate. Founder и Founding Member не се показват публично.</p>
+    ${sBi('Заглавие','memberships.title')}
+    ${sBi('Увод','memberships.intro',3)}
+    ${memBlock('club','Club Member')}
+    ${memBlock('alumni','Alumni Member')}
+    ${memBlock('corporate','Corporate Member')}
+  </div>
+
+  <div class="card" style="margin-top:10px;"><b>Галерия</b>
+    ${sBi('Заглавие','gallery.title')}
+    <label style="margin-top:10px;">Снимки (${gal.length})</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      ${gal.map((u,i)=>`<div style="position:relative;"><img src="${esc(u)}" style="width:110px;height:82px;object-fit:cover;border-radius:10px;"/>
+        <button class="btn no sm" style="position:absolute;top:4px;right:4px;padding:2px 7px;" onclick="siteGalDel(${i})">×</button></div>`).join('')}
+    </div>
+    <input type="file" accept="image/*" multiple onchange="siteGalAdd(this)" style="margin-top:8px;"/>
+    <div class="muted" style="font-size:12px;">Ако секцията е празна, галерията не се показва на сайта.</div>
+  </div>
+
+  <div class="card" style="margin-top:10px;"><b>Контакти</b>
+    ${sBi('Заглавие','contact.title')}
+    ${sBi('Кратък текст','contact.body',2)}
+    <label style="margin-top:10px;">Имейл</label><input id="s_contact_email" value="${esc(sGet('contact.email')||'')}" placeholder="info@…"/>
+    <label style="margin-top:10px;">Телефон</label><input id="s_contact_phone" value="${esc(sGet('contact.phone')||'')}" placeholder="+359 …"/>
+    ${sBi('Адрес','contact.address')}
+  </div>
+
+  <div style="display:flex;gap:10px;margin-top:16px;align-items:center;">
+    <button class="btn" id="siteSaveBtn" onclick="saveSite()">Запази сайта</button>
+    <a class="btn ghost" href="./" target="_blank">Виж сайта ↗</a>
+  </div>`;
+}
+// събира всички полета от формата в SITEC
+function siteGrab(){
+  document.querySelectorAll('[id^="s_"]').forEach(el=>{
+    const id=el.id.slice(2);                       // напр. hero_title_bg
+    const m=id.match(/^(.*)_(bg|en)$/);
+    if(m){ const path=m[1].replace(/_/g,'.'); const cur=sGet(path)||{}; sSet(path,Object.assign({},cur,{[m[2]]:el.value.trim()})); }
+    else if(id==='contact_email')sSet('contact.email',el.value.trim());
+    else if(id==='contact_phone')sSet('contact.phone',el.value.trim());
+  });
+}
+async function siteUpload(input,path){
+  const f=input.files&&input.files[0]; if(!f)return;
+  siteGrab();                                        // да не загубим написаното при пречертаване
+  toast('Качване…');
+  const u=await DB.uploadMedia(f,'site');
+  if(u.error){alert('Снимката не се качи: '+u.error.message);return;}
+  sSet(path,u.url); render(); toast('Качено — не забравяй „Запази сайта"');
+}
+async function siteGalAdd(input){
+  const files=Array.from(input.files||[]); if(!files.length)return;
+  siteGrab(); toast('Качване на '+files.length+' снимки…');
+  const list=(sGet('gallery.images')||[]).slice();
+  for(const f of files){ const u=await DB.uploadMedia(f,'site'); if(u.error){alert('Снимка не се качи: '+u.error.message);continue;} list.push(u.url); }
+  sSet('gallery.images',list); render(); toast('Качено — не забравяй „Запази сайта"');
+}
+function siteGalDel(i){ siteGrab(); const list=(sGet('gallery.images')||[]).slice(); list.splice(i,1); sSet('gallery.images',list); render(); }
+async function saveSite(){
+  siteGrab();
+  const b=document.getElementById('siteSaveBtn'); if(b){b.disabled=true;b.textContent='Запазване…';}
+  const r=await DB.saveSiteContent(SITEC);
+  if(b){b.disabled=false;b.textContent='Запази сайта';}
+  if(r&&r.error){alert('Не се запази: '+r.error.message);return;}
+  try{await DB.logAudit('site_content_saved','','');}catch(e){}
+  toast('Сайтът е запазен ✓');
+}
+
 function appsView(){
   if(APPS===null)return `<h2>Кандидатури</h2><p class="empty">Зареждане…</p>`;
   if(!APPS.length)return `<h2>Кандидатури</h2><p class="empty">Все още няма кандидатури.</p>`;

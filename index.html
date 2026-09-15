@@ -354,6 +354,43 @@
   .gate .form{width:100%;max-width:330px;margin-top:30px;animation:fadeUp .9s ease 1.05s both;}
   .gate.ready .ring,.gate.ready .ring img,.gate.ready h1,.gate.ready .sub,.gate.ready .form{animation:none;}
   .gate.ready .ring{box-shadow:0 0 22px 1px rgba(200,100,60,.16);}
+  /* ---------- Публична витрина (само уеб) ---------- */
+  .land{max-width:960px;margin:0 auto;padding:0 20px 60px;}
+  .land .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;background:linear-gradient(var(--bg),var(--bg) 80%,transparent);}
+  .land .brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:19px;color:var(--text);}
+  .land .brand img{width:34px;height:34px;border-radius:50%;background:var(--medallion);padding:5px;box-sizing:border-box;object-fit:contain;}
+  .land .topbar .acts{display:flex;gap:8px;align-items:center;}
+  .land .hero{text-align:center;padding:38px 0 30px;}
+  .land .hero .ring{width:120px;height:120px;margin:0 auto;background:var(--medallion);border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;box-shadow:0 0 22px 1px rgba(200,100,60,.16);}
+  .land .hero .ring img{width:80px;height:60px;object-fit:contain;}
+  .land .hero h1{font-family:var(--serif);font-size:clamp(28px,5vw,42px);font-weight:500;letter-spacing:1.5px;line-height:1.15;margin:22px 0 10px;color:var(--text);}
+  .land .hero .lead{color:var(--mid);font-size:16px;line-height:1.55;max-width:600px;margin:0 auto;}
+  .land .hero .heroimg{width:100%;max-height:360px;object-fit:cover;border-radius:22px;margin-top:26px;box-shadow:var(--shadow-out,0 10px 30px rgba(58,44,35,.12));}
+  .land .cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px;}
+  .land section{margin-top:44px;}
+  .land .kicker{color:var(--gold);font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;}
+  .land h2{font-family:var(--serif);font-size:28px;font-weight:500;margin:0 0 12px;color:var(--text);}
+  .land .body{color:var(--mid);font-size:15px;line-height:1.65;white-space:pre-line;max-width:720px;}
+  .land .two{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center;}
+  .land .two img{width:100%;border-radius:18px;object-fit:cover;max-height:340px;}
+  .land .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:18px;}
+  .land .fcard{background:var(--card,#fffdf4);border:1px solid var(--line-soft);border-radius:18px;padding:16px;display:flex;gap:12px;align-items:flex-start;}
+  .land .fcard img{width:46px;height:46px;object-fit:contain;flex:none;}
+  .land .fcard b{display:block;font-size:15px;margin-bottom:4px;}
+  .land .fcard ul{margin:0;padding-left:16px;color:var(--mid);font-size:13px;line-height:1.5;}
+  .land .mcard{background:var(--card,#fffdf4);border:1px solid var(--line-soft);border-radius:22px;padding:22px;display:flex;flex-direction:column;}
+  .land .mcard .tag{color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase;}
+  .land .mcard h3{font-family:var(--serif);font-size:24px;font-weight:500;margin:6px 0 4px;}
+  .land .mcard .price{font-size:20px;color:var(--text);margin:6px 0 10px;}
+  .land .mcard .price small{color:var(--muted);font-size:12px;margin-left:4px;}
+  .land .mcard p{color:var(--mid);font-size:14px;line-height:1.55;margin:0 0 10px;}
+  .land .mcard ul{margin:0 0 16px;padding-left:18px;color:var(--mid);font-size:13px;line-height:1.6;flex:1;}
+  .land .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:16px;}
+  .land .gal img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;}
+  .land .contact{background:var(--card,#fffdf4);border:1px solid var(--line-soft);border-radius:22px;padding:22px;}
+  .land .contact a{color:var(--gold);text-decoration:none;}
+  .land footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line-soft);color:var(--muted);font-size:12px;text-align:center;}
+  @media(max-width:640px){.land .two{grid-template-columns:1fr;}.land .hero{padding-top:22px;}}
   .pwov{position:fixed;inset:0;background:rgba(58,44,35,.38);display:flex;align-items:center;justify-content:center;z-index:99;}
   .pwcard{background:var(--bg);border-radius:22px;padding:22px;width:min(90%,340px);
     box-shadow:9px 9px 18px #d9cdb6,-9px -9px 18px #fffdf4;}
@@ -516,6 +553,57 @@ const MEMBERS=[
   bn:{bg:['Членство за компании и организации','Достъп за до 5 представители','Покани за професионални формати','8% членска преференция в AC² Table','Дискретни срещи в уединена зона','Персонализирана Corporate карта'],en:['Membership for companies and organisations','Access for up to 5 representatives','Invitations to professional formats','8% member preference at AC² Table','Discreet meetings in a secluded area','A personalised Corporate card']}}
 ];
 const AC2='cards/logo-ac2.webp';
+// В iOS приложението няма витрина — то отваря направо входа. На уеб витрината е първото, което се вижда.
+const IN_APP=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+
+// ---------- ПУБЛИЧНА ВИТРИНА: съдържание по подразбиране ----------
+// Админът може да замени всяко поле от админ панела → таб „Сайт". Каквото не е
+// попълнено там, се показва оттук. Всеки текст е {bg, en}.
+const SITE_DEFAULTS={
+  hero:{
+    title:{bg:'American College Arcus Club',en:'American College Arcus Club'},
+    subtitle:{bg:'Частен клуб за култура, гастрономия и смислено общуване — създаден около общността на Американски колеж Аркус.',en:'A private club for culture, gastronomy and meaningful company — built around the American College Arcus community.'},
+    image:''
+  },
+  about:{
+    title:{bg:'Кои сме ние',en:'Who we are'},
+    body:{bg:'AC² е място, в което културата, добрата храна и разговорът се срещат в спокойна и лична среда. Клубът е по покана и обединява хора, свързани с Американски колеж Аркус — възпитаници, родители, преподаватели и приятели на училището.\n\nВярваме, че най-ценните неща се случват в малък кръг: една прожекция, една вечеря, един разговор с човек, когото иначе не бихте срещнали.',en:'AC² is a place where culture, good food and conversation meet in a calm, personal setting. Membership is by invitation and brings together people connected to the American College Arcus — alumni, parents, teachers and friends of the school.\n\nWe believe the most valuable things happen in a small circle: one screening, one dinner, one conversation with someone you would not otherwise have met.'},
+    image:''
+  },
+  offer:{
+    title:{bg:'Какво предлагаме',en:'What we offer'},
+    body:{bg:'Програмата на клуба е организирана в осем формата. Всеки от тях е малък по мащаб и подбран по съдържание.',en:'The club programme is organised in eight formats. Each is small in scale and carefully curated.'}
+  },
+  memberships:{
+    title:{bg:'Членство',en:'Membership'},
+    intro:{bg:'Клубът е по покана. Можете да кандидатствате за една от трите категории по-долу — всяка кандидатура се разглежда лично.',en:'The club is by invitation. You may apply for one of the three categories below — every application is reviewed personally.'},
+    items:{
+      club:{price:{bg:'',en:''},desc:{bg:'',en:''},benefits:{bg:'',en:''}},
+      alumni:{price:{bg:'',en:''},desc:{bg:'',en:''},benefits:{bg:'',en:''}},
+      corporate:{price:{bg:'',en:''},desc:{bg:'',en:''},benefits:{bg:'',en:''}}
+    }
+  },
+  gallery:{title:{bg:'Моменти от клуба',en:'Moments from the club'},images:[]},
+  contact:{
+    title:{bg:'Свържете се с нас',en:'Get in touch'},
+    body:{bg:'За въпроси относно членство и събития.',en:'For questions about membership and events.'},
+    email:'info@arcusclub.bg',phone:'',address:{bg:'София, България',en:'Sofia, Bulgaria'}
+  }
+};
+let SITE=null; // съдържание от базата (или {} ако няма); null = още не е заредено
+// текст от базата, ако е попълнен; иначе от подразбиране
+function sT(path){
+  const get=(o,p)=>p.split('.').reduce((a,k)=>(a&&a[k]!==undefined)?a[k]:undefined,o);
+  const v=get(SITE||{},path), d=get(SITE_DEFAULTS,path);
+  const pick=x=>(x&&typeof x==='object'&&!Array.isArray(x))?(x[lang]||x.bg||''):x;
+  const pv=pick(v); return (pv!==undefined&&pv!==null&&pv!=='')?pv:(pick(d)||'');
+}
+async function loadSite(){
+  if(SITE!==null)return;
+  SITE={};
+  try{ SITE=(await DB.getSiteContent())||{}; }catch(e){}
+  if(!user&&document.querySelector('.land'))route();  // пречертаваме с реалното съдържание
+}
 // Единен набор линейни икони (в стила на мотивите)
 const ICN={
   home:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg>`,
@@ -1676,6 +1764,95 @@ async function bioLogin(){
   }catch(e){/* отказан/неуспешен Face ID — нищо */}
 }
 let entered=false;
+// ---------- ПУБЛИЧНА ВИТРИНА (само уеб, преди вход) ----------
+function landing(){
+  const bg=lang==='bg';
+  const heroImg=sT('hero.image'), aboutImg=sT('about.image');
+  // формати — от вградения списък (същият като в приложението)
+  const fmt=FORMATS.map(f=>`<div class="fcard"><img src="${f.img}" alt=""/><div><b style="color:${f.c}">${esc(f.t)}</b>
+      <ul>${(f.b[lang]||f.b.bg).slice(0,3).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div>`).join('');
+  // членства — Club / Alumni / Corporate (без Founder и Founding Member)
+  const mem=['club','alumni','corporate'].map(id=>{
+    const m=MEMBERS.find(x=>x.id===id);
+    const desc=sT('memberships.items.'+id+'.desc')||(m.d[lang]||m.d.bg);
+    const benRaw=sT('memberships.items.'+id+'.benefits');
+    const ben=benRaw?benRaw.split('\n').map(s=>s.trim()).filter(Boolean):(m.bn[lang]||m.bn.bg);
+    const price=sT('memberships.items.'+id+'.price');
+    return `<div class="mcard">
+      <div class="tag">${esc(m.tag[lang]||m.tag.bg)}</div>
+      <h3>${esc(m.t)}</h3>
+      ${price?`<div class="price">${esc(price)}<small>${bg?'/ година':'/ year'}</small></div>`:''}
+      <p>${esc(desc)}</p>
+      <ul>${ben.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+      <button class="btn btn-ghost" onclick="go('apply')">${bg?'Кандидатствай':'Apply'}</button>
+    </div>`;
+  }).join('');
+  const gal=(SITE&&SITE.gallery&&Array.isArray(SITE.gallery.images)?SITE.gallery.images:[]).filter(Boolean);
+  const email=sT('contact.email'), phone=sT('contact.phone');
+  return `<div class="land">
+    <div class="topbar">
+      <div class="brand"><img src="${AC2}" alt="AC²"/><span>Arcus Club</span></div>
+      <div class="acts">
+        <button class="pill" onclick="toggleLang()">${bg?'EN':'BG'}</button>
+        <button class="btn" style="padding:9px 16px;font-size:13px;" onclick="go('login')">${bg?'Вход за членове':'Member login'}</button>
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="ring"><img src="${AC2}" alt="AC²"/></div>
+      <h1>${esc(sT('hero.title'))}</h1>
+      <div class="lead">${esc(sT('hero.subtitle'))}</div>
+      <div class="cta">
+        <button class="btn" onclick="go('apply')">${bg?'Кандидатствай за членство':'Apply for membership'}</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('l_about').scrollIntoView({behavior:'smooth'})">${bg?'Научете повече':'Learn more'}</button>
+      </div>
+      ${heroImg?`<img class="heroimg" src="${esc(heroImg)}" alt=""/>`:''}
+    </div>
+
+    <section id="l_about">
+      <div class="kicker">${bg?'За клуба':'About the club'}</div>
+      <h2>${esc(sT('about.title'))}</h2>
+      <div class="${aboutImg?'two':''}">
+        <div class="body">${esc(sT('about.body'))}</div>
+        ${aboutImg?`<img src="${esc(aboutImg)}" alt=""/>`:''}
+      </div>
+    </section>
+
+    <section>
+      <div class="kicker">${bg?'Програма':'Programme'}</div>
+      <h2>${esc(sT('offer.title'))}</h2>
+      <div class="body">${esc(sT('offer.body'))}</div>
+      <div class="grid">${fmt}</div>
+    </section>
+
+    <section id="l_mem">
+      <div class="kicker">${bg?'Категории':'Categories'}</div>
+      <h2>${esc(sT('memberships.title'))}</h2>
+      <div class="body">${esc(sT('memberships.intro'))}</div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));">${mem}</div>
+    </section>
+
+    ${gal.length?`<section>
+      <div class="kicker">${bg?'Галерия':'Gallery'}</div>
+      <h2>${esc(sT('gallery.title'))}</h2>
+      <div class="gal">${gal.map(u=>`<img src="${esc(u)}" alt="" loading="lazy"/>`).join('')}</div>
+    </section>`:''}
+
+    <section>
+      <div class="kicker">${bg?'Контакти':'Contact'}</div>
+      <h2>${esc(sT('contact.title'))}</h2>
+      <div class="contact">
+        <div class="body" style="margin-bottom:10px;">${esc(sT('contact.body'))}</div>
+        ${email?`<div><a href="mailto:${esc(email)}">${esc(email)}</a></div>`:''}
+        ${phone?`<div style="margin-top:4px;"><a href="tel:${esc(phone.replace(/\s+/g,''))}">${esc(phone)}</a></div>`:''}
+        <div style="margin-top:4px;color:var(--mid);">${esc(sT('contact.address'))}</div>
+      </div>
+    </section>
+
+    <footer>© ${new Date().getFullYear()} American College Arcus Club · <a style="color:var(--gold);cursor:pointer;" onclick="go('login')">${bg?'Вход за членове':'Member login'}</a></footer>
+  </div>`;
+}
+
 function gate(){
   const live=DB.live;
   const su=loginMode==='signup';
@@ -1696,6 +1873,7 @@ function gate(){
        <div style="margin-top:14px;color:var(--muted);font-size:12px;">${lang==='bg'?'Демо достъп':'Demo access'}: <span style="color:var(--gold);">admin / admin</span></div>`;
   return `<div class="gate${entered?' ready':''}">
     <div style="position:absolute;top:calc(16px + env(safe-area-inset-top));right:16px;"><button class="pill" onclick="toggleLang()">${lang==='bg'?'EN':'BG'}</button></div>
+    ${(!IN_APP&&live)?`<div style="position:absolute;top:calc(16px + env(safe-area-inset-top));left:16px;"><button class="pill" onclick="go('')">‹ ${lang==='bg'?'Към сайта':'Back to site'}</button></div>`:''}
     <div class="ring"><img src="${AC2}" alt="AC²"/></div>
     <h1>American College<br>Arcus Club</h1>
     <div class="sub">${su?tr('signupTitle'):(lang==='bg'?'Вход за членове':'Members’ entrance')}</div>
@@ -2337,11 +2515,19 @@ async function route(){
   if(!user){
     const p0=location.hash.replace(/^#/,'').split('?')[0];
     if(p0==='apply'){app.innerHTML=appForm('apply');if(document.getElementById('ap_mem'))appToggle();window.scrollTo(0,0);tb.style.display='none';entered=true;return;}
+    // Уеб: витрината е първото, което се вижда; входът е на #login.
+    // Приложение (Capacitor): направо входът, както досега.
+    if(!IN_APP&&DB.live&&p0!=='login'){
+      const keepY=document.querySelector('.land')?window.scrollY:0;   // при смяна на език не скачаме нагоре
+      app.innerHTML=landing();tb.style.display='none';entered=true;
+      window.scrollTo(0,keepY);loadSite();return;
+    }
     app.innerHTML=gate();window.scrollTo(0,0);tb.style.display='none';entered=true;return;
   }
   tb.style.display='flex';
   const raw=location.hash.replace(/^#/,'');
   const [path,q]=raw.split('?');
+  if(path==='login'){location.hash='';return;}   // след вход #login няма смисъл
   if(path!=='events')previewAs=null;
   const parts=path.split('/');
   // 1) Рисуваме веднага с наличните данни (без чакане → без забавяне)
