@@ -961,7 +961,12 @@ function auditView(){
 // Редактира текстовете и снимките на публичната страница (само уеб).
 // Всичко се пази като един JSON в site_content. Празно поле = текст по подразбиране.
 let SITEC=null;
-const sGet=(p)=>p.split('.').reduce((a,k)=>(a&&a[k]!==undefined)?a[k]:undefined,SITEC||{});
+const _dig=(o,p)=>p.split('.').reduce((a,k)=>(a&&a[k]!==undefined)?a[k]:undefined,o||{});
+// Стойност за редакция: записаното в базата, а ако липсва — текстът, който сайтът показва сега.
+// Така админът вижда реалния текст и просто го поправя, вместо да гледа празни полета.
+const sGet=(p)=>{const v=_dig(SITEC,p);const d=_dig(window.SITE_DEFAULTS,p);
+  if(v&&typeof v==='object'&&!Array.isArray(v)){return {bg:(v.bg||(d&&d.bg)||''),en:(v.en||(d&&d.en)||'')};}
+  return (v!==undefined&&v!==null&&v!=='')?v:(d!==undefined?d:undefined);};
 const sSet=(p,v)=>{const ks=p.split('.');let o=SITEC=SITEC||{};ks.slice(0,-1).forEach(k=>{o=o[k]=o[k]||{};});o[ks[ks.length-1]]=v;};
 const sid=p=>'s_'+p.replace(/\./g,'_');
 // двуезично поле: BG и EN едно до друго
@@ -990,16 +995,16 @@ function siteView(){
     ${sBi('„За вас е, ако…" — едно изречение','memberships.items.'+id+'.hook')}
     ${sBi('Кратко резюме — едно изречение под него','memberships.items.'+id+'.summary')}
     ${sBi('Годишна цена (напр. „1 200 €")','memberships.items.'+id+'.price')}
-    ${sBi('Пълно описание — вижда се при „Виж всичко" (празно = вграденото)','memberships.items.'+id+'.desc',3)}
-    ${sBi('Ползи — по една на ред, при „Виж всичко" (празно = вградените)','memberships.items.'+id+'.benefits',5)}
+    ${sBi('Пълно описание — вижда се при „Виж всичко"','memberships.items.'+id+'.desc',3)}
+    ${sBi('Ползи — по една на ред, при „Виж всичко"','memberships.items.'+id+'.benefits',5)}
   </div>`;
   const FMT_IDS=[['culture','AC² Culture'],['cinema','AC² Cinema'],['table','AC² Table'],['music','AC² Music'],['conversation','AC² Conversation'],['community','AC² Community'],['theater','AC² Theater'],['online','AC² Online']];
   const fmtBlock=([id,label])=>`<div class="card" style="margin-top:10px;"><b>${label}</b>
-    ${sBi('Абзац (празно = вграденият текст)','offer.items.'+id+'.body',3)}
+    ${sBi('Абзац','offer.items.'+id+'.body',3)}
     ${sImg('Снимка (без снимка се показва логото на формата)','offer.items.'+id+'.image')}
   </div>`;
   return `<h2>Публична страница (сайт)</h2>
-  <p class="muted" style="margin-top:-6px;">Това е витрината, която нечленовете виждат на уеб адреса. В iOS приложението не се показва. Празно поле = текстът по подразбиране.</p>
+  <p class="muted" style="margin-top:-6px;">Това е витрината, която нечленовете виждат на уеб адреса. В iOS приложението не се показва. Полетата показват текущия текст на сайта — просто го редактирай и натисни „Запази сайта".</p>
 
   <div class="card"><b>Начало</b>
     ${sBi('Заглавие','hero.title')}

@@ -355,7 +355,9 @@
   .gate.ready .ring,.gate.ready .ring img,.gate.ready h1,.gate.ready .sub,.gate.ready .form{animation:none;}
   .gate.ready .ring{box-shadow:0 0 22px 1px rgba(200,100,60,.16);}
   /* ---------- Публична витрина (само уеб) ---------- */
-  .land{max-width:960px;margin:0 auto;padding:0 20px 60px;}
+  /* приложението е в 520px "телефонен" контейнер; витрината има нужда от цялата ширина */
+  #app.wide{max-width:1120px;padding-bottom:0;}
+  .land{max-width:1080px;margin:0 auto;padding:0 24px 60px;}
   .land .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;background:linear-gradient(var(--bg),var(--bg) 80%,transparent);}
   .land .brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:19px;color:var(--text);}
   .land .brand img{width:34px;height:34px;border-radius:50%;background:var(--medallion);padding:5px;box-sizing:border-box;object-fit:contain;}
@@ -373,8 +375,17 @@
   .land .body{color:var(--mid);font-size:15px;line-height:1.65;white-space:pre-line;max-width:720px;}
   .land .two{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center;}
   .land .two img{width:100%;border-radius:18px;object-fit:cover;max-height:340px;}
-  .land .mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px;padding:0;}
-  @media(max-width:760px){.land .mgrid{grid-template-columns:1fr;}}
+  .land .mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:18px;padding:0;}
+  /* под 900px: една под друга, но хоризонтални (име вляво, текст вдясно) */
+  @media(max-width:900px){
+    .land .mgrid{grid-template-columns:1fr;}
+    .land .mcard{display:grid;grid-template-columns:200px 1fr;column-gap:20px;align-items:start;}
+    .land .mcard .tag,.land .mcard h3,.land .mcard .price{grid-column:1;}
+    .land .mcard .hook,.land .mcard p,.land .mcard .more{grid-column:2;}
+    .land .mcard .hook{grid-row:1;}
+    .land .mcard .more{margin-top:0;}
+  }
+  @media(max-width:560px){.land .mcard{display:flex;flex-direction:column;}}
   /* формати — редакционни редове */
   .land .flist{margin-top:10px;}
   .land .frow{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center;padding:26px 0;border-bottom:1px solid var(--line-soft);}
@@ -571,48 +582,7 @@ const IN_APP=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capa
 // ---------- ПУБЛИЧНА ВИТРИНА: съдържание по подразбиране ----------
 // Админът може да замени всяко поле от админ панела → таб „Сайт". Каквото не е
 // попълнено там, се показва оттук. Всеки текст е {bg, en}.
-const SITE_DEFAULTS={
-  hero:{
-    title:{bg:'American College Arcus Club',en:'American College Arcus Club'},
-    subtitle:{bg:'Частен клуб за култура, гастрономия и смислено общуване — създаден около общността на Американски колеж Аркус.',en:'A private club for culture, gastronomy and meaningful company — built around the American College Arcus community.'},
-    image:''
-  },
-  about:{
-    title:{bg:'Кои сме ние',en:'Who we are'},
-    body:{bg:'AC² е място, в което културата, добрата храна и разговорът се срещат в спокойна и лична среда. Клубът е по покана и обединява хора, свързани с Американски колеж Аркус — възпитаници, родители, преподаватели и приятели на училището.\n\nВярваме, че най-ценните неща се случват в малък кръг: една прожекция, една вечеря, един разговор с човек, когото иначе не бихте срещнали.',en:'AC² is a place where culture, good food and conversation meet in a calm, personal setting. Membership is by invitation and brings together people connected to the American College Arcus — alumni, parents, teachers and friends of the school.\n\nWe believe the most valuable things happen in a small circle: one screening, one dinner, one conversation with someone you would not otherwise have met.'},
-    image:''
-  },
-  offer:{
-    title:{bg:'Какво предлагаме',en:'What we offer'},
-    body:{bg:'Програмата на клуба е организирана в осем формата. Всеки от тях е малък по мащаб и подбран по съдържание.',en:'The club programme is organised in eight formats. Each is small in scale and carefully curated.'},
-    // по един запис на формат: абзац (BG/EN) + снимка. Празно = кратко описание от приложението.
-    items:{
-      culture:{body:{bg:'Музика, изложби, литература и срещи с артисти и лектори. Вечери в малка зала, където разговорът след събитието е част от програмата.',en:'Music, exhibitions, literature and meetings with artists and lecturers. Evenings in a small hall, where the conversation afterwards is part of the programme.'},image:''},
-      cinema:{body:{bg:'Авторско кино и дискусии. Прожекция за няколко десетки души и разговор с гост, който познава филма отвътре. Тематични и семейни формати.',en:'Auteur cinema and discussions. A screening for a few dozen people and a conversation with a guest who knows the film from the inside. Thematic and family formats.'},image:''},
-      table:{body:{bg:'Гастрономически вечери с гост-готвач и ресторантът на клуба — с членска преференция и среда, в която не бързате.',en:'Gastronomic evenings with a guest chef and the club restaurant — with a member preference and a setting where nobody hurries you.'},image:''},
-      music:{body:{bg:'Камерни концерти и музикални вечери в близост до изпълнителите — формат, в който се чува всяка нота.',en:'Chamber concerts and musical evenings close to the performers — a format where you hear every note.'},image:''},
-      conversation:{body:{bg:'Разговори с интересни хора — на маса, без сцена и микрофон. Теми от науката до всекидневието.',en:'Conversations with interesting people — at a table, without a stage or microphone. Topics from science to everyday life.'},image:''},
-      community:{body:{bg:'Семейни поводи, срещи на възпитаници и училищно-свързани формати. Дискретни срещи в по-лична среда.',en:'Family occasions, alumni gatherings and school-related formats. Discreet meetings in a more personal setting.'},image:''},
-      theater:{body:{bg:'Камерни театрални формати и четения — близо до актьорите, в зала за малко публика.',en:'Chamber theatre formats and readings — close to the actors, in a hall for a small audience.'},image:''},
-      online:{body:{bg:'Живи предавания и видео архив за членовете, които не могат да присъстват на място.',en:'Live streams and a video archive for members who cannot attend in person.'},image:''}
-    }
-  },
-  memberships:{
-    title:{bg:'Членство',en:'Membership'},
-    intro:{bg:'Клубът е по покана. Можете да кандидатствате за една от трите категории по-долу — всяка кандидатура се разглежда лично.',en:'The club is by invitation. You may apply for one of the three categories below — every application is reviewed personally.'},
-    items:{
-      club:{hook:{bg:'За вас е, ако искате клубът да е част от седмицата ви.',en:'For you if you want the club to be part of your week.'},summary:{bg:'Цялата програма, приоритет при резервации, 5% в AC² Table.',en:'The full programme, priority for reservations, 5% at AC² Table.'},price:{bg:'',en:''},desc:{bg:'',en:''},benefits:{bg:'',en:''}},
-      alumni:{hook:{bg:'За вас е, ако сте свързани с Американския колеж Аркус.',en:'For you if you are connected to the American College Arcus.'},summary:{bg:'Избрани събития, училищни формати, кино и култура.',en:'Selected events, school-related formats, cinema and culture.'},price:{bg:'',en:''},desc:{bg:'',en:''},benefits:{bg:'',en:''}},
-      corporate:{hook:{bg:'За вас е, ако представлявате компания или организация.',en:'For you if you represent a company or organisation.'},summary:{bg:'До 5 представители, професионални формати, 8% в AC² Table.',en:'Up to 5 representatives, professional formats, 8% at AC² Table.'},price:{bg:'',en:''},desc:{bg:'',en:''},benefits:{bg:'',en:''}}
-    }
-  },
-  gallery:{title:{bg:'Моменти от клуба',en:'Moments from the club'},images:[]},
-  contact:{
-    title:{bg:'Свържете се с нас',en:'Get in touch'},
-    body:{bg:'За въпроси относно членство и събития.',en:'For questions about membership and events.'},
-    email:'info@arcusclub.bg',phone:'',address:{bg:'София, България',en:'Sofia, Bulgaria'}
-  }
-};
+const SITE_DEFAULTS=window.SITE_DEFAULTS; // общи за приложението и админ панела — в db.js
 let SITE=null; // съдържание от базата (или {} ако няма); null = още не е заредено
 // текст от базата, ако е попълнен; иначе от подразбиране
 function sT(path){
@@ -2552,16 +2522,19 @@ async function route(){
   const tb=document.getElementById('tabbar');
   if(!user){
     const p0=location.hash.replace(/^#/,'').split('?')[0];
-    if(p0==='apply'){app.innerHTML=appForm('apply');if(document.getElementById('ap_mem'))appToggle();window.scrollTo(0,0);tb.style.display='none';entered=true;return;}
+    if(p0==='apply'){app.classList.remove('wide');app.innerHTML=appForm('apply');if(document.getElementById('ap_mem'))appToggle();window.scrollTo(0,0);tb.style.display='none';entered=true;return;}
     // Уеб: витрината е първото, което се вижда; входът е на #login.
     // Приложение (Capacitor): направо входът, както досега.
     if(!IN_APP&&DB.live&&p0!=='login'){
       const keepY=document.querySelector('.land')?window.scrollY:0;   // при смяна на език не скачаме нагоре
+      app.classList.add('wide');                                        // витрината ползва цялата ширина
       app.innerHTML=landing();tb.style.display='none';entered=true;
       window.scrollTo(0,keepY);loadSite();return;
     }
+    app.classList.remove('wide');
     app.innerHTML=gate();window.scrollTo(0,0);tb.style.display='none';entered=true;return;
   }
+  app.classList.remove('wide');
   tb.style.display='flex';
   const raw=location.hash.replace(/^#/,'');
   const [path,q]=raw.split('?');

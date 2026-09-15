@@ -1,3 +1,49 @@
+// ---------- ПУБЛИЧНА ВИТРИНА: съдържание по подразбиране ----------
+// Общо за приложението (index.html) и админ панела (admin.html). Всеки текст е {bg,en}.
+// Админът вижда тези текстове в таб „Сайт" и ги редактира; записаното в базата има предимство.
+window.SITE_DEFAULTS={
+  hero:{
+    title:{bg:'American College Arcus Club',en:'American College Arcus Club'},
+    subtitle:{bg:'Частен клуб за култура, гастрономия и смислено общуване — създаден около общността на Американски колеж Аркус.',en:'A private club for culture, gastronomy and meaningful company — built around the American College Arcus community.'},
+    image:''
+  },
+  about:{
+    title:{bg:'Кои сме ние',en:'Who we are'},
+    body:{bg:'AC² е място, в което културата, добрата храна и разговорът се срещат в спокойна и лична среда. Клубът е по покана и обединява хора, свързани с Американски колеж Аркус — възпитаници, родители, преподаватели и приятели на училището.\n\nВярваме, че най-ценните неща се случват в малък кръг: една прожекция, една вечеря, един разговор с човек, когото иначе не бихте срещнали.',en:'AC² is a place where culture, good food and conversation meet in a calm, personal setting. Membership is by invitation and brings together people connected to the American College Arcus — alumni, parents, teachers and friends of the school.\n\nWe believe the most valuable things happen in a small circle: one screening, one dinner, one conversation with someone you would not otherwise have met.'},
+    image:''
+  },
+  offer:{
+    title:{bg:'Какво предлагаме',en:'What we offer'},
+    body:{bg:'Програмата на клуба е организирана в осем формата. Всеки от тях е малък по мащаб и подбран по съдържание.',en:'The club programme is organised in eight formats. Each is small in scale and carefully curated.'},
+    // по един запис на формат: абзац (BG/EN) + снимка. Празно = кратко описание от приложението.
+    items:{
+      culture:{body:{bg:'Музика, изложби, литература и срещи с артисти и лектори. Вечери в малка зала, където разговорът след събитието е част от програмата.',en:'Music, exhibitions, literature and meetings with artists and lecturers. Evenings in a small hall, where the conversation afterwards is part of the programme.'},image:''},
+      cinema:{body:{bg:'Авторско кино и дискусии. Прожекция за няколко десетки души и разговор с гост, който познава филма отвътре. Тематични и семейни формати.',en:'Auteur cinema and discussions. A screening for a few dozen people and a conversation with a guest who knows the film from the inside. Thematic and family formats.'},image:''},
+      table:{body:{bg:'Гастрономически вечери с гост-готвач и ресторантът на клуба — с членска преференция и среда, в която не бързате.',en:'Gastronomic evenings with a guest chef and the club restaurant — with a member preference and a setting where nobody hurries you.'},image:''},
+      music:{body:{bg:'Камерни концерти и музикални вечери в близост до изпълнителите — формат, в който се чува всяка нота.',en:'Chamber concerts and musical evenings close to the performers — a format where you hear every note.'},image:''},
+      conversation:{body:{bg:'Разговори с интересни хора — на маса, без сцена и микрофон. Теми от науката до всекидневието.',en:'Conversations with interesting people — at a table, without a stage or microphone. Topics from science to everyday life.'},image:''},
+      community:{body:{bg:'Семейни поводи, срещи на възпитаници и училищно-свързани формати. Дискретни срещи в по-лична среда.',en:'Family occasions, alumni gatherings and school-related formats. Discreet meetings in a more personal setting.'},image:''},
+      theater:{body:{bg:'Камерни театрални формати и четения — близо до актьорите, в зала за малко публика.',en:'Chamber theatre formats and readings — close to the actors, in a hall for a small audience.'},image:''},
+      online:{body:{bg:'Живи предавания и видео архив за членовете, които не могат да присъстват на място.',en:'Live streams and a video archive for members who cannot attend in person.'},image:''}
+    }
+  },
+  memberships:{
+    title:{bg:'Членство',en:'Membership'},
+    intro:{bg:'Клубът е по покана. Можете да кандидатствате за една от трите категории по-долу — всяка кандидатура се разглежда лично.',en:'The club is by invitation. You may apply for one of the three categories below — every application is reviewed personally.'},
+    items:{
+      club:{hook:{bg:'За вас е, ако искате клубът да е част от седмицата ви.',en:'For you if you want the club to be part of your week.'},summary:{bg:'Цялата програма, приоритет при резервации, 5% в AC² Table.',en:'The full programme, priority for reservations, 5% at AC² Table.'},price:{bg:'',en:''},desc:{bg:'Основната членска категория — за хората, които желаят да бъдат активна част от клубния живот, неговата програма и общност.',en:'The core membership category — for those who wish to be an active part of club life, its programme and community.'},benefits:{bg:'Достъп до клубната програма и събития\nПокани за културни и гастрономически формати\nПриоритет при резервации\n5% членска преференция в AC² Table\nПерсонализирана Club Member карта',en:'Access to the programme and events\nInvitations to cultural and gastronomic formats\nPriority for reservations\n5% member preference at AC² Table\nA personalised Club Member card'}},
+      alumni:{hook:{bg:'За вас е, ако сте свързани с Американския колеж Аркус.',en:'For you if you are connected to the American College Arcus.'},summary:{bg:'Избрани събития, училищни формати, кино и култура.',en:'Selected events, school-related formats, cinema and culture.'},price:{bg:'',en:''},desc:{bg:'Специална категория за хората с лична връзка към общността на Американски Колеж Аркус — възпитаници, родители, учители.',en:'A special category for those with a personal connection to the American College Arcus community.'},benefits:{bg:'Достъп до избрани клубни събития\nПокани за училищно-свързани събития\nУчастие в AC² Cinema и AC² Culture\nПокани за общностни вечери\nПерсонализирана Alumni карта',en:'Access to selected club events\nInvitations to school-related events\nParticipation in AC² Cinema and Culture\nInvitations to community evenings\nA personalised Alumni card'}},
+      corporate:{hook:{bg:'За вас е, ако представлявате компания или организация.',en:'For you if you represent a company or organisation.'},summary:{bg:'До 5 представители, професионални формати, 8% в AC² Table.',en:'Up to 5 representatives, professional formats, 8% at AC² Table.'},price:{bg:'',en:''},desc:{bg:'Категория за компании и организации, които споделят ценностите на клуба — култура, образование, качество и смислено общуване.',en:'A category for companies and organisations that share the club values.'},benefits:{bg:'Членство за компании и организации\nДостъп за до 5 представители\nПокани за професионални формати\n8% членска преференция в AC² Table\nДискретни срещи в уединена зона\nПерсонализирана Corporate карта',en:'Membership for companies and organisations\nAccess for up to 5 representatives\nInvitations to professional formats\n8% member preference at AC² Table\nDiscreet meetings in a secluded area\nA personalised Corporate card'}}
+    }
+  },
+  gallery:{title:{bg:'Моменти от клуба',en:'Moments from the club'},images:[]},
+  contact:{
+    title:{bg:'Свържете се с нас',en:'Get in touch'},
+    body:{bg:'За въпроси относно членство и събития.',en:'For questions about membership and events.'},
+    email:'info@arcusclub.bg',phone:'',address:{bg:'София, България',en:'Sofia, Bulgaria'}
+  }
+};
+
 // ============================================================
 //  Единен слой за данни. Ако config.js е попълнен → Supabase (общо за всички).
 //  Иначе → демо режим (localStorage, само на това устройство).
