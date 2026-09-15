@@ -414,6 +414,26 @@
   .land .contact a{color:var(--gold);text-decoration:none;}
   .land footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line-soft);color:var(--muted);font-size:12px;text-align:center;}
   @media(max-width:640px){.land .two,.land .frow{grid-template-columns:1fr;}.land .frow.rev .fpic{order:0;}.land .hero{padding-top:22px;}}
+  /* ---------- Правилник преди кандидатстване ---------- */
+  .rulesov{position:fixed;inset:0;background:rgba(58,44,35,.5);display:flex;align-items:center;justify-content:center;z-index:120;padding:14px;}
+  .rulescard{background:var(--bg);border-radius:22px;width:min(100%,760px);max-height:calc(100vh - 28px);display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .rulescard .rh{padding:18px 22px 10px;border-bottom:1px solid var(--line-soft);}
+  .rulescard .rh h3{font-family:var(--serif);font-size:22px;font-weight:500;margin:0;}
+  .rulescard .rh .m{color:var(--muted);font-size:12px;margin-top:4px;}
+  .rulescard .rb{overflow:auto;padding:6px 22px;flex:1;-webkit-overflow-scrolling:touch;}
+  .rulescard .rf{padding:12px 22px 18px;border-top:1px solid var(--line-soft);}
+  .rulescard .rf label{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45;cursor:pointer;margin-bottom:12px;}
+  .rulescard .rf input{margin-top:3px;width:18px;height:18px;flex:none;}
+  .rulescard .rf .acts{display:flex;gap:10px;}
+  .rulescard .rf .acts .btn{flex:1;margin:0;}
+  .rulescard .rf .btn[disabled]{opacity:.45;cursor:not-allowed;}
+  .rules{font-size:14px;line-height:1.6;color:var(--text);}
+  .rules .rules-note{color:var(--muted);font-size:12px;margin:8px 0 14px;}
+  .rules h2{font-family:var(--serif);font-size:19px;font-weight:500;margin:22px 0 8px;color:var(--text);}
+  .rules h3{font-size:14px;font-weight:600;margin:14px 0 4px;color:var(--gold);}
+  .rules p{margin:0 0 8px;color:var(--mid);}
+  .rules table{font-size:13px;border-collapse:collapse;margin:8px 0;}
+  .rules td,.rules th{border:1px solid var(--line-soft);padding:6px 8px;vertical-align:top;}
   .pwov{position:fixed;inset:0;background:rgba(58,44,35,.38);display:flex;align-items:center;justify-content:center;z-index:99;}
   .pwcard{background:var(--bg);border-radius:22px;padding:22px;width:min(90%,340px);
     box-shadow:9px 9px 18px #d9cdb6,-9px -9px 18px #fffdf4;}
@@ -1553,7 +1573,7 @@ async function submitApp(nominate){
   const r=await DB.submitApplication({nominate,membership:m,name,email,phone,about,
     profession:v('ap_prof'),interests:v('ap_interests'),alumni_relation:alumni,
     corp_bulstat:v('ap_bulstat'),corp_size:v('ap_size'),corp_activity:v('ap_activity'),
-    captcha_token:ctok});
+    captcha_token:ctok, rules_accepted:rulesAccepted()});
   if(r&&r.error){
     resetCaptcha(); // токенът е за еднократна употреба
     if(r.error.cooldown){toast(lang==='bg'?'Скорошна кандидатура с този имейл/БУЛСТАТ беше отказана. Може да опитате отново след 30 дни.':'A recent application with this email/company ID was declined. You can re-apply after 30 days.');return;}
@@ -1757,6 +1777,45 @@ async function bioLogin(){
   }catch(e){/* отказан/неуспешен Face ID — нищо */}
 }
 let entered=false;
+// ---------- ПРАВИЛНИК ПРЕДИ КАНДИДАТСТВАНЕ ----------
+// Показва целия вътрешен правилник в прозорец. Продължаването е възможно само след
+// отметка „Прочетох и приемам". Съгласието важи за тази сесия на браузъра.
+let _rulesHtml=null;
+const rulesAccepted=()=>{try{return sessionStorage.getItem('acac_rules_ok')==='1';}catch(e){return false;}};
+async function startApply(){
+  if(rulesAccepted()){go('apply');return;}
+  const bg=lang==='bg';
+  const ov=document.createElement('div');ov.className='rulesov';
+  ov.innerHTML=`<div class="rulescard" role="dialog" aria-modal="true">
+    <div class="rh"><h3>${bg?'Вътрешен правилник на клуба':'Club rules'}</h3>
+      <div class="m">${bg?'Моля, прочетете правилника. Кандидатстването е възможно само след като го приемете.':'Please read the rules. You can apply only after accepting them. The document is in Bulgarian.'}</div></div>
+    <div class="rb" id="rulesBody"><p style="color:var(--muted);padding:30px 0;text-align:center;">${bg?'Зареждане…':'Loading…'}</p></div>
+    <div class="rf">
+      <label><input type="checkbox" id="rulesChk"/><span>${bg?'Прочетох и приемам Вътрешния правилник на American College Arcus Club.':'I have read and accept the Internal Rules of the American College Arcus Club.'}</span></label>
+      <div class="acts">
+        <button class="btn btn-ghost" id="rulesNo">${bg?'Откажи':'Cancel'}</button>
+        <button class="btn" id="rulesOk" disabled>${bg?'Продължи към кандидатстване':'Continue to application'}</button>
+      </div>
+    </div></div>`;
+  document.body.appendChild(ov);
+  document.body.style.overflow='hidden';
+  const close=()=>{ov.remove();document.body.style.overflow='';};
+  ov.querySelector('#rulesNo').onclick=close;
+  ov.querySelector('#rulesChk').onchange=e=>{ov.querySelector('#rulesOk').disabled=!e.target.checked;};
+  ov.querySelector('#rulesOk').onclick=()=>{
+    if(!ov.querySelector('#rulesChk').checked)return;
+    try{sessionStorage.setItem('acac_rules_ok','1');}catch(e){}
+    close(); go('apply');
+  };
+  // самият текст се зарежда от отделен файл, за да не тежи на приложението
+  try{
+    if(!_rulesHtml){ const r=await fetch('rules.html',{cache:'no-cache'}); _rulesHtml=await r.text(); }
+    const b=ov.querySelector('#rulesBody'); if(b){b.innerHTML=_rulesHtml;b.scrollTop=0;}
+  }catch(e){
+    const b=ov.querySelector('#rulesBody'); if(b)b.innerHTML=`<p style="color:var(--muted);padding:30px 0;text-align:center;">${bg?'Правилникът не се зареди. Проверете връзката и опитайте пак.':'The rules could not be loaded. Check your connection and try again.'}</p>`;
+  }
+}
+
 // ---------- ПУБЛИЧНА ВИТРИНА (само уеб, преди вход) ----------
 function landing(){
   const bg=lang==='bg';
@@ -1808,7 +1867,7 @@ function landing(){
       <h1>${esc(sT('hero.title'))}</h1>
       <div class="lead">${esc(sT('hero.subtitle'))}</div>
       <div class="cta">
-        <button class="btn" onclick="go('apply')">${bg?'Кандидатствай за членство':'Apply for membership'}</button>
+        <button class="btn" onclick="startApply()">${bg?'Кандидатствай за членство':'Apply for membership'}</button>
         <button class="btn btn-ghost" onclick="document.getElementById('l_about').scrollIntoView({behavior:'smooth'})">${bg?'Научете повече':'Learn more'}</button>
       </div>
       ${heroImg?`<img class="heroimg" src="${esc(heroImg)}" alt=""/>`:''}
@@ -1836,7 +1895,7 @@ function landing(){
       <div class="body">${esc(sT('memberships.intro'))}</div>
       <div class="mgrid">${mem}</div>
       <div class="cta" style="margin-top:26px;">
-        <button class="btn" onclick="go('apply')">${bg?'Кандидатствай за членство':'Apply for membership'}</button>
+        <button class="btn" onclick="startApply()">${bg?'Кандидатствай за членство':'Apply for membership'}</button>
       </div>
     </section>
 
@@ -1888,7 +1947,7 @@ function gate(){
     <div class="form">${fields}
     ${live?`<div style="margin-top:18px;border-top:1px solid var(--line-soft);padding-top:16px;">
       <div style="color:var(--mid);font-size:13px;margin-bottom:8px;">${lang==='bg'?'Още не сте член?':'Not a member yet?'}</div>
-      <button class="btn btn-ghost" onclick="go('apply')">${lang==='bg'?'Кандидатствай за членство':'Apply for membership'}</button></div>`:''}
+      <button class="btn btn-ghost" onclick="startApply()">${lang==='bg'?'Кандидатствай за членство':'Apply for membership'}</button></div>`:''}
     </div></div>`;
 }
 let pickedMem='guest';
@@ -2522,6 +2581,8 @@ async function route(){
   const tb=document.getElementById('tabbar');
   if(!user){
     const p0=location.hash.replace(/^#/,'').split('?')[0];
+    // директен линк към формата без приет правилник → първо прозорецът
+    if(p0==='apply'&&!rulesAccepted()){location.hash='';setTimeout(startApply,50);return;}
     if(p0==='apply'){app.classList.remove('wide');app.innerHTML=appForm('apply');if(document.getElementById('ap_mem'))appToggle();window.scrollTo(0,0);tb.style.display='none';entered=true;return;}
     // Уеб: витрината е първото, което се вижда; входът е на #login.
     // Приложение (Capacitor): направо входът, както досега.

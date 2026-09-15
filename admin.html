@@ -1109,6 +1109,7 @@ function appsView(){
     if(a.alumni_relation)lines.push('Връзка с колежа: '+esc(a.alumni_relation));
     if(isCorp){const c=[a.corp_bulstat&&('БУЛСТАТ '+a.corp_bulstat),a.corp_size&&(a.corp_size+' служители'),a.corp_activity].filter(Boolean).map(esc).join(' · ');if(c)lines.push(c);}
     if(a.type==='nomination'&&a.proposer_email)lines.push('Предложен от: '+esc(a.proposer_email));
+    if(a.rules_accepted_at)lines.push('✓ Приел правилника: '+esc(new Date(a.rules_accepted_at).toLocaleString('bg-BG')));
     const acts=st==='new'
       ? `<button class="btn ok sm" onclick="approveApp('${a.id}')">Одобри и покани</button>
          <button class="btn no sm" onclick="setApp('${a.id}','declined')">Откажи</button>

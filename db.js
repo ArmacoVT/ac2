@@ -459,6 +459,7 @@ window.SITE_DEFAULTS={
       const { data, error } = await sb.functions.invoke('submit-application', {
         body: {
           captcha_token: o.captcha_token || '',
+          rules_accepted: !!o.rules_accepted,
           nominate: !!o.nominate,
           membership: o.membership || null,
           name: o.name || null, email: (o.email || '').trim() || null, phone: o.phone || null,
