@@ -374,23 +374,37 @@
   .land .two{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center;}
   .land .two img{width:100%;border-radius:18px;object-fit:cover;max-height:340px;}
   .land .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:18px;}
-  .land .fcard{background:var(--card,#fffdf4);border:1px solid var(--line-soft);border-radius:18px;padding:16px;display:flex;gap:12px;align-items:flex-start;}
-  .land .fcard img{width:46px;height:46px;object-fit:contain;flex:none;}
-  .land .fcard b{display:block;font-size:15px;margin-bottom:4px;}
-  .land .fcard ul{margin:0;padding-left:16px;color:var(--mid);font-size:13px;line-height:1.5;}
+  /* формати — редакционни редове */
+  .land .flist{margin-top:10px;}
+  .land .frow{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center;padding:26px 0;border-bottom:1px solid var(--line-soft);}
+  .land .frow:last-child{border-bottom:0;}
+  .land .frow.rev .fpic{order:2;}
+  .land .fpic{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:18px;}
+  .land .fph{background:var(--medallion);display:flex;align-items:center;justify-content:center;}
+  .land .fph img{width:38%;max-width:150px;object-fit:contain;opacity:.95;}
+  .land .ftxt h3{font-family:var(--serif);font-size:26px;font-weight:500;margin:4px 0 8px;color:var(--text);}
+  .land .ftxt .kicker{margin-bottom:2px;}
+  .land .ftxt p{color:var(--mid);font-size:15px;line-height:1.65;margin:0;}
+  /* членства — „За вас е, ако…" */
   .land .mcard{background:var(--card,#fffdf4);border:1px solid var(--line-soft);border-radius:22px;padding:22px;display:flex;flex-direction:column;}
   .land .mcard .tag{color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase;}
-  .land .mcard h3{font-family:var(--serif);font-size:24px;font-weight:500;margin:6px 0 4px;}
-  .land .mcard .price{font-size:20px;color:var(--text);margin:6px 0 10px;}
+  .land .mcard h3{font-family:var(--serif);font-size:24px;font-weight:500;margin:6px 0 8px;}
+  .land .mcard .hook{font-family:var(--serif);font-size:17px;line-height:1.4;color:var(--text);margin-bottom:8px;}
+  .land .mcard .price{font-size:20px;color:var(--text);margin:4px 0 10px;}
   .land .mcard .price small{color:var(--muted);font-size:12px;margin-left:4px;}
-  .land .mcard p{color:var(--mid);font-size:14px;line-height:1.55;margin:0 0 10px;}
-  .land .mcard ul{margin:0 0 16px;padding-left:18px;color:var(--mid);font-size:13px;line-height:1.6;flex:1;}
+  .land .mcard p{color:var(--mid);font-size:14px;line-height:1.55;margin:0 0 6px;}
+  .land .mcard ul{margin:0;padding-left:18px;color:var(--mid);font-size:13px;line-height:1.6;}
+  .land .mcard details{margin-top:auto;padding-top:8px;border-top:1px solid var(--line-soft);}
+  .land .mcard summary{cursor:pointer;color:var(--gold);font-size:13px;list-style:none;}
+  .land .mcard summary::-webkit-details-marker{display:none;}
+  .land .mcard summary::after{content:' ▾';}
+  .land .mcard details[open] summary::after{content:' ▴';}
   .land .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:16px;}
   .land .gal img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;}
   .land .contact{background:var(--card,#fffdf4);border:1px solid var(--line-soft);border-radius:22px;padding:22px;}
   .land .contact a{color:var(--gold);text-decoration:none;}
   .land footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line-soft);color:var(--muted);font-size:12px;text-align:center;}
-  @media(max-width:640px){.land .two{grid-template-columns:1fr;}.land .hero{padding-top:22px;}}
+  @media(max-width:640px){.land .two,.land .frow{grid-template-columns:1fr;}.land .frow.rev .fpic{order:0;}.land .hero{padding-top:22px;}}
   .pwov{position:fixed;inset:0;background:rgba(58,44,35,.38);display:flex;align-items:center;justify-content:center;z-index:99;}
   .pwcard{background:var(--bg);border-radius:22px;padding:22px;width:min(90%,340px);
     box-shadow:9px 9px 18px #d9cdb6,-9px -9px 18px #fffdf4;}
@@ -572,15 +586,26 @@ const SITE_DEFAULTS={
   },
   offer:{
     title:{bg:'Какво предлагаме',en:'What we offer'},
-    body:{bg:'Програмата на клуба е организирана в осем формата. Всеки от тях е малък по мащаб и подбран по съдържание.',en:'The club programme is organised in eight formats. Each is small in scale and carefully curated.'}
+    body:{bg:'Програмата на клуба е организирана в осем формата. Всеки от тях е малък по мащаб и подбран по съдържание.',en:'The club programme is organised in eight formats. Each is small in scale and carefully curated.'},
+    // по един запис на формат: абзац (BG/EN) + снимка. Празно = кратко описание от приложението.
+    items:{
+      culture:{body:{bg:'Музика, изложби, литература и срещи с артисти и лектори. Вечери в малка зала, където разговорът след събитието е част от програмата.',en:'Music, exhibitions, literature and meetings with artists and lecturers. Evenings in a small hall, where the conversation afterwards is part of the programme.'},image:''},
+      cinema:{body:{bg:'Авторско кино и дискусии. Прожекция за няколко десетки души и разговор с гост, който познава филма отвътре. Тематични и семейни формати.',en:'Auteur cinema and discussions. A screening for a few dozen people and a conversation with a guest who knows the film from the inside. Thematic and family formats.'},image:''},
+      table:{body:{bg:'Гастрономически вечери с гост-готвач и ресторантът на клуба — с членска преференция и среда, в която не бързате.',en:'Gastronomic evenings with a guest chef and the club restaurant — with a member preference and a setting where nobody hurries you.'},image:''},
+      music:{body:{bg:'Камерни концерти и музикални вечери в близост до изпълнителите — формат, в който се чува всяка нота.',en:'Chamber concerts and musical evenings close to the performers — a format where you hear every note.'},image:''},
+      conversation:{body:{bg:'Разговори с интересни хора — на маса, без сцена и микрофон. Теми от науката до всекидневието.',en:'Conversations with interesting people — at a table, without a stage or microphone. Topics from science to everyday life.'},image:''},
+      community:{body:{bg:'Семейни поводи, срещи на възпитаници и училищно-свързани формати. Дискретни срещи в по-лична среда.',en:'Family occasions, alumni gatherings and school-related formats. Discreet meetings in a more personal setting.'},image:''},
+      theater:{body:{bg:'Камерни театрални формати и четения — близо до актьорите, в зала за малко публика.',en:'Chamber theatre formats and readings — close to the actors, in a hall for a small audience.'},image:''},
+      online:{body:{bg:'Живи предавания и видео архив за членовете, които не могат да присъстват на място.',en:'Live streams and a video archive for members who cannot attend in person.'},image:''}
+    }
   },
   memberships:{
     title:{bg:'Членство',en:'Membership'},
     intro:{bg:'Клубът е по покана. Можете да кандидатствате за една от трите категории по-долу — всяка кандидатура се разглежда лично.',en:'The club is by invitation. You may apply for one of the three categories below — every application is reviewed personally.'},
     items:{
-      club:{price:{bg:'',en:''},desc:{bg:'',en:''},benefits:{bg:'',en:''}},
-      alumni:{price:{bg:'',en:''},desc:{bg:'',en:''},benefits:{bg:'',en:''}},
-      corporate:{price:{bg:'',en:''},desc:{bg:'',en:''},benefits:{bg:'',en:''}}
+      club:{hook:{bg:'За вас е, ако искате клубът да е част от седмицата ви.',en:'For you if you want the club to be part of your week.'},summary:{bg:'Цялата програма, приоритет при резервации, 5% в AC² Table.',en:'The full programme, priority for reservations, 5% at AC² Table.'},price:{bg:'',en:''},desc:{bg:'',en:''},benefits:{bg:'',en:''}},
+      alumni:{hook:{bg:'За вас е, ако сте свързани с Американския колеж Аркус.',en:'For you if you are connected to the American College Arcus.'},summary:{bg:'Избрани събития, училищни формати, кино и култура.',en:'Selected events, school-related formats, cinema and culture.'},price:{bg:'',en:''},desc:{bg:'',en:''},benefits:{bg:'',en:''}},
+      corporate:{hook:{bg:'За вас е, ако представлявате компания или организация.',en:'For you if you represent a company or organisation.'},summary:{bg:'До 5 представители, професионални формати, 8% в AC² Table.',en:'Up to 5 representatives, professional formats, 8% at AC² Table.'},price:{bg:'',en:''},desc:{bg:'',en:''},benefits:{bg:'',en:''}}
     }
   },
   gallery:{title:{bg:'Моменти от клуба',en:'Moments from the club'},images:[]},
@@ -1768,12 +1793,18 @@ let entered=false;
 function landing(){
   const bg=lang==='bg';
   const heroImg=sT('hero.image'), aboutImg=sT('about.image');
-  // формати — от вградения списък (същият като в приложението)
-  const fmt=FORMATS.map(f=>`<div class="fcard"><img src="${f.img}" alt=""/><div><b style="color:${f.c}">${esc(f.t)}</b>
-      <ul>${(f.b[lang]||f.b.bg).slice(0,3).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div>`).join('');
-  // членства — Club / Alumni / Corporate (без Founder и Founding Member)
+  // формати — редакционни редове: снимка + абзац, редуват се ляво/дясно
+  const fmt=FORMATS.filter(f=>['culture','cinema','table','music','conversation','community','theater','online'].includes(f.id)).map((f,i)=>{
+    const body=sT('offer.items.'+f.id+'.body')||(f.b[lang]||f.b.bg).join(', ');
+    const img=sT('offer.items.'+f.id+'.image');
+    const pic=img?`<img class="fpic" src="${esc(img)}" alt=""/>`:`<div class="fpic fph"><img src="${f.img}" alt=""/></div>`;
+    const txt=`<div class="ftxt"><div class="kicker" style="color:${f.c}">${esc((f.b[lang]||f.b.bg).slice(0,3).join(' · '))}</div><h3>${esc(f.t)}</h3><p>${esc(body)}</p></div>`;
+    return `<div class="frow${i%2?' rev':''}">${pic}${txt}</div>`;
+  }).join('');
+  // членства — „За вас е, ако…" (Club / Alumni / Corporate; без Founder и Founding Member)
   const mem=['club','alumni','corporate'].map(id=>{
     const m=MEMBERS.find(x=>x.id===id);
+    const hook=sT('memberships.items.'+id+'.hook'), sum=sT('memberships.items.'+id+'.summary');
     const desc=sT('memberships.items.'+id+'.desc')||(m.d[lang]||m.d.bg);
     const benRaw=sT('memberships.items.'+id+'.benefits');
     const ben=benRaw?benRaw.split('\n').map(s=>s.trim()).filter(Boolean):(m.bn[lang]||m.bn.bg);
@@ -1781,10 +1812,13 @@ function landing(){
     return `<div class="mcard">
       <div class="tag">${esc(m.tag[lang]||m.tag.bg)}</div>
       <h3>${esc(m.t)}</h3>
+      <div class="hook">${esc(hook)}</div>
+      <p>${esc(sum)}</p>
       ${price?`<div class="price">${esc(price)}<small>${bg?'/ година':'/ year'}</small></div>`:''}
-      <p>${esc(desc)}</p>
-      <ul>${ben.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
-      <button class="btn btn-ghost" onclick="go('apply')">${bg?'Кандидатствай':'Apply'}</button>
+      <details><summary>${bg?'Виж всичко':'See everything'}</summary>
+        <p style="margin-top:10px;">${esc(desc)}</p>
+        <ul>${ben.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+      </details>
     </div>`;
   }).join('');
   const gal=(SITE&&SITE.gallery&&Array.isArray(SITE.gallery.images)?SITE.gallery.images:[]).filter(Boolean);
@@ -1822,14 +1856,17 @@ function landing(){
       <div class="kicker">${bg?'Програма':'Programme'}</div>
       <h2>${esc(sT('offer.title'))}</h2>
       <div class="body">${esc(sT('offer.body'))}</div>
-      <div class="grid">${fmt}</div>
+      <div class="flist">${fmt}</div>
     </section>
 
     <section id="l_mem">
       <div class="kicker">${bg?'Категории':'Categories'}</div>
       <h2>${esc(sT('memberships.title'))}</h2>
       <div class="body">${esc(sT('memberships.intro'))}</div>
-      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));">${mem}</div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));">${mem}</div>
+      <div class="cta" style="margin-top:26px;">
+        <button class="btn" onclick="go('apply')">${bg?'Кандидатствай за членство':'Apply for membership'}</button>
+      </div>
     </section>
 
     ${gal.length?`<section>

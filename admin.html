@@ -987,9 +987,16 @@ function siteView(){
   if(SITEC===null)return `<h2>Сайт</h2><p class="empty">Зареждане…</p>`;
   const gal=(sGet('gallery.images')||[]);
   const memBlock=(id,label)=>`<div class="card" style="margin-top:10px;"><b>${label}</b>
+    ${sBi('„За вас е, ако…" — едно изречение','memberships.items.'+id+'.hook')}
+    ${sBi('Кратко резюме — едно изречение под него','memberships.items.'+id+'.summary')}
     ${sBi('Годишна цена (напр. „1 200 €")','memberships.items.'+id+'.price')}
-    ${sBi('Описание (празно = вграденото)','memberships.items.'+id+'.desc',3)}
-    ${sBi('Ползи — по една на ред (празно = вградените)','memberships.items.'+id+'.benefits',5)}
+    ${sBi('Пълно описание — вижда се при „Виж всичко" (празно = вграденото)','memberships.items.'+id+'.desc',3)}
+    ${sBi('Ползи — по една на ред, при „Виж всичко" (празно = вградените)','memberships.items.'+id+'.benefits',5)}
+  </div>`;
+  const FMT_IDS=[['culture','AC² Culture'],['cinema','AC² Cinema'],['table','AC² Table'],['music','AC² Music'],['conversation','AC² Conversation'],['community','AC² Community'],['theater','AC² Theater'],['online','AC² Online']];
+  const fmtBlock=([id,label])=>`<div class="card" style="margin-top:10px;"><b>${label}</b>
+    ${sBi('Абзац (празно = вграденият текст)','offer.items.'+id+'.body',3)}
+    ${sImg('Снимка (без снимка се показва логото на формата)','offer.items.'+id+'.image')}
   </div>`;
   return `<h2>Публична страница (сайт)</h2>
   <p class="muted" style="margin-top:-6px;">Това е витрината, която нечленовете виждат на уеб адреса. В iOS приложението не се показва. Празно поле = текстът по подразбиране.</p>
@@ -1007,9 +1014,10 @@ function siteView(){
   </div>
 
   <div class="card" style="margin-top:10px;"><b>Какво предлагаме</b>
-    <p class="muted">Осемте формата се показват автоматично с описанията от приложението. Тук е само уводът.</p>
+    <p class="muted">Всеки формат е ред със снимка и абзац; редуват се ляво/дясно. Тук редактираш увода и всеки формат поотделно.</p>
     ${sBi('Заглавие','offer.title')}
     ${sBi('Увод','offer.body',3)}
+    ${FMT_IDS.map(fmtBlock).join('')}
   </div>
 
   <div class="card" style="margin-top:10px;"><b>Членство</b>
