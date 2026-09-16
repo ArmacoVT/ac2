@@ -597,6 +597,8 @@ const MEMBERS=[
 ];
 const AC2='cards/logo-ac2.webp';
 // В iOS приложението няма витрина — то отваря направо входа. На уеб витрината е първото, което се вижда.
+// Публичният адрес на сайта — от config.js, за да се сменя на едно място при нов домейн.
+const SITE_URL=(window.ACAC_CONFIG&&window.ACAC_CONFIG.SITE_URL)||'https://ac2.bg/';
 const IN_APP=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
 
 // ---------- ПУБЛИЧНА ВИТРИНА: съдържание по подразбиране ----------
@@ -1152,7 +1154,7 @@ function streamEmbed(u){
   if((m=u.match(/(?:youtube\.com\/.*[?&]v=|youtu\.be\/|youtube\.com\/live\/)([\w-]{6,})/)))return 'https://www.youtube.com/embed/'+m[1]+'?autoplay=1&playsinline=1&rel=0&modestbranding=1';
   if((m=u.match(/vimeo\.com\/(\d+)/)))return 'https://player.vimeo.com/video/'+m[1]+'?autoplay=1';
   // Twitch — изисква parent с домейна, на който е вграден плеърът
-  const parent=location.hostname||'armacovt.github.io';
+  const parent=location.hostname||new URL(SITE_URL).hostname;
   if((m=u.match(/twitch\.tv\/videos\/(\d+)/)))return 'https://player.twitch.tv/?video='+m[1]+'&parent='+parent+'&autoplay=true';
   if((m=u.match(/twitch\.tv\/([A-Za-z0-9_]{3,25})(?:[/?]|$)/)))return 'https://player.twitch.tv/?channel='+m[1]+'&parent='+parent+'&autoplay=true';
   // Kick — вграждаем плеър по име на канала (kick.com/име или player.kick.com/име)
@@ -2372,7 +2374,7 @@ function shareEvent(id){
   const e=EVENTS.find(x=>x.id===id); if(!e)return;
   const when=e.date?(' · '+fmtDay(e.date)+(e.time?' '+e.time:'')):'';
   const txt=(lang==='bg'?'Събитие в Arcus Club: ':'Event at Arcus Club: ')+e.title+when;
-  const url='https://armacovt.github.io/ac2/#format/'+e.format;
+  const url=SITE_URL+'#format/'+e.format;   // публичният адрес на клуба (config.js)
   if(navigator.share){navigator.share({title:e.title,text:txt,url}).catch(()=>{});}
   else{try{navigator.clipboard.writeText(txt+' '+url);toast(lang==='bg'?'Копирано':'Copied');}catch(_){}}
 }
