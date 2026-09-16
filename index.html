@@ -362,6 +362,33 @@
   .land .brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:19px;color:var(--text);}
   .land .brand img{width:34px;height:34px;border-radius:50%;background:var(--medallion);padding:5px;box-sizing:border-box;object-fit:contain;}
   .land .topbar .acts{display:flex;gap:8px;align-items:center;}
+  /* „Members only" екран: видео/картина на цял екран, входът вътре */
+  .gatehero{position:relative;min-height:100vh;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#f3e9d6;overflow:hidden;margin:0 -24px;padding:70px 24px 60px;background:#1d1611;}
+  .gatehero video,.gatehero .poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
+  /* „жива картина": бавно приближаване като камера + топло дишане на светлината + зърнеж */
+  .gatehero .poster{background-size:cover;background-position:center;animation:kenburns 26s ease-in-out infinite alternate;transform-origin:52% 45%;}
+  @keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.09)}}
+  .gatehero .warm{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,rgba(255,190,110,.18),transparent 60%);animation:warmpulse 4.5s ease-in-out infinite alternate;mix-blend-mode:screen;}
+  @keyframes warmpulse{from{opacity:.45}to{opacity:1}}
+  .gatehero .grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");}
+  .gatehero .shade{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(20,14,10,.5) 0%,rgba(20,14,10,.3) 45%,rgba(20,14,10,.74) 100%),radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(20,14,10,.55) 100%);}
+  @media(prefers-reduced-motion:reduce){.gatehero .poster,.gatehero .warm{animation:none;}}
+  .gatehero .in{position:relative;z-index:2;width:100%;max-width:360px;}
+  .gatehero .mo{font-size:11px;letter-spacing:5px;text-transform:uppercase;color:#d8c39a;margin-bottom:18px;}
+  /* логото като вектор, оцветено през CSS mask — рязко на всеки екран, 1.5 KB */
+  .gatehero .logo{width:min(230px,58vw);aspect-ratio:2235/1376;margin:0 auto 16px;background:#f3e9d6;-webkit-mask:url(cards/logo-ac2.svg) center/contain no-repeat;mask:url(cards/logo-ac2.svg) center/contain no-repeat;filter:drop-shadow(0 6px 24px rgba(0,0,0,.45));}
+  .gatehero h1{font-family:var(--serif);font-size:clamp(26px,4.5vw,38px);font-weight:500;letter-spacing:1.5px;line-height:1.15;margin:0 0 22px;color:#f7efe0;}
+  .gatehero form{margin:0;}
+  .gatehero input{background:rgba(246,239,226,.94);border:0;color:var(--text);}
+  .gatehero .btn{margin-top:6px;}
+  .gatehero .alt{margin-top:16px;font-size:13px;color:#cdbb9c;}
+  .gatehero .alt a{color:#e9b58f;cursor:pointer;text-decoration:none;}
+  .gatehero .down{position:absolute;bottom:18px;left:0;right:0;z-index:2;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#cdbb9c;cursor:pointer;}
+  .gatehero .down:after{content:'';display:block;width:1px;height:22px;background:#cdbb9c;margin:8px auto 0;opacity:.7;animation:downline 1.8s ease-in-out infinite;}
+  @keyframes downline{0%,100%{transform:scaleY(.4);transform-origin:top;opacity:.3}50%{transform:scaleY(1);opacity:.8}}
+  .gatehero .topr{position:absolute;top:16px;right:18px;z-index:3;}
+  .gatehero .topr .pill{background:rgba(246,239,226,.16);color:#f3e9d6;border-color:rgba(246,239,226,.35);}
+  @media(prefers-reduced-motion:reduce){.gatehero .down:after{animation:none;}}
   .land .hero{text-align:center;padding:38px 0 30px;}
   .land .hero .ring{width:120px;height:120px;margin:0 auto;background:var(--medallion);border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;box-shadow:0 0 22px 1px rgba(200,100,60,.16);}
   .land .hero .ring img{width:80px;height:60px;object-fit:contain;}
@@ -412,6 +439,7 @@
   .land .gal img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;}
   .land .contact{background:var(--card,#fffdf4);border:1px solid var(--line-soft);border-radius:22px;padding:22px;}
   .land .contact a{color:var(--gold);text-decoration:none;}
+  .land .flogo{width:64px;aspect-ratio:2235/1376;margin:0 auto 10px;background:var(--text);opacity:.8;-webkit-mask:url(cards/logo-ac2.svg) center/contain no-repeat;mask:url(cards/logo-ac2.svg) center/contain no-repeat;}
   .land footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line-soft);color:var(--muted);font-size:12px;text-align:center;}
   @media(max-width:640px){.land .two,.land .frow{grid-template-columns:1fr;}.land .frow.rev .fpic{order:0;}.land .hero{padding-top:22px;}}
   /* ---------- Правилник преди кандидатстване ---------- */
@@ -1855,24 +1883,29 @@ function landing(){
   }).join('');
   const gal=(SITE&&SITE.gallery&&Array.isArray(SITE.gallery.images)?SITE.gallery.images:[]).filter(Boolean);
   const email=sT('contact.email'), phone=sT('contact.phone');
+  // видео фон (от админ панела); картината е „постер" — вижда се докато видеото зареди,
+  // при слаба връзка, и при хора с изключени анимации
+  const heroVid=sT('hero.video');
+  const reduce=(()=>{try{return window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}})();
+  const heroBg=heroImg?`<div class="poster" style="background-image:url('${esc(heroImg)}')"></div>`:'';
+  const heroVideo=(heroVid&&!reduce)?`<video autoplay muted loop playsinline preload="metadata" ${heroImg?`poster="${esc(heroImg)}"`:''} aria-hidden="true"><source src="${esc(heroVid)}"/></video>`:'';
   return `<div class="land">
-    <div class="topbar">
-      <div class="brand"><img src="${AC2}" alt="AC²"/><span>Arcus Club</span></div>
-      <div class="acts">
-        <button class="pill" onclick="toggleLang()">${bg?'EN':'BG'}</button>
-        <button class="btn" style="padding:9px 16px;font-size:13px;" onclick="go('login')">${bg?'Вход за членове':'Member login'}</button>
+    <div class="gatehero">
+      ${heroBg}${heroVideo}<div class="warm"></div><div class="grain"></div><div class="shade"></div>
+      <div class="topr"><button class="pill" onclick="toggleLang()">${bg?'EN':'BG'}</button></div>
+      <div class="in">
+        <div class="mo">${bg?'Само за членове':'Members only'}</div>
+        <div class="logo" role="img" aria-label="AC²"></div>
+        <h1>${esc(sT('hero.title'))}</h1>
+        <form onsubmit="event.preventDefault();doAuth();return false;" autocomplete="on">
+          <input id="l_email" type="email" name="username" autocapitalize="none" autocorrect="off" autocomplete="username" placeholder="${tr('email')}"/>
+          <input id="l_pass" type="password" name="password" autocomplete="current-password" placeholder="${tr('pass')}"/>
+          <button class="btn" type="submit">${tr('enter')}</button>
+        </form>
+        <div class="alt"><a onclick="doForgot()">${tr('forgot')}</a></div>
+        <div class="alt">${bg?'Още не сте член?':'Not a member yet?'} <a onclick="startApply()">${bg?'Кандидатствайте':'Apply'}</a></div>
       </div>
-    </div>
-
-    <div class="hero">
-      <div class="ring"><img src="${AC2}" alt="AC²"/></div>
-      <h1>${esc(sT('hero.title'))}</h1>
-      <div class="lead">${esc(sT('hero.subtitle'))}</div>
-      <div class="cta">
-        <button class="btn" onclick="startApply()">${bg?'Кандидатствай за членство':'Apply for membership'}</button>
-        <button class="btn btn-ghost" onclick="document.getElementById('l_about').scrollIntoView({behavior:'smooth'})">${bg?'Научете повече':'Learn more'}</button>
-      </div>
-      ${heroImg?`<img class="heroimg" src="${esc(heroImg)}" alt=""/>`:''}
+      <div class="down" onclick="document.getElementById('l_about').scrollIntoView({behavior:'smooth'})">${bg?'За клуба':'About the club'}</div>
     </div>
 
     <section id="l_about">
@@ -1918,7 +1951,7 @@ function landing(){
       </div>
     </section>
 
-    <footer>© ${new Date().getFullYear()} American College Arcus Club · <a style="color:var(--gold);cursor:pointer;" onclick="go('login')">${bg?'Вход за членове':'Member login'}</a></footer>
+    <footer><div class="flogo" role="img" aria-label="AC²"></div>© ${new Date().getFullYear()} American College Arcus Club · <a style="color:var(--gold);cursor:pointer;" onclick="go('login')">${bg?'Вход за членове':'Member login'}</a></footer>
   </div>`;
 }
 

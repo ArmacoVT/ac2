@@ -4,6 +4,7 @@
 window.SITE_DEFAULTS={
   hero:{
     title:{bg:'American College Arcus Club',en:'American College Arcus Club'},
+    video:'',   // MP4/WebM фон на началния екран (по избор)
     subtitle:{bg:'Частен клуб за култура, гастрономия и смислено общуване — създаден около общността на Американски колеж Аркус.',en:'A private club for culture, gastronomy and meaningful company — built around the American College Arcus community.'},
     image:''
   },

@@ -988,6 +988,25 @@ function sImg(label,path){
       ${url?`<button class="btn ghost sm" onclick="sSet('${path}','');render()">Премахни</button>`:''}
     </div>`;
 }
+// поле за видео (фон на началния екран): MP4/WebM без звук; качва се веднага
+function sVid(label,path){
+  const url=sGet(path)||'';
+  return `<label style="margin-top:10px;">${esc(label)}</label>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      ${url?`<video src="${esc(url)}" muted loop autoplay playsinline style="height:72px;border-radius:10px;background:#000;"></video>`:'<span class="muted">няма — показва се картината</span>'}
+      <input type="file" accept="video/mp4,video/webm" onchange="siteUploadVideo(this,'${path}')"/>
+      ${url?`<button class="btn ghost sm" onclick="sSet('${path}','');render()">Премахни</button>`:''}
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:4px;">MP4 (H.264) или WebM, без звук, хоризонтално 1920×1080, 6–12 секунди в цикъл, до 8 MB. По-големите зареждат бавно на телефон.</div>`;
+}
+async function siteUploadVideo(input,path){
+  const f=input.files&&input.files[0]; if(!f)return;
+  if(f.size>25*1024*1024){alert('Видеото е '+(f.size/1048576).toFixed(1)+' MB. Лимитът е 25 MB, а препоръчително е под 8 — компресирай го (HandBrake, RF 26–28).');input.value='';return;}
+  siteGrab(); toast('Качване на видео ('+(f.size/1048576).toFixed(1)+' MB)…');
+  const u=await DB.uploadMedia(f,'site');
+  if(u.error){alert('Видеото не се качи: '+u.error.message);return;}
+  sSet(path,u.url); render(); toast('Качено — не забравяй „Запази сайта"');
+}
 function siteView(){
   if(SITEC===null)return `<h2>Сайт</h2><p class="empty">Зареждане…</p>`;
   const gal=(sGet('gallery.images')||[]);
@@ -1006,10 +1025,11 @@ function siteView(){
   return `<h2>Публична страница (сайт)</h2>
   <p class="muted" style="margin-top:-6px;">Това е витрината, която нечленовете виждат на уеб адреса. В iOS приложението не се показва. Полетата показват текущия текст на сайта — просто го редактирай и натисни „Запази сайта".</p>
 
-  <div class="card"><b>Начало</b>
+  <div class="card"><b>Начален екран („Само за членове")</b>
+    <p class="muted">Цял екран: картина или видео на фона, лого, заглавие и входът за членове. Отдолу е „За клуба" с останалите секции.</p>
     ${sBi('Заглавие','hero.title')}
-    ${sBi('Подзаглавие','hero.subtitle',3)}
-    ${sImg('Голяма снимка под заглавието (по избор)','hero.image')}
+    ${sImg('Картина на фона (задължителна — вижда се докато видеото зареди и при слаба връзка)','hero.image')}
+    ${sVid('Видео на фона (по избор, върху картината)','hero.video')}
   </div>
 
   <div class="card" style="margin-top:10px;"><b>Кои сме ние</b>
