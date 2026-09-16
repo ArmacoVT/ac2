@@ -362,33 +362,29 @@
   .land .brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:19px;color:var(--text);}
   .land .brand img{width:34px;height:34px;border-radius:50%;background:var(--medallion);padding:5px;box-sizing:border-box;object-fit:contain;}
   .land .topbar .acts{display:flex;gap:8px;align-items:center;}
-  /* „Members only" екран: видео/картина на цял екран, входът вътре */
-  .gatehero{position:relative;min-height:100vh;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#f3e9d6;overflow:hidden;margin:0 -24px;padding:70px 24px 60px;background:#1d1611;}
+  /* „Members only" екран — цял прозорец, подредба като BestSecret (лого горе вляво, текст и вход долу вляво) */
+  #app.full{max-width:none;padding:0;}
+  .gatehero{position:relative;min-height:100vh;min-height:100svh;overflow:hidden;background:#1d1611;color:#f3e9d6;}
   .gatehero video,.gatehero .poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
-  /* „жива картина": бавно приближаване като камера + топло дишане на светлината + зърнеж */
   .gatehero .poster{background-size:cover;background-position:center;animation:kenburns 26s ease-in-out infinite alternate;transform-origin:52% 45%;}
   @keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.09)}}
-  .gatehero .warm{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,rgba(255,190,110,.18),transparent 60%);animation:warmpulse 4.5s ease-in-out infinite alternate;mix-blend-mode:screen;}
+  .gatehero .warm{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,rgba(255,190,110,.16),transparent 60%);animation:warmpulse 4.5s ease-in-out infinite alternate;mix-blend-mode:screen;}
   @keyframes warmpulse{from{opacity:.45}to{opacity:1}}
   .gatehero .grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");}
-  .gatehero .shade{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(20,14,10,.5) 0%,rgba(20,14,10,.3) 45%,rgba(20,14,10,.74) 100%),radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(20,14,10,.55) 100%);}
+  .gatehero .shade{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(20,14,10,.35) 0%,rgba(20,14,10,.15) 40%,rgba(20,14,10,.78) 100%);}
   @media(prefers-reduced-motion:reduce){.gatehero .poster,.gatehero .warm{animation:none;}}
-  .gatehero .in{position:relative;z-index:2;width:100%;max-width:360px;}
-  .gatehero .mo{font-size:11px;letter-spacing:5px;text-transform:uppercase;color:#d8c39a;margin-bottom:18px;}
-  /* логото като вектор, оцветено през CSS mask — рязко на всеки екран, 1.5 KB */
-  .gatehero .logo{width:min(230px,58vw);aspect-ratio:2235/1376;margin:0 auto 16px;background:#f3e9d6;-webkit-mask:url(cards/logo-ac2.svg) center/contain no-repeat;mask:url(cards/logo-ac2.svg) center/contain no-repeat;filter:drop-shadow(0 6px 24px rgba(0,0,0,.45));}
-  .gatehero h1{font-family:var(--serif);font-size:clamp(26px,4.5vw,38px);font-weight:500;letter-spacing:1.5px;line-height:1.15;margin:0 0 22px;color:#f7efe0;}
-  .gatehero form{margin:0;}
-  .gatehero input{background:rgba(246,239,226,.94);border:0;color:var(--text);}
-  .gatehero .btn{margin-top:6px;}
-  .gatehero .alt{margin-top:16px;font-size:13px;color:#cdbb9c;}
-  .gatehero .alt a{color:#e9b58f;cursor:pointer;text-decoration:none;}
-  .gatehero .down{position:absolute;bottom:18px;left:0;right:0;z-index:2;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#cdbb9c;cursor:pointer;}
-  .gatehero .down:after{content:'';display:block;width:1px;height:22px;background:#cdbb9c;margin:8px auto 0;opacity:.7;animation:downline 1.8s ease-in-out infinite;}
-  @keyframes downline{0%,100%{transform:scaleY(.4);transform-origin:top;opacity:.3}50%{transform:scaleY(1);opacity:.8}}
-  .gatehero .topr{position:absolute;top:16px;right:18px;z-index:3;}
-  .gatehero .topr .pill{background:rgba(246,239,226,.16);color:#f3e9d6;border-color:rgba(246,239,226,.35);}
-  @media(prefers-reduced-motion:reduce){.gatehero .down:after{animation:none;}}
+  .gatehero .tl{position:absolute;top:28px;left:40px;z-index:3;width:120px;color:#f3e9d6;filter:drop-shadow(0 4px 14px rgba(0,0,0,.45));}
+  .gatehero .tr{position:absolute;top:26px;right:40px;z-index:3;}
+  .gatehero .tr .pill{background:rgba(246,239,226,.14);color:#f3e9d6;border-color:rgba(246,239,226,.35);}
+  .gatehero .bl{position:absolute;left:40px;right:40px;bottom:48px;z-index:2;max-width:640px;}
+  .gatehero .tag{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#d8c39a;margin-bottom:14px;}
+  .gatehero h1{font-family:var(--serif);font-size:clamp(40px,7vw,84px);font-weight:400;line-height:1;letter-spacing:.5px;margin:0 0 26px;color:#f7efe0;}
+  .gatehero .acts{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
+  .gatehero .acts .btn{margin:0;width:auto;min-width:220px;border-radius:6px;letter-spacing:2px;text-transform:uppercase;font-size:13px;}
+  .gatehero .acts a{color:#f3e9d6;text-decoration:underline;text-underline-offset:5px;cursor:pointer;font-size:14px;}
+  @media(max-width:640px){.gatehero .tl{left:20px;top:20px;width:88px;}.gatehero .tr{right:20px;top:18px;}.gatehero .bl{left:20px;right:20px;bottom:36px;}}
+  /* страницата „За клуба" — лента отгоре */
+  .land .topbar .brand .lg{display:inline-block;width:56px;color:var(--text);}
   .land .hero{text-align:center;padding:38px 0 30px;}
   .land .hero .ring{width:120px;height:120px;margin:0 auto;background:var(--medallion);border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;box-shadow:0 0 22px 1px rgba(200,100,60,.16);}
   .land .hero .ring img{width:80px;height:60px;object-fit:contain;}
@@ -624,6 +620,8 @@ const MEMBERS=[
   bn:{bg:['Членство за компании и организации','Достъп за до 5 представители','Покани за професионални формати','8% членска преференция в AC² Table','Дискретни срещи в уединена зона','Персонализирана Corporate карта'],en:['Membership for companies and organisations','Access for up to 5 representatives','Invitations to professional formats','8% member preference at AC² Table','Discreet meetings in a secluded area','A personalised Corporate card']}}
 ];
 const AC2='cards/logo-ac2.webp';
+// Векторното лого (5 контура, 1.4 KB). Цветът се задава през CSS „color" на родителя.
+const LOGO_SVG=`<svg viewBox="0 0 2235 1376" role="img" aria-label="AC²" style="width:100%;height:100%;display:block;"><path fill="currentColor" fill-rule="evenodd" d="M0 688L0 0L1118 0L2235 0L2235 688L2235 1376L1118 1376L0 1376L0 688ZM53 1367C54 1365 90 1278 133 1174L211 986L460 986L709 986L782 1177C822 1282 855 1368 855 1369C856 1370 1106 1371 1106 1369C1106 1368 595 116 594 114C593 113 585 113 561 113C537 113 530 113 529 114C527 118 6 1369 7 1369C7 1370 17 1370 29 1370L52 1370L53 1367ZM1712 1368C1916 1353 2068 1257 2131 1103C2143 1075 2155 1028 2155 1013L2155 1011L2136 1011L2117 1012L2116 1016C2102 1094 2071 1154 2019 1206C1938 1287 1821 1330 1681 1330C1570 1330 1489 1301 1416 1235C1358 1184 1312 1102 1284 1003C1231 821 1240 581 1304 418C1347 311 1410 236 1495 193C1550 165 1602 154 1680 154C1752 154 1809 164 1870 190C1991 242 2070 335 2094 454L2098 472L2116 472C2126 472 2135 472 2135 471C2137 469 2129 434 2121 411C2057 219 1869 104 1630 114C1482 120 1367 154 1261 225C1072 351 976 567 1001 814C1020 1012 1121 1175 1287 1275C1386 1334 1490 1363 1632 1369C1645 1370 1698 1369 1712 1368ZM225 952C225 949 469 359 470 359C470 359 696 949 696 952C696 953 648 953 460 953C273 953 225 953 225 952ZM2229 188L2229 174L2166 174L2104 174L2151 137C2203 98 2212 90 2218 78C2238 36 2199 -0 2140 7C2108 11 2089 27 2085 53C2084 62 2084 64 2088 64C2090 64 2091 63 2091 55C2092 37 2104 23 2124 16C2132 14 2152 14 2159 17C2195 31 2197 85 2162 120C2158 123 2138 139 2118 154L2081 182L2081 192L2081 202L2155 202L2229 202L2229 188Z"/></svg>`;
 // В iOS приложението няма витрина — то отваря направо входа. На уеб витрината е първото, което се вижда.
 // Публичният адрес на сайта — от config.js, за да се сменя на едно място при нов домейн.
 const SITE_URL=(window.ACAC_CONFIG&&window.ACAC_CONFIG.SITE_URL)||'https://ac2.bg/';
@@ -645,7 +643,7 @@ async function loadSite(){
   if(SITE!==null)return;
   SITE={};
   try{ SITE=(await DB.getSiteContent())||{}; }catch(e){}
-  if(!user&&document.querySelector('.land'))route();  // пречертаваме с реалното съдържание
+  if(!user&&document.querySelector('.land,.gatehero'))route();  // пречертаваме с реалното съдържание
 }
 // Единен набор линейни икони (в стила на мотивите)
 const ICN={
@@ -1847,7 +1845,7 @@ async function startApply(){
 }
 
 // ---------- ПУБЛИЧНА ВИТРИНА (само уеб, преди вход) ----------
-function landing(){
+function landing(mode){
   const bg=lang==='bg';
   const heroImg=sT('hero.image'), aboutImg=sT('about.image');
   // формати — редакционни редове: снимка + абзац, редуват се ляво/дясно
@@ -1883,29 +1881,33 @@ function landing(){
   }).join('');
   const gal=(SITE&&SITE.gallery&&Array.isArray(SITE.gallery.images)?SITE.gallery.images:[]).filter(Boolean);
   const email=sT('contact.email'), phone=sT('contact.phone');
-  // видео фон (от админ панела); картината е „постер" — вижда се докато видеото зареди,
-  // при слаба връзка, и при хора с изключени анимации
+  // видео фон (от админ панела); картината е „постер"
   const heroVid=sT('hero.video');
   const reduce=(()=>{try{return window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}})();
   const heroBg=heroImg?`<div class="poster" style="background-image:url('${esc(heroImg)}')"></div>`:'';
   const heroVideo=(heroVid&&!reduce)?`<video autoplay muted loop playsinline preload="metadata" ${heroImg?`poster="${esc(heroImg)}"`:''} aria-hidden="true"><source src="${esc(heroVid)}"/></video>`:'';
-  return `<div class="land">
-    <div class="gatehero">
+  if(mode==='gate')return `<div class="gatehero">
       ${heroBg}${heroVideo}<div class="warm"></div><div class="grain"></div><div class="shade"></div>
-      <div class="topr"><button class="pill" onclick="toggleLang()">${bg?'EN':'BG'}</button></div>
-      <div class="in">
-        <div class="mo">${bg?'Само за членове':'Members only'}</div>
-        <div class="logo" role="img" aria-label="AC²"></div>
-        <h1>${esc(sT('hero.title'))}</h1>
-        <form onsubmit="event.preventDefault();doAuth();return false;" autocomplete="on">
-          <input id="l_email" type="email" name="username" autocapitalize="none" autocorrect="off" autocomplete="username" placeholder="${tr('email')}"/>
-          <input id="l_pass" type="password" name="password" autocomplete="current-password" placeholder="${tr('pass')}"/>
-          <button class="btn" type="submit">${tr('enter')}</button>
-        </form>
-        <div class="alt"><a onclick="doForgot()">${tr('forgot')}</a></div>
-        <div class="alt">${bg?'Още не сте член?':'Not a member yet?'} <a onclick="startApply()">${bg?'Кандидатствайте':'Apply'}</a></div>
+      <div class="tl">${LOGO_SVG}</div>
+      <div class="tr"><button class="pill" onclick="toggleLang()">${bg?'EN':'BG'}</button></div>
+      <div class="bl">
+        <div class="tag">${esc(sT('hero.subtitle'))}</div>
+        <h1>${bg?'Само за членове.':'Members only.'}</h1>
+        <div class="acts">
+          <button class="btn" onclick="go('login')">${bg?'Вход':'Login'}</button>
+          <a onclick="go('about')">${bg?'За клуба':'About us'}</a>
+          <a onclick="startApply()">${bg?'Кандидатствай':'Apply'}</a>
+        </div>
       </div>
-      <div class="down" onclick="document.getElementById('l_about').scrollIntoView({behavior:'smooth'})">${bg?'За клуба':'About the club'}</div>
+    </div>`;
+  return `<div class="land">
+    <div class="topbar">
+      <div class="brand"><span class="lg">${LOGO_SVG}</span></div>
+      <div class="acts">
+        <button class="pill" onclick="toggleLang()">${bg?'EN':'BG'}</button>
+        <button class="pill" onclick="go('')">‹ ${bg?'Начало':'Home'}</button>
+        <button class="btn" style="padding:9px 16px;font-size:13px;" onclick="go('login')">${bg?'Вход за членове':'Member login'}</button>
+      </div>
     </div>
 
     <section id="l_about">
@@ -2618,19 +2620,21 @@ async function route(){
     const p0=location.hash.replace(/^#/,'').split('?')[0];
     // директен линк към формата без приет правилник → първо прозорецът
     if(p0==='apply'&&!rulesAccepted()){location.hash='';setTimeout(startApply,50);return;}
-    if(p0==='apply'){app.classList.remove('wide');app.innerHTML=appForm('apply');if(document.getElementById('ap_mem'))appToggle();window.scrollTo(0,0);tb.style.display='none';entered=true;return;}
+    if(p0==='apply'){app.classList.remove('wide','full');app.innerHTML=appForm('apply');if(document.getElementById('ap_mem'))appToggle();window.scrollTo(0,0);tb.style.display='none';entered=true;return;}
     // Уеб: витрината е първото, което се вижда; входът е на #login.
     // Приложение (Capacitor): направо входът, както досега.
     if(!IN_APP&&DB.live&&p0!=='login'){
-      const keepY=document.querySelector('.land')?window.scrollY:0;   // при смяна на език не скачаме нагоре
-      app.classList.add('wide');                                        // витрината ползва цялата ширина
-      app.innerHTML=landing();tb.style.display='none';entered=true;
+      const isAbout=p0==='about';
+      const keepY=(isAbout&&document.querySelector('.land'))?window.scrollY:0;   // при смяна на език не скачаме нагоре
+      app.classList.toggle('full',!isAbout);   // началният екран е на цял прозорец
+      app.classList.toggle('wide',isAbout);    // „За клуба" ползва широкия контейнер
+      app.innerHTML=landing(isAbout?'about':'gate');tb.style.display='none';entered=true;
       window.scrollTo(0,keepY);loadSite();return;
     }
-    app.classList.remove('wide');
+    app.classList.remove('wide','full');
     app.innerHTML=gate();window.scrollTo(0,0);tb.style.display='none';entered=true;return;
   }
-  app.classList.remove('wide');
+  app.classList.remove('wide','full');
   tb.style.display='flex';
   const raw=location.hash.replace(/^#/,'');
   const [path,q]=raw.split('?');
