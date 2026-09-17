@@ -378,12 +378,12 @@
   .gatehero .tr .pill{background:rgba(246,239,226,.14);color:#f3e9d6;border-color:rgba(246,239,226,.35);}
   .gatehero .bottom{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;flex-direction:column;gap:18px;padding:0 40px 48px;}
   .gatehero .bl{position:relative;max-width:640px;}
-  .gatehero .tag{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#d8c39a;margin-bottom:14px;}
-  .gatehero h1{font-family:var(--serif);font-size:clamp(40px,7vw,84px);font-weight:400;line-height:1;letter-spacing:.5px;margin:0 0 26px;color:#f7efe0;}
+  .gatehero .tag{font-size:11.5px;letter-spacing:2px;line-height:1.75;text-transform:uppercase;color:#d8c39a;max-width:480px;margin:-6px 0 24px;}
+  .gatehero h1{font-family:var(--serif);font-size:clamp(40px,7vw,84px);font-weight:400;line-height:1;letter-spacing:.5px;margin:0 0 18px;color:#f7efe0;}
   .gatehero .acts{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
   .gatehero .acts .btn{margin:0;width:auto;min-width:220px;box-shadow:none;border-radius:6px;letter-spacing:2px;text-transform:uppercase;font-size:13px;}
   .gatehero .acts a{color:#f3e9d6;text-decoration:underline;text-underline-offset:5px;cursor:pointer;font-size:14px;}
-  @media(max-width:640px){.gatehero .tr{right:20px;top:18px;}.gatehero .bottom{padding:0 20px 36px;}}
+  @media(max-width:640px){.gatehero .tr{right:20px;top:18px;}.gatehero .bottom{padding:0 20px 36px;}.gatehero .tag{font-size:10.5px;letter-spacing:1.5px;line-height:1.7;max-width:100%;}}
   /* --- начален екран: лого в центъра с лъч + жива лента с човечета --- */
   .gatehero .beam{position:absolute;left:-30%;top:-40%;width:38%;height:180%;z-index:1;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,220,160,.10),transparent);transform:rotate(18deg);animation:gbeam 8s ease-in-out infinite;}
   @keyframes gbeam{0%,22%{left:-45%}70%,100%{left:125%}}
@@ -2042,8 +2042,8 @@ function landing(mode){
       <div class="bottom">
         <div class="frieze">${FRIEZE_SVG}</div>
         <div class="bl">
-        <div class="tag">${esc(sT('hero.subtitle'))}</div>
         <h1>${bg?'Само за членове.':'Members only.'}</h1>
+        <div class="tag">${esc(sT('hero.subtitle'))}</div>
         <div class="acts">
           <button class="btn" onclick="go('login')">${bg?'Вход':'Login'}</button>
           <a onclick="go('about')">${bg?'За клуба':'About us'}</a>
