@@ -694,8 +694,11 @@ const FRIEZE_SVG=(()=>{
   const glass=(x,y,flip)=>flip?`<path d="M${x} ${y}q-5-2-7 1l1 10q4 2 7 0z"/>`:`<path d="M${x} ${y}q5-2 7 1l-1 10q-4 2-7 0z"/>`;
   let f='';
   // под + таван с гирлянда от крушки
-  f+=`<path d="M10 120h1380" class="d"/><path d="M40 10q160 26 320 0t320 0t320 0t320 0" class="d"/>`;
-  for(let x=80;x<1400;x+=80){f+=`<path d="M${x} ${x%160?18:22}v6 M${x-2} ${x%160?24:28}h4" class="d"/>`;}
+  f+=`<path d="M10 120h1380" class="d"/>`;
+  // гирлянда: плавна вълна (без остри върхове), с крушки по дължината
+  f+=`<path d="M0 22C110 6 190 6 300 22S490 38 600 22S790 6 900 22S1090 38 1200 22S1340 10 1400 16" class="d"/>`;
+  const gy=x=>{const t=x/600*Math.PI;return 22-8*Math.cos(t);};   // приблизителна височина на вълната в x
+  for(let x=60;x<1400;x+=70){const y=gy(x);f+=`<path d="M${x} ${y.toFixed(1)}v5 M${x-2} ${(y+7).toFixed(1)}h4" class="d"/>`;}
   // висящи лампи
   for(const x of [200,700,1000]){f+=`<path d="M${x} 10v22 M${x-10} 32h20l-4 8h-12z" class="d"/>`;}
   // картини на стената
@@ -762,7 +765,7 @@ const FRIEZE_SVG=(()=>{
   f+=`<path d="M1250 120v-64q0-4 4-4h40q4 0 4 4v64 M1254 60v56h40V60 M1290 90a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M1256 62h36 M1274 62v54" class="d"/>`;
   f+=`<path d="M1320 120v-56 M1312 64h16 M1314 70l-6 6 M1326 70l6 6 M1316 72l4 20 M1324 72l-4 20" class="d"/>`; // закачалка с палто
   f+=`<path d="M1356 120v-20 M1356 104c-8-6-10-16-6-22 M1356 102c8-6 10-16 6-22 M1356 110c-6-4-12-8-10-16 M1348 120h16l-2-8h-12z" class="d"/>`;
-  return `<svg viewBox="0 0 1400 130" aria-hidden="true" preserveAspectRatio="xMidYMax meet">${f}</svg>`;
+  return `<svg viewBox="0 -10 1400 140" aria-hidden="true" preserveAspectRatio="xMidYMax meet">${f}</svg>`;
 })();
 // Логото с преминаващ светлинен лъч (SVG градиент, анимиран със SMIL — работи във всички браузъри)
 const LOGO_SWEEP_SVG=`<svg viewBox="26.77 4.70 536.28 330.41" role="img" aria-label="AC²" style="width:100%;height:auto;display:block;overflow:visible;">
