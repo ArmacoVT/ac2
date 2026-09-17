@@ -2032,16 +2032,18 @@ function landing(mode){
   const reduce=(()=>{try{return window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}})();
   const heroBg=heroImg?`<div class="poster" style="background-image:url('${esc(heroImg)}')"></div>`:'';
   const heroVideo=(heroVid&&!reduce)?`<video autoplay muted loop playsinline preload="metadata" ${heroImg?`poster="${esc(heroImg)}"`:''} aria-hidden="true"><source src="${esc(heroVid)}"/></video>`:'';
-  if(mode==='gate')return `<div class="gatehero">
-      ${heroBg}${heroVideo}<div class="warm"></div><div class="grain"></div><div class="shade"></div>
-      <div class="beam"></div>
-      <div class="logoarea"><div class="biglogo">${LOGO_SWEEP_SVG}</div></div>
+  const on=(k)=>{const v=(SITE&&SITE.hero&&SITE.hero[k]);return v===undefined||v===null?SITE_DEFAULTS.hero[k]:!!v;};
+  const bgCol=(SITE&&SITE.hero&&SITE.hero.bg_color)||SITE_DEFAULTS.hero.bg_color;
+  if(mode==='gate')return `<div class="gatehero" style="background:${esc(bgCol)}">
+      ${heroBg}${heroVideo}${on('show_fx')?'<div class="warm"></div><div class="grain"></div>':''}<div class="shade"></div>
+      ${on('show_beam')?'<div class="beam"></div>':''}
+      <div class="logoarea"><div class="biglogo">${on('show_beam')?LOGO_SWEEP_SVG:LOGO_SVG}</div></div>
 
       <div class="tr"><button class="pill" onclick="toggleLang()">${bg?'EN':'BG'}</button></div>
       <div class="bottom">
         <div class="frieze">${FRIEZE_SVG}</div>
         <div class="bl">
-        <h1>${bg?'Само за членове.':'Members only.'}</h1>
+        <h1>${esc(sT('hero.gate_title'))}</h1>
         <div class="tag">${esc(sT('hero.subtitle'))}</div>
         <div class="acts">
           <button class="btn" onclick="go('login')">${bg?'Вход':'Login'}</button>

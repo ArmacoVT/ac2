@@ -3,6 +3,13 @@
 // Админът вижда тези текстове в таб „Сайт" и ги редактира; записаното в базата има предимство.
 window.SITE_DEFAULTS={
   hero:{
+    // НАЧАЛЕН ЕКРАН („Само за членове")
+    gate_title:{bg:'Само за членове.',en:'Members only.'},
+    bg_color:'#1d1611',        // цвят на фона, когато няма картина/видео (и зад тях)
+    show_frieze:true,          // анимираната лента с човечета
+    show_beam:true,            // лъчът по логото
+    show_fx:true,              // топла светлина + зърнеж върху фона
+    // СТРАНИЦА „ЗА КЛУБА"
     title:{bg:'American College Arcus Club',en:'American College Arcus Club'},
     video:'',   // MP4/WebM фон на началния екран (по избор)
     subtitle:{bg:'Частен клуб за култура, гастрономия и смислено общуване — създаден около общността на Американски колеж Аркус.',en:'A private club for culture, gastronomy and meaningful company — built around the American College Arcus community.'},

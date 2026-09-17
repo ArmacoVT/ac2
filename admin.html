@@ -1026,10 +1026,23 @@ function siteView(){
   <p class="muted" style="margin-top:-6px;">Това е витрината, която нечленовете виждат на уеб адреса. В iOS приложението не се показва. Полетата показват текущия текст на сайта — просто го редактирай и натисни „Запази сайта".</p>
 
   <div class="card"><b>Начален екран („Само за членове")</b>
-    <p class="muted">Цял екран: картина или видео на фона, лого, заглавие и входът за членове. Отдолу е „За клуба" с останалите секции.</p>
-    ${sBi('Заглавие','hero.title')}
-    ${sImg('Картина на фона (задължителна — вижда се докато видеото зареди и при слаба връзка)','hero.image')}
-    ${sVid('Видео на фона (по избор, върху картината)','hero.video')}
+    <p class="muted">Това, което нечленовете виждат първо на ac2.bg: лого, анимирана лента, заглавие, изречение и бутоните Вход / За клуба / Кандидатствай.</p>
+    ${sBi('Голямо заглавие','hero.gate_title')}
+    ${sBi('Изречение под заглавието (кратко — показва се с главни букви)','hero.subtitle',2)}
+    <label style="margin-top:10px;">Цвят на фона</label>
+    <div style="display:flex;gap:10px;align-items:center;"><input type="color" id="s_color_hero_bg_color" value="${esc(sGet('hero.bg_color')||'#1d1611')}" style="width:56px;height:36px;padding:2px;"/><span class="muted">${esc(sGet('hero.bg_color')||'#1d1611')} — вижда се, когато няма картина/видео</span></div>
+    ${sImg('Картина на фона (по избор; върху цвета)','hero.image')}
+    ${sVid('Видео на фона (по избор; върху картината)','hero.video')}
+    <label style="margin-top:12px;">Елементи</label>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <label style="display:flex;gap:8px;align-items:center;font-weight:400;"><input type="checkbox" id="s_chk_hero_show_frieze" ${sGet('hero.show_frieze')!==false?'checked':''}/> Анимираната лента с човечета</label>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:400;"><input type="checkbox" id="s_chk_hero_show_beam" ${sGet('hero.show_beam')!==false?'checked':''}/> Светлинен лъч по логото</label>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:400;"><input type="checkbox" id="s_chk_hero_show_fx" ${sGet('hero.show_fx')!==false?'checked':''}/> Топла светлина и зърнеж върху фона</label>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:10px;"><b>Страница „За клуба" — заглавие</b>
+    ${sBi('Заглавие на страницата','hero.title')}
   </div>
 
   <div class="card" style="margin-top:10px;"><b>Кои сме ние</b>
@@ -1086,6 +1099,8 @@ function siteGrab(){
     if(m){ const path=m[1].replace(/_/g,'.'); const cur=sGet(path)||{}; sSet(path,Object.assign({},cur,{[m[2]]:el.value.trim()})); }
     else if(id==='contact_email')sSet('contact.email',el.value.trim());
     else if(id==='contact_phone')sSet('contact.phone',el.value.trim());
+    else if(id.startsWith('chk_'))sSet(id.slice(4).replace(/_show_/,'.show_'),el.checked);
+    else if(id.startsWith('color_'))sSet(id.slice(6).replace(/_bg_color$/,'.bg_color'),el.value);
   });
 }
 async function siteUpload(input,path){
