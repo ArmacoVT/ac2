@@ -1,7 +1,8 @@
 // Service worker — прави приложението инсталируемо и достъпно офлайн (обвивката).
-const CACHE = 'acac-v222';
+// Обслужва и публичния сайт (/) и членското приложение (/app/).
+const CACHE = 'acac-v230';
 const ASSETS = [
-  './', './index.html', './admin.html', './config.js', './db.js', './rules.html',
+  './', './index.html', './app/index.html', './admin.html', './config.js', './db.js', './brand.js', './rules.html',
   './vendor/supabase.js', './vendor/qrcode.js',
   './cards/logo-ac2.webp', './cards/logo-ac2.svg', './cards/logo-culture.webp', './cards/logo-cinema.webp',
   './cards/logo-table.webp', './cards/logo-music.webp', './cards/logo-conversation.webp',
@@ -18,12 +19,14 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   // Данните (Supabase) винаги по мрежата; обвивката — от кеша.
   if (url.hostname.endsWith('supabase.co') || url.hostname.includes('supabase')) return;
+  if (url.origin !== location.origin) return;   // външни скриптове (аналитика, карти) — без намеса
+  const fallback = () => caches.match(url.pathname.indexOf('/app') === 0 ? './app/index.html' : './index.html');
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request).then(resp => {
-      if (e.request.method === 'GET' && resp.ok && url.origin === location.origin) {
+      if (e.request.method === 'GET' && resp.ok) {
         const cp = resp.clone(); caches.open(CACHE).then(c => c.put(e.request, cp));
       }
       return resp;
-    }).catch(() => caches.match('./index.html')))
+    }).catch(fallback))
   );
 });

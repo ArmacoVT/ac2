@@ -52,6 +52,84 @@ window.SITE_DEFAULTS={
   }
 };
 
+// ---------- ПУБЛИЧЕН САЙТ (ac2.bg): съдържание по подразбиране ----------
+// Редактира се от админ панела → таб „Публичен сайт". Всеки текст е {bg,en}.
+// Записаното в базата (site_content, ред 'public') има предимство пред тези стойности.
+const _b=(bg,en)=>({bg:bg,en:en});
+window.PUB_DEFAULTS={
+  general:{
+    site_name:'AC² — American College Arcus Club',
+    tagline:_b('Културен център, ресторант и клуб във Велико Търново','Cultural centre, restaurant and club in Veliko Tarnovo'),
+    facebook:'', instagram:'',
+    appstore_url:'', playstore_url:'',
+    show_intro:true,                 // кратката анимация с логото преди сайта
+    email:'welcome@ac2.bg', phone:'',
+    address:_b('Велико Търново','Veliko Tarnovo'),
+    hours:_b('Вторник – неделя: 10:00 – 23:00\nПонеделник: почивен ден','Tuesday – Sunday: 10:00 – 23:00\nMonday: closed'),
+    parking:_b('','' ), access:_b('',''),
+    maps_embed:'',                   // адрес от Google Maps → Share → Embed a map → само src="…"
+    maps_link:''                     // линк „Отвори в Google Maps"
+  },
+  home:{
+    slides:[
+      {image:'',video:'',title:_b('Място за култура, разговор и добра храна','A place for culture, conversation and good food'),sub:_b('Културен център, ресторант и клуб в сърцето на Велико Търново.','A cultural centre, restaurant and club in the heart of Veliko Tarnovo.'),cta:_b('Виж програмата','See the programme'),link:'#/program'}
+    ],
+    manifesto:{title:_b('Какво е AC²','What is AC²'),body:_b('AC² е културен център, ресторант и клуб, създаден около общността на Американски колеж Аркус. Сцена, галерия и кино под един покрив — и маса, на която разговорът продължава.','AC² is a cultural centre, restaurant and club built around the American College Arcus community. A stage, a gallery and a cinema under one roof — and a table where the conversation continues.')},
+    season:{title:_b('Сезон есен–зима: ИНТЕРТЕКСТ','Autumn–winter season: INTERTEXT'),body:_b('Тема на сезона — как текстовете, образите и хората си говорят през времето.','The theme of the season — how texts, images and people speak to each other across time.')},
+    restaurant:{title:_b('Ресторант','Restaurant'),body:_b('Сезонна кухня, тематични вечери и брънч в неделя. Маса за след събитието — или просто за вечерта.','Seasonal cooking, themed dinners and Sunday brunch. A table for after the show — or just for the evening.'),image:''},
+    app:{title:_b('AC² в джоба ти','AC² in your pocket'),body:_b('Билети, резервации и членска карта — в приложението.','Tickets, reservations and your membership card — in the app.'),image:''},
+    membership:{title:_b('Членство','Membership'),body:_b('Клубът е по покана. Членовете получават приоритет за резервации, покани за затворени формати и преференции в ресторанта.','The club is by invitation. Members get priority reservations, invitations to closed formats and restaurant benefits.')},
+    college:{title:_b('Arcus College','Arcus College'),body:_b('Младите хора са активна част от AC². Учениците на Американски колеж Аркус участват в програмата — на сцената, в галерията и зад кулисите.','Young people are an active part of AC². Students of the American College Arcus take part in the programme — on stage, in the gallery and behind the scenes.'),images:[],url:''},
+    newsletter:{title:_b('Нюзлетър','Newsletter'),body:_b('Програмата за месеца, тематичните вечери и новините — веднъж месечно, без спам.','The monthly programme, themed dinners and news — once a month, no spam.')},
+    show:{restaurant:true,app:true,membership:true,college:true,newsletter:true}
+  },
+  program:{intro:_b('Всички предстоящи събития в изложбената зала и залата за сценични изкуства. Изберете направление, за да филтрирате.','All upcoming events in the exhibition hall and the performing-arts hall. Pick a direction to filter.')},
+  restaurant:{
+    title:_b('Ресторант','Restaurant'),
+    body:_b('Ресторантът на AC² е продължение на сцената — място, където вечерта продължава на масата. Сезонни продукти, кратко меню и вино от региона.','The AC² restaurant is an extension of the stage — the place where the evening continues at the table. Seasonal produce, a short menu and wine from the region.'),
+    images:[],
+    chef:{name:'',body:_b('',''),image:''},
+    dinners_intro:_b('Тематични вечери — една тема, едно меню, една маса.','Themed dinners — one theme, one menu, one table.'),
+    brunch:{title:_b('Брънч','Brunch'),body:_b('Всяка неделя от 11:00 — бавна сутрин с кафе, печива и семейна маса.','Every Sunday from 11:00 — a slow morning with coffee, pastries and a family table.'),images:[]},
+    hours:_b('Вторник – неделя: 12:00 – 23:00','Tuesday – Sunday: 12:00 – 23:00'),
+    reserve_url:'',                 // външна система за резервации (ако има); празно = форма за контакт
+    reserve_phone:''
+  },
+  menu:{
+    intro:_b('Менюто се сменя със сезона. Попитайте за дневното предложение.','The menu changes with the season. Ask about the daily special.'),
+    pdf_url:'',
+    sections:[]                     // [{title:{bg,en}, image:'', items:[{name:{bg,en}, desc:{bg,en}, price:''}]}]
+  },
+  membership:{
+    why_title:_b('Защо да стана член?','Why become a member?'),
+    why_body:_b('Защото най-ценните неща се случват в малък кръг: една прожекция, една вечеря, един разговор с човек, когото иначе не бихте срещнали. Членството дава приоритет за резервации, покани за затворени формати и преференции в ресторанта.','Because the most valuable things happen in a small circle: one screening, one dinner, one conversation with someone you would not otherwise have met. Membership gives priority reservations, invitations to closed formats and restaurant benefits.'),
+    how_title:_b('Как се кандидатства','How to apply'),
+    how_body:_b('1. Прочетете правилника на клуба.\n2. Попълнете формуляра за кандидатстване.\n3. Ще се свържем с вас за кратък разговор.\n4. След одобрение получавате покана и достъп до приложението.','1. Read the club rules.\n2. Fill in the application form.\n3. We will contact you for a short conversation.\n4. Once approved you receive an invitation and access to the app.'),
+    terms_url:'',
+    faq:[
+      {q:_b('Колко време отнема разглеждането на кандидатурата?','How long does an application take?'),a:_b('Обикновено до две седмици.','Usually up to two weeks.')},
+      {q:_b('Мога ли да водя гости?','Can I bring guests?'),a:_b('Да — до 4 места на резервация за повечето събития.','Yes — up to 4 seats per reservation for most events.')}
+    ]
+  },
+  about:{title:_b('За AC²','About AC²'),body:_b('Историята на AC² започва с Американски колеж Аркус и идеята, че едно училище може да бъде център на общността и след часовете. Днес AC² е културен център с ресторант, галерия, сцена и кино — и клуб от хора, които ги пълнят.','The story of AC² begins with the American College Arcus and the idea that a school can be the centre of its community after hours. Today AC² is a cultural centre with a restaurant, gallery, stage and cinema — and a club of people who fill them.'),images:[]},
+  team:{intro:_b('Хората зад AC².','The people behind AC².'),members:[]},   // [{name, role:{bg,en}, bio:{bg,en}, image}]
+  rent:{
+    title:_b('Наеми AC² за своето събитие','Hire AC² for your event'),
+    body:_b('Залата за сценични изкуства, галерията и ресторантът могат да бъдат наети за частни и фирмени събития, презентации и празници.','The performing-arts hall, the gallery and the restaurant can be hired for private and corporate events, presentations and celebrations.'),
+    images:[],
+    specs:[{label:_b('Места (сцена)','Seats (stage)'),value:_b('','')},{label:_b('Площ','Area'),value:_b('','')},{label:_b('Височина','Height'),value:_b('','')},{label:_b('Техника','Equipment'),value:_b('','')}],
+    terms:_b('Условията за наемане се уточняват според събитието. Пишете ни.','Hire terms depend on the event. Write to us.')
+  },
+  college:{title:_b('Arcus College','Arcus College'),body:_b('AC² и Американски колеж Аркус са една екосистема: учениците участват в програмата, стажуват в ресторанта и галерията, а сцената е тяхна за училищните продукции.','AC² and the American College Arcus are one ecosystem: students take part in the programme, intern in the restaurant and gallery, and the stage is theirs for school productions.'),images:[],url:''},
+  app:{title:_b('Приложението AC²','The AC² app'),body:_b('Програмата, билетите, резервациите и членската карта — на едно място. За членове на клуба.','The programme, tickets, reservations and your membership card — in one place. For club members.'),images:[],
+    features:_b('Програма и билети\nРезервации на маса\nЧленска карта с QR\nИзвестия за нови събития','Programme and tickets\nTable reservations\nMembership card with QR\nNotifications for new events')},
+  contacts:{intro:_b('Пишете ни — за събития, резервации, наеми или партньорства.','Write to us — about events, reservations, hire or partnerships.')},
+  legal:{
+    terms:_b('',''), privacy:_b('',''),
+    cookies:_b('Сайтът използва бисквитки за статистика (Google Analytics) и реклама (Meta Pixel) само след вашето съгласие.','This site uses cookies for statistics (Google Analytics) and advertising (Meta Pixel) only with your consent.')
+  }
+};
+
 // ============================================================
 //  Единен слой за данни. Ако config.js е попълнен → Supabase (общо за всички).
 //  Иначе → демо режим (localStorage, само на това устройство).
@@ -163,16 +241,70 @@ window.SITE_DEFAULTS={
 
     // ---------- ПУБЛИЧНА ВИТРИНА (landing) ----------
     // Един JSON ред; чете се и без вход. Празен обект = вградените текстове по подразбиране.
-    async getSiteContent() {
+    // id: 'landing' (началният екран на приложението) или 'public' (публичният сайт)
+    async getSiteContent(id) {
       if (!LIVE) return {};
       try {
-        const { data } = await sb.from('site_content').select('data').eq('id', 'landing').maybeSingle();
+        const { data } = await sb.from('site_content').select('data').eq('id', id || 'landing').maybeSingle();
         return (data && data.data) || {};
       } catch (e) { return {}; }
     },
-    async saveSiteContent(obj) {
+    async saveSiteContent(obj, id) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { error } = await sb.from('site_content').upsert({ id: 'landing', data: obj || {} });
+      const { error } = await sb.from('site_content').upsert({ id: id || 'landing', data: obj || {} });
+      return { error };
+    },
+
+    // ---------- ПУБЛИЧЕН САЙТ ----------
+    // Само събития с pub.show = true; само публичните колони (RLS + column grants за anon).
+    async listPublicEvents() {
+      if (!LIVE) return seedDemo().map(e => Object.assign({ pub: { show: true, direction: 'stage' } }, e));
+      const { data } = await sb.from('events')
+        .select('id,title,format,place,date,end_date,time,ends,capacity,price,image_url,description,tags,pub,archive_only')
+        .eq('pub->>show', 'true').order('date', { ascending: true });
+      return (data || []).map(e => ({ id: e.id, title: e.title, format: e.format, place: e.place || '',
+        date: e.date || '', end_date: e.end_date || '', time: e.time || '', ends: e.ends || '',
+        capacity: e.capacity || 0, price: e.price || 0, image_url: e.image_url || '',
+        description: e.description || '', tags: Array.isArray(e.tags) ? e.tags : [],
+        archive_only: !!e.archive_only, pub: e.pub || {} }));
+    },
+    // Форми от сайта (контакт / нюзлетър) → Edge Function public-forms (Turnstile + имейл)
+    async publicForm(kind, o) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await sb.functions.invoke('public-forms', { body: Object.assign({ kind }, o || {}) });
+      if (error) {
+        let reason = '';
+        try { reason = (await error.context.json()).error || ''; } catch (e) {}
+        if (reason === 'captcha') return { error: { captcha: true } };
+        if (reason === 'cooldown') return { error: { cooldown: true } };
+        return { error: { message: reason || error.message } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, data };
+    },
+    async listContactMessages() {
+      if (!LIVE) return [];
+      const { data } = await sb.from('contact_messages').select('*').order('created_at', { ascending: false }).limit(300);
+      return data || [];
+    },
+    async setMessageRead(id, read) {
+      if (!LIVE) return { error: null };
+      const { error } = await sb.from('contact_messages').update({ is_read: !!read }).eq('id', id);
+      return { error };
+    },
+    async deleteMessage(id) {
+      if (!LIVE) return { error: null };
+      const { error } = await sb.from('contact_messages').delete().eq('id', id);
+      return { error };
+    },
+    async listSubscribers() {
+      if (!LIVE) return [];
+      const { data } = await sb.from('newsletter_subscribers').select('*').order('consent_at', { ascending: false });
+      return data || [];
+    },
+    async deleteSubscriber(email) {
+      if (!LIVE) return { error: null };
+      const { error } = await sb.from('newsletter_subscribers').delete().eq('email', email);
       return { error };
     },
     async signIn(email, password) {
@@ -209,7 +341,7 @@ window.SITE_DEFAULTS={
         image_url: e.image_url || '', video_url: e.video_url || '',
         stream_url: e.stream_url || '', is_live: !!e.is_live, live_auto: !!e.live_auto, live_ended: !!e.live_ended, stream_gated: !!e.stream_gated,
         recording_url: e.recording_url || '', rec_title: e.rec_title || '', rec_gated: !!e.rec_gated, rec_price: e.rec_price || 0, archive_only: !!e.archive_only,
-        description: e.description || '', tags: Array.isArray(e.tags) ? e.tags : [] }));
+        description: e.description || '', tags: Array.isArray(e.tags) ? e.tags : [], pub: e.pub || {} }));
     },
     // всички събития (за админ панела — без филтър по членство; в live разчита на admin RLS)
     async listAllEvents() { return this.listEvents(); },
@@ -234,7 +366,7 @@ window.SITE_DEFAULTS={
         booking_windows: o.booking_windows || null,
         image_url: o.image_url || null, video_url: o.video_url || null,
         stream_url: o.stream_url || null, is_live: !!o.is_live, live_auto: !!o.live_auto, live_ended: false, stream_gated: !!o.stream_gated,
-        description: o.description || null, tags: o.tags || [] });
+        description: o.description || null, tags: o.tags || [], pub: o.pub || {} });
       return { error };
     },
     async updateEvent(id, o) {
@@ -247,7 +379,7 @@ window.SITE_DEFAULTS={
         booking_windows: o.booking_windows || null,
         image_url: o.image_url || null, video_url: o.video_url || null,
         stream_url: o.stream_url || null, is_live: !!o.is_live, live_auto: !!o.live_auto, stream_gated: !!o.stream_gated,
-        description: o.description || null, tags: o.tags || [] }).eq('id', id);
+        description: o.description || null, tags: o.tags || [], pub: o.pub || {} }).eq('id', id);
       return { error };
     },
     // самостоятелен архивен запис (скрито „събитие", показва се само във Видео архив)

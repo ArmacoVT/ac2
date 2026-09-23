@@ -2,7 +2,7 @@
   "name": "American College Arcus Club",
   "short_name": "Arcus Club",
   "description": "Културен и социален клуб — събития, резервации, членство.",
-  "start_url": "./index.html",
+  "start_url": "./app/index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

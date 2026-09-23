@@ -91,7 +91,8 @@ const esc=s=>(''+(s??'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 // ПРЕДИ да се изпълни JS, значи ' се измъква от кавичките. Подавай само id и търси обекта.
 const byId=(arr,id)=>(arr||[]).find(x=>x.id===id)||{};
 
-let tab='events', editId=null, draftAud=['all'], admin=false;
+let tab='events', editId=null, draftAud=['all'], admin=false, role='';
+const isEditor=()=>role==='editor';   // редактор: само събития, публичен сайт, сайт, съобщения
 let EVENTS=[], RES=[];
 const root=document.getElementById('root');
 
@@ -111,8 +112,8 @@ function sessionLost(){
 async function checkSession(){ if(!_sessionLost && !(await DB.sessionAlive())) sessionLost(); }
 
 async function boot(){
-  if(DB.live){ const u=await DB.getUser(); admin=!!(u&&u.role==='admin'); }
-  else { admin=localStorage.getItem('acac_admin')==='1'; }
+  if(DB.live){ const u=await DB.getUser(); role=u?u.role:''; admin=!!(u&&(u.role==='admin'||u.role==='editor')); }
+  else { admin=localStorage.getItem('acac_admin')==='1'; role='admin'; }
   if(admin) await refresh();
   render();
   if(DB.live&&admin){
@@ -136,22 +137,27 @@ function render(){
       <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn ghost sm" id="refreshBtn" onclick="adminRefresh()">↻ Опресни</button><button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
     <div class="tabs">
       <button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>
-      <button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации${tabBadge(RES.filter(r=>!r.status||r.status==='requested').length)}</button>
+      ${isEditor()?'':`<button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации${tabBadge(RES.filter(r=>!r.status||r.status==='requested').length)}</button>
       <button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>
       <button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge((APPS||[]).filter(a=>(a.status||'new')==='new').length)}</button>
-      <button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>
-      <button class="tab ${tab==='site'?'on':''}" onclick="setTab('site')">Сайт</button>
-      <button class="tab ${tab==='archive'?'on':''}" onclick="setTab('archive')">Архив</button>
+      <button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>`}
+      <button class="tab ${tab==='public'?'on':''}" onclick="setTab('public')">Публичен сайт</button>
+      <button class="tab ${tab==='site'?'on':''}" onclick="setTab('site')">Вход в приложението</button>
+      <button class="tab ${tab==='messages'?'on':''}" onclick="setTab('messages')">Съобщения${tabBadge((MSGS||[]).filter(m=>!m.is_read).length)}</button>
+      ${isEditor()?'':`<button class="tab ${tab==='archive'?'on':''}" onclick="setTab('archive')">Архив</button>
       <button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>
       <button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>
-      <button class="tab ${tab==='audit'?'on':''}" onclick="setTab('audit')">Журнал</button>
-    </div>`;
+      <button class="tab ${tab==='audit'?'on':''}" onclick="setTab('audit')">Журнал</button>`}
+    </div>
+    ${isEditor()?`<p class="muted" style="margin:6px 0 10px;font-size:12px;">Влезли сте като редактор: събития и съдържание на сайта. Членове, кандидатури и плащания са само за администратор.</p>`:''}`;
   if(tab==='events')h+=eventsView();
   else if(tab==='res')h+=resView();
   else if(tab==='people')h+=peopleView();
   else if(tab==='apps')h+=appsView();
   else if(tab==='ann')h+=announcementsView();
   else if(tab==='site')h+=siteView();
+  else if(tab==='public')h+=publicView();
+  else if(tab==='messages')h+=messagesView();
   else if(tab==='archive')h+=archiveAdminView();
   else if(tab==='stats')h+=statsView();
   else if(tab==='audit')h+=auditView();
@@ -304,6 +310,8 @@ async function setTab(t){tab=t;editId=null;await refresh();render();
   if((t==='res'||t==='events')&&!PHONES){await loadPhones();render();}
   if(t==='ann'){ANN=await DB.listAnnouncements();if(!PEOPLE)PEOPLE=await DB.listMembers();render();}
   if(t==='site'){SITEC=await DB.getSiteContent();render();}
+  if(t==='public'){PUBC=await DB.getSiteContent('public');render();}
+  if(t==='messages'){await loadMessages();}
   if(t==='audit'){AUDIT=await DB.listAudit(300);render();}
 }
 
@@ -397,7 +405,7 @@ function eventsView(){
       <div><h3>${esc(e.title)} ${liveBadge}</h3>
         <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)}${e.end_date?' – '+isoToBg(e.end_date):''} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места · ${e.price>0?(e.price+' €/билет'):'безплатно'}</div>
         <div style="margin-top:6px;">${seatsInfo(e)} ${tableInfo(e)}</div>
-        <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)}</div></div>
+        <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)} ${(e.pub&&e.pub.show)?'<span class="pill" style="border-color:#2f6b63;color:#2f6b63;">🌐 на сайта</span>':''}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${liveBtn}
         <button class="btn ghost sm" onclick="editEvent('${e.id}')">Редактирай</button>
@@ -464,7 +472,8 @@ function formView(){
     <label style="display:flex;align-items:center;gap:10px;margin-top:8px;cursor:pointer;">
       <input type="checkbox" id="f_gated" ${(e?e.stream_gated:true)?'checked':''} style="width:auto;"/> Излъчването е само за записани/платили</label>
     <p class="muted" style="margin:4px 0 0;font-size:12px;">При „авто старт" стриймът се показва сам в часа на началото и тече до ръчно спиране, дори след заложения край. „Само за записани/платили" значи, че членът трябва да има одобрена резервация (после — плащане/абонамент), за да гледа. Махни отметката, ако излъчването е свободно.</p>
-    <label>Видимо за (кой може да го вижда / гледа / запазва)</label>
+    ${pubEventBlock(e)}
+    <label style="margin-top:14px;">Видимо за (кой може да го вижда / гледа / запазва)</label>
     <div class="chips">${memCk}</div>
     ${bwSection(e)}
     <div style="display:flex;gap:10px;margin-top:16px;">
@@ -502,7 +511,7 @@ function grabForm(){
     offer_online:!!(document.getElementById('f_offer_online')&&document.getElementById('f_offer_online').checked),
     offer_archive:!!(document.getElementById('f_offer_archive')&&document.getElementById('f_offer_archive').checked),
     stream:g('f_stream'),live:live?live.checked:false,auto:auto?auto.checked:false,gated:gated?gated.checked:false,
-    desc:g('f_desc'),tags:[...document.querySelectorAll('#f_tags input[data-tag]:checked')].map(c=>c.dataset.tag),bw};
+    desc:g('f_desc'),tags:[...document.querySelectorAll('#f_tags input[data-tag]:checked')].map(c=>c.dataset.tag),bw,pub:grabPub()};
 }
 // Избирачка за час: 24-часов (00–23) + минути през 5; пази стойност HH:MM в скрито поле
 function timePickerHTML(id,val){
@@ -548,6 +557,7 @@ function putForm(v){
   const live=document.getElementById('f_live');if(live)live.checked=!!v.live;
   const auto=document.getElementById('f_auto');if(auto)auto.checked=!!v.auto;
   const gated=document.getElementById('f_gated');if(gated)gated.checked=!!v.gated;
+  putPub(v.pub);
 }
 function toggleAud(id){
   const v=grabForm();
@@ -616,8 +626,8 @@ function pickDate(iso){
   if(inp){inp.dataset.iso=iso;inp.value=iso?isoToBg(iso):'';}
   closeCal();
 }
-function editEvent(id){editId=id;tab='events';const e=EVENTS.find(x=>x.id===id);draftAud=e.aud==='all'?['all']:e.aud.slice();render();window.scrollTo(0,0);}
-function cancelEdit(){editId=null;draftAud=['all'];render();}
+function editEvent(id){editId=id;tab='events';const e=EVENTS.find(x=>x.id===id);draftAud=e.aud==='all'?['all']:e.aud.slice();draftPubGal=(e.pub&&Array.isArray(e.pub.gallery))?e.pub.gallery.slice():[];render();window.scrollTo(0,0);}
+function cancelEdit(){editId=null;draftAud=['all'];draftPubGal=[];render();}
 async function delEvent(id){if(!confirm('Да изтрия ли събитието?'))return;const ev=EVENTS.find(x=>x.id===id);await DB.deleteEvent(id);DB.logAudit('event_deleted',(ev&&ev.title)||'','');await refresh();render();}
 async function toggleLive(id,on){await DB.setLive(id,on);await refresh();render();}
 function clearMedia(which){
@@ -663,10 +673,11 @@ async function saveEvent(){
     is_live:document.getElementById('f_live').checked,
     live_auto:document.getElementById('f_auto')?document.getElementById('f_auto').checked:false,
     stream_gated:document.getElementById('f_gated')?document.getElementById('f_gated').checked:false,
-    aud:draftAud.includes('all')?'all':draftAud.slice()};
+    aud:draftAud.includes('all')?'all':draftAud.slice(),
+    pub:grabPub()||{}};
   const r=eid?await DB.updateEvent(eid,obj):await DB.addEvent(obj);
   if(r&&r.error){alert('Събитието не се записа: '+r.error.message);return;}
-  editId=null;draftAud=['all'];await refresh();render();window.scrollTo(0,0);
+  editId=null;draftAud=['all'];draftPubGal=[];await refresh();render();window.scrollTo(0,0);
   } finally { _savingEvent=false; }
 }
 
@@ -1022,8 +1033,8 @@ function siteView(){
     ${sBi('Абзац','offer.items.'+id+'.body',3)}
     ${sImg('Снимка (без снимка се показва логото на формата)','offer.items.'+id+'.image')}
   </div>`;
-  return `<h2>Публична страница (сайт)</h2>
-  <p class="muted" style="margin-top:-6px;">Това е витрината, която нечленовете виждат на уеб адреса. В iOS приложението не се показва. Полетата показват текущия текст на сайта — просто го редактирай и натисни „Запази сайта".</p>
+  return `<h2>Вход в приложението (ac2.bg/app) и членства</h2>
+  <p class="muted" style="margin-top:-6px;">Екранът „Само за членове", който се вижда на ac2.bg/app преди вход, страницата „За клуба" и текстовете на членствата (същите се показват и на публичния сайт → Членство). Публичният сайт ac2.bg се редактира в таб „Публичен сайт".</p>
 
   <div class="card"><b>Начален екран („Само за членове")</b>
     <p class="muted">Това, което нечленовете виждат първо на ac2.bg: лого, анимирана лента, заглавие, изречение и бутоните Вход / За клуба / Кандидатствай.</p>
@@ -1088,7 +1099,7 @@ function siteView(){
 
   <div style="display:flex;gap:10px;margin-top:16px;align-items:center;">
     <button class="btn" id="siteSaveBtn" onclick="saveSite()">Запази сайта</button>
-    <a class="btn ghost" href="./" target="_blank">Виж сайта ↗</a>
+    <a class="btn ghost" href="app/" target="_blank">Виж входа на приложението ↗</a>
   </div>`;
 }
 // събира всички полета от формата в SITEC
@@ -1128,6 +1139,256 @@ async function saveSite(){
   try{await DB.logAudit('site_content_saved','','');}catch(e){}
   toast('Сайтът е запазен ✓');
 }
+
+// ================= ПУБЛИЧЕН САЙТ ac2.bg (таб „Публичен сайт") =================
+// Целият сайт се описва със схема (по-долу); формата се рисува сама от нея.
+// Стойностите се пазят в site_content ред 'public' като един JSON (PUBC).
+// Липсващо поле = текстът по подразбиране от PUB_DEFAULTS (db.js).
+let PUBC=null;
+const _pdig=(o,p)=>p.split('.').reduce((a,k)=>(a&&a[k]!==undefined&&a[k]!==null)?a[k]:undefined,o||{});
+function pGet(p){ const v=_pdig(PUBC,p); const d=_pdig(window.PUB_DEFAULTS,p);
+  if(v&&typeof v==='object'&&!Array.isArray(v)&&('bg'in v||'en'in v)){return {bg:(v.bg||(d&&d.bg)||''),en:(v.en||(d&&d.en)||'')};}
+  return (v!==undefined&&v!==null&&v!=='')?v:(d!==undefined?d:undefined); }
+function pRaw(p){ return _pdig(PUBC,p); }
+function pSet(p,v){ const ks=p.split('.'); let o=PUBC=PUBC||{};
+  ks.slice(0,-1).forEach((k,i)=>{ const nextIsIdx=/^\d+$/.test(ks[i+1]); if(o[k]===undefined||o[k]===null||typeof o[k]!=='object')o[k]=nextIsIdx?[]:{}; o=o[k]; });
+  o[ks[ks.length-1]]=v; }
+// списък: записаното в базата, а ако няма — копие на списъка по подразбиране (за да се вижда и редактира)
+function pList(p){ const v=_pdig(PUBC,p); if(Array.isArray(v))return v; const d=_pdig(window.PUB_DEFAULTS,p); return Array.isArray(d)?JSON.parse(JSON.stringify(d)):[]; }
+
+// ---------- схема ----------
+const F=(k,t,label,o)=>Object.assign({k,t,label},o||{});
+const PUB_SCHEMA=[
+  {id:'general',title:'Общи: контакти, социални мрежи, магазини, карта',fields:[
+    F('general.tagline','bi','Кратко описание на сайта (за търсачки)'),
+    F('general.email','txt','Имейл за контакт (получава формата от сайта)'),F('general.phone','txt','Телефон'),
+    F('general.address','bi','Адрес'),F('general.hours','bit','Работно време (един ред = един ред на сайта)',{rows:3}),
+    F('general.parking','bit','Паркиране (по избор)',{rows:2}),F('general.access','bit','Достъп за хора с увреждания (по избор)',{rows:2}),
+    F('general.facebook','url','Facebook (пълен адрес)'),F('general.instagram','url','Instagram (пълен адрес)'),
+    F('general.appstore_url','url','App Store линк (празно = „очаквайте скоро")'),F('general.playstore_url','url','Google Play линк (празно = „очаквайте скоро")'),
+    F('general.maps_embed','url','Google Maps — адрес за вграждане',{help:'Google Maps → Споделяне → Вграждане на карта → копирай САМО адреса от src="…" (започва с https://www.google.com/maps/embed?…).'}),
+    F('general.maps_link','url','Google Maps — линк „Отвори в Google Maps"'),
+    F('general.show_intro','bool','Кратка анимация с логото преди сайта (веднъж на посещение)')
+  ]},
+  {id:'home',title:'Начална страница',fields:[
+    F('home.slides','list','Слайдер (голяма снимка/видео + послание) — 1 до 5 слайда',{max:5,fields:[
+      F('image','img','Снимка (хоризонтална, 1920×1080)'),F('video','vid','Видео (по избор; върху снимката)'),
+      F('title','bi','Заглавие'),F('sub','bit','Изречение под заглавието',{rows:2}),F('cta','bi','Текст на бутона (празно = без бутон)'),F('link','txt','Линк на бутона (напр. #/program или https://…)')
+    ]}),
+    F('home.manifesto.title','bi','Какво е AC² — надпис'),F('home.manifesto.body','bit','Манифест — няколко изречения',{rows:4}),
+    F('home.season.title','bi','Тема на сезона — заглавие (напр. „Сезон есен–зима: ИНТЕРТЕКСТ")'),F('home.season.body','bit','Тема на сезона — кратко описание',{rows:3}),
+    F('home.show.restaurant','bool','Показвай секция „Ресторант"'),F('home.restaurant.title','bi','Ресторант — заглавие'),F('home.restaurant.body','bit','Ресторант — кратко представяне',{rows:3}),F('home.restaurant.image','img','Ресторант — снимка'),
+    F('home.show.app','bool','Показвай секция „Инсталирай приложението"'),F('home.app.title','bi','Приложение — заглавие'),F('home.app.body','bit','Приложение — текст',{rows:2}),F('home.app.image','img','Приложение — снимка/екран'),
+    F('home.show.membership','bool','Показвай секция „Членство"'),F('home.membership.title','bi','Членство — заглавие'),F('home.membership.body','bit','Членство — кратко обяснение',{rows:3}),
+    F('home.show.college','bool','Показвай секция „Arcus College"'),F('home.college.title','bi','Arcus College — заглавие'),F('home.college.body','bit','Arcus College — текст',{rows:3}),F('home.college.images','imgs','Arcus College — снимки'),F('home.college.url','url','Линк към сайта на колежа'),
+    F('home.show.newsletter','bool','Показвай секция „Нюзлетър"'),F('home.newsletter.title','bi','Нюзлетър — заглавие'),F('home.newsletter.body','bit','Нюзлетър — текст',{rows:2})
+  ]},
+  {id:'program',title:'Програма',help:'Събитията идват от таб „Събития" — отметка „Показвай на публичния сайт" + направление (Сцена/Галерия/Кино/Тематична вечеря) и категория. Тук е само уводният текст.',fields:[
+    F('program.intro','bit','Уводен текст над филтрите',{rows:3})
+  ]},
+  {id:'restaurant',title:'Ресторант, меню, брънч',fields:[
+    F('restaurant.title','bi','Заглавие'),F('restaurant.body','bit','Концепция',{rows:4}),F('restaurant.images','imgs','Снимки'),
+    F('restaurant.chef.name','txt','Шеф-готвач — име'),F('restaurant.chef.body','bit','Шеф-готвач — представяне',{rows:3}),F('restaurant.chef.image','img','Шеф-готвач — снимка'),
+    F('restaurant.dinners_intro','bi','Тематични вечери — увод (самите вечери са събития с направление „Тематична вечеря")'),
+    F('restaurant.brunch.title','bi','Брънч — заглавие'),F('restaurant.brunch.body','bit','Брънч — описание',{rows:3}),F('restaurant.brunch.images','imgs','Брънч — снимки'),
+    F('restaurant.hours','bit','Работно време на ресторанта',{rows:2}),
+    F('restaurant.reserve_url','url','Външна система за резервации (линк). Празно = телефон / форма за контакт'),F('restaurant.reserve_phone','txt','Телефон за резервации (по избор)'),
+    F('menu.intro','bit','Меню — увод',{rows:2}),F('menu.pdf_url','url','Меню като PDF (по избор — качи го като снимка/файл другаде и сложи линка)'),
+    F('menu.sections','list','Меню — раздели',{fields:[
+      F('title','bi','Раздел (напр. „Предястия")'),F('image','img','Снимка на раздела (по избор)'),
+      F('items','list','Ястия',{fields:[F('name','bi','Име'),F('desc','bi','Описание (по избор)'),F('price','txt','Цена (напр. „18 лв.")')]})
+    ]})
+  ]},
+  {id:'membership',title:'Членство',help:'Нивата (Club / Alumni / Corporate), цените и ползите се редактират в таб „Сайт" — същите текстове вижда и приложението.',fields:[
+    F('membership.why_title','bi','„Защо да стана член?" — заглавие'),F('membership.why_body','bit','„Защо да стана член?" — текст',{rows:4}),
+    F('membership.how_title','bi','Как се кандидатства — заглавие'),F('membership.how_body','bit','Как се кандидатства — стъпки',{rows:5}),
+    F('membership.terms_url','url','Линк към пълните условия (празно = правилникът на клуба)'),
+    F('membership.faq','list','Често задавани въпроси',{fields:[F('q','bi','Въпрос'),F('a','bit','Отговор',{rows:2})]})
+  ]},
+  {id:'about',title:'За AC², екип, наеми',fields:[
+    F('about.title','bi','За AC² — заглавие'),F('about.body','bit','За AC² — разказът за бранда (празен ред = нов абзац)',{rows:8}),F('about.images','imgs','За AC² — снимки (първата е голяма)'),
+    F('team.intro','bi','Екип — увод'),
+    F('team.members','list','Екип — хора',{fields:[F('name','txt','Име'),F('role','bi','Длъжност'),F('bio','bit','Представяне',{rows:3}),F('image','img','Снимка (квадратна)')]}),
+    F('rent.title','bi','Наеми — заглавие'),F('rent.body','bit','Наеми — описание',{rows:4}),F('rent.images','imgs','Наеми — снимки'),
+    F('rent.specs','list','Наеми — техническа информация',{fields:[F('label','bi','Показател (напр. „Места")'),F('value','bi','Стойност (напр. „120")')]}),
+    F('rent.terms','bit','Наеми — условия',{rows:3})
+  ]},
+  {id:'college',title:'Arcus College',fields:[
+    F('college.title','bi','Заглавие'),F('college.body','bit','Текст',{rows:6}),F('college.images','imgs','Снимки'),F('college.url','url','Линк към сайта на колежа')
+  ]},
+  {id:'app',title:'Страница „App"',fields:[
+    F('app.title','bi','Заглавие'),F('app.body','bit','Текст',{rows:3}),F('app.features','bit','Какво има вътре — по един ред',{rows:5}),F('app.images','imgs','Екрани от приложението')
+  ]},
+  {id:'contacts',title:'Контакти',help:'Адрес, телефон, имейл, работно време и картата са в „Общи" най-горе.',fields:[F('contacts.intro','bit','Уводен текст',{rows:2})]},
+  {id:'legal',title:'Правна информация, поверителност, бисквитки',fields:[
+    F('legal.terms','bit','Правна информация / Общи условия',{rows:10}),F('legal.privacy','bit','Политика за поверителност',{rows:10}),F('legal.cookies','bit','Бисквитки — текст на страницата',{rows:4})
+  ]}
+];
+
+// ---------- рисуване на полетата ----------
+let pubOpen=(()=>{try{return localStorage.getItem('acac_pubtab')||'general';}catch(e){return 'general';}})();
+function pField(f,base){
+  const path=base?base+'.'+f.k:f.k;
+  const lab=`<label style="margin-top:10px;">${esc(f.label)}</label>${f.help?`<div class="muted" style="font-size:12px;margin:-2px 0 4px;">${esc(f.help)}</div>`:''}`;
+  if(f.t==='bi'||f.t==='bit'){
+    const v=pGet(path)||{};
+    const inp=(l,val)=>f.t==='bit'?`<textarea data-p="${path}.${l}" rows="${f.rows||3}" placeholder="${l.toUpperCase()}">${esc(val||'')}</textarea>`:`<input data-p="${path}.${l}" placeholder="${l.toUpperCase()}" value="${esc(val||'')}"/>`;
+    return lab+`<div class="row2">${inp('bg',v.bg)}${inp('en',v.en)}</div>`;
+  }
+  if(f.t==='txt'||f.t==='url'){ const v=pGet(path); return lab+`<input data-p="${path}" value="${esc(v==null?'':v)}" ${f.t==='url'?'placeholder="https://…"':''}/>`; }
+  if(f.t==='bool'){ const v=pGet(path); return `<label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:10px;"><input type="checkbox" data-p="${path}" data-bool="1" ${v!==false&&v!==undefined?'checked':''}/> ${esc(f.label)}</label>`; }
+  if(f.t==='img'){ const url=pGet(path)||'';
+    return lab+`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">${url?`<img src="${esc(url)}" style="height:64px;border-radius:10px;object-fit:cover;"/>`:'<span class="muted">няма</span>'}
+      <input type="file" accept="image/*" onchange="pubUpload(this,'${path}')"/>${url?`<button class="btn ghost sm" onclick="pubGrab();pSet('${path}','');render()">Премахни</button>`:''}</div>`; }
+  if(f.t==='vid'){ const url=pGet(path)||'';
+    return lab+`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">${url?`<video src="${esc(url)}" muted loop autoplay playsinline style="height:72px;border-radius:10px;background:#000;"></video>`:'<span class="muted">няма</span>'}
+      <input type="file" accept="video/mp4,video/webm" onchange="pubUpload(this,'${path}',true)"/>${url?`<button class="btn ghost sm" onclick="pubGrab();pSet('${path}','');render()">Премахни</button>`:''}</div>
+      <div class="muted" style="font-size:12px;">MP4/WebM без звук, до 8 MB.</div>`; }
+  if(f.t==='imgs'){ const list=(pRaw(path)!==undefined?pRaw(path):(pGet(path)||[])).filter(Boolean);
+    return lab+`<div style="display:flex;gap:8px;flex-wrap:wrap;">${list.map((u,i)=>`<div style="position:relative;"><img src="${esc(u)}" style="width:110px;height:82px;object-fit:cover;border-radius:10px;"/>
+      <button class="btn no sm" style="position:absolute;top:4px;right:4px;padding:2px 7px;" onclick="pubImgsDel('${path}',${i})">×</button>
+      ${i>0?`<button class="btn ghost sm" style="position:absolute;bottom:4px;left:4px;padding:2px 7px;" onclick="pubImgsMove('${path}',${i},-1)">‹</button>`:''}</div>`).join('')}</div>
+      <input type="file" accept="image/*" multiple onchange="pubImgsAdd(this,'${path}')" style="margin-top:8px;"/>`; }
+  if(f.t==='list'){ const list=pList(path);
+    const rows=list.map((it,i)=>`<div class="card" style="margin-top:8px;border-color:#e7d9c0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;"><b>${i+1}.</b><div style="display:flex;gap:6px;">
+        ${i>0?`<button class="btn ghost sm" onclick="pubListMove('${path}',${i},-1)">↑</button>`:''}${i<list.length-1?`<button class="btn ghost sm" onclick="pubListMove('${path}',${i},1)">↓</button>`:''}
+        <button class="btn no sm" onclick="pubListDel('${path}',${i})">Изтрий</button></div></div>
+      ${f.fields.map(sf=>pField(sf,path+'.'+i)).join('')}</div>`).join('');
+    return `<div style="margin-top:14px;padding-top:10px;border-top:1px dashed #e7d9c0;"><label>${esc(f.label)} (${list.length})</label>${rows}
+      ${(!f.max||list.length<f.max)?`<button class="btn ghost sm" style="margin-top:8px;" onclick="pubListAdd('${path}')">+ Добави</button>`:''}</div>`; }
+  return '';
+}
+function publicView(){
+  if(PUBC===null)return `<h2>Публичен сайт</h2><p class="empty">Зареждане…</p>`;
+  const sec=PUB_SCHEMA.find(s=>s.id===pubOpen)||PUB_SCHEMA[0];
+  return `<h2>Публичен сайт (ac2.bg)</h2>
+  <p class="muted" style="margin-top:-6px;">Всичко, което посетителите виждат на ac2.bg. Полетата показват текущия текст — редактирай и натисни „Запази". Ляво BG, дясно EN; празно EN = показва се BG.</p>
+  <div class="tabs" style="margin:10px 0 14px;">${PUB_SCHEMA.map(s=>`<button class="tab ${s.id===pubOpen?'on':''}" onclick="pubGrab();pubOpen='${s.id}';try{localStorage.setItem('acac_pubtab','${s.id}')}catch(e){};render()">${esc(s.title.split(':')[0].split(',')[0])}</button>`).join('')}</div>
+  <div class="card"><b>${esc(sec.title)}</b>${sec.help?`<p class="muted">${esc(sec.help)}</p>`:''}
+    ${sec.fields.map(f=>pField(f,'')).join('')}
+  </div>
+  <div style="display:flex;gap:10px;margin-top:16px;align-items:center;position:sticky;bottom:10px;background:var(--bg,#f6efe2);padding:10px 0;">
+    <button class="btn" id="pubSaveBtn" onclick="savePublic()">Запази публичния сайт</button>
+    <a class="btn ghost" href="./" target="_blank">Виж сайта ↗</a>
+  </div>`;
+}
+// събира всички полета в PUBC
+function pubGrab(){
+  document.querySelectorAll('[data-p]').forEach(el=>{
+    if(el.dataset.bool==='1')pSet(el.dataset.p,el.checked);
+    else pSet(el.dataset.p,el.value.trim());
+  });
+  // списъците се материализират в PUBC (за да не изчезнат редовете без полета)
+  const walk=(fields,base)=>fields.forEach(f=>{ const path=base?base+'.'+f.k:f.k;
+    if(f.t==='list'){ const l=pList(path); pSet(path,l); l.forEach((it,i)=>walk(f.fields,path+'.'+i)); } });
+  PUB_SCHEMA.forEach(s=>walk(s.fields,''));
+}
+async function pubUpload(input,path,isVideo){
+  const f=input.files&&input.files[0]; if(!f)return;
+  if(isVideo&&f.size>25*1024*1024){alert('Видеото е над 25 MB — компресирай го.');input.value='';return;}
+  pubGrab(); toast('Качване…');
+  const u=await DB.uploadMedia(f,'site'); if(u.error){alert('Не се качи: '+u.error.message);return;}
+  pSet(path,u.url); render(); toast('Качено — не забравяй „Запази"');
+}
+async function pubImgsAdd(input,path){
+  const files=Array.from(input.files||[]); if(!files.length)return;
+  pubGrab(); toast('Качване на '+files.length+' снимки…');
+  const list=(pRaw(path)!==undefined?pRaw(path):(pGet(path)||[])).slice();
+  for(const f of files){ const u=await DB.uploadMedia(f,'site'); if(u.error){alert('Снимка не се качи: '+u.error.message);continue;} list.push(u.url); }
+  pSet(path,list); render(); toast('Качено — не забравяй „Запази"');
+}
+function pubImgsDel(path,i){ pubGrab(); const l=(pRaw(path)!==undefined?pRaw(path):(pGet(path)||[])).slice(); l.splice(i,1); pSet(path,l); render(); }
+function pubImgsMove(path,i,d){ pubGrab(); const l=(pRaw(path)!==undefined?pRaw(path):(pGet(path)||[])).slice(); const j=i+d; if(j<0||j>=l.length)return; [l[i],l[j]]=[l[j],l[i]]; pSet(path,l); render(); }
+function pubListAdd(path){ pubGrab(); const l=pList(path).slice(); l.push({}); pSet(path,l); render(); }
+function pubListDel(path,i){ if(!confirm('Да изтрия ли този запис?'))return; pubGrab(); const l=pList(path).slice(); l.splice(i,1); pSet(path,l); render(); }
+function pubListMove(path,i,d){ pubGrab(); const l=pList(path).slice(); const j=i+d; if(j<0||j>=l.length)return; [l[i],l[j]]=[l[j],l[i]]; pSet(path,l); render(); }
+async function savePublic(){
+  pubGrab();
+  const b=document.getElementById('pubSaveBtn'); if(b){b.disabled=true;b.textContent='Запазване…';}
+  const r=await DB.saveSiteContent(PUBC,'public');
+  if(b){b.disabled=false;b.textContent='Запази публичния сайт';}
+  if(r&&r.error){alert('Не се запази: '+r.error.message);return;}
+  try{await DB.logAudit('public_site_saved','','');}catch(e){}
+  toast('Публичният сайт е запазен ✓');
+}
+
+// ================= СЪОБЩЕНИЯ от сайта + абонати за нюзлетъра =================
+let MSGS=null, SUBS=null;
+function messagesView(){
+  if(MSGS===null)return `<h2>Съобщения</h2><p class="empty">Зареждане…</p>`;
+  const fmt=d=>d?new Date(d).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+  const rows=MSGS.map(m=>`<div class="card" style="${m.is_read?'opacity:.75;':'border-color:var(--gold-soft);'}">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <div><b>${esc(m.name)}</b> · <a href="mailto:${esc(m.email)}">${esc(m.email)}</a>${m.phone?' · '+esc(m.phone):''}
+        <div class="muted" style="font-size:12px;">${fmt(m.created_at)} · ${m.lang||'bg'} ${m.mailed?'· ✉ изпратено до пощата':'· <span style="color:#b5532f">✉ НЕ е стигнало до пощата (SMTP?)</span>'}</div></div>
+      <div style="display:flex;gap:6px;"><button class="btn ghost sm" onclick="msgRead('${m.id}',${m.is_read?'false':'true'})">${m.is_read?'Непрочетено':'Прочетено'}</button><button class="btn no sm" onclick="msgDel('${m.id}')">Изтрий</button></div></div>
+    ${m.subject?`<div style="margin-top:8px;"><b>${esc(m.subject)}</b></div>`:''}
+    <div style="margin-top:6px;white-space:pre-line;">${esc(m.message)}</div></div>`).join('');
+  const subs=(SUBS||[]);
+  return `<h2>Съобщения от сайта${tabBadge(MSGS.filter(m=>!m.is_read).length)}</h2>
+    <p class="muted" style="margin-top:-6px;">Контактната форма на ac2.bg. Копие отива и на имейла за контакт (Secrets → CONTACT_TO, по подразбиране welcome@ac2.bg).</p>
+    ${rows||'<p class="empty">Няма съобщения.</p>'}
+    <h2 style="margin-top:28px;">Абонати за нюзлетъра (${subs.length})</h2>
+    <p class="muted" style="margin-top:-6px;">Записват се от сайта със съгласие. Експортът е CSV за Mailchimp или друг инструмент.</p>
+    <div style="display:flex;gap:10px;margin:8px 0 12px;"><button class="btn ghost sm" onclick="subsCsv()">⬇ Експорт CSV</button></div>
+    <div class="card" style="max-height:360px;overflow:auto;font-size:13px;">${subs.length?subs.map(s=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #f0e6d2;"><span>${esc(s.email)} <span class="muted">· ${s.lang||'bg'} · ${fmt(s.consent_at)}</span></span><button class="btn no sm" style="padding:1px 8px;" onclick="subDel('${esc(s.email)}')">×</button></div>`).join(''):'<span class="muted">Още няма абонати.</span>'}</div>`;
+}
+async function loadMessages(){ MSGS=await DB.listContactMessages(); SUBS=await DB.listSubscribers(); render(); }
+async function msgRead(id,r){ await DB.setMessageRead(id,r); await loadMessages(); }
+async function msgDel(id){ if(!confirm('Да изтрия ли съобщението?'))return; await DB.deleteMessage(id); await loadMessages(); }
+async function subDel(email){ if(!confirm('Да премахна ли '+email+' от списъка?'))return; await DB.deleteSubscriber(email); await loadMessages(); }
+function subsCsv(){
+  const rows=[['email','lang','consent_at']].concat((SUBS||[]).map(s=>[s.email,s.lang||'',s.consent_at||'']));
+  const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download='newsletter-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+
+// ================= ПУБЛИЧНИ ДАННИ НА СЪБИТИЕ (блок във формата за събитие) =================
+const PUB_DIRS=[['stage','Сцена'],['gallery','Галерия'],['cinema','Кино'],['dinner','Тематична вечеря (ресторант)']];
+const PUB_CATS=[['','— по формата —'],['exhibition','Изложба'],['theatre','Театър'],['concert','Концерт'],['dance','Танц'],['performance','Пърформанс'],['discussion','Дискусия'],['film','Кино'],['dinner','Тематична вечеря'],['other','Друго']];
+let draftPubGal=[];
+function pubEventBlock(e){
+  const p=(e&&e.pub)||{}; const b=(v)=>(v&&typeof v==='object')?v:{bg:v||'',en:''};
+  const bi=(id,label,val,rows)=>{const v=b(val); const inp=l=>rows?`<textarea id="${id}_${l}" rows="${rows}" placeholder="${l.toUpperCase()}">${esc(v[l]||'')}</textarea>`:`<input id="${id}_${l}" placeholder="${l.toUpperCase()}" value="${esc(v[l]||'')}"/>`; return `<label style="margin-top:8px;">${label}</label><div class="row2">${inp('bg')}${inp('en')}</div>`;};
+  return `<div class="card" style="margin-top:14px;background:#fbf6ea;border-color:#e7d9c0;"><b>Публичен сайт (ac2.bg)</b>
+    <p class="muted" style="margin:2px 0 6px;font-size:12px;">С отметката събитието се показва на ac2.bg за всички (заглавие, дата, място, цена, снимка, описание). Без нея остава само за членове в приложението.</p>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="f_pub_show" ${p.show?'checked':''} style="width:auto;"/> Показвай на публичния сайт</label>
+    <div class="row2" style="margin-top:8px;"><div><label>Направление</label><select id="f_pub_dir">${PUB_DIRS.map(d=>`<option value="${d[0]}" ${p.direction===d[0]?'selected':''}>${d[1]}</option>`).join('')}</select></div>
+      <div><label>Категория (етикет на картата)</label><select id="f_pub_cat">${PUB_CATS.map(c=>`<option value="${c[0]}" ${(p.category||'')===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select></div></div>
+    <label style="margin-top:8px;">Заглавие на английски (по избор)</label><input id="f_pub_title_en" value="${esc(p.title_en||'')}"/>
+    <label style="margin-top:8px;">Описание на английски (по избор)</label><textarea id="f_pub_desc_en" rows="3">${esc(p.desc_en||'')}</textarea>
+    ${bi('f_pub_part','Участници',p.participants,2)}
+    ${bi('f_pub_curator','Куратор (изложби)',p.curator)}
+    ${bi('f_pub_authors','Представени автори (изложби)',p.authors,2)}
+    ${bi('f_pub_visit','Информация за посещение (изложби)',p.visit,2)}
+    <label style="margin-top:8px;">Външен линк за билети / резервация (по избор; празно = през приложението)</label><input id="f_pub_ticket" value="${esc(p.ticket_url||'')}" placeholder="https://…"/>
+    <label style="margin-top:8px;">Галерия за страницата на събитието (${draftPubGal.length})</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">${draftPubGal.map((u,i)=>`<div style="position:relative;"><img src="${esc(u)}" style="width:96px;height:72px;object-fit:cover;border-radius:8px;"/><button class="btn no sm" style="position:absolute;top:2px;right:2px;padding:1px 6px;" onclick="pubGalDel(${i})">×</button></div>`).join('')}</div>
+    <input type="file" accept="image/*" multiple onchange="pubGalAdd(this)" style="margin-top:6px;"/>
+  </div>`;
+}
+function grabPub(){
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  const bi=id=>({bg:g(id+'_bg'),en:g(id+'_en')});
+  const show=document.getElementById('f_pub_show');
+  if(!show)return null;
+  return {show:show.checked,direction:g('f_pub_dir'),category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
+    participants:bi('f_pub_part'),curator:bi('f_pub_curator'),authors:bi('f_pub_authors'),visit:bi('f_pub_visit'),ticket_url:g('f_pub_ticket'),gallery:draftPubGal.slice()};
+}
+function putPub(p){
+  if(!p)return; const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
+  const show=document.getElementById('f_pub_show'); if(show)show.checked=!!p.show;
+  s('f_pub_dir',p.direction);s('f_pub_cat',p.category);s('f_pub_title_en',p.title_en);s('f_pub_desc_en',p.desc_en);s('f_pub_ticket',p.ticket_url);
+  ['part','curator','authors','visit'].forEach((k,i)=>{const v=p[['participants','curator','authors','visit'][i]]||{};s('f_pub_'+k+'_bg',v.bg);s('f_pub_'+k+'_en',v.en);});
+}
+async function pubGalAdd(input){
+  const files=Array.from(input.files||[]); if(!files.length)return;
+  const v=grabForm(); toast('Качване…');
+  for(const f of files){ const u=await DB.uploadMedia(f); if(u.error){alert('Снимка не се качи: '+u.error.message);continue;} draftPubGal.push(u.url); }
+  render(); putForm(v);
+}
+function pubGalDel(i){ const v=grabForm(); draftPubGal.splice(i,1); render(); putForm(v); }
 
 function appsView(){
   if(APPS===null)return `<h2>Кандидатури</h2><p class="empty">Зареждане…</p>`;
@@ -1449,11 +1710,11 @@ async function doLogin(){
     const {error}=await DB.signIn(u,p);
     if(error){alert('Грешен вход: '+error.message);return;}
     const me=await DB.getUser();
-    if(!me||me.role!=='admin'){alert('Този акаунт няма админ права.');await DB.signOut();return;}
-    admin=true;await refresh();render();
+    if(!me||(me.role!=='admin'&&me.role!=='editor')){alert('Този акаунт няма админ права.');await DB.signOut();return;}
+    role=me.role;admin=true;await refresh();render();
   }else{
     if((u||'').trim().toLowerCase()!=='admin'||(p||'').trim()!=='admin'){alert('Грешно име или парола');return;}
-    admin=true;localStorage.setItem('acac_admin','1');await refresh();render();
+    admin=true;role='admin';localStorage.setItem('acac_admin','1');await refresh();render();
   }
 }
 async function logout(){

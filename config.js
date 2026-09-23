@@ -14,5 +14,11 @@ window.ACAC_CONFIG = {
   // Докато този ред е празен, captcha-та не се показва и формата работи както преди.
   TURNSTILE_SITE_KEY: "0x4AAAAAADzBXlrVTbWnEJn9",
   // Публичният адрес на сайта (със завършваща наклонена черта). Ползва се за споделяне на събития.
-  SITE_URL: "https://ac2.bg/"
+  SITE_URL: "https://ac2.bg/",
+  // Адресът на членското приложение (уеб версията). iOS приложението отваря същия адрес.
+  APP_URL: "https://ac2.bg/app/",
+  // Аналитика на публичния сайт — зарежда се САМО след съгласие с бисквитките.
+  // Празно = изключено. GA4: "G-XXXXXXXXXX" (Google Analytics → Admin → Data streams). Meta Pixel: само цифри.
+  GA_ID: "",
+  META_PIXEL_ID: ""
 };
