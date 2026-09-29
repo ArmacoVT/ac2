@@ -494,11 +494,12 @@
   @media(max-width:640px){.land .two,.land .frow{grid-template-columns:1fr;}.land .frow.rev .fpic{order:0;}.land .hero{padding-top:22px;}}
   /* ---------- Правилник преди кандидатстване ---------- */
   .rulesov{position:fixed;inset:0;background:rgba(58,44,35,.5);display:flex;align-items:center;justify-content:center;z-index:120;padding:14px;}
-  .rulescard{background:var(--bg);border-radius:22px;width:min(100%,760px);max-height:calc(100vh - 28px);display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .rulescard{background:var(--bg);border-radius:22px;width:min(100%,760px);max-height:100%;height:100%;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);}
   .rulescard .rh{padding:18px 22px 10px;border-bottom:1px solid var(--line-soft);}
   .rulescard .rh h3{font-family:var(--serif);font-size:22px;font-weight:500;margin:0;}
   .rulescard .rh .m{color:var(--muted);font-size:12px;margin-top:4px;}
-  .rulescard .rb{overflow:auto;padding:6px 22px;flex:1;-webkit-overflow-scrolling:touch;}
+  .rulescard .rb{overflow:auto;padding:6px 22px;flex:1 1 auto;min-height:0;-webkit-overflow-scrolling:touch;}
+  .rulescard .rh,.rulescard .rf{flex:0 0 auto;}
   .rulescard .rf{padding:12px 22px 18px;border-top:1px solid var(--line-soft);}
   .rulescard .rf label{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45;cursor:pointer;margin-bottom:12px;}
   .rulescard .rf input{margin-top:3px;width:18px;height:18px;flex:none;}
@@ -2041,7 +2042,7 @@ function gate(){
        <div style="margin-top:14px;color:var(--muted);font-size:12px;">${lang==='bg'?'Демо достъп':'Demo access'}: <span style="color:var(--gold);">admin / admin</span></div>`;
   return `<div class="gate${entered?' ready':''}">
     <div style="position:absolute;top:calc(16px + env(safe-area-inset-top));right:16px;"><button class="pill" onclick="toggleLang()">${lang==='bg'?'EN':'BG'}</button></div>
-    ${(!IN_APP&&live)?`<div style="position:absolute;top:calc(16px + env(safe-area-inset-top));left:16px;"><button class="pill" onclick="go('')">‹ ${lang==='bg'?'Към сайта':'Back to site'}</button></div>`:''}
+    ${(!IN_APP&&live)?`<div style="position:absolute;top:calc(16px + env(safe-area-inset-top));left:16px;"><a class="pill" style="text-decoration:none;display:inline-block;" href="${esc(SITE_URL)}">‹ ${lang==='bg'?'Към сайта':'Back to site'}</a></div>`:''}
     <div class="ring"><img src="${AC2}" alt="AC²"/></div>
     <h1>American College<br>Arcus Club</h1>
     <div class="sub">${su?tr('signupTitle'):(lang==='bg'?'Вход за членове':'Members’ entrance')}</div>
