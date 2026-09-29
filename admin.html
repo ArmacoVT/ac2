@@ -469,6 +469,8 @@ function formView(){
       <div><label>Край (час)</label>${timePickerHTML('f_ends',e?e.ends:'')}</div></div>
     <div class="row2"><div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}"/></div>
       <div><label>Места на маса след събитието</label><input id="f_tcap" type="number" min="0" value="${e&&e.table_capacity?e.table_capacity:''}" placeholder="по желание"/></div></div>
+    <div class="row2"><div><label>Отказ на ПЛАТЕН билет — най-късно (часове преди началото)</label><input id="f_cancel_h" type="number" min="0" step="1" value="${(e&&e.pub&&e.pub.cancel_hours!=null&&e.pub.cancel_hours!=='')?e.pub.cancel_hours:''}" placeholder="по подразбиране 72"/></div>
+      <div class="muted" style="font-size:12px;padding-top:26px;">Празно = 72 ч. (3 дни). 0 = до самото начало. Безплатни резервации (безплатно събитие, маса, запитване) — винаги 24 ч.</div></div>
     <label style="margin-top:6px;">Какво се предлага за това събитие (отметни нивото + сложи цена; 0 = безплатно)</label>
     <div class="row2" style="margin-top:4px;">
       <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_phys" ${(e?e.offer_physical:true)?'checked':''} style="width:auto;"/> Присъствие в клуба</label>
@@ -781,7 +783,7 @@ function resView(){
     const acts=resActs(r.id,st);
     return `<div class="card" id="rescard_${r.id}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
-        <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${r.guest?'<span class="pill" style="border-color:#bf8a2e;color:#bf8a2e;">гост от сайта</span>':esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}${r.paid?' · <b style="color:#3f6235;">платено</b>':''}</div>
+        <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${r.guest?'<span class="pill" style="border-color:#bf8a2e;color:#bf8a2e;">гост от сайта</span>':esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}${r.paid?' · <b style="color:#3f6235;">платено</b>':''}${r.refunded_at?' · <b style="color:#b5532f;">възстановени '+(r.refund_cents/100).toFixed(2)+' €</b>':''}</div>
         ${contact?`<div class="muted" style="margin-top:3px;">${contact}</div>`:''}
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
         <div style="margin-top:7px;" id="resbadge_${r.id}">${badge}${cap}</div></div>
@@ -1411,14 +1413,15 @@ function grabPub(){
   const bi=id=>({bg:g(id+'_bg'),en:g(id+'_en')});
   const mo=document.getElementById('f_pub_members_only'), gf=document.getElementById('f_pub_gfrom');
   if(!mo)return null;
-  return {members_only:mo.checked,guests:!!draftGuests,guest_from:(draftGuests&&gf)?(gf.dataset.iso||''):'',category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
+  const ch=g('f_cancel_h');
+  return {members_only:mo.checked,guests:!!draftGuests,guest_from:(draftGuests&&gf)?(gf.dataset.iso||''):'',cancel_hours:(ch===''?null:Math.max(0,parseInt(ch,10)||0)),category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
     participants:bi('f_pub_part'),curator:bi('f_pub_curator'),authors:bi('f_pub_authors'),visit:bi('f_pub_visit'),ticket_url:g('f_pub_ticket'),gallery:draftPubGal.slice()};
 }
 function putPub(p){
   if(!p)return; const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   const mo=document.getElementById('f_pub_members_only'); if(mo)mo.checked=!!p.members_only;
   const gf=document.getElementById('f_pub_gfrom'); if(gf){gf.dataset.iso=p.guest_from||'';gf.value=p.guest_from?isoToBg(p.guest_from):'';}
-  s('f_pub_cat',p.category);s('f_pub_title_en',p.title_en);s('f_pub_desc_en',p.desc_en);s('f_pub_ticket',p.ticket_url);
+  s('f_pub_cat',p.category);s('f_cancel_h',(p.cancel_hours==null?'':String(p.cancel_hours)));s('f_pub_title_en',p.title_en);s('f_pub_desc_en',p.desc_en);s('f_pub_ticket',p.ticket_url);
   ['part','curator','authors','visit'].forEach((k,i)=>{const v=p[['participants','curator','authors','visit'][i]]||{};s('f_pub_'+k+'_bg',v.bg);s('f_pub_'+k+'_en',v.en);});
 }
 async function pubGalAdd(input){

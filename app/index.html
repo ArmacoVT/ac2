@@ -2326,8 +2326,16 @@ async function toggleFav(id){
   route();
 }
 // карта за една резервация (dim=true за изминалите; датата е в заглавието на групата)
-const CANCEL_HOURS_EVENT=72, CANCEL_HOURS_TABLE=24; // билет за събитие / маса в ресторант
-function cancelCutoffH(r){ return (r.table_event_id && !r.event_id) ? CANCEL_HOURS_TABLE : CANCEL_HOURS_EVENT; }
+// Срок за отказ: ПЛАТЕН билет → зададеното в събитието от админа (по подразбиране 72 ч.);
+// безплатна резервация (безплатно събитие, маса, запитване) → винаги 24 ч.
+const CANCEL_HOURS_PAID=72, CANCEL_HOURS_FREE=24;
+function cancelCutoffH(r){
+  const ev=r.event_id?EVENTS.find(x=>x.id===r.event_id):null;
+  const paid=!!(ev&&ev.price>0&&r.event_id&&(r.kind||'physical')==='physical');
+  if(!paid)return CANCEL_HOURS_FREE;
+  const h=ev.pub&&ev.pub.cancel_hours;
+  return (h!=null&&h!==''&&!isNaN(+h))?+h:CANCEL_HOURS_PAID;
+}
 function resStartMs(r){
   if(!r.date)return null;
   const t=(r.time&&/^\d{1,2}:\d{2}/.test(r.time))?r.time.slice(0,5):'00:00';
@@ -2377,7 +2385,7 @@ function resCard(r,dim){
   const ctx=[fmtName,venue].filter(Boolean).join(' · ');
   const ctxLine=ctx?`<div class="m" style="color:${col||'var(--gold-soft)'};margin-bottom:2px;font-weight:600;">${esc(ctx)}</div>`:'';
   const accent=(col&&!hl)?`border-left:3px solid ${col};`:'';
-  return `<div class="ev"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${accent}${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${r.party} ${tr('seats')} · <b style="color:${r.paid?'#4f7a43':(SC[r.status]||'var(--muted)')};">${(r.paid&&!['cancelled','declined'].includes(r.status))?(lang==='bg'?'платена':'paid'):(SL[r.status]||r.status)}${(r.paid&&['cancelled','declined'].includes(r.status))?(lang==='bg'?' · платена — за връщане на сумата се свържете с клуба':' · paid — contact the club for a refund'):''}</b></div>${priceLine}${cancelBtn}</div>`;
+  return `<div class="ev"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${accent}${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${r.party} ${tr('seats')} · <b style="color:${r.paid?'#4f7a43':(SC[r.status]||'var(--muted)')};">${(r.paid&&!['cancelled','declined'].includes(r.status))?(lang==='bg'?'платена':'paid'):(SL[r.status]||r.status)}${r.refunded_at?(lang==='bg'?' · сумата е възстановена':' · refunded'):((r.paid&&['cancelled','declined'].includes(r.status))?(lang==='bg'?' · платена — за връщане на сумата се свържете с клуба':' · paid — contact the club for a refund'):'')}</b></div>${priceLine}${cancelBtn}</div>`;
 }
 // заглавие на дата: „петък, 6 юни 2026"
 function resDayLabel(iso){
