@@ -388,7 +388,7 @@ const UI={
   login:['Вход за членове','Member login'],install:['Инсталирай приложението','Install the app'],
   all:['Всички','All'],upcoming:['Предстоящо','Upcoming'],whole:['Цялата програма','Full programme'],
   tickets:['Билети','Tickets'],reserve:['Резервация','Reserve'],details:['Подробности','Details'],table:['Резервирай маса','Book a table'],
-  free:['Вход свободен','Free entry'],lv:['лв.','BGN'],from:['от','from'],until:['до','until'],
+  free:['Вход свободен','Free entry'],lv:['€','€'],from:['от','from'],until:['до','until'],
   apply:['Кандидатствай','Apply'],allBenefits:['Всички предимства','All benefits'],readRules:['Правилник на клуба','Club rules'],
   faq:['Често задавани въпроси','Frequently asked questions'],perYear:['/ година','/ year'],
   subscribe:['Запиши се','Subscribe'],email:['Имейл','Email'],name:['Име','Name'],phone:['Телефон','Phone'],subject:['Тема','Subject'],message:['Съобщение','Message'],
@@ -928,7 +928,8 @@ async function submitTicket(f,eventId){
     const stripe=Stripe(CFG.STRIPE_PK);
     const elements=stripe.elements({clientSecret:r.data.client_secret,appearance:{theme:'flat',variables:{colorPrimary:'#c8643c'}}});
     const box=document.getElementById('bk_pay'); box.style.display='block';
-    const pe=elements.create('payment'); pe.mount('#bk_pay');
+    // имейлът/името/телефонът са от нашата форма — Stripe не пита пак (и не подменя с запомнен Link имейл)
+    const pe=elements.create('payment',{fields:{billingDetails:{name:'never',email:'never',phone:'never'}}}); pe.mount('#bk_pay');
     try{sessionStorage.setItem('ac2_pay_event',eventId);}catch(e){}
     const total=(r.data.amount/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv');
     [...f.querySelectorAll('input,select')].forEach(i=>{ if(i.name!=='consent'){i.readOnly=true; if(i.tagName==='SELECT')i.disabled=true;} });
@@ -937,7 +938,7 @@ async function submitTicket(f,eventId){
     f.onsubmit=async(ev)=>{
       if(ev)ev.preventDefault();
       b.disabled=true; b.textContent=L('Плащане…','Paying…'); setMsg('bk_msg','');
-      const {error}=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{return_url:location.origin+location.pathname+'#/event/'+eventId+'/book'}});
+      const {error}=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{return_url:location.origin+location.pathname+'#/event/'+eventId+'/book',payment_method_data:{billing_details:{name,email,phone}}}});
       if(error){setMsg('bk_msg',error.message||t('payFail'));b.disabled=false;b.textContent=t('pay')+' '+total;return false;}
       f.innerHTML=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`; track('purchase',{event_id:eventId});
       return false;
