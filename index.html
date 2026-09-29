@@ -674,7 +674,7 @@ function newsletterSection(){
     <div class="kicker">${L('Нюзлетър','Newsletter')}</div>
     <h2 style="font-size:clamp(28px,3.4vw,40px);margin-bottom:12px;">${esc(pT('home.newsletter.title'))}</h2>
     <div class="lead">${esc(pT('home.newsletter.body'))}</div>
-    <form class="form" style="max-width:520px;margin:0 auto;" onsubmit="return submitNewsletter(this)">
+    <form class="form" style="max-width:520px;margin:0 auto;" onsubmit="submitNewsletter(this);return false;">
       <div class="nl" style="margin-top:22px;"><input type="email" name="email" placeholder="${t('email')}" required autocomplete="email"/><button class="btn" type="submit">${t('subscribe')}</button></div>
       <label class="chk" style="justify-content:center;"><input type="checkbox" name="consent"/> <span>${t('consentNl')}</span></label>
       <div id="nl_captcha" class="cap"></div>
@@ -873,7 +873,7 @@ function bookingBox(e){
   if(!guestOpen(e))inner=`<p class="body">${t('guestClosed')}</p>`;
   else if(from&&from>td)inner=`<p class="body">${t('opensOn')} <b>${esc(fmtD(from,true))}</b>.</p>`;
   else if(paidBack&&PAY_RESULT.ok)inner=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`;
-  else inner=`<form class="form" id="bookForm" onsubmit="return submitTicket(this,'${esc(e.id)}')" data-unit="${unit}">
+  else inner=`<form class="form" id="bookForm" onsubmit="submitTicket(this,'${esc(e.id)}');return false;" data-unit="${unit}">
       ${paidBack&&!PAY_RESULT.ok?`<div class="msg err">${t('payFail')}</div>`:''}
       <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;"><select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form)"><option>1</option><option>2</option><option>3</option><option>4</option></select>
         ${unit>0?`<span style="font-family:var(--serif);font-size:22px;color:var(--cream);">= <b id="bk_total">${esc(fmtPrice(e))}</b></span>`:`<span class="hint" style="margin:0">${t('free')}</span>`}</div></div>
@@ -934,7 +934,8 @@ async function submitTicket(f,eventId){
     [...f.querySelectorAll('input,select')].forEach(i=>{ if(i.name!=='consent'){i.readOnly=true; if(i.tagName==='SELECT')i.disabled=true;} });
     const cap=document.getElementById('bk_captcha'); if(cap)cap.style.display='none';
     b.disabled=false; b.textContent=t('pay')+' '+total;
-    f.onsubmit=async()=>{
+    f.onsubmit=async(ev)=>{
+      if(ev)ev.preventDefault();
       b.disabled=true; b.textContent=L('Плащане…','Paying…'); setMsg('bk_msg','');
       const {error}=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{return_url:location.origin+location.pathname+'#/event/'+eventId+'/book'}});
       if(error){setMsg('bk_msg',error.message||t('payFail'));b.disabled=false;b.textContent=t('pay')+' '+total;return false;}
@@ -950,7 +951,7 @@ function enquiryForm(){
   const sel=(n,opts)=>`<select name="${n}" class="sel">${opts}</select>`;
   const plBg=['Ресторант','Камерна зала','Изложбено фоайе','VIP зала'], plEn=['Restaurant','Chamber hall','Exhibition foyer','VIP room'];
   const places=lang==='bg'?plBg:plEn;
-  return `<form class="form" onsubmit="return submitEnquiry(this)">
+  return `<form class="form" onsubmit="submitEnquiry(this);return false;">
     <div class="r2"><div><label>${t('format')}</label>${sel('format',FORMATS.map(f=>`<option value="${f.id}" ${f.id==='table'?'selected':''}>${f.t}</option>`).join(''))}</div>
       <div><label>${t('place')}</label>${sel('place',places.map((p,i)=>`<option value="${esc(plBg[i])}">${esc(p)}</option>`).join(''))}</div></div>
     <div class="r2"><div><label>${t('dateLbl')} *</label><input name="date" type="date" required min="${todayIso()}"/></div><div><label>${t('timeLbl')}</label><input name="time" type="time"/></div></div>
@@ -994,7 +995,7 @@ function pageContacts(){
     <div class="contactgrid">
       <div>
         <div class="kicker">${t('orWrite')}</div>
-        <form class="form" onsubmit="return submitContact(this)">
+        <form class="form" onsubmit="submitContact(this);return false;">
           <div class="r2"><div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div></div>
           <div class="r2"><div><label>${t('phone')}</label><input name="phone" type="tel" autocomplete="tel" placeholder="+359 …"/></div><div><label>${t('subject')}</label><input name="subject"/></div></div>
           <div><label>${t('message')} *</label><textarea name="message" rows="6" required></textarea></div>
