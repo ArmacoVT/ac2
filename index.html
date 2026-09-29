@@ -873,7 +873,7 @@ function bookingBox(e){
   if(!guestOpen(e))inner=`<p class="body">${t('guestClosed')}</p>`;
   else if(from&&from>td)inner=`<p class="body">${t('opensOn')} <b>${esc(fmtD(from,true))}</b>.</p>`;
   else if(paidBack&&PAY_RESULT.ok)inner=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`;
-  else inner=`<form class="form" id="bookForm" onsubmit="submitTicket(this,'${esc(e.id)}');return false;" data-unit="${unit}">
+  else inner=`<form class="form" id="bookForm" onsubmit="return false;" data-unit="${unit}">
       ${paidBack&&!PAY_RESULT.ok?`<div class="msg err">${t('payFail')}</div>`:''}
       <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;"><select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form)"><option>1</option><option>2</option><option>3</option><option>4</option></select>
         ${unit>0?`<span style="font-family:var(--serif);font-size:22px;color:var(--cream);">= <b id="bk_total">${esc(fmtPrice(e))}</b></span>`:`<span class="hint" style="margin:0">${t('free')}</span>`}</div></div>
@@ -883,7 +883,7 @@ function bookingBox(e){
       <div id="bk_captcha" class="cap"></div>
       <div id="bk_pay" style="display:none;margin:6px 0;"></div>
       <div class="msg" id="bk_msg"></div>
-      <div><button class="btn" type="submit" id="bk_btn">${unit>0?t('pay'):t('reserve')}</button></div>
+      <div><button class="btn" type="button" id="bk_btn" onclick="submitTicket(this.form,'${esc(e.id)}')">${unit>0?t('pay'):t('reserve')}</button></div>
       ${unit>0?`<div class="hint">${t('cardHint')}</div>`:''}
     </form>`;
   return `<div class="kv" id="booking" style="background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:22px;margin-top:30px;">
@@ -935,16 +935,15 @@ async function submitTicket(f,eventId){
     [...f.querySelectorAll('input,select')].forEach(i=>{ if(i.name!=='consent'){i.readOnly=true; if(i.tagName==='SELECT')i.disabled=true;} });
     const cap=document.getElementById('bk_captcha'); if(cap)cap.style.display='none';
     b.disabled=false; b.textContent=t('pay')+' '+total;
-    f.onsubmit=async(ev)=>{
-      if(ev)ev.preventDefault();
+    b.onclick=async()=>{
       b.disabled=true; b.textContent=L('Плащане…','Paying…'); setMsg('bk_msg','');
-      const {error}=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{return_url:location.origin+location.pathname+'#/event/'+eventId+'/book',payment_method_data:{billing_details:{name,email,phone}}}});
-      if(error){setMsg('bk_msg',error.message||t('payFail'));b.disabled=false;b.textContent=t('pay')+' '+total;return false;}
-      f.innerHTML=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`; track('purchase',{event_id:eventId});
-      return false;
+      try{
+        const {error}=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{return_url:location.origin+location.pathname+'#/event/'+eventId+'/book',payment_method_data:{billing_details:{name,email,phone}}}});
+        if(error){setMsg('bk_msg',error.message||t('payFail'));b.disabled=false;b.textContent=t('pay')+' '+total;return;}
+        f.innerHTML=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`; track('purchase',{event_id:eventId});
+      }catch(err){ setMsg('bk_msg',(err&&err.message)||t('payFail')); b.disabled=false; b.textContent=t('pay')+' '+total; }
     };
-  }catch(e){ setMsg('bk_msg',L('Плащането не се зареди. Опитайте пак.','Payment could not load. Please try again.')); b.disabled=false; b.textContent=old; }
-  return false;
+  }catch(e){ setMsg('bk_msg',L('Плащането не се зареди: ','Payment could not load: ')+((e&&e.message)||'')); b.disabled=false; b.textContent=old; }
 }
 
 // ---------- ЗАПИТВАНЕ ЗА РЕЗЕРВАЦИЯ (маса / частно събитие) — както в приложението ----------
