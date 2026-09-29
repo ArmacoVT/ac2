@@ -168,9 +168,11 @@ window.PUB_DEFAULTS={
   function seedDemo() { let e = jget(K.ev, null); if (!e) { e = SEED.slice(); jset(K.ev, e); } return e; }
 
   // Всяко повикване на Edge Function минава първо през подновяване на изтичащ токен.
+  // Нищо тук не може да „виси" вечно: подновяването на токена има 6 сек., самата функция — 25 сек.
+  const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error((what || 'Заявката') + ' не отговори навреме')), ms))]);
   async function invokeFn(name, opts) {
-    try { if (DB.freshSession) await DB.freshSession(); } catch (e) {}
-    return invokeFn(name, opts);
+    try { if (DB.freshSession) await withTimeout(DB.freshSession(), 6000, 'Сесията'); } catch (e) {}
+    return withTimeout(sb.functions.invoke(name, opts), 25000, 'Сървърът');
   }
   const DB = {
     live: LIVE,
