@@ -868,27 +868,32 @@ function pageApp(){
 function bookingBox(e){
   const td=todayIso(); const from=guestFrom(e);
   const paidBack=PAY_RESULT&&PAY_RESULT.event===e.id;
+  const unit=Number(e.price)||0;
   let inner='';
   if(!guestOpen(e))inner=`<p class="body">${t('guestClosed')}</p>`;
   else if(from&&from>td)inner=`<p class="body">${t('opensOn')} <b>${esc(fmtD(from,true))}</b>.</p>`;
   else if(paidBack&&PAY_RESULT.ok)inner=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`;
-  else inner=`<form class="form" id="bookForm" onsubmit="return submitTicket(this,'${esc(e.id)}')">
+  else inner=`<form class="form" id="bookForm" onsubmit="return submitTicket(this,'${esc(e.id)}')" data-unit="${unit}">
       ${paidBack&&!PAY_RESULT.ok?`<div class="msg err">${t('payFail')}</div>`:''}
-      <div class="r2"><div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div></div>
-      <div class="r2"><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div>
-        <div><label>${t('seats')}</label><select name="party" class="sel"><option>1</option><option>2</option><option>3</option><option>4</option></select></div></div>
-      <div><label>${t('note')}</label><input name="note"/></div>
+      <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;"><select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form)"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+        ${unit>0?`<span style="font-family:var(--serif);font-size:22px;color:var(--cream);">= <b id="bk_total">${esc(fmtPrice(e))}</b></span>`:`<span class="hint" style="margin:0">${t('free')}</span>`}</div></div>
+      <div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div>
+      <div class="r2"><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
       <label class="chk"><input type="checkbox" name="consent"/> <span>${t('consentContact')}</span></label>
       <div id="bk_captcha" class="cap"></div>
+      <div id="bk_pay" style="display:none;margin:6px 0;"></div>
       <div class="msg" id="bk_msg"></div>
-      <div id="bk_pay"></div>
-      <div><button class="btn" type="submit" id="bk_btn">${e.price>0?t('pay')+' · '+esc(fmtPrice(e))+' × '+L('места','seats'):t('reserve')}</button></div>
-      ${e.price>0?`<div class="hint">${t('cardHint')}</div>`:''}
+      <div><button class="btn" type="submit" id="bk_btn">${unit>0?t('pay'):t('reserve')}</button></div>
+      ${unit>0?`<div class="hint">${t('cardHint')}</div>`:''}
     </form>`;
   return `<div class="kv" id="booking" style="background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:22px;margin-top:30px;">
     <div class="k">${t('bookTitle')}</div><p class="hint" style="margin:0 0 14px;">${t('bookIntro')}</p>${inner}</div>`;
 }
-let PAY_RESULT=null;   // резултат от връщането на Stripe (?redirect_status=…)
+function bkTotal(f){
+  const unit=Number(f.dataset.unit)||0, n=parseInt(f.party.value,10)||1; const el=document.getElementById('bk_total');
+  if(el)el.textContent=(Math.round(unit*n*100)/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv');
+}
+let PAY_RESULT=null;   // резултат от връщането на Stripe (?redirect_status=…) — само при банки, които изискват пренасочване
 function readPayResult(){
   try{
     const q=new URLSearchParams(location.search);
@@ -899,40 +904,44 @@ function readPayResult(){
     if(PAY_RESULT.ok)track('purchase',{event_id:ev});
   }catch(e){}
 }
-let _stripe=null;
 function loadStripe(){
   return new Promise((res,rej)=>{
     if(window.Stripe)return res(window.Stripe);
     const s=document.createElement('script');s.src='https://js.stripe.com/v3/';s.onload=()=>res(window.Stripe);s.onerror=()=>rej(new Error('stripe'));document.head.appendChild(s);
   });
 }
+// Същият поток като в приложението: данни → PaymentIntent от сървъра → Stripe Payment Element на място → confirmPayment без напускане на страницата
 async function submitTicket(f,eventId){
-  const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), party=parseInt(f.party.value,10)||1, note=f.note.value.trim();
+  const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), party=parseInt(f.party.value,10)||1;
   if(!name||!email||!phone){setMsg('bk_msg',t('errFields'));return false;}
   if(!validEmail(email)){setMsg('bk_msg',t('errEmail'));return false;}
   if(!validPhone(phone)){setMsg('bk_msg',t('errPhone'));return false;}
   if(!f.consent.checked){setMsg('bk_msg',t('errConsent'));return false;}
   const tok=captchaToken('bk_captcha'); if(CFG.TURNSTILE_SITE_KEY&&!tok){setMsg('bk_msg',t('errCaptcha'));return false;}
   const b=document.getElementById('bk_btn'); b.disabled=true; const old=b.textContent; b.textContent=t('sending'); setMsg('bk_msg','');
-  const r=await DB.publicForm('ticket',{event_id:eventId,name,email,phone,party,note,lang,captcha_token:tok});
+  const r=await DB.publicForm('ticket',{event_id:eventId,name,email,phone,party,lang,captcha_token:tok});
   if(r.error){ b.disabled=false;b.textContent=old; resetCaptcha('bk_captcha'); setMsg('bk_msg',r.error.captcha?t('errCaptcha'):(r.error.message||t('errGeneric'))); return false; }
   if(r.data&&r.data.free){ f.innerHTML=`<div class="msg ok" style="font-size:16px;">${t('bookFree')}</div>`; track('reservation_request',{event_id:eventId}); return false; }
-  // платено → Stripe Payment Element (картата отива директно в Stripe)
   try{
     const Stripe=await loadStripe();
-    _stripe=Stripe(CFG.STRIPE_PK);
-    const elements=_stripe.elements({clientSecret:r.data.client_secret,appearance:{theme:'stripe',variables:{colorPrimary:'#c8643c',borderRadius:'8px'}}});
+    if(!Stripe||!CFG.STRIPE_PK)throw new Error('stripe');
+    const stripe=Stripe(CFG.STRIPE_PK);
+    const elements=stripe.elements({clientSecret:r.data.client_secret,appearance:{theme:'flat',variables:{colorPrimary:'#c8643c'}}});
+    const box=document.getElementById('bk_pay'); box.style.display='block';
     const pe=elements.create('payment'); pe.mount('#bk_pay');
     try{sessionStorage.setItem('ac2_pay_event',eventId);}catch(e){}
-    b.disabled=false; b.textContent=t('payAmount')+' · '+(r.data.amount/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv');
+    const total=(r.data.amount/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv');
+    [...f.querySelectorAll('input,select')].forEach(i=>{ if(i.name!=='consent'){i.readOnly=true; if(i.tagName==='SELECT')i.disabled=true;} });
+    const cap=document.getElementById('bk_captcha'); if(cap)cap.style.display='none';
+    b.disabled=false; b.textContent=t('pay')+' '+total;
     f.onsubmit=async()=>{
-      b.disabled=true; setMsg('bk_msg','');
-      const {error}=await _stripe.confirmPayment({elements,confirmParams:{return_url:location.origin+location.pathname+'#/event/'+eventId+'/book'}});
-      if(error){setMsg('bk_msg',error.message||t('payFail'));b.disabled=false;}
+      b.disabled=true; b.textContent=L('Плащане…','Paying…'); setMsg('bk_msg','');
+      const {error}=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{return_url:location.origin+location.pathname+'#/event/'+eventId+'/book'}});
+      if(error){setMsg('bk_msg',error.message||t('payFail'));b.disabled=false;b.textContent=t('pay')+' '+total;return false;}
+      f.innerHTML=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`; track('purchase',{event_id:eventId});
       return false;
     };
-    [...f.querySelectorAll('input,select')].forEach(i=>{if(i.name!=='consent')i.readOnly=true;});
-  }catch(e){ setMsg('bk_msg',t('errGeneric')); b.disabled=false; b.textContent=old; }
+  }catch(e){ setMsg('bk_msg',L('Плащането не се зареди. Опитайте пак.','Payment could not load. Please try again.')); b.disabled=false; b.textContent=old; }
   return false;
 }
 
