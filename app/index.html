@@ -2818,8 +2818,39 @@ async function promptInitialPassword(){
   }
 }
 DB.onRecovery(promptInitialPassword);
+// ---------- Изтекла сесия: ясен екран „Влез отново", вместо празни списъци и мълчание ----------
+let _sessLost=false;
+function sessionLostUI(){
+  if(_sessLost||!user)return; _sessLost=true;
+  const bg=lang==='bg';
+  const ov=document.createElement('div');
+  ov.id='sesslost';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(30,22,16,.72);display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:var(--bg);border-radius:22px;padding:26px 22px;width:min(100%,360px);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35);">
+    <img src="${AC2}" alt="AC²" style="width:56px;height:56px;border-radius:50%;background:var(--medallion);padding:8px;object-fit:contain;margin:0 auto 12px;display:block;"/>
+    <h3 style="font-family:var(--serif);font-size:22px;font-weight:500;color:var(--cream);margin:0 0 8px;">${bg?'Сесията изтече':'Session expired'}</h3>
+    <p style="color:var(--mid);font-size:14px;line-height:1.5;margin:0 0 18px;">${bg?'За сигурност входът ви е изтекъл. Влезте отново, за да продължите.':'For security your sign-in has expired. Please sign in again to continue.'}</p>
+    <button class="btn" style="width:100%;margin:0;" onclick="relogin()">${bg?'Влез отново':'Sign in again'}</button></div>`;
+  document.body.appendChild(ov);
+  try{hap('warning');}catch(e){}
+}
+async function relogin(){ try{await DB.signOut();}catch(e){} location.hash=''; location.reload(); }
+async function checkSessionAlive(){
+  if(!user||!DB.live)return;
+  try{
+    const s=await DB.freshSession();            // подновява токена, ако изтича
+    if(!s){ const alive=await DB.sessionAlive(); if(!alive)sessionLostUI(); }
+  }catch(e){}
+}
 (async function(){
   try{ user=await DB.getUser(); }catch(e){}
+  // сесията се проверява при връщане в приложението и на всяка минута; при отпадане → екран „Влез отново"
+  if(user&&DB.live){
+    DB.onSessionLost(sessionLostUI);
+    setInterval(checkSessionAlive,60000);
+    document.addEventListener('visibilitychange',()=>{ if(!document.hidden)checkSessionAlive(); });
+    window.addEventListener('focus',checkSessionAlive);
+  }
   // дошъл от имейл-покана → задава си парола веднага (с потвърждение)
   if(user&&(DB.urlType==='invite'||DB.urlType==='recovery')) await promptInitialPassword();
   route(); // рисува веднага (skeleton при нужда), данните идват на фон
