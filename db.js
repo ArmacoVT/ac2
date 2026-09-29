@@ -445,13 +445,37 @@ window.PUB_DEFAULTS={
       return { error };
     },
     // Stripe: създава плащане за билет (тип physical|online|archive). Връща {client_secret} или {free:true}.
+    // Преди повикване на Edge Function: гарантираме жив токен. Приложението може да е стояло
+    // отворено с часове — токенът е изтекъл, а функцията отговаря „Not signed in" макар че сте влезли.
+    async freshSession() {
+      try {
+        const { data } = await sb.auth.getSession();
+        let s = data && data.session;
+        if (!s) return null;
+        const exp = (s.expires_at || 0) * 1000;
+        if (exp && exp - Date.now() < 120 * 1000) {           // изтича до 2 мин. → подновяваме сега
+          const r = await sb.auth.refreshSession();
+          if (r && r.data && r.data.session) s = r.data.session;
+        }
+        return s;
+      } catch (e) { return null; }
+    },
     async createPayment(event_id, kind, party) {
       if (!LIVE) return { error: { message: 'Налично след свързване на Supabase' } };
-      const { data, error } = await sb.functions.invoke('create-payment', { body: { event_id, kind, party: party || 1 } });
+      const sess = await this.freshSession();
+      if (!sess) return { error: { message: 'Сесията е изтекла — влезте отново.' } };
+      let { data, error } = await sb.functions.invoke('create-payment', { body: { event_id, kind, party: party || 1 } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
-        return { error: { message: msg } };
+        // изтекъл токен точно в момента → подновяваме и опитваме още веднъж
+        if (/not signed in|jwt|401/i.test(msg)) {
+          try { await sb.auth.refreshSession(); } catch (e) {}
+          const again = await sb.functions.invoke('create-payment', { body: { event_id, kind, party: party || 1 } });
+          if (!again.error) { data = again.data; error = null; }
+          else { try { const b = await again.error.context.json(); if (b && b.error) msg = b.error; } catch (e) {} }
+        }
+        if (error) return { error: { message: /not signed in/i.test(msg) ? 'Сесията е изтекла — излезте и влезте отново.' : msg } };
       }
       if (data && data.error) return { error: { message: data.error } };
       return data;
