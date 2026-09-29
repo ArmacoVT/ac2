@@ -1118,7 +1118,8 @@ function openBook(id,onlyKind){
     <div class="qrow"><span>${lang==='bg'?'Общо':'Total'}</span><b id="bt_${e.id}" style="color:var(--gold);">—</b></div>
     <div id="paybox_${e.id}" style="margin-top:14px;"></div>
     <div id="payhint_${e.id}" style="display:none;font-size:12px;color:var(--muted);margin-top:8px;">${lang==='bg'?'Избери начин на плащане, попълни данните и натисни „Плати" по-долу.':'Choose a payment method, fill in the details and press "Pay" below.'}</div>
-    <button class="btn" id="buybtn_${e.id}" style="margin-top:14px;" onclick="confirmBuy('${e.id}')">—</button>`;
+    <button class="btn" id="buybtn_${e.id}" style="margin-top:14px;" onclick="confirmBuy('${e.id}')">—</button>
+    <div id="payerr_${e.id}" style="color:#b5532f;font-size:13px;margin-top:8px;min-height:18px;"></div>`;
   document.body.appendChild(bd); document.body.appendChild(sh);
   document.body.style.overflow='hidden';
   requestAnimationFrame(()=>{bd.classList.add('open');sh.classList.add('open');selectTier(e.id,bookTier);});
@@ -1166,20 +1167,22 @@ function resQty(delta,maxN){
 let _tblPending=null;
 async function confirmBuy(id){
   if(!user){needLogin();return;}
-  if(!membershipActive()){toast(tr('memberExpiredTitle'));go('profile');return;}
+  const fail=m=>{toast(m);const el=document.getElementById('payerr_'+id);if(el)el.textContent=m;};
+  {const el=document.getElementById('payerr_'+id);if(el)el.textContent='';}
+  if(!membershipActive()){fail(tr('memberExpiredTitle'));go('profile');return;}
   const e=EVENTS.find(x=>x.id===id); if(!e)return;
-  if(!canBookNow(e)){toast(tr('bookFrom')+' '+bookOpenISO(e).split('-').reverse().join('.'));return;}
+  if(!canBookNow(e)){fail(tr('bookFrom')+' '+bookOpenISO(e).split('-').reverse().join('.'));return;}
   const kind=bookTier;
   const party=(kind==='physical')?(parseInt(document.getElementById('bp_'+id)?.value||'1',10)||1):1;
   const bname=(document.getElementById('bn_'+id)?.value||'').trim()||user.full_name||user.username||user.email;
   if(kind==='physical'){
     const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
-    if(party>seats){toast((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
+    if(party>seats){fail((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
     const left=seatsLeft(e);
-    if(left!==null&&party>left){toast(left<=0?(lang==='bg'?'Изчерпано':'Sold out'):(lang==='bg'?('Остават само '+left+' места'):('Only '+left+' seats left')));return;}
+    if(left!==null&&party>left){fail(left<=0?(lang==='bg'?'Изчерпано':'Sold out'):(lang==='bg'?('Остават само '+left+' места'):('Only '+left+' seats left')));return;}
   }
   try{RES=await DB.listReservations();}catch(err){}
-  if(hasBooking(id)){toast(tr('alreadyBooked'));route();return;}
+  if(hasBooking(id)){fail(tr('alreadyBooked'));route();return;}
   // маса след събитие (само при присъствие)
   _tblPending=(kind==='physical'&&endsEarly(e)&&document.getElementById('tb_'+id)?.checked)
     ?{id,tp:parseInt(document.getElementById('tbp_'+id)?.value||'2',10),bname}:null;
@@ -1187,17 +1190,17 @@ async function confirmBuy(id){
   // безплатно ниво → заявка за одобрение от админ (стария поток)
   if(tierPrice(e,kind)<=0){
     const rr=await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:e.time,party,note:'Билет / ticket',res_name:bname,email:user.email,phone:user.phone||'',kind});
-    if(rr&&rr.error){toast(/duplicate|unique/i.test(rr.error.message)?tr('alreadyBooked'):rr.error.message);if(btn)updateBuy(id);return;}
+    if(rr&&rr.error){fail(/duplicate|unique/i.test(rr.error.message)?tr('alreadyBooked'):rr.error.message);if(btn)updateBuy(id);return;}
     await finishBooking(id,bname,true); return;
   }
   // платено → Stripe
   const r=await DB.createPayment(e.id,kind,party);
-  if(r&&r.error){toast(r.error.message);if(btn)updateBuy(id);return;}
+  if(r&&r.error){fail(r.error.message);if(btn)updateBuy(id);return;}
   // предишният опит всъщност е минал (webhook-ът е закъснял) — не плащаме втори път
-  if(r&&r.already_paid){ toast(lang==='bg'?'Плащането вече е получено. Билетът е потвърден.':'Payment already received. Your ticket is confirmed.'); await finishBooking(id,bname,false); return; }
+  if(r&&r.already_paid){ fail(lang==='bg'?'Плащането вече е получено. Билетът е потвърден.':'Payment already received. Your ticket is confirmed.'); await finishBooking(id,bname,false); return; }
   if(r&&r.client_secret){ await mountPayment(id,r.client_secret); return; }
   if(r&&r.free){ await finishBooking(id,bname,true); return; }
-  toast(lang==='bg'?'Възникна грешка':'Something went wrong');if(btn)updateBuy(id);
+  fail(lang==='bg'?'Възникна грешка':'Something went wrong');if(btn)updateBuy(id);
 }
 // маса (ако е избрана) + затваряне + успех
 async function finishBooking(id,bname,pending){
