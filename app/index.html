@@ -2887,7 +2887,7 @@ async function refreshProfile(){
   }catch(e){}}
 })();
 </script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('../sw.js').catch(()=>{}));}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('../sw.js').catch(()=>{}));let _swr=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(_swr)return;_swr=true;if(navigator.serviceWorker.controller)location.reload();});}</script>
 <script>
 // Скриване на splash след кратка анимация
 (function(){

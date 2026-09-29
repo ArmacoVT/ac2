@@ -1188,6 +1188,6 @@ function toast(m){const el=document.getElementById('toast');el.textContent=m;el.
   document.addEventListener('visibilitychange',async()=>{ if(document.visibilityState==='visible'){ try{ EVENTS=await DB.listPublicEvents(); }catch(e){} if(parseRoute().p0===''||parseRoute().p0==='program')render(); } });
 })();
 </script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));let _swr=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(_swr)return;_swr=true;if(navigator.serviceWorker.controller)location.reload();});}</script>
 </body>
 </html>
