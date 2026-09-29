@@ -72,7 +72,7 @@
 <script src="db.js"></script>
 <script>
 const MEMBERS=[{id:'founder',t:'Founder'},{id:'founding',t:'Founding Member'},{id:'club',t:'Club Member'},{id:'alumni',t:'Alumni Member'},{id:'corporate',t:'Corporate Member'}];
-const FORMATS=['culture','cinema','table','music','conversation','community','theater','online'];
+const FORMATS=['culture','table','conversation','community','online'];
 const EVTAGS=[
   {id:'lang_bg',g:'Език',t:'На български'},{id:'lang_en',g:'Език',t:'На английски'},{id:'lang_bi',g:'Език',t:'Двуезично / с превод'},
   {id:'acc_wheel',g:'Достъпност',t:'Достъпно с количка'},{id:'acc_blind',g:'Достъпност',t:'За незрящи'},
@@ -83,7 +83,7 @@ const EVTAGS=[
   {id:'set_parking',g:'Обстановка',t:'Паркинг на място'},
   {id:'cat_dinner',g:'Кетъринг',t:'Вечеря включена'},{id:'cat_drinks',g:'Кетъринг',t:'Коктейл / напитки'},{id:'cat_veg',g:'Кетъринг',t:'Веге / веган опции'}
 ];
-const FMT_LABEL={culture:'AC² Culture',cinema:'AC² Cinema',table:'AC² Table',music:'AC² Music',conversation:'AC² Conversation',community:'AC² Community',theater:'AC² Theater',online:'AC² Online'};
+const FMT_LABEL={culture:'AC² Culture',table:'AC² Food',conversation:'AC² Conversation',community:'AC² Arcus Community',online:'AC² Online',cinema:'AC² Culture (старо: Cinema)',music:'AC² Culture (старо: Music)',theater:'AC² Culture (старо: Theater)'};
 const VENUES=['Ресторант','Камерна зала','Онлайн','Изложбено фоайе','VIP зала'];
 const memName=id=>(MEMBERS.find(m=>m.id===id)||{t:id}).t;
 const esc=s=>(''+(s??'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -405,7 +405,7 @@ function eventsView(){
       <div><h3>${esc(e.title)} ${liveBadge}</h3>
         <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)}${e.end_date?' – '+isoToBg(e.end_date):''} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места · ${e.price>0?(e.price+' €/билет'):'безплатно'}</div>
         <div style="margin-top:6px;">${seatsInfo(e)} ${tableInfo(e)}</div>
-        <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)} ${(e.pub&&e.pub.show)?'<span class="pill" style="border-color:#2f6b63;color:#2f6b63;">🌐 на сайта</span>':''}</div></div>
+        <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)} ${(e.pub&&e.pub.members_only)?'<span class="pill">само членове</span>':'<span class="pill" style="border-color:#2f6b63;color:#2f6b63;">🌐 на сайта</span>'} ${(e.pub&&e.pub.guests)?'<span class="pill" style="border-color:#bf8a2e;color:#bf8a2e;">гости'+(e.pub.guest_from?' от '+isoToBg(e.pub.guest_from):'')+'</span>':''}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${liveBtn}
         <button class="btn ghost sm" onclick="editEvent('${e.id}')">Редактирай</button>
@@ -743,7 +743,7 @@ function resView(){
     const acts=resActs(r.id,st);
     return `<div class="card" id="rescard_${r.id}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
-        <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}</div>
+        <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${r.guest?'<span class="pill" style="border-color:#bf8a2e;color:#bf8a2e;">гост от сайта</span>':esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}${r.paid?' · <b style="color:#3f6235;">платено</b>':''}</div>
         ${contact?`<div class="muted" style="margin-top:3px;">${contact}</div>`:''}
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
         <div style="margin-top:7px;" id="resbadge_${r.id}">${badge}${cap}</div></div>
@@ -1028,7 +1028,7 @@ function siteView(){
     ${sBi('Пълно описание — вижда се при „Виж всичко"','memberships.items.'+id+'.desc',3)}
     ${sBi('Ползи — по една на ред, при „Виж всичко"','memberships.items.'+id+'.benefits',5)}
   </div>`;
-  const FMT_IDS=[['culture','AC² Culture'],['cinema','AC² Cinema'],['table','AC² Table'],['music','AC² Music'],['conversation','AC² Conversation'],['community','AC² Community'],['theater','AC² Theater'],['online','AC² Online']];
+  const FMT_IDS=[['culture','AC² Culture'],['table','AC² Food'],['conversation','AC² Conversation'],['community','AC² Arcus Community'],['online','AC² Online']];
   const fmtBlock=([id,label])=>`<div class="card" style="margin-top:10px;"><b>${label}</b>
     ${sBi('Абзац','offer.items.'+id+'.body',3)}
     ${sImg('Снимка (без снимка се показва логото на формата)','offer.items.'+id+'.image')}
@@ -1345,16 +1345,16 @@ function subsCsv(){
 }
 
 // ================= ПУБЛИЧНИ ДАННИ НА СЪБИТИЕ (блок във формата за събитие) =================
-const PUB_DIRS=[['stage','Сцена'],['gallery','Галерия'],['cinema','Кино'],['dinner','Тематична вечеря (ресторант)']];
 const PUB_CATS=[['','— по формата —'],['exhibition','Изложба'],['theatre','Театър'],['concert','Концерт'],['dance','Танц'],['performance','Пърформанс'],['discussion','Дискусия'],['film','Кино'],['dinner','Тематична вечеря'],['other','Друго']];
 let draftPubGal=[];
 function pubEventBlock(e){
   const p=(e&&e.pub)||{}; const b=(v)=>(v&&typeof v==='object')?v:{bg:v||'',en:''};
   const bi=(id,label,val,rows)=>{const v=b(val); const inp=l=>rows?`<textarea id="${id}_${l}" rows="${rows}" placeholder="${l.toUpperCase()}">${esc(v[l]||'')}</textarea>`:`<input id="${id}_${l}" placeholder="${l.toUpperCase()}" value="${esc(v[l]||'')}"/>`; return `<label style="margin-top:8px;">${label}</label><div class="row2">${inp('bg')}${inp('en')}</div>`;};
   return `<div class="card" style="margin-top:14px;background:#fbf6ea;border-color:#e7d9c0;"><b>Публичен сайт (ac2.bg)</b>
-    <p class="muted" style="margin:2px 0 6px;font-size:12px;">С отметката събитието се показва на ac2.bg за всички (заглавие, дата, място, цена, снимка, описание). Без нея остава само за членове в приложението.</p>
-    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="f_pub_show" ${p.show?'checked':''} style="width:auto;"/> Показвай на публичния сайт</label>
-    <div class="row2" style="margin-top:8px;"><div><label>Направление</label><select id="f_pub_dir">${PUB_DIRS.map(d=>`<option value="${d[0]}" ${p.direction===d[0]?'selected':''}>${d[1]}</option>`).join('')}</select></div>
+    <p class="muted" style="margin:2px 0 6px;font-size:12px;">Всяко събитие се показва на ac2.bg под своя формат (заглавие, дата, място, цена, снимка, описание) — освен ако е отметнато „само за членове". Гостите (нечленове) могат да купуват билети от сайта само ако е разрешено тук.</p>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="f_pub_members_only" ${p.members_only?'checked':''} style="width:auto;"/> Само за членове — НЕ се показва на публичния сайт</label>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:6px;"><input type="checkbox" id="f_pub_guests" ${p.guests?'checked':''} style="width:auto;"/> Гости (нечленове) могат да резервират / купуват билети от сайта</label>
+    <div class="row2" style="margin-top:8px;"><div><label>Записване за гости от (празно = веднага)</label><input id="f_pub_gfrom" readonly placeholder="дд.мм.гггг" value="${p.guest_from?isoToBg(p.guest_from):''}" data-iso="${esc(p.guest_from||'')}" onclick="openCal('f_pub_gfrom')" style="cursor:pointer;"/></div>
       <div><label>Категория (етикет на картата)</label><select id="f_pub_cat">${PUB_CATS.map(c=>`<option value="${c[0]}" ${(p.category||'')===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select></div></div>
     <label style="margin-top:8px;">Заглавие на английски (по избор)</label><input id="f_pub_title_en" value="${esc(p.title_en||'')}"/>
     <label style="margin-top:8px;">Описание на английски (по избор)</label><textarea id="f_pub_desc_en" rows="3">${esc(p.desc_en||'')}</textarea>
@@ -1371,15 +1371,17 @@ function pubEventBlock(e){
 function grabPub(){
   const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
   const bi=id=>({bg:g(id+'_bg'),en:g(id+'_en')});
-  const show=document.getElementById('f_pub_show');
-  if(!show)return null;
-  return {show:show.checked,direction:g('f_pub_dir'),category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
+  const mo=document.getElementById('f_pub_members_only'), gu=document.getElementById('f_pub_guests'), gf=document.getElementById('f_pub_gfrom');
+  if(!mo)return null;
+  return {members_only:mo.checked,guests:!!(gu&&gu.checked),guest_from:gf?(gf.dataset.iso||''):'',category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
     participants:bi('f_pub_part'),curator:bi('f_pub_curator'),authors:bi('f_pub_authors'),visit:bi('f_pub_visit'),ticket_url:g('f_pub_ticket'),gallery:draftPubGal.slice()};
 }
 function putPub(p){
   if(!p)return; const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
-  const show=document.getElementById('f_pub_show'); if(show)show.checked=!!p.show;
-  s('f_pub_dir',p.direction);s('f_pub_cat',p.category);s('f_pub_title_en',p.title_en);s('f_pub_desc_en',p.desc_en);s('f_pub_ticket',p.ticket_url);
+  const mo=document.getElementById('f_pub_members_only'); if(mo)mo.checked=!!p.members_only;
+  const gu=document.getElementById('f_pub_guests'); if(gu)gu.checked=!!p.guests;
+  const gf=document.getElementById('f_pub_gfrom'); if(gf){gf.dataset.iso=p.guest_from||'';gf.value=p.guest_from?isoToBg(p.guest_from):'';}
+  s('f_pub_cat',p.category);s('f_pub_title_en',p.title_en);s('f_pub_desc_en',p.desc_en);s('f_pub_ticket',p.ticket_url);
   ['part','curator','authors','visit'].forEach((k,i)=>{const v=p[['participants','curator','authors','visit'][i]]||{};s('f_pub_'+k+'_bg',v.bg);s('f_pub_'+k+'_en',v.en);});
 }
 async function pubGalAdd(input){

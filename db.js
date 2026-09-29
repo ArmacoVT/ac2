@@ -22,16 +22,13 @@ window.SITE_DEFAULTS={
   },
   offer:{
     title:{bg:'Какво предлагаме',en:'What we offer'},
-    body:{bg:'Програмата на клуба е организирана в осем формата. Всеки от тях е малък по мащаб и подбран по съдържание.',en:'The club programme is organised in eight formats. Each is small in scale and carefully curated.'},
+    body:{bg:'Програмата на клуба е организирана в пет формата. Всеки от тях е малък по мащаб и подбран по съдържание.',en:'The club programme is organised in five formats. Each is small in scale and carefully curated.'},
     // по един запис на формат: абзац (BG/EN) + снимка. Празно = кратко описание от приложението.
     items:{
-      culture:{body:{bg:'Музика, изложби, литература и срещи с артисти и лектори. Вечери в малка зала, където разговорът след събитието е част от програмата.',en:'Music, exhibitions, literature and meetings with artists and lecturers. Evenings in a small hall, where the conversation afterwards is part of the programme.'},image:''},
-      cinema:{body:{bg:'Авторско кино и дискусии. Прожекция за няколко десетки души и разговор с гост, който познава филма отвътре. Тематични и семейни формати.',en:'Auteur cinema and discussions. A screening for a few dozen people and a conversation with a guest who knows the film from the inside. Thematic and family formats.'},image:''},
-      table:{body:{bg:'Гастрономически вечери с гост-готвач и ресторантът на клуба — с членска преференция и среда, в която не бързате.',en:'Gastronomic evenings with a guest chef and the club restaurant — with a member preference and a setting where nobody hurries you.'},image:''},
-      music:{body:{bg:'Камерни концерти и музикални вечери в близост до изпълнителите — формат, в който се чува всяка нота.',en:'Chamber concerts and musical evenings close to the performers — a format where you hear every note.'},image:''},
+      culture:{body:{bg:'Музика, изложби, литература, кино и камерен театър. Вечери в малка зала, където разговорът след събитието е част от програмата.',en:'Music, exhibitions, literature, film and chamber theatre. Evenings in a small hall, where the conversation afterwards is part of the programme.'},image:''},
+      table:{body:{bg:'Тематични вечери с гост-готвач, брънч и ресторантът на клуба — с членска преференция и среда, в която не бързате.',en:'Themed dinners with a guest chef, brunch and the club restaurant — with a member preference and a setting where nobody hurries you.'},image:''},
       conversation:{body:{bg:'Разговори с интересни хора — на маса, без сцена и микрофон. Теми от науката до всекидневието.',en:'Conversations with interesting people — at a table, without a stage or microphone. Topics from science to everyday life.'},image:''},
-      community:{body:{bg:'Семейни поводи, срещи на възпитаници и училищно-свързани формати. Дискретни срещи в по-лична среда.',en:'Family occasions, alumni gatherings and school-related formats. Discreet meetings in a more personal setting.'},image:''},
-      theater:{body:{bg:'Камерни театрални формати и четения — близо до актьорите, в зала за малко публика.',en:'Chamber theatre formats and readings — close to the actors, in a hall for a small audience.'},image:''},
+      community:{body:{bg:'Общността на Американски колеж Аркус: семейни поводи, срещи на възпитаници, училищни формати и участието на учениците в живота на клуба.',en:'The American College Arcus community: family occasions, alumni gatherings, school formats and the students taking part in club life.'},image:''},
       online:{body:{bg:'Живи предавания и видео архив за членовете, които не могат да присъстват на място.',en:'Live streams and a video archive for members who cannot attend in person.'},image:''}
     }
   },
@@ -40,7 +37,7 @@ window.SITE_DEFAULTS={
     intro:{bg:'Клубът е по покана. Можете да кандидатствате за една от трите категории по-долу — всяка кандидатура се разглежда лично.',en:'The club is by invitation. You may apply for one of the three categories below — every application is reviewed personally.'},
     items:{
       club:{hook:{bg:'За вас е, ако искате клубът да е част от седмицата ви.',en:'For you if you want the club to be part of your week.'},summary:{bg:'Цялата програма, приоритет при резервации, 5% в AC² Table.',en:'The full programme, priority for reservations, 5% at AC² Table.'},price:{bg:'',en:''},desc:{bg:'Основната членска категория — за хората, които желаят да бъдат активна част от клубния живот, неговата програма и общност.',en:'The core membership category — for those who wish to be an active part of club life, its programme and community.'},benefits:{bg:'Достъп до клубната програма и събития\nПокани за културни и гастрономически формати\nПриоритет при резервации\n5% членска преференция в AC² Table\nПерсонализирана Club Member карта',en:'Access to the programme and events\nInvitations to cultural and gastronomic formats\nPriority for reservations\n5% member preference at AC² Table\nA personalised Club Member card'}},
-      alumni:{hook:{bg:'За вас е, ако сте свързани с Американския колеж Аркус.',en:'For you if you are connected to the American College Arcus.'},summary:{bg:'Избрани събития, училищни формати, кино и култура.',en:'Selected events, school-related formats, cinema and culture.'},price:{bg:'',en:''},desc:{bg:'Специална категория за хората с лична връзка към общността на Американски Колеж Аркус — възпитаници, родители, учители.',en:'A special category for those with a personal connection to the American College Arcus community.'},benefits:{bg:'Достъп до избрани клубни събития\nПокани за училищно-свързани събития\nУчастие в AC² Cinema и AC² Culture\nПокани за общностни вечери\nПерсонализирана Alumni карта',en:'Access to selected club events\nInvitations to school-related events\nParticipation in AC² Cinema and Culture\nInvitations to community evenings\nA personalised Alumni card'}},
+      alumni:{hook:{bg:'За вас е, ако сте свързани с Американския колеж Аркус.',en:'For you if you are connected to the American College Arcus.'},summary:{bg:'Избрани събития, училищни формати, кино и култура.',en:'Selected events, school-related formats, cinema and culture.'},price:{bg:'',en:''},desc:{bg:'Специална категория за хората с лична връзка към общността на Американски Колеж Аркус — възпитаници, родители, учители.',en:'A special category for those with a personal connection to the American College Arcus community.'},benefits:{bg:'Достъп до избрани клубни събития\nПокани за училищно-свързани събития\nУчастие в AC² Culture и AC² Conversation\nПокани за общностни вечери\nПерсонализирана Alumni карта',en:'Access to selected club events\nInvitations to school-related events\nParticipation in AC² Culture and Conversation\nInvitations to community evenings\nA personalised Alumni card'}},
       corporate:{hook:{bg:'За вас е, ако представлявате компания или организация.',en:'For you if you represent a company or organisation.'},summary:{bg:'До 5 представители, професионални формати, 8% в AC² Table.',en:'Up to 5 representatives, professional formats, 8% at AC² Table.'},price:{bg:'',en:''},desc:{bg:'Категория за компании и организации, които споделят ценностите на клуба — култура, образование, качество и смислено общуване.',en:'A category for companies and organisations that share the club values.'},benefits:{bg:'Членство за компании и организации\nДостъп за до 5 представители\nПокани за професионални формати\n8% членска преференция в AC² Table\nДискретни срещи в уединена зона\nПерсонализирана Corporate карта',en:'Membership for companies and organisations\nAccess for up to 5 representatives\nInvitations to professional formats\n8% member preference at AC² Table\nDiscreet meetings in a secluded area\nA personalised Corporate card'}}
     }
   },
@@ -83,7 +80,7 @@ window.PUB_DEFAULTS={
     newsletter:{title:_b('Нюзлетър','Newsletter'),body:_b('Програмата за месеца, тематичните вечери и новините — веднъж месечно, без спам.','The monthly programme, themed dinners and news — once a month, no spam.')},
     show:{restaurant:true,app:true,membership:true,college:true,newsletter:true}
   },
-  program:{intro:_b('Всички предстоящи събития в изложбената зала и залата за сценични изкуства. Изберете направление, за да филтрирате.','All upcoming events in the exhibition hall and the performing-arts hall. Pick a direction to filter.')},
+  program:{intro:_b('Всички предстоящи събития на AC². Изберете формат, за да филтрирате.','All upcoming events at AC². Pick a format to filter.')},
   restaurant:{
     title:_b('Ресторант','Restaurant'),
     body:_b('Ресторантът на AC² е продължение на сцената — място, където вечерта продължава на масата. Сезонни продукти, кратко меню и вино от региона.','The AC² restaurant is an extension of the stage — the place where the evening continues at the table. Seasonal produce, a short menu and wine from the region.'),
@@ -148,6 +145,9 @@ window.PUB_DEFAULTS={
   }
 
   const MEM = ['founder', 'founding', 'club', 'alumni', 'corporate'];
+  // старите формати cinema/music/theater вече са част от Culture
+  const FMT_ALIAS = { cinema: 'culture', music: 'culture', theater: 'culture' };
+  const fmtId = (f) => FMT_ALIAS[f] || f;
   const SEED = [
     { id: 'e1', title: 'Разговор за съвременната българска проза', format: 'conversation', place: 'Клубна зала', date: '2026-06-12', time: '19:00', ends: '21:00', capacity: 30, aud: 'all' },
     { id: 'e2', title: 'Гастрономическа вечер', format: 'table', place: 'Trapezna', date: '2026-06-19', time: '20:00', ends: '', capacity: 20, aud: ['club', 'corporate', 'founding', 'founder'] },
@@ -256,13 +256,15 @@ window.PUB_DEFAULTS={
     },
 
     // ---------- ПУБЛИЧЕН САЙТ ----------
-    // Само събития с pub.show = true; само публичните колони (RLS + column grants за anon).
+    // Всички събития освен „само за членове" и архивните; само публичните колони (RLS + column grants за anon).
     async listPublicEvents() {
-      if (!LIVE) return seedDemo().map(e => Object.assign({ pub: { show: true, direction: 'stage' } }, e));
+      if (!LIVE) return seedDemo().map(e => Object.assign({ pub: {} }, e));
       const { data } = await sb.from('events')
         .select('id,title,format,place,date,end_date,time,ends,capacity,price,image_url,description,tags,pub,archive_only')
-        .eq('pub->>show', 'true').order('date', { ascending: true });
-      return (data || []).map(e => ({ id: e.id, title: e.title, format: e.format, place: e.place || '',
+        .or('pub->>members_only.is.null,pub->>members_only.neq.true')
+        .or('archive_only.is.null,archive_only.eq.false')
+        .order('date', { ascending: true });
+      return (data || []).map(e => ({ id: e.id, title: e.title, format: fmtId(e.format), place: e.place || '',
         date: e.date || '', end_date: e.end_date || '', time: e.time || '', ends: e.ends || '',
         capacity: e.capacity || 0, price: e.price || 0, image_url: e.image_url || '',
         description: e.description || '', tags: Array.isArray(e.tags) ? e.tags : [],
@@ -332,7 +334,7 @@ window.PUB_DEFAULTS={
     async listEvents() {
       if (!LIVE) return seedDemo();
       const { data } = await sb.from('events').select('*').order('date', { ascending: true });
-      return (data || []).map(e => ({ id: e.id, title: e.title, format: e.format, place: e.place,
+      return (data || []).map(e => ({ id: e.id, title: e.title, format: fmtId(e.format), place: e.place,
         date: e.date, end_date: e.end_date || '', time: e.time, ends: e.ends || '', capacity: e.capacity,
         price: e.price || 0, price_online: e.price_online || 0, price_archive: e.price_archive || 0,
         offer_physical: e.offer_physical !== false, offer_online: !!e.offer_online, offer_archive: !!e.offer_archive,
@@ -422,7 +424,8 @@ window.PUB_DEFAULTS={
         who: r.who || '', membership: r.membership || '', fmt: r.format,
         place: r.place, date: r.date, time: r.time, party: r.party_size, note: r.note, status: r.status,
         kind: r.kind || '', paid: !!r.paid,
-        name: r.res_name || '', email: r.contact_email || '', phone: r.contact_phone || '' }));
+        name: r.res_name || r.guest_name || '', email: r.contact_email || r.guest_email || '', phone: r.contact_phone || r.guest_phone || '',
+        guest: !r.user_id && !!r.guest_email }));
     },
     async addReservation(o) {
       if (!LIVE) { const r = jget(K.res, []); o.id = 'r' + Date.now(); o.status = 'requested'; r.unshift(o); jset(K.res, r); return { error: null }; }

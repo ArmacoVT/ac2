@@ -35,3 +35,9 @@ where id = (select id from auth.users where email = 'адрес@пример.bg'
 - Нюзлетър: записва се, вижда се в Админ → Съобщения.
 - Събитие с отметка „на сайта" се вижда в Програма; „Билети" води към ac2.bg/app/#event/… (или външния линк).
 - ac2.bg/app/: входът и приложението работят както преди; линк за покана/нова парола отваря /app/.
+
+## Част 2 (29.09): 5 формата, всички събития публични, гости от сайта
+1. SQL Editor → пусни `supabase/sql/public_site_2.sql` (мести старите формати към Culture, прави user_id в reservations незадължителен, добавя guest_* колони).
+2. Edge Functions → **обнови** `public-forms` (v2: + запитване за резервация + билет за гост през Stripe), `stripe-webhook` (v2: + имейл до госта), `reservation-status` (v4: + гости). Копирай новите файлове от `supabase/functions/*/index.ts`. Провери за маркерите `kind === "ticket"`, `mailGuest`, `guest_email`.
+3. Push. Админ → Събития → за събитие: „Гости могат да резервират/купуват от сайта" + дата „Записване за гости от".
+4. Логата на форматите: за **AC² Food** и **AC² Arcus Community** трябват нови картинки от дизайнера (`cards/logo-food.webp`, `cards/logo-community.webp` с новото име) — засега Food е с лого „table".
