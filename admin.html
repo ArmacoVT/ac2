@@ -117,10 +117,30 @@ async function boot(){
   if(admin) await refresh();
   render();
   if(DB.live&&admin){
+    startAdminLive();
     DB.onSessionLost(sessionLost);
     setInterval(checkSession,60000);                 // на всяка минута
     document.addEventListener('visibilitychange',()=>{ if(!document.hidden)checkSession(); });
   }
+}
+// Реалтайм: при промяна в базата опресняваме данните и таба (със забавяне, за да не мигат бързи серии).
+let _liveT=null, _liveSeen=false;
+function startAdminLive(){
+  if(_liveSeen)return; _liveSeen=true;
+  DB.onAdminChange((table,type,row)=>{
+    if(type==='INSERT'){
+      const msg=table==='reservations'?'Нова резервация':table==='applications'?'Нова кандидатура':table==='contact_messages'?'Ново съобщение от сайта':table==='newsletter_subscribers'?'Нов абонат за нюзлетъра':'';
+      if(msg)toast('🔔 '+msg);
+    } else if(table==='reservations'&&type==='UPDATE'&&row&&row.status==='cancelled'){ toast('Резервация е отменена от член'); }
+    clearTimeout(_liveT);
+    _liveT=setTimeout(async()=>{
+      // не пипаме формата, докато админът пише в нея
+      const editing=editId||document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+      await refresh();
+      if(tab==='messages'&&(table==='contact_messages'||table==='newsletter_subscribers')){MSGS=await DB.listContactMessages();SUBS=await DB.listSubscribers();}
+      if(!editing)render();
+    },800);
+  });
 }
 async function refresh(){
   try{ EVENTS=await DB.listEvents(); }catch(e){ EVENTS=[]; }
@@ -711,14 +731,26 @@ function resBadge(st){
   if(st==='pending_payment')return '<span class="pill">чака плащане</span>';
   return '<span class="pill">чакаща</span>';
 }
+let resArchive=false;
+function toggleResArchive(){resArchive=!resArchive;render();}
+// резервация е „стара", ако събитието (или датата ѝ) е минало преди повече от 2 дни → отива в архив
+function resIsOld(r){
+  const ev=(r.event_id||r.table_event_id)?EVENTS.find(e=>e.id===(r.event_id||r.table_event_id)):null;
+  const d=ev?(ev.end_date||ev.date):r.date; if(!d)return false;
+  const cut=new Date(); cut.setDate(cut.getDate()-2);
+  return d<cut.toISOString().slice(0,10);
+}
 function resView(){
   if(!RES.length)return `<h2>Резервации</h2><p class="empty">Все още няма запитвания за резервация.</p>`;
+  const OLD=RES.filter(resIsOld); const CUR=RES.filter(r=>!resIsOld(r));
+  if(!CUR.length&&!resArchive)return `<h2>Резервации</h2><p class="empty">Няма текущи резервации.</p>${OLD.length?`<button class="btn ghost" onclick="toggleResArchive()">Архив (${OLD.length}) ▾</button>`:''}`;
+  const SRC=resArchive?OLD:CUR;
   // групиране по събитие
   const groups={};
-  RES.forEach(r=>{const k=r.event_id||'other';(groups[k]=groups[k]||[]).push(r);});
+  SRC.forEach(r=>{const k=r.event_id||'other';(groups[k]=groups[k]||[]).push(r);});
   const pend=list=>list.filter(r=>!r.status||r.status==='requested').length;
   const cnt=n=>n?` <span style="display:inline-block;background:#b5532f;color:#fffdf4;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${n}</span>`:'';
-  let chips=`<button class="tab ${resFilter==='all'?'on':''}" onclick="setResFilter('all')">Всички${cnt(pend(RES))}</button>`;
+  let chips=`<button class="tab ${resFilter==='all'?'on':''}" onclick="setResFilter('all')">Всички${cnt(pend(SRC))}</button>`;
   EVENTS.forEach(e=>{
     if(!groups[e.id])return;
     const t=e.title.length>22?e.title.slice(0,22)+'…':e.title;
@@ -727,7 +759,7 @@ function resView(){
   if(groups.other)chips+=`<button class="tab ${resFilter==='other'?'on':''}" onclick="setResFilter('other')">Общи запитвания${cnt(pend(groups.other))}</button>`;
   // ако избраният таб вече няма заявки — връщаме се на „Всички"
   if(resFilter!=='all'&&!groups[resFilter])resFilter='all';
-  const shown=resFilter==='all'?RES:groups[resFilter]||[];
+  const shown=resFilter==='all'?SRC:groups[resFilter]||[];
   // заглавна карта при избрано събитие
   let head='';
   if(resFilter!=='all'&&resFilter!=='other'){
@@ -756,7 +788,8 @@ function resView(){
       <div style="display:flex;flex-direction:column;gap:6px;" id="resact_${r.id}">${acts}</div>
     </div></div>`;}).join('');
   if(!rows)rows=`<p class="empty">Няма заявки в този раздел.</p>`;
-  return `<h2>Резервации</h2>
+  return `<h2>Резервации${resArchive?' — архив':''}</h2>
+  <div style="margin:-4px 0 10px;"><button class="btn ghost sm" onclick="toggleResArchive()">${resArchive?'‹ Текущи':'Архив ('+OLD.length+') ▾'}</button> <span class="muted" style="font-size:12px;">${resArchive?'Резервации за събития, минали преди повече от 2 дни.':'Минали събития (2+ дни) са в архива.'}</span></div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px;">${chips}</div>
     ${head}${rows}`;
 }

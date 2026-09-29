@@ -167,6 +167,11 @@ window.PUB_DEFAULTS={
 
   function seedDemo() { let e = jget(K.ev, null); if (!e) { e = SEED.slice(); jset(K.ev, e); } return e; }
 
+  // Всяко повикване на Edge Function минава първо през подновяване на изтичащ токен.
+  async function invokeFn(name, opts) {
+    try { if (DB.freshSession) await DB.freshSession(); } catch (e) {}
+    return invokeFn(name, opts);
+  }
   const DB = {
     live: LIVE,
     urlType: URLTYPE,
@@ -273,7 +278,7 @@ window.PUB_DEFAULTS={
     // Форми от сайта (контакт / нюзлетър) → Edge Function public-forms (Turnstile + имейл)
     async publicForm(kind, o) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await sb.functions.invoke('public-forms', { body: Object.assign({ kind }, o || {}) });
+      const { data, error } = await invokeFn('public-forms', { body: Object.assign({ kind }, o || {}) });
       if (error) {
         let reason = '';
         try { reason = (await error.context.json()).error || ''; } catch (e) {}
@@ -464,14 +469,14 @@ window.PUB_DEFAULTS={
       if (!LIVE) return { error: { message: 'Налично след свързване на Supabase' } };
       const sess = await this.freshSession();
       if (!sess) return { error: { message: 'Сесията е изтекла — влезте отново.' } };
-      let { data, error } = await sb.functions.invoke('create-payment', { body: { event_id, kind, party: party || 1 } });
+      let { data, error } = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1 } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
         // изтекъл токен точно в момента → подновяваме и опитваме още веднъж
         if (/not signed in|jwt|401/i.test(msg)) {
           try { await sb.auth.refreshSession(); } catch (e) {}
-          const again = await sb.functions.invoke('create-payment', { body: { event_id, kind, party: party || 1 } });
+          const again = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1 } });
           if (!again.error) { data = again.data; error = null; }
           else { try { const b = await again.error.context.json(); if (b && b.error) msg = b.error; } catch (e) {} }
         }
@@ -538,12 +543,26 @@ window.PUB_DEFAULTS={
       } catch (e) { return null; }
     },
 
+    // Реалтайм за админ панела: нови/променени резервации, кандидатури, съобщения, абонати.
+    // Изисква sql/realtime_admin.sql (таблиците да са в publication supabase_realtime); RLS важи.
+    onAdminChange(cb) {
+      if (!(LIVE && sb)) return null;
+      try {
+        let ch = sb.channel('admin-live');
+        ['reservations', 'applications', 'contact_messages', 'newsletter_subscribers', 'events'].forEach(t => {
+          ch = ch.on('postgres_changes', { event: '*', schema: 'public', table: t },
+            (payload) => { try { cb(t, payload.eventType, payload.new || payload.old || null); } catch (e) {} });
+        });
+        return ch.subscribe();
+      } catch (e) { return null; }
+    },
+
     // ---------- ПОКАНИ (само админ; през Edge Function) ----------
     // fullName и phone идват от кандидатурата — пренасяме ги в профила,
     // за да не пита приложението за тях след първото влизане.
     async inviteMember(email, username, membership, validFrom, fullName, phone) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await sb.functions.invoke('invite-member',
+      const { data, error } = await invokeFn('invite-member',
         { body: { email: (email || '').trim(), username: (username || '').trim(), membership: membership || 'guest',
                   valid_from: validFrom || null, full_name: (fullName || '').trim(), phone: (phone || '').trim() } });
       if (error) {
@@ -557,7 +576,7 @@ window.PUB_DEFAULTS={
     // корекция на телефон на член (само админ)
     async adminSetPhone(id, phone) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'set_phone', id, phone } });
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'set_phone', id, phone } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
@@ -575,7 +594,7 @@ window.PUB_DEFAULTS={
     },
     async adminRequestPhone(id) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'request_phone', id } });
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'request_phone', id } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
@@ -587,7 +606,7 @@ window.PUB_DEFAULTS={
     // смяна на членска категория (само админ)
     async setMembership(email, membership) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await sb.functions.invoke('invite-member',
+      const { data, error } = await invokeFn('invite-member',
         { body: { action: 'set_membership', email: (email || '').trim(), membership } });
       if (error) {
         let msg = error.message;
@@ -600,13 +619,13 @@ window.PUB_DEFAULTS={
     // ---------- ФИРМЕНИ ПРОФИЛИ (корпоративно членство) ----------
     async companyMembers() {
       if (!LIVE) return { members: [], max: 5 };
-      const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'company_members' } });
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'company_members' } });
       if (error || !data || data.error) return { members: [], max: 5 };
       return { members: data.members || [], max: data.max || 5 };
     },
     async companyInvite(email, username) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await sb.functions.invoke('invite-member',
+      const { data, error } = await invokeFn('invite-member',
         { body: { action: 'company_invite', email: (email || '').trim(), username: (username || '').trim() } });
       if (error) {
         let msg = error.message;
@@ -623,7 +642,7 @@ window.PUB_DEFAULTS={
     // напълни таблицата с милиони записи.
     async submitApplication(o) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await sb.functions.invoke('submit-application', {
+      const { data, error } = await invokeFn('submit-application', {
         body: {
           captcha_token: o.captcha_token || '',
           rules_accepted: !!o.rules_accepted,
@@ -672,7 +691,7 @@ window.PUB_DEFAULTS={
       // Edge функциите заспиват; първото извикване понякога пада. Опитваме два пъти.
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
-          const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'members' } });
+          const { data, error } = await invokeFn('invite-member', { body: { action: 'members' } });
           if (error) {
             let msg = error.message;
             try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
@@ -691,7 +710,7 @@ window.PUB_DEFAULTS={
     // изтриване на член (само админ)
     async deleteMember(id) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'delete_user', id } });
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'delete_user', id } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
@@ -703,7 +722,7 @@ window.PUB_DEFAULTS={
     // членът изтрива собствения си акаунт (GDPR)
     async deleteSelfAccount() {
       if (!LIVE) { localStorage.removeItem(K.user); return { error: null }; }
-      const { data, error } = await sb.functions.invoke('invite-member', { body: { action: 'delete_self' } });
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'delete_self' } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
@@ -762,7 +781,7 @@ window.PUB_DEFAULTS={
     // подновяване на членство (само админ) — удължава с 1 година от дадена дата
     async renewMembership(email, validFrom) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await sb.functions.invoke('invite-member',
+      const { data, error } = await invokeFn('invite-member',
         { body: { action: 'renew', email: (email || '').trim(), valid_from: validFrom || null } });
       if (error) {
         let msg = error.message;
@@ -775,7 +794,7 @@ window.PUB_DEFAULTS={
     // имейл до члена при одобрена/отказана резервация (само админ)
     async notifyReservation(id, status) {
       if (!LIVE) return { error: null };
-      const { data, error } = await sb.functions.invoke('reservation-status',
+      const { data, error } = await invokeFn('reservation-status',
         { body: { reservation_id: id, status } });
       if (error) {
         let msg = error.message;
@@ -788,7 +807,7 @@ window.PUB_DEFAULTS={
     // нова временна парола за съществуващ член (само админ)
     async adminResetPassword(email) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await sb.functions.invoke('invite-member',
+      const { data, error } = await invokeFn('invite-member',
         { body: { action: 'reset', email: (email || '').trim() } });
       if (error) {
         let msg = error.message;
