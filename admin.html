@@ -425,7 +425,8 @@ function formView(){
   const e=editId?EVENTS.find(x=>x.id===editId):null;
   const allOn=draftAud.includes('all');
   let memCk=`<div class="ck ${allOn?'on':''}" onclick="toggleAud('all')">✓ Всички членове</div>`+
-    MEMBERS.map(m=>`<div class="ck ${(!allOn&&draftAud.includes(m.id))?'on':''}" onclick="toggleAud('${m.id}')">${m.t}</div>`).join('');
+    MEMBERS.map(m=>`<div class="ck ${(!allOn&&draftAud.includes(m.id))?'on':''}" onclick="toggleAud('${m.id}')">${m.t}</div>`).join('')+
+    `<div class="ck ${draftGuests?'on':''}" onclick="toggleGuests()" style="border-style:dashed;" title="Нечленове — резервират/купуват от ac2.bg без профил">Гости (нечленове, от сайта)</div>`;
   let fmtOpts=FORMATS.map(f=>`<option value="${f}" ${e&&e.format===f?'selected':''}>${FMT_LABEL[f]||f}</option>`).join('');
   let venOpts=VENUES.map(v=>`<option ${e&&e.place===v?'selected':''}>${v}</option>`).join('');
   if(e&&e.place&&!VENUES.includes(e.place))venOpts=`<option selected>${esc(e.place)}</option>`+venOpts;
@@ -485,7 +486,11 @@ function formView(){
 function bwSection(e){
   // при „всички членове" фазите важат за всички нива; иначе само за избраните
   const list=draftAud.includes('all')?MEMBERS.map(m=>m.id):draftAud.filter(id=>id!=='all');
-  if(!list.length)return '';
+  const gIso=(e&&e.pub&&e.pub.guest_from)||'';
+  const guestRow=draftGuests?`<div class="row2" style="align-items:center;margin-top:6px;">
+      <div style="padding-top:8px;">Гости (нечленове)</div>
+      <div><input id="f_pub_gfrom" readonly placeholder="веднага" value="${gIso?isoToBg(gIso):''}" data-iso="${esc(gIso)}" onclick="openCal('f_pub_gfrom')" style="cursor:pointer;"/></div></div>`:'';
+  if(!list.length&&!guestRow)return '';
   const rows=list.map(id=>{
     const mem=MEMBERS.find(m=>m.id===id);
     const iso=(e&&e.booking_windows&&e.booking_windows[id])||'';
@@ -494,7 +499,7 @@ function bwSection(e){
       <div><input class="bwfield" data-mem="${id}" id="f_bw_${id}" readonly placeholder="веднага" value="${iso?isoToBg(iso):''}" data-iso="${esc(iso)}" onclick="openCal('f_bw_${id}')" style="cursor:pointer;"/></div></div>`;
   }).join('');
   return `<label style="margin-top:14px;">Приоритетно записване — „записване от" за всяко ниво (празно = веднага)</label>
-    <p class="muted" style="margin:2px 0 4px;font-size:12px;">Така напр. Founder записват веднага, Founding след седмица, Club още по-късно. Всички виждат събитието; само записването е на вълни.</p>${rows}`;
+    <p class="muted" style="margin:2px 0 4px;font-size:12px;">Така напр. Founder записват веднага, Founding след седмица, Club още по-късно, гостите най-накрая. Всички виждат събитието; само записването е на вълни.</p>${rows}${guestRow}`;
 }
 // запазва/връща въведеното във формата (за да не се губи при преначертаване)
 function grabForm(){
@@ -559,6 +564,7 @@ function putForm(v){
   const gated=document.getElementById('f_gated');if(gated)gated.checked=!!v.gated;
   putPub(v.pub);
 }
+function toggleGuests(){ const v=grabForm(); draftGuests=!draftGuests; render(); putForm(v); }
 function toggleAud(id){
   const v=grabForm();
   if(id==='all'){draftAud=['all'];}
@@ -626,8 +632,8 @@ function pickDate(iso){
   if(inp){inp.dataset.iso=iso;inp.value=iso?isoToBg(iso):'';}
   closeCal();
 }
-function editEvent(id){editId=id;tab='events';const e=EVENTS.find(x=>x.id===id);draftAud=e.aud==='all'?['all']:e.aud.slice();draftPubGal=(e.pub&&Array.isArray(e.pub.gallery))?e.pub.gallery.slice():[];render();window.scrollTo(0,0);}
-function cancelEdit(){editId=null;draftAud=['all'];draftPubGal=[];render();}
+function editEvent(id){editId=id;tab='events';const e=EVENTS.find(x=>x.id===id);draftAud=e.aud==='all'?['all']:e.aud.slice();draftPubGal=(e.pub&&Array.isArray(e.pub.gallery))?e.pub.gallery.slice():[];draftGuests=!!(e.pub&&e.pub.guests);render();window.scrollTo(0,0);}
+function cancelEdit(){editId=null;draftAud=['all'];draftPubGal=[];draftGuests=false;render();}
 async function delEvent(id){if(!confirm('Да изтрия ли събитието?'))return;const ev=EVENTS.find(x=>x.id===id);await DB.deleteEvent(id);DB.logAudit('event_deleted',(ev&&ev.title)||'','');await refresh();render();}
 async function toggleLive(id,on){await DB.setLive(id,on);await refresh();render();}
 function clearMedia(which){
@@ -677,7 +683,7 @@ async function saveEvent(){
     pub:grabPub()||{}};
   const r=eid?await DB.updateEvent(eid,obj):await DB.addEvent(obj);
   if(r&&r.error){alert('Събитието не се записа: '+r.error.message);return;}
-  editId=null;draftAud=['all'];draftPubGal=[];await refresh();render();window.scrollTo(0,0);
+  editId=null;draftAud=['all'];draftPubGal=[];draftGuests=false;await refresh();render();window.scrollTo(0,0);
   } finally { _savingEvent=false; }
 }
 
@@ -1346,16 +1352,15 @@ function subsCsv(){
 
 // ================= ПУБЛИЧНИ ДАННИ НА СЪБИТИЕ (блок във формата за събитие) =================
 const PUB_CATS=[['','— по формата —'],['exhibition','Изложба'],['theatre','Театър'],['concert','Концерт'],['dance','Танц'],['performance','Пърформанс'],['discussion','Дискусия'],['film','Кино'],['dinner','Тематична вечеря'],['other','Друго']];
-let draftPubGal=[];
+let draftPubGal=[], draftGuests=false;
 function pubEventBlock(e){
   const p=(e&&e.pub)||{}; const b=(v)=>(v&&typeof v==='object')?v:{bg:v||'',en:''};
   const bi=(id,label,val,rows)=>{const v=b(val); const inp=l=>rows?`<textarea id="${id}_${l}" rows="${rows}" placeholder="${l.toUpperCase()}">${esc(v[l]||'')}</textarea>`:`<input id="${id}_${l}" placeholder="${l.toUpperCase()}" value="${esc(v[l]||'')}"/>`; return `<label style="margin-top:8px;">${label}</label><div class="row2">${inp('bg')}${inp('en')}</div>`;};
   return `<div class="card" style="margin-top:14px;background:#fbf6ea;border-color:#e7d9c0;"><b>Публичен сайт (ac2.bg)</b>
     <p class="muted" style="margin:2px 0 6px;font-size:12px;">Всяко събитие се показва на ac2.bg под своя формат (заглавие, дата, място, цена, снимка, описание) — освен ако е отметнато „само за членове". Гостите (нечленове) могат да купуват билети от сайта само ако е разрешено тук.</p>
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="f_pub_members_only" ${p.members_only?'checked':''} style="width:auto;"/> Само за членове — НЕ се показва на публичния сайт</label>
-    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:6px;"><input type="checkbox" id="f_pub_guests" ${p.guests?'checked':''} style="width:auto;"/> Гости (нечленове) могат да резервират / купуват билети от сайта</label>
-    <div class="row2" style="margin-top:8px;"><div><label>Записване за гости от (празно = веднага)</label><input id="f_pub_gfrom" readonly placeholder="дд.мм.гггг" value="${p.guest_from?isoToBg(p.guest_from):''}" data-iso="${esc(p.guest_from||'')}" onclick="openCal('f_pub_gfrom')" style="cursor:pointer;"/></div>
-      <div><label>Категория (етикет на картата)</label><select id="f_pub_cat">${PUB_CATS.map(c=>`<option value="${c[0]}" ${(p.category||'')===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select></div></div>
+    <p class="muted" style="margin:4px 0 0;font-size:12px;">Дали гостите (нечленове) могат да резервират/купуват от сайта се отмята по-долу при „Видимо за" — чип „Гости", с дата „записване от" при вълните.</p>
+    <div class="row2" style="margin-top:8px;"><div><label>Категория (етикет на картата)</label><select id="f_pub_cat">${PUB_CATS.map(c=>`<option value="${c[0]}" ${(p.category||'')===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select></div></div>
     <label style="margin-top:8px;">Заглавие на английски (по избор)</label><input id="f_pub_title_en" value="${esc(p.title_en||'')}"/>
     <label style="margin-top:8px;">Описание на английски (по избор)</label><textarea id="f_pub_desc_en" rows="3">${esc(p.desc_en||'')}</textarea>
     ${bi('f_pub_part','Участници',p.participants,2)}
@@ -1371,15 +1376,14 @@ function pubEventBlock(e){
 function grabPub(){
   const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
   const bi=id=>({bg:g(id+'_bg'),en:g(id+'_en')});
-  const mo=document.getElementById('f_pub_members_only'), gu=document.getElementById('f_pub_guests'), gf=document.getElementById('f_pub_gfrom');
+  const mo=document.getElementById('f_pub_members_only'), gf=document.getElementById('f_pub_gfrom');
   if(!mo)return null;
-  return {members_only:mo.checked,guests:!!(gu&&gu.checked),guest_from:gf?(gf.dataset.iso||''):'',category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
+  return {members_only:mo.checked,guests:!!draftGuests,guest_from:(draftGuests&&gf)?(gf.dataset.iso||''):'',category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
     participants:bi('f_pub_part'),curator:bi('f_pub_curator'),authors:bi('f_pub_authors'),visit:bi('f_pub_visit'),ticket_url:g('f_pub_ticket'),gallery:draftPubGal.slice()};
 }
 function putPub(p){
   if(!p)return; const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   const mo=document.getElementById('f_pub_members_only'); if(mo)mo.checked=!!p.members_only;
-  const gu=document.getElementById('f_pub_guests'); if(gu)gu.checked=!!p.guests;
   const gf=document.getElementById('f_pub_gfrom'); if(gf){gf.dataset.iso=p.guest_from||'';gf.value=p.guest_from?isoToBg(p.guest_from):'';}
   s('f_pub_cat',p.category);s('f_pub_title_en',p.title_en);s('f_pub_desc_en',p.desc_en);s('f_pub_ticket',p.ticket_url);
   ['part','curator','authors','visit'].forEach((k,i)=>{const v=p[['participants','curator','authors','visit'][i]]||{};s('f_pub_'+k+'_bg',v.bg);s('f_pub_'+k+'_en',v.en);});

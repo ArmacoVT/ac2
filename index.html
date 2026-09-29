@@ -706,7 +706,7 @@ function pageProgram(dir){
       <div class="body" style="max-width:760px;">${esc(pT('program.intro'))}</div>
       <div class="filters">${btn('',t('all'))}${fmtBtns}</div>
       ${list.length?`<div class="grid3">${list.map(e=>evCard(e,false)).join('')}</div>`:`<div class="empty">${t('noEvents')}</div>`}
-      ${past.length&&!dir?`<div style="margin-top:64px;"><div class="sechead"><h2>${t('pastEvents')}</h2></div><div class="grid3" style="opacity:.8;">${past.slice(0,9).map(e=>evCard(e,false)).join('')}</div></div>`:''}
+      ${past.length&&!dir?`<div style="margin-top:64px;"><button class="btn ghost" type="button" onclick="const d=this.nextElementSibling;const o=d.style.display!=='none';d.style.display=o?'none':'block';this.textContent=(o?'${t('pastEvents')} (${past.length}) ▾':'${t('pastEvents')} ▴');">${t('pastEvents')} (${past.length}) ▾</button><div style="display:none;margin-top:22px;"><div class="grid3" style="opacity:.85;">${past.slice(0,12).map(e=>evCard(e,false)).join('')}</div></div></div>`:''}
     </div><div style="height:72px;"></div>`;
 }
 
@@ -785,7 +785,7 @@ function pageDinners(){
   return pageHead(t('restaurant'),t('dinners'),pT('restaurant.dinners_intro'),restNav('restaurant/dinners'))+`
     <div class="wrap" style="padding-bottom:80px;">
       ${dn.length?`<div class="grid3">${dn.map(e=>evCard(e,false)).join('')}</div>`:`<div class="empty">${L('Няма обявени тематични вечери. Следете програмата.','No themed dinners announced yet. Watch the programme.')}</div>`}
-      ${past.length?`<div style="margin-top:56px;"><h2 style="margin-bottom:18px;">${t('pastEvents')}</h2><div class="grid3" style="opacity:.8;">${past.slice(0,6).map(e=>evCard(e,false)).join('')}</div></div>`:''}
+      ${past.length?`<div style="margin-top:56px;"><button class="btn ghost" type="button" onclick="const d=this.nextElementSibling;const o=d.style.display!=='none';d.style.display=o?'none':'block';this.textContent=(o?'${t('pastEvents')} (${past.length}) ▾':'${t('pastEvents')} ▴');">${t('pastEvents')} (${past.length}) ▾</button><div style="display:none;margin-top:22px;"><div class="grid3" style="opacity:.85;">${past.slice(0,6).map(e=>evCard(e,false)).join('')}</div></div></div>`:''}
     </div>`;
 }
 function pageBrunch(){
