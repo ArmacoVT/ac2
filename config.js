@@ -20,5 +20,9 @@ window.ACAC_CONFIG = {
   // Аналитика на публичния сайт — зарежда се САМО след съгласие с бисквитките.
   // Празно = изключено. GA4: "G-XXXXXXXXXX" (Google Analytics → Admin → Data streams). Meta Pixel: само цифри.
   GA_ID: "",
-  META_PIXEL_ID: ""
+  META_PIXEL_ID: "",
+  // Apple Pay в iOS приложението: Merchant ID от developer.apple.com (Identifiers → Merchant IDs).
+  APPLE_MERCHANT_ID: "merchant.bg.arcusclub.app",
+  // Държава на търговеца за Apple Pay / Google Pay
+  MERCHANT_COUNTRY: "BG"
 };

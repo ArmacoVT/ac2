@@ -1,7 +1,7 @@
 # Възстановяване на iOS приложението — ПЪЛЕН списък (Capacitor 8)
 
 Уеб приложението и Supabase са непокътнати. Обвивката само зарежда живия адрес
-https://armacovt.github.io/ac2/ и държи нативните плъгини.
+https://ac2.bg/app/ и държи нативните плъгини.
 
 ВАЖНО: всички Capacitor пакети трябва да са **версия 8** (core, cli, ios, android и плъгините).
 Несъвпадащи версии = плъгините не се вграждат (точно това чупеше Face ID).
@@ -29,7 +29,7 @@ npm install @capacitor/core@^8.0.0 @capacitor/cli@^8.0.0 @capacitor/ios@^8.0.0 @
   "appId": "bg.arcusclub.app",
   "appName": "Arcus Club",
   "webDir": "www",
-  "server": { "url": "https://armacovt.github.io/ac2/" }
+  "server": { "url": "https://ac2.bg/app/" }
 }
 ```
 

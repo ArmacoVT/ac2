@@ -1116,8 +1116,9 @@ function openBook(id,onlyKind){
     <div id="partyrow_${e.id}">${partyInner}</div>
     <input id="bp_${e.id}" type="hidden" value="1"/>
     <div class="qrow"><span>${lang==='bg'?'Общо':'Total'}</span><b id="bt_${e.id}" style="color:var(--gold);">—</b></div>
-    <button class="btn" id="buybtn_${e.id}" style="margin-top:18px;" onclick="confirmBuy('${e.id}')">—</button>
-    <div id="paybox_${e.id}" style="margin-top:14px;"></div>`;
+    <div id="paybox_${e.id}" style="margin-top:14px;"></div>
+    <div id="payhint_${e.id}" style="display:none;font-size:12px;color:var(--muted);margin-top:8px;">${lang==='bg'?'Избери начин на плащане, попълни данните и натисни „Плати" по-долу.':'Choose a payment method, fill in the details and press "Pay" below.'}</div>
+    <button class="btn" id="buybtn_${e.id}" style="margin-top:14px;" onclick="confirmBuy('${e.id}')">—</button>`;
   document.body.appendChild(bd); document.body.appendChild(sh);
   document.body.style.overflow='hidden';
   requestAnimationFrame(()=>{bd.classList.add('open');sh.classList.add('open');selectTier(e.id,bookTier);});
@@ -1212,20 +1213,62 @@ async function finishBooking(id,bname,pending){
   hap('success');showStamp();
   toast(pending?(lang==='bg'?'Заявката е изпратена — чака одобрение':'Request sent — awaiting approval'):(lang==='bg'?'Готово!':'Done!'));setTimeout(()=>route(),900);
 }
+// ---- Нативен Stripe (в приложението): системният лист за плащане с Apple Pay / Google Pay + карта ----
+// Плъгин @capacitor-community/stripe. Ако го няма (стара версия на приложението/уеб) → уеб формата по-долу.
+function nativeStripe(){
+  try{ const C=window.Capacitor; if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return null;
+    return (C.Plugins&&C.Plugins.Stripe)||(C.registerPlugin&&C.registerPlugin('Stripe'))||null; }catch(e){return null;}
+}
+let _nsInit=false;
+async function nativePay(id,clientSecret){
+  const NS=nativeStripe(); if(!NS)return false;
+  const cfg=window.ACAC_CONFIG||{}; const pk=cfg.STRIPE_PK||'';
+  try{
+    if(!_nsInit){ await NS.initialize({publishableKey:pk}); _nsInit=true; }
+    const e=EVENTS.find(x=>x.id===id);
+    const bname=(document.getElementById('bn_'+id)?.value||'').trim()||user.full_name||user.username||'';
+    await NS.createPaymentSheet({
+      paymentIntentClientSecret:clientSecret,
+      merchantDisplayName:'AC² Arcus Club',
+      countryCode:cfg.MERCHANT_COUNTRY||'BG', currencyCode:'EUR',
+      enableGooglePay:true, GooglePayIsTesting:/^pk_test_/.test(pk),
+      enableApplePay:!!cfg.APPLE_MERCHANT_ID, applePayMerchantId:cfg.APPLE_MERCHANT_ID||'',
+      defaultBillingDetails:{name:bname,email:user.email||'',phone:user.phone||''},
+      billingDetailsCollectionConfiguration:{email:'never',name:'never',phone:'never',address:'never'},
+      paymentMethodLayout:'vertical', style:'alwaysLight'
+    });
+    const r=await NS.presentPaymentSheet();
+    const res=r&&r.paymentResult;
+    if(res==='paymentSheetCompleted'){ await finishBooking(id,bname); return true; }
+    if(res==='paymentSheetCanceled'){ toast(lang==='bg'?'Плащането е отказано':'Payment cancelled'); updateBuy(id); return true; }
+    toast(lang==='bg'?'Грешка при плащане':'Payment error'); updateBuy(id); return true;
+  }catch(err){
+    // плъгинът не е вграден (или не е наличен на устройството) → уеб формата
+    if(/not implemented|not available|UNIMPLEMENTED/i.test(String(err&&err.message||err)))return false;
+    toast((err&&err.message)||(lang==='bg'?'Грешка при плащане':'Payment error')); updateBuy(id); return true;
+  }
+}
 // вграденото плащане (Stripe Payment Element + Apple Pay)
 async function mountPayment(id,clientSecret){
+  if(IN_APP&&await nativePay(id,clientSecret))return;
   const box=document.getElementById('paybox_'+id),btn=document.getElementById('buybtn_'+id);
   if(!box){return;}
   if(!window.Stripe||!(window.ACAC_CONFIG&&ACAC_CONFIG.STRIPE_PK)){toast('Stripe не е зареден');if(btn)updateBuy(id);return;}
   const stripe=Stripe(ACAC_CONFIG.STRIPE_PK);
   const elements=stripe.elements({clientSecret,appearance:{theme:'flat',variables:{colorPrimary:'#c8643c'}}});
-  const pe=elements.create('payment'); pe.mount('#paybox_'+id);
+  const pe=elements.create('payment',{layout:{type:'tabs'},fields:{billingDetails:{name:'never',email:'never',phone:'never'}}}); pe.mount('#paybox_'+id);
+  const hint=document.getElementById('payhint_'+id); if(hint)hint.style.display='block';
+  pe.on('ready',()=>{ try{ box.scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){} });
   if(btn){btn.disabled=false;btn.textContent=lang==='bg'?'Плати':'Pay';
     btn.onclick=async function(){
       btn.disabled=true;btn.textContent=lang==='bg'?'Плащане…':'Paying…';
-      const {error}=await stripe.confirmPayment({elements,redirect:'if_required'});
-      if(error){toast(error.message||(lang==='bg'?'Грешка при плащане':'Payment error'));btn.disabled=false;btn.textContent=lang==='bg'?'Плати':'Pay';return;}
       const bname=(document.getElementById('bn_'+id)?.value||'').trim()||user.full_name||user.username||user.email;
+      let error=null;
+      try{
+        const r=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{payment_method_data:{billing_details:{name:bname,email:user.email||'',phone:user.phone||''}}}});
+        error=r&&r.error;
+      }catch(ex){ error={message:(ex&&ex.message)||String(ex)}; }
+      if(error){toast(error.message||(lang==='bg'?'Грешка при плащане':'Payment error'));btn.disabled=false;btn.textContent=lang==='bg'?'Плати':'Pay';return;}
       await finishBooking(id,bname); // webhook потвърждава в базата; ние просто опресняваме
     };
   }
