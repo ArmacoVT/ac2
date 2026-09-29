@@ -2839,8 +2839,20 @@ async function checkSessionAlive(){
   if(!user||!DB.live)return;
   try{
     const s=await DB.freshSession();            // подновява токена, ако изтича
-    if(!s){ const alive=await DB.sessionAlive(); if(!alive)sessionLostUI(); }
+    if(!s){ const alive=await DB.sessionAlive(); if(!alive)sessionLostUI(); return; }
+    await refreshProfile();
   }catch(e){}
+}
+// Профилът (ниво, срок на членство, име, телефон) се презарежда от базата; при промяна — прерисуваме.
+async function refreshProfile(){
+  if(!user||!DB.live)return false;
+  try{
+    const fresh=await DB.getUser(); if(!fresh)return false;
+    const changed=fresh.membership!==user.membership||fresh.membership_until!==user.membership_until||fresh.full_name!==user.full_name||fresh.phone!==user.phone||fresh.role!==user.role;
+    user=fresh;
+    if(changed){ try{EVENTS=await DB.listEvents();}catch(e){} route(); toast(lang==='bg'?'Членството ви е обновено':'Your membership was updated'); }
+    return changed;
+  }catch(e){return false;}
 }
 (async function(){
   try{ user=await DB.getUser(); }catch(e){}
@@ -2902,6 +2914,7 @@ async function checkSessionAlive(){
     if(p&&p.classList.contains('show')){
       if(on){
         p.classList.add('spin');p.style.transform='translate(-50%,16px)';p.style.opacity='1';
+        try{if(typeof refreshProfile==='function')await refreshProfile();}catch(e){}
         try{if(typeof dataSig!=='undefined')dataSig=''; if(typeof route==='function')await route();}catch(e){}
         try{if(typeof hap==='function')hap('select');}catch(e){}
         setTimeout(function(){p.classList.remove('show','spin');p.style.transform='translate(-50%,-46px)';p.style.opacity='0';},500);
