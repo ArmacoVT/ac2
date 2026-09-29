@@ -2685,16 +2685,7 @@ async function route(){
     // директен линк към формата без приет правилник → първо прозорецът
     if(p0==='apply'&&!rulesAccepted()){location.hash='';setTimeout(startApply,50);return;}
     if(p0==='apply'){app.classList.remove('wide','full');app.innerHTML=appForm('apply');if(document.getElementById('ap_mem'))appToggle();window.scrollTo(0,0);tb.style.display='none';entered=true;return;}
-    // Уеб: витрината е първото, което се вижда; входът е на #login.
-    // Приложение (Capacitor): направо входът, както досега.
-    if(!IN_APP&&DB.live&&p0!=='login'){
-      const isAbout=p0==='about';
-      const keepY=(isAbout&&document.querySelector('.land'))?window.scrollY:0;   // при смяна на език не скачаме нагоре
-      app.classList.toggle('full',!isAbout);   // началният екран е на цял прозорец
-      app.classList.toggle('wide',isAbout);    // „За клуба" ползва широкия контейнер
-      app.innerHTML=landing(isAbout?'about':'gate');tb.style.display='none';entered=true;
-      window.scrollTo(0,keepY);loadSite();return;
-    }
+    // Публичната витрина живее на ac2.bg (корена). Тук (/app/) е направо входът — и на уеб, и в приложението.
     app.classList.remove('wide','full');
     app.innerHTML=gate();window.scrollTo(0,0);tb.style.display='none';entered=true;return;
   }
