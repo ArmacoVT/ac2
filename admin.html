@@ -998,16 +998,32 @@ function auditView(){
   if(AUDIT===null)return `<h2>Журнал</h2><p class="empty">Зареждане…</p>`;
   if(!AUDIT.length)return `<h2>Журнал на действията</h2><p class="empty">Все още няма записи.</p>`;
   const AL={reservation_confirmed:'потвърди резервация',reservation_declined:'отказа резервация',application_approved:'одобри кандидатура',application_declined:'отказа кандидатура',member_deleted:'изтри член',member_renewed:'поднови членство',membership_changed:'смени членство',phone_set:'смени телефон',phone_requested:'поиска нов телефон',member_invited:'покани член',announcement_posted:'публикува новина',event_deleted:'изтри събитие'};
-  const rows=AUDIT.map(a=>{
-    const d=a.created_at?new Date(a.created_at).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+  // групиране по седмица (понеделник–неделя) или по месец; последният период е отворен, останалите — сгънати
+  const MON=['януари','февруари','март','април','май','юни','юли','август','септември','октомври','ноември','декември'];
+  const d2=n=>String(n).padStart(2,'0');
+  const keyOf=a=>{
+    const t=a.created_at?new Date(a.created_at):null; if(!t)return {k:'?',label:'без дата'};
+    if(auditGroup==='month')return {k:t.getFullYear()+'-'+d2(t.getMonth()+1),label:MON[t.getMonth()]+' '+t.getFullYear()};
+    const m=new Date(t); m.setHours(0,0,0,0); m.setDate(m.getDate()-((m.getDay()+6)%7));   // понеделник
+    const su=new Date(m); su.setDate(m.getDate()+6);
+    return {k:m.toISOString().slice(0,10),label:d2(m.getDate())+'.'+d2(m.getMonth()+1)+' – '+d2(su.getDate())+'.'+d2(su.getMonth()+1)+'.'+su.getFullYear()};
+  };
+  const groups=[]; const idx={};
+  AUDIT.forEach(a=>{const g=keyOf(a); if(idx[g.k]===undefined){idx[g.k]=groups.length;groups.push({k:g.k,label:g.label,items:[]});} groups[idx[g.k]].items.push(a);});
+  const row=a=>{
+    const d=a.created_at?new Date(a.created_at).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
     const act=AL[a.action]||a.action;
-    return `<tr><td class="muted" style="white-space:nowrap;">${d}</td><td>${esc(a.actor_name||'—')}</td><td>${esc(act)}</td><td>${esc(a.target||'')}${a.details?' <span class="muted">('+esc(a.details)+')</span>':''}</td></tr>`;
-  }).join('');
+    return `<tr><td class="muted" style="white-space:nowrap;">${d}</td><td>${esc(a.actor_name||'—')}</td><td>${esc(act)}</td><td>${esc(a.target||'')}${a.details?' <span class="muted">('+esc(a.details)+')</span>':''}</td></tr>`;};
+  const blocks=groups.map((g,i)=>`<div class="card" style="margin-top:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="const t=this.nextElementSibling;const o=t.style.display!=='none';t.style.display=o?'none':'block';this.querySelector('span').textContent=o?'▾':'▴';">
+        <b>${esc(g.label)} <span class="muted" style="font-weight:400;">· ${g.items.length}</span></b><span>${i===0?'▴':'▾'}</span></div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;display:${i===0?'table':'none'};">
+        <tr style="text-align:left;color:var(--muted);"><th>Кога</th><th>Кой</th><th>Действие</th><th>Към</th></tr>${g.items.map(row).join('')}</table></div>`).join('');
   return `<h2>Журнал на действията</h2>
-    <div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <tr style="text-align:left;color:var(--muted);"><th>Дата</th><th>Кой</th><th>Действие</th><th>Към</th></tr>
-      ${rows}</table></div>`;
+    <div class="tabs" style="margin:6px 0 4px;"><button class="tab ${auditGroup==='week'?'on':''}" onclick="auditGroup='week';render()">По седмици</button><button class="tab ${auditGroup==='month'?'on':''}" onclick="auditGroup='month';render()">По месеци</button></div>
+    ${blocks}`;
 }
+let auditGroup='week';
 // ================= ПУБЛИЧНА ВИТРИНА (таб „Сайт") =================
 // Редактира текстовете и снимките на публичната страница (само уеб).
 // Всичко се пази като един JSON в site_content. Празно поле = текст по подразбиране.
