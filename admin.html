@@ -162,7 +162,6 @@ function render(){
       <button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge((APPS||[]).filter(a=>(a.status||'new')==='new').length)}</button>
       <button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>`}
       <button class="tab ${tab==='public'?'on':''}" onclick="setTab('public')">Публичен сайт</button>
-      <button class="tab ${tab==='site'?'on':''}" onclick="setTab('site')">Вход в приложението</button>
       <button class="tab ${tab==='messages'?'on':''}" onclick="setTab('messages')">Съобщения${tabBadge((MSGS||[]).filter(m=>!m.is_read).length)}</button>
       ${isEditor()?'':`<button class="tab ${tab==='archive'?'on':''}" onclick="setTab('archive')">Архив</button>
       <button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>
@@ -330,7 +329,7 @@ async function setTab(t){tab=t;editId=null;await refresh();render();
   if((t==='res'||t==='events')&&!PHONES){await loadPhones();render();}
   if(t==='ann'){ANN=await DB.listAnnouncements();if(!PEOPLE)PEOPLE=await DB.listMembers();render();}
   if(t==='site'){SITEC=await DB.getSiteContent();render();}
-  if(t==='public'){PUBC=await DB.getSiteContent('public');render();}
+  if(t==='public'){PUBC=await DB.getSiteContent('public');SITEC=await DB.getSiteContent('landing');render();}
   if(t==='messages'){await loadMessages();}
   if(t==='audit'){AUDIT=await DB.listAudit(300);render();}
 }
@@ -1074,44 +1073,10 @@ function siteView(){
     ${sBi('Абзац','offer.items.'+id+'.body',3)}
     ${sImg('Снимка (без снимка се показва логото на формата)','offer.items.'+id+'.image')}
   </div>`;
-  return `<h2>Вход в приложението (ac2.bg/app) и членства</h2>
-  <p class="muted" style="margin-top:-6px;">Екранът „Само за членове", който се вижда на ac2.bg/app преди вход, страницата „За клуба" и текстовете на членствата (същите се показват и на публичния сайт → Членство). Публичният сайт ac2.bg се редактира в таб „Публичен сайт".</p>
+  return `<h2>Членства (нива, цени, ползи)</h2>
+  <p class="muted" style="margin-top:-6px;">Текстовете на трите членски категории — Club, Alumni, Corporate. Показват се на публичния сайт → Членство и в приложението (кандидатстване, членска карта). Founder и Founding Member не се показват публично.</p>
 
-  <div class="card"><b>Начален екран („Само за членове")</b>
-    <p class="muted">Това, което нечленовете виждат първо на ac2.bg: лого, анимирана лента, заглавие, изречение и бутоните Вход / За клуба / Кандидатствай.</p>
-    ${sBi('Голямо заглавие','hero.gate_title')}
-    ${sBi('Изречение под заглавието (кратко — показва се с главни букви)','hero.subtitle',2)}
-    <label style="margin-top:10px;">Цвят на фона</label>
-    <div style="display:flex;gap:10px;align-items:center;"><input type="color" id="s_color_hero_bg_color" value="${esc(sGet('hero.bg_color')||'#1d1611')}" style="width:56px;height:36px;padding:2px;"/><span class="muted">${esc(sGet('hero.bg_color')||'#1d1611')} — вижда се, когато няма картина/видео</span></div>
-    ${sImg('Картина на фона (по избор; върху цвета)','hero.image')}
-    ${sVid('Видео на фона (по избор; върху картината)','hero.video')}
-    <label style="margin-top:12px;">Елементи</label>
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <label style="display:flex;gap:8px;align-items:center;font-weight:400;"><input type="checkbox" id="s_chk_hero_show_frieze" ${sGet('hero.show_frieze')!==false?'checked':''}/> Анимираната лента с човечета</label>
-      <label style="display:flex;gap:8px;align-items:center;font-weight:400;"><input type="checkbox" id="s_chk_hero_show_beam" ${sGet('hero.show_beam')!==false?'checked':''}/> Светлинен лъч по логото</label>
-      <label style="display:flex;gap:8px;align-items:center;font-weight:400;"><input type="checkbox" id="s_chk_hero_show_fx" ${sGet('hero.show_fx')!==false?'checked':''}/> Топла светлина и зърнеж върху фона</label>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top:10px;"><b>Страница „За клуба" — заглавие</b>
-    ${sBi('Заглавие на страницата','hero.title')}
-  </div>
-
-  <div class="card" style="margin-top:10px;"><b>Кои сме ние</b>
-    ${sBi('Заглавие','about.title')}
-    ${sBi('Текст (празен ред = нов абзац)','about.body',7)}
-    ${sImg('Снимка до текста (по избор)','about.image')}
-  </div>
-
-  <div class="card" style="margin-top:10px;"><b>Какво предлагаме</b>
-    <p class="muted">Всеки формат е ред със снимка и абзац; редуват се ляво/дясно. Тук редактираш увода и всеки формат поотделно.</p>
-    ${sBi('Заглавие','offer.title')}
-    ${sBi('Увод','offer.body',3)}
-    ${FMT_IDS.map(fmtBlock).join('')}
-  </div>
-
-  <div class="card" style="margin-top:10px;"><b>Членство</b>
-    <p class="muted">Показват се Club, Alumni и Corporate. Founder и Founding Member не се показват публично.</p>
+  <div class="card"><b>Членство</b>
     ${sBi('Заглавие','memberships.title')}
     ${sBi('Увод','memberships.intro',3)}
     ${memBlock('club','Club Member')}
@@ -1119,28 +1084,9 @@ function siteView(){
     ${memBlock('corporate','Corporate Member')}
   </div>
 
-  <div class="card" style="margin-top:10px;"><b>Галерия</b>
-    ${sBi('Заглавие','gallery.title')}
-    <label style="margin-top:10px;">Снимки (${gal.length})</label>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      ${gal.map((u,i)=>`<div style="position:relative;"><img src="${esc(u)}" style="width:110px;height:82px;object-fit:cover;border-radius:10px;"/>
-        <button class="btn no sm" style="position:absolute;top:4px;right:4px;padding:2px 7px;" onclick="siteGalDel(${i})">×</button></div>`).join('')}
-    </div>
-    <input type="file" accept="image/*" multiple onchange="siteGalAdd(this)" style="margin-top:8px;"/>
-    <div class="muted" style="font-size:12px;">Ако секцията е празна, галерията не се показва на сайта.</div>
-  </div>
-
-  <div class="card" style="margin-top:10px;"><b>Контакти</b>
-    ${sBi('Заглавие','contact.title')}
-    ${sBi('Кратък текст','contact.body',2)}
-    <label style="margin-top:10px;">Имейл</label><input id="s_contact_email" value="${esc(sGet('contact.email')||'')}" placeholder="info@…"/>
-    <label style="margin-top:10px;">Телефон</label><input id="s_contact_phone" value="${esc(sGet('contact.phone')||'')}" placeholder="+359 …"/>
-    ${sBi('Адрес','contact.address')}
-  </div>
-
   <div style="display:flex;gap:10px;margin-top:16px;align-items:center;">
     <button class="btn" id="siteSaveBtn" onclick="saveSite()">Запази сайта</button>
-    <a class="btn ghost" href="app/" target="_blank">Виж входа на приложението ↗</a>
+    <a class="btn ghost" href="./#/membership" target="_blank">Виж на сайта ↗</a>
   </div>`;
 }
 // събира всички полета от формата в SITEC
@@ -1240,7 +1186,8 @@ const PUB_SCHEMA=[
       F('items','list','Ястия',{fields:[F('name','bi','Име'),F('desc','bi','Описание (по избор)'),F('price','txt','Цена (напр. „18 лв.")')]})
     ]})
   ]},
-  {id:'membership',title:'Членство',help:'Нивата (Club / Alumni / Corporate), цените и ползите се редактират в таб „Сайт" — същите текстове вижда и приложението.',fields:[
+  {id:'levels',title:'Нива на членство (Club / Alumni / Corporate)',help:'Заглавие, „за вас е, ако…", резюме, цена, описание и ползи за всяко ниво. Същите текстове вижда и приложението (кандидатстване, членска карта). Founder и Founding Member не се показват публично.',fields:[]},
+  {id:'membership',title:'Членство — страница',help:'Текстовете около нивата: защо да стана член, как се кандидатства, въпроси и отговори.',fields:[
     F('membership.why_title','bi','„Защо да стана член?" — заглавие'),F('membership.why_body','bit','„Защо да стана член?" — текст',{rows:4}),
     F('membership.how_title','bi','Как се кандидатства — заглавие'),F('membership.how_body','bit','Как се кандидатства — стъпки',{rows:5}),
     F('membership.terms_url','url','Линк към пълните условия (празно = правилникът на клуба)'),
@@ -1300,6 +1247,18 @@ function pField(f,base){
       ${(!f.max||list.length<f.max)?`<button class="btn ghost sm" style="margin-top:8px;" onclick="pubListAdd('${path}')">+ Добави</button>`:''}</div>`; }
   return '';
 }
+// нивата на членство живеят в site_content 'landing' (SITEC) — общи за сайта и приложението
+function levelsFields(){
+  if(SITEC===null)return '<p class="empty">Зареждане…</p>';
+  const memBlock=(id,label)=>`<div class="card" style="margin-top:10px;"><b>${label}</b>
+    ${sBi('„За вас е, ако…" — едно изречение','memberships.items.'+id+'.hook')}
+    ${sBi('Кратко резюме — едно изречение под него','memberships.items.'+id+'.summary')}
+    ${sBi('Годишна цена (напр. „1 200 €")','memberships.items.'+id+'.price')}
+    ${sBi('Пълно описание','memberships.items.'+id+'.desc',3)}
+    ${sBi('Ползи — по една на ред','memberships.items.'+id+'.benefits',5)}
+  </div>`;
+  return sBi('Заглавие на секцията','memberships.title')+sBi('Увод','memberships.intro',3)+memBlock('club','Club Member')+memBlock('alumni','Alumni Member')+memBlock('corporate','Corporate Member');
+}
 function publicView(){
   if(PUBC===null)return `<h2>Публичен сайт</h2><p class="empty">Зареждане…</p>`;
   const sec=PUB_SCHEMA.find(s=>s.id===pubOpen)||PUB_SCHEMA[0];
@@ -1307,7 +1266,7 @@ function publicView(){
   <p class="muted" style="margin-top:-6px;">Всичко, което посетителите виждат на ac2.bg. Полетата показват текущия текст — редактирай и натисни „Запази". Ляво BG, дясно EN; празно EN = показва се BG.</p>
   <div class="tabs" style="margin:10px 0 14px;">${PUB_SCHEMA.map(s=>`<button class="tab ${s.id===pubOpen?'on':''}" onclick="pubGrab();pubOpen='${s.id}';try{localStorage.setItem('acac_pubtab','${s.id}')}catch(e){};render()">${esc(s.title.split(':')[0].split(',')[0])}</button>`).join('')}</div>
   <div class="card"><b>${esc(sec.title)}</b>${sec.help?`<p class="muted">${esc(sec.help)}</p>`:''}
-    ${sec.fields.map(f=>pField(f,'')).join('')}
+    ${sec.id==='levels'?levelsFields():sec.fields.map(f=>pField(f,'')).join('')}
   </div>
   <div style="display:flex;gap:10px;margin-top:16px;align-items:center;position:sticky;bottom:10px;background:var(--bg,#f6efe2);padding:10px 0;">
     <button class="btn" id="pubSaveBtn" onclick="savePublic()">Запази публичния сайт</button>
@@ -1345,9 +1304,10 @@ function pubListAdd(path){ pubGrab(); const l=pList(path).slice(); l.push({}); p
 function pubListDel(path,i){ if(!confirm('Да изтрия ли този запис?'))return; pubGrab(); const l=pList(path).slice(); l.splice(i,1); pSet(path,l); render(); }
 function pubListMove(path,i,d){ pubGrab(); const l=pList(path).slice(); const j=i+d; if(j<0||j>=l.length)return; [l[i],l[j]]=[l[j],l[i]]; pSet(path,l); render(); }
 async function savePublic(){
-  pubGrab();
+  pubGrab(); if(SITEC!==null)siteGrab();
   const b=document.getElementById('pubSaveBtn'); if(b){b.disabled=true;b.textContent='Запазване…';}
-  const r=await DB.saveSiteContent(PUBC,'public');
+  let r=await DB.saveSiteContent(PUBC,'public');
+  if(!(r&&r.error)&&SITEC!==null)r=await DB.saveSiteContent(SITEC,'landing');
   if(b){b.disabled=false;b.textContent='Запази публичния сайт';}
   if(r&&r.error){alert('Не се запази: '+r.error.message);return;}
   try{await DB.logAudit('public_site_saved','','');}catch(e){}
