@@ -1770,16 +1770,14 @@ function reserve(q){
     <label>${tr('placeChoose')} *</label><div class="selrow" id="vensel">${vsel}</div>
     <label>${tr('date')} *</label><input id="r_date" readonly placeholder="дд.мм.гггг" data-iso="" onclick="openResCal()" style="cursor:pointer;"/>
     <label>${tr('time')} *</label>${timePicker('r_time','')}
-    <label>${tr('party')} *</label>
-    <div class="qrow" style="border:none;padding:2px 0 0;"><span style="color:var(--muted);font-size:13px;">${lang==='bg'?'Места':'Seats'}</span><div class="qstep"><button type="button" onclick="resQty(-1,${seats})">−</button><b id="r_party_lbl">1</b><button type="button" onclick="resQty(1,${seats})">+</button></div></div>
-    <input id="r_party" type="hidden" value="1"/>
+    <label>${tr('party')} *</label><input id="r_party" type="number" inputmode="numeric" min="1" max="50" value="1"/><div style="color:var(--muted);font-size:12px;margin-top:4px;">${lang==='bg'?'До 50 души. За по-голямо събитие напишете броя в бележката — ще се свържем с вас.':'Up to 50 people. For a larger event write the number in the note — we will contact you.'}</div>
     <label>${tr('contactEmail')} *</label><input id="r_email" type="email" autocapitalize="none" value="${user?esc(user.email||''):''}"/>
     <label>${tr('contactPhone')} *</label><input id="r_phone" type="tel" value="${user?esc(user.phone||''):''}" placeholder="${lang==='bg'?'Въведете телефонен номер':'Enter phone number'}"/>
     <div id="algwrap" style="display:${preV==='restaurant'?'':'none'};">
       <label>${lang==='bg'?'Алергени / хранителни ограничения':'Allergens / dietary'} *</label>
       <div class="selrow" id="algsel">${(lang==='bg'?['Нямам алергии','Глутен','Мляко/лактоза','Яйца','Ядки','Фъстъци','Риба','Ракообразни','Соя','Сусам','Целина','Синап','Сулфити']:['No allergies','Gluten','Milk/lactose','Eggs','Tree nuts','Peanuts','Fish','Crustaceans','Soy','Sesame','Celery','Mustard','Sulphites']).map((a,i)=>`<button type="button" class="chip" data-alg="${esc(a)}"${i===0?' data-none="1"':''} onclick="toggleAlg(this)">${a}</button>`).join('')}</div>
     </div>
-    <label>${tr('note')}</label><textarea id="r_note" rows="2" placeholder="${tr('notePlaceholder')}"></textarea>
+    <label>${tr('note')} *</label><textarea id="r_note" rows="3" placeholder="${tr('notePlaceholder')}"></textarea>
     <button class="btn" onclick="sendRes(${seats})">${tr('send')}</button></div>`;
 }
 let pickedVenue=null;
@@ -1851,8 +1849,9 @@ async function sendRes(seats){
   if(!venue){toast(tr('reqVenue'));return;}
   if(!rdate){toast(lang==='bg'?'Изберете дата':'Choose a date');return;}
   if(!rtime){toast(lang==='bg'?'Въведете час':'Enter a time');return;}
-  if(n<1){toast(tr('party'));return;}
-  if(n>seats){toast((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
+  if(!(n>=1)){toast(lang==='bg'?'Въведете брой хора':'Enter the number of people');return;}
+  if(n>50){toast(lang==='bg'?'До 50 души през формата — за по-голямо събитие напишете броя в бележката':'Up to 50 via the form — for a larger event write the number in the note');return;}
+  if(!note){toast(lang==='bg'?'Опишете повода в бележката':'Describe the occasion in the note');return;}
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast(tr('reqEmail'));return;}
   if(!phone){toast(tr('reqPhone'));return;}
   if(!validPhone(phone)){toast(lang==='bg'?'Въведете валиден телефонен номер':'Enter a valid phone number');return;}

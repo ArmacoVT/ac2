@@ -947,6 +947,14 @@ async function submitTicket(f,eventId){
 }
 
 // ---------- ЗАПИТВАНЕ ЗА РЕЗЕРВАЦИЯ (маса / частно събитие) — както в приложението ----------
+// дата и час — падащи списъци (24-часов формат, дд.мм.гггг), независимо от езика на браузъра
+function dateSelects(){
+  const now=new Date(); const y0=now.getFullYear();
+  const d=Array.from({length:31},(_,i)=>`<option value="${String(i+1).padStart(2,'0')}" ${i+1===now.getDate()?'selected':''}>${i+1}</option>`).join('');
+  const m=MONTHS[lang].map((n,i)=>`<option value="${String(i+1).padStart(2,'0')}" ${i===now.getMonth()?'selected':''}>${n}</option>`).join('');
+  const y=[y0,y0+1].map(v=>`<option value="${v}">${v}</option>`).join('');
+  return `<div style="display:flex;gap:6px;"><select name="dd" class="sel" style="flex:0 0 76px;">${d}</select><select name="mo" class="sel" style="flex:1;">${m}</select><select name="yy" class="sel" style="flex:0 0 96px;">${y}</select></div>`;
+}
 function enquiryForm(){
   const sel=(n,opts)=>`<select name="${n}" class="sel">${opts}</select>`;
   const plBg=['Ресторант','Камерна зала','Изложбено фоайе','VIP зала'], plEn=['Restaurant','Chamber hall','Exhibition foyer','VIP room'];
@@ -954,10 +962,11 @@ function enquiryForm(){
   return `<form class="form" onsubmit="submitEnquiry(this);return false;">
     <div class="r2"><div><label>${t('format')}</label>${sel('format',FORMATS.map(f=>`<option value="${f.id}" ${f.id==='table'?'selected':''}>${f.t}</option>`).join(''))}</div>
       <div><label>${t('place')}</label>${sel('place',places.map((p,i)=>`<option value="${esc(plBg[i])}">${esc(p)}</option>`).join(''))}</div></div>
-    <div class="r2"><div><label>${t('dateLbl')} *</label><input name="date" type="date" required min="${todayIso()}"/></div><div><label>${t('timeLbl')}</label><input name="time" type="time"/></div></div>
-    <div class="r2"><div><label>${t('people')}</label><input name="party" type="number" min="1" max="12" value="2"/></div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
+    <div class="r2"><div><label>${t('dateLbl')} *</label>${dateSelects()}</div><div><label>${t('timeLbl')}</label>
+      <div style="display:flex;gap:6px;align-items:center;">${sel('hh','<option value="">--</option>'+Array.from({length:24},(_,h)=>`<option value="${String(h).padStart(2,'0')}">${String(h).padStart(2,'0')}</option>`).join(''))}<b style="opacity:.5">:</b>${sel('mm',['00','15','30','45'].map(m=>`<option value="${m}">${m}</option>`).join(''))}</div></div></div>
+    <div class="r2"><div><label>${t('people')} *</label><input name="party" type="number" inputmode="numeric" min="1" max="50" value="1"/><div class="hint" style="margin-top:4px;">${L('До 50 души. За по-голямо събитие напишете броя в описанието.','Up to 50 people. For a larger event write the number in the description.')}</div></div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
     <div class="r2"><div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div></div>
-    <div><label>${t('note')}</label><textarea name="note" rows="3"></textarea></div>
+    <div><label>${L('Повод / описание','Occasion / description')} *</label><textarea name="note" rows="3" required placeholder="${L('Опишете повода — какво събитие или среща искате да организирате.','Describe the occasion — what event or gathering you would like to hold.')}"></textarea></div>
     <label class="chk"><input type="checkbox" name="consent"/> <span>${t('consentContact')}</span></label>
     <div id="rq_captcha" class="cap"></div>
     <div class="msg" id="rq_msg"></div>
@@ -965,8 +974,12 @@ function enquiryForm(){
   </form>`;
 }
 async function submitEnquiry(f){
-  const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), date=f.date.value, time=f.time.value, party=parseInt(f.party.value,10)||1, note=f.note.value.trim();
-  if(!name||!email||!phone||!date){setMsg('rq_msg',t('errFields'));return false;}
+  const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), party=parseInt(f.party.value,10)||1, note=f.note.value.trim();
+  const date=f.yy.value+'-'+f.mo.value+'-'+f.dd.value; const time=f.hh.value?(f.hh.value+':'+(f.mm.value||'00')):'';
+  if(!name||!email||!phone||!note){setMsg('rq_msg',t('errFields'));return false;}
+  if(!(party>=1&&party<=50)){setMsg('rq_msg',L('Брой хора: от 1 до 50. За повече — напишете го в описанието.','Number of people: 1 to 50. For more, write it in the description.'));return false;}
+  if(isNaN(new Date(date+'T00:00:00').getTime())||new Date(date+'T00:00:00').getDate()!==parseInt(f.dd.value,10)){setMsg('rq_msg',L('Невалидна дата.','Invalid date.'));return false;}
+  if(date<todayIso()){setMsg('rq_msg',L('Датата е минала.','The date has passed.'));return false;}
   if(!validEmail(email)){setMsg('rq_msg',t('errEmail'));return false;}
   if(!validPhone(phone)){setMsg('rq_msg',t('errPhone'));return false;}
   if(!f.consent.checked){setMsg('rq_msg',t('errConsent'));return false;}
@@ -1188,6 +1201,6 @@ function toast(m){const el=document.getElementById('toast');el.textContent=m;el.
   document.addEventListener('visibilitychange',async()=>{ if(document.visibilityState==='visible'){ try{ EVENTS=await DB.listPublicEvents(); }catch(e){} if(parseRoute().p0===''||parseRoute().p0==='program')render(); } });
 })();
 </script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));let _swr=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(_swr)return;_swr=true;if(navigator.serviceWorker.controller)location.reload();});}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
 </body>
 </html>
