@@ -1327,7 +1327,8 @@ function liveView(){
       </div>`;
     }).join('');
   }else{
-    const up=EVENTS.filter(e=>canAccess(e)&&!e.archive_only).filter(e=>e.date&&!isPast(e)).sort((a,b)=>a.date<b.date?-1:1)[0];
+    // „Следващо събитие" тук = следващото, което ЩЕ СЕ ИЗЛЪЧВА (има стрийм линк или е онлайн формат / онлайн билет)
+    const up=EVENTS.filter(e=>canAccess(e)&&!e.archive_only).filter(e=>e.date&&!isPast(e)).filter(e=>!!e.stream_url||e.format==='online'||!!e.offer_online).sort((a,b)=>a.date<b.date?-1:1)[0];
     body=`<div class="ev" style="text-align:center;padding:32px 18px;">
       <div style="font-size:34px;margin-bottom:8px;color:var(--gold-soft);">▶</div>
       <h3 style="font-size:18px;">${tr('noLiveTitle')}</h3>
@@ -2576,7 +2577,7 @@ function checkUnlocks(){
     setTimeout(()=>toast(msg),1400);
   }
 }
-async function signout(){await DB.signOut();user=null;saved=[];RES=[];go('');}
+async function signout(){_loggingOut=true;try{await DB.signOut();}finally{user=null;saved=[];RES=[];go('');setTimeout(()=>{_loggingOut=false;},1500);}}
 // брой нови известия (резервации с променен статус, които още не са видени)
 function notifCount(){
   try{
@@ -2827,9 +2828,9 @@ async function promptInitialPassword(){
 }
 DB.onRecovery(promptInitialPassword);
 // ---------- Изтекла сесия: ясен екран „Влез отново", вместо празни списъци и мълчание ----------
-let _sessLost=false;
+let _sessLost=false, _loggingOut=false;
 function sessionLostUI(){
-  if(_sessLost||!user)return; _sessLost=true;
+  if(_sessLost||!user||_loggingOut)return; _sessLost=true;
   const bg=lang==='bg';
   const ov=document.createElement('div');
   ov.id='sesslost';
@@ -2867,6 +2868,7 @@ async function refreshProfile(){
   // сесията се проверява при връщане в приложението и на всяка минута; при отпадане → екран „Влез отново"
   if(user&&DB.live){
     DB.onSessionLost(sessionLostUI);
+    window.addEventListener('acac-session-lost',sessionLostUI);   // заявка към базата е отговорила „изтекъл ключ"
     setInterval(checkSessionAlive,60000);
     document.addEventListener('visibilitychange',()=>{ if(!document.hidden)checkSessionAlive(); });
     window.addEventListener('focus',checkSessionAlive);

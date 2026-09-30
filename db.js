@@ -174,8 +174,20 @@ window.PUB_DEFAULTS={
     try { if (DB.freshSession) await withTimeout(DB.freshSession(), 6000, 'Сесията'); } catch (e) {}
     return withTimeout(sb.functions.invoke(name, opts), 25000, 'Сървърът');
   }
+  // При отговор „JWT expired / invalid" от базата известяваме страницата (тя показва „Влез отново").
+  let _lostFired = false;
+  function authErr(error) {
+    if (!error) return false;
+    const m = String(error.message || '') + ' ' + String(error.code || '');
+    if (/jwt|PGRST301|invalid claim|not authenticated|401/i.test(m)) {
+      if (!_lostFired) { _lostFired = true; try { window.dispatchEvent(new Event('acac-session-lost')); } catch (e) {} }
+      return true;
+    }
+    return false;
+  }
   const DB = {
     live: LIVE,
+    resetSessionLost() { _lostFired = false; },
     urlType: URLTYPE,
 
     // Известява, когато сесията изчезне (изтекла или отнета).
@@ -340,7 +352,8 @@ window.PUB_DEFAULTS={
     // ---------- СЪБИТИЯ ----------
     async listEvents() {
       if (!LIVE) return seedDemo();
-      const { data } = await sb.from('events').select('*').order('date', { ascending: true });
+      const { data, error } = await sb.from('events').select('*').order('date', { ascending: true });
+      authErr(error);
       return (data || []).map(e => ({ id: e.id, title: e.title, format: fmtId(e.format), place: e.place,
         date: e.date, end_date: e.end_date || '', time: e.time, ends: e.ends || '', capacity: e.capacity,
         price: e.price || 0, price_online: e.price_online || 0, price_archive: e.price_archive || 0,
@@ -426,7 +439,8 @@ window.PUB_DEFAULTS={
     // ---------- РЕЗЕРВАЦИИ ----------
     async listReservations() {
       if (!LIVE) return jget(K.res, []);
-      const { data } = await sb.from('reservations').select('*').order('created_at', { ascending: false });
+      const { data, error } = await sb.from('reservations').select('*').order('created_at', { ascending: false });
+      authErr(error);
       return (data || []).map(r => ({ id: r.id, user_id: r.user_id || null, event_id: r.event_id || null, table_event_id: r.table_event_id || null,
         who: r.who || '', membership: r.membership || '', fmt: r.format,
         place: r.place, date: r.date, time: r.time, party: r.party_size, note: r.note, status: r.status,

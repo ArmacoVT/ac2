@@ -98,9 +98,9 @@ const root=document.getElementById('root');
 
 // ---- Изтекла сесия ----
 // Преди това администраторът нямаше как да разбере: бутоните просто мълчаха.
-let _sessionLost=false;
+let _sessionLost=false, _loggingOut=false;
 function sessionLost(){
-  if(_sessionLost)return; _sessionLost=true;
+  if(_sessionLost||_loggingOut||!admin)return; _sessionLost=true;
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(30,22,16,.72);display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:var(--card,#fffdf4);border-radius:16px;padding:24px;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
@@ -119,6 +119,7 @@ async function boot(){
   if(DB.live&&admin){
     startAdminLive();
     DB.onSessionLost(sessionLost);
+    window.addEventListener('acac-session-lost',sessionLost);
     setInterval(checkSession,60000);                 // на всяка минута
     document.addEventListener('visibilitychange',()=>{ if(!document.hidden)checkSession(); });
   }
@@ -1736,8 +1737,9 @@ async function doLogin(){
   }
 }
 async function logout(){
-  if(DB.live)await DB.signOut(); else localStorage.removeItem('acac_admin');
-  admin=false;render();
+  _loggingOut=true;
+  try{ if(DB.live)await DB.signOut(); else localStorage.removeItem('acac_admin'); }
+  finally{ admin=false;role='';render(); setTimeout(()=>{_loggingOut=false;},1500); }
 }
 boot();
 </script>
