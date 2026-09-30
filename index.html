@@ -947,13 +947,9 @@ async function submitTicket(f,eventId){
 }
 
 // ---------- ЗАПИТВАНЕ ЗА РЕЗЕРВАЦИЯ (маса / частно събитие) — както в приложението ----------
-// дата и час — падащи списъци (24-часов формат, дд.мм.гггг), независимо от езика на браузъра
+// дата — календар на браузъра; час — падащи списъци (24-часов формат, независимо от езика на браузъра)
 function dateSelects(){
-  const now=new Date(); const y0=now.getFullYear();
-  const d=Array.from({length:31},(_,i)=>`<option value="${String(i+1).padStart(2,'0')}" ${i+1===now.getDate()?'selected':''}>${i+1}</option>`).join('');
-  const m=MONTHS[lang].map((n,i)=>`<option value="${String(i+1).padStart(2,'0')}" ${i===now.getMonth()?'selected':''}>${n}</option>`).join('');
-  const y=[y0,y0+1].map(v=>`<option value="${v}">${v}</option>`).join('');
-  return `<div style="display:flex;gap:6px;"><select name="dd" class="sel" style="flex:0 0 76px;">${d}</select><select name="mo" class="sel" style="flex:1;">${m}</select><select name="yy" class="sel" style="flex:0 0 96px;">${y}</select></div>`;
+  return `<input name="date" type="date" required min="${todayIso()}" value="${todayIso()}"/>`;
 }
 function enquiryForm(){
   const sel=(n,opts)=>`<select name="${n}" class="sel">${opts}</select>`;
@@ -975,10 +971,10 @@ function enquiryForm(){
 }
 async function submitEnquiry(f){
   const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), party=parseInt(f.party.value,10)||1, note=f.note.value.trim();
-  const date=f.yy.value+'-'+f.mo.value+'-'+f.dd.value; const time=f.hh.value?(f.hh.value+':'+(f.mm.value||'00')):'';
+  const date=f.date.value; const time=f.hh.value?(f.hh.value+':'+(f.mm.value||'00')):'';
   if(!name||!email||!phone||!note){setMsg('rq_msg',t('errFields'));return false;}
   if(!(party>=1&&party<=50)){setMsg('rq_msg',L('Брой хора: от 1 до 50. За повече — напишете го в описанието.','Number of people: 1 to 50. For more, write it in the description.'));return false;}
-  if(isNaN(new Date(date+'T00:00:00').getTime())||new Date(date+'T00:00:00').getDate()!==parseInt(f.dd.value,10)){setMsg('rq_msg',L('Невалидна дата.','Invalid date.'));return false;}
+  if(!date||isNaN(new Date(date+'T00:00:00').getTime())){setMsg('rq_msg',L('Изберете дата.','Choose a date.'));return false;}
   if(date<todayIso()){setMsg('rq_msg',L('Датата е минала.','The date has passed.'));return false;}
   if(!validEmail(email)){setMsg('rq_msg',t('errEmail'));return false;}
   if(!validPhone(phone)){setMsg('rq_msg',t('errPhone'));return false;}
