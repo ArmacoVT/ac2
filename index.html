@@ -362,6 +362,9 @@
 <script src="vendor/supabase.js"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <script src="config.js"></script>
+<!-- COMING_SOON (config.js): докато е true, целият публичен сайт е скрит зад landing.html.
+     Пълният сайт се вижда само с ac2.bg/?site=1 (за преглед). Правните страници (#/legal/…) остават достъпни. -->
+<script>(function(){try{var c=window.ACAC_CONFIG||{};if(!c.COMING_SOON)return;if(/[?&]site=1/.test(location.search)){sessionStorage.setItem('ac2_site','1');return;}if(sessionStorage.getItem('ac2_site')==='1')return;if(/^#\/legal\//.test(location.hash))return;location.replace('landing.html');}catch(e){}})();</script>
 <script src="brand.js"></script>
 <script src="db.js"></script>
 <script>

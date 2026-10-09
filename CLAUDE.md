@@ -5,6 +5,7 @@
 ## Какво е това
 Една кодова база (vanilla JS, без билд) → три неща:
 - `index.html` — **публичен сайт** ac2.bg (хеш адреси `#/program`, `#/event/<id>`, `#/restaurant/menu`, `#/membership`, `#/about/team`, `#/contacts`…). BG/EN. Cookie банер + GA4/Meta Pixel (ID-та в `config.js`, празни = изключено).
+- `landing.html` — **„Очаквайте скоро"** страница (само нюзлетър; дизайн по визуализацията на user — не се променя; рисунка `cards/contour.svg` — векторна, не се модифицира). Включва се с `COMING_SOON: true` в `config.js` → index.html пренасочва към нея (освен `?site=1` за преглед и `#/legal/…`). Когато сайтът тръгне — `COMING_SOON: false`.
 - `app/index.html` — **членско приложение** ac2.bg/app (вход, събития, резервации, билети, членска карта с QR, Face ID). Същото зарежда iOS/Android Capacitor обвивката (`server.url = https://ac2.bg/app/`).
 - `admin.html` — админ панел ac2.bg/admin.html (роли `admin` и `editor`).
 Общи: `db.js` (слой данни + `SITE_DEFAULTS`, `PUB_DEFAULTS`), `brand.js` (лого + анимирана лента), `config.js` (само публични ключове), `sw.js` (service worker — **вдигай `acac-vNNN` при всяка промяна**; страниците се презареждат сами при нова версия).
