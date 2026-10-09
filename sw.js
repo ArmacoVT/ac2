@@ -1,6 +1,6 @@
 // Service worker — прави приложението инсталируемо и достъпно офлайн (обвивката).
 // Обслужва и публичния сайт (/) и членското приложение (/app/).
-const CACHE = 'acac-v279';
+const CACHE = 'acac-v280';
 const ASSETS = [
   './', './index.html', './landing.html', './cards/contour-tall.svg', './cards/contour-wide.svg', './app/index.html', './admin.html', './config.js', './db.js', './brand.js', './rules.html',
   './vendor/supabase.js', './vendor/qrcode.js',
@@ -8,7 +8,7 @@ const ASSETS = [
   './cards/logo-table.webp', './cards/logo-music.webp', './cards/logo-conversation.webp',
   './cards/logo-community.webp', './cards/logo-theater.webp',
   './fonts/fonts.css', './fonts/GoogleSans-Regular.woff2', './fonts/GoogleSans-Medium.woff2', './fonts/GoogleSans-Bold.woff2',
-  './fonts/Playfair-Regular.woff2', './fonts/Playfair-Bold.woff2', './fonts/Playfair-Italic.woff2', './fonts/Playfair-BoldItalic.woff2',
+  './fonts/PlayfairDisplay-Regular.woff2', './fonts/PlayfairDisplay-Bold.woff2', './fonts/PlayfairDisplay-Italic.woff2', './fonts/PlayfairDisplay-BoldItalic.woff2',
   './manifest.json', './favicon.png', './icon-192.png', './icon-512.png'
 ];
 self.addEventListener('install', e => {
