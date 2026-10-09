@@ -18,7 +18,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="theme-color" content="#ebebd6" />
 <title>Arcus Club · Админ панел</title>
-<link rel="icon" href="favicon.png" />
+<link rel="icon" href="favicon.png?v=2" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Google+Sans+Flex:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
   :root{--bg:#ebebd6;--surface:#f4f4e8;--gold:#82303d;--gold-soft:#652430;--cream:#000000;--text:#1c1c1b;
@@ -28,7 +28,7 @@
   body{background:var(--bg);color:var(--text);font-family:var(--sans);}
   .wrap{max-width:760px;margin:0 auto;padding:0 16px 60px;}
   .top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;
-    padding:14px 0;background:rgba(246,239,226,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin-bottom:18px;}
+    padding:14px 0;background:rgba(235,235,214,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin-bottom:18px;}
   .top .b{font-family:var(--serif);font-style:italic;color:var(--gold);font-size:19px;letter-spacing:0;}
   .top .b small{color:var(--mid);font-size:12px;letter-spacing:0;}
   .tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
@@ -103,7 +103,7 @@ let _sessionLost=false, _loggingOut=false;
 function sessionLost(){
   if(_sessionLost||_loggingOut||!admin)return; _sessionLost=true;
   const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(30,22,16,.72);display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:var(--card,#f7f7ee);border-radius:16px;padding:24px;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
     <h3 style="margin:0 0 8px;">Сесията изтече</h3>
     <p style="color:var(--muted);font-size:13px;margin:0 0 16px;">Не сте вписан вече. Промените, които направите сега, няма да се запазят.</p>

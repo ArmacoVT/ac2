@@ -24,8 +24,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <title>American College Arcus Club</title>
-<link rel="icon" href="../favicon.png" />
-<link rel="apple-touch-icon" href="../icon-192.png" />
+<link rel="icon" href="../favicon.png?v=2" />
+<link rel="apple-touch-icon" href="../icon-192.png?v=2" />
 <link rel="manifest" href="../manifest.json" />
 <link rel="preconnect" href="https://twcxfqgknhqicxqghcrx.supabase.co" crossorigin />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -46,7 +46,7 @@
   body{background:var(--bg);color:var(--text);font-family:var(--sans);}
   #app{max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:calc(118px + env(safe-area-inset-bottom));}
   .topbar{position:sticky;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;
-    padding:calc(14px + env(safe-area-inset-top)) 18px 14px;background:rgba(246,239,226,0.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+    padding:calc(14px + env(safe-area-inset-top)) 18px 14px;background:rgba(235,235,214,0.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
   .topbar .mark{font-family:var(--serif);font-style:italic;color:var(--gold);font-size:18px;letter-spacing:0;display:flex;align-items:center;gap:8px;cursor:pointer;}
   .topbar .mark img{width:32px;height:32px;background:var(--medallion);border-radius:50%;padding:3px;object-fit:contain;}
   .pill{border:none;border-radius:20px;padding:7px 14px;color:var(--gold);font-size:13px;letter-spacing:1px;cursor:pointer;background:var(--bg);
@@ -108,7 +108,8 @@
   .fcard .well{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
     background:var(--bg);box-shadow:inset 3px 3px 6px #cfcfbb,inset -3px -3px 6px #f7f7ee;}
   .fcard .well svg{width:26px;height:26px;}
-  .fcard .ac2{font-family:var(--serif);font-style:italic;font-size:17px;opacity:.85;}
+  .fcard .ac2{width:44px;height:30px;opacity:.9;}
+  .fcard .ac2 svg{width:100%!important;height:100%!important;display:block;}
   .fcard .body{margin-top:auto;}
   .fcard .lab{font-size:10px;letter-spacing:2px;text-transform:uppercase;}
   .fcard h3{font-family:var(--serif);font-style:italic;color:var(--cream);font-size:25px;font-weight:500;line-height:1;margin-top:3px;}
@@ -192,7 +193,7 @@
   .contact .tag{color:var(--gold);letter-spacing:2px;margin-bottom:8px;font-size:13px;}
   .page{padding:16px;}
   .banner{height:175px;border-radius:16px;border:1px solid var(--line);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-  .banner .ov{position:absolute;inset:0;background:rgba(26,20,16,.25);}
+  .banner .ov{position:absolute;inset:0;background:rgba(0,0,0,.25);}
   .banner img{width:78px;height:78px;position:relative;}
   .banner h2{position:relative;font-family:var(--serif);font-style:italic;color:var(--oncolor);font-size:26px;letter-spacing:0;margin-top:6px;font-weight:500;}
   .fbanner{background:var(--bg);border-radius:18px;padding:12px 12px 6px;text-align:center;box-shadow:7px 7px 14px #cfcfbb,-7px -7px 14px #f7f7ee;}
@@ -204,7 +205,7 @@
   .btn{display:block;width:100%;background:var(--gold);color:#f4f4e8;border:none;border-radius:14px;padding:15px;
     font-size:16px;font-weight:600;letter-spacing:1px;cursor:pointer;font-family:inherit;text-align:center;
     box-shadow:6px 6px 14px #cfcfbb,-6px -6px 14px #f7f7ee;transition:box-shadow .2s,transform .12s;}
-  .btn:active{box-shadow:inset 4px 4px 9px rgba(120,45,20,.35),inset -2px -2px 6px rgba(255,255,255,.15);transform:scale(.99);}
+  .btn:active{box-shadow:inset 4px 4px 9px rgba(60,15,25,.35),inset -2px -2px 6px rgba(255,255,255,.15);transform:scale(.99);}
   .btn-ghost{background:var(--bg);color:var(--gold);box-shadow:6px 6px 14px #cfcfbb,-6px -6px 14px #f7f7ee;margin-top:11px;}
   label{display:block;color:var(--mid);font-size:13px;margin:0 0 6px;}
   input,select,textarea{width:100%;background:var(--bg);border:none;border-radius:12px;
@@ -237,7 +238,7 @@
   .tcheck small{color:var(--muted);font-size:11px;}
   .tablebox{display:none;margin-top:10px;}
   /* Bottom sheet (плъзгащ панел отдолу) */
-  .sheetbd{position:fixed;inset:0;background:rgba(40,30,22,.45);opacity:0;pointer-events:none;transition:opacity .28s ease;z-index:1800;}
+  .sheetbd{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .28s ease;z-index:1800;}
   .sheetbd.open{opacity:1;pointer-events:auto;}
   .sheet{position:fixed;left:50%;bottom:0;z-index:1900;width:100%;max-width:480px;background:var(--bg);border-radius:24px 24px 0 0;
     padding:8px 20px calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,110%);
@@ -279,7 +280,7 @@
   .evposter{opacity:0;filter:blur(8px);transition:opacity .5s ease,filter .6s ease;}
   .evposter.imgloaded{opacity:1;filter:none;}
   /* Печат при успешна резервация */
-  .stamp{position:fixed;inset:0;z-index:2200;display:flex;align-items:center;justify-content:center;pointer-events:none;background:rgba(40,30,22,.16);transition:opacity .3s;}
+  .stamp{position:fixed;inset:0;z-index:2200;display:flex;align-items:center;justify-content:center;pointer-events:none;background:rgba(0,0,0,.16);transition:opacity .3s;}
   .stamp.out{opacity:0;}
   .stamp .stampin{width:96px;height:96px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 32px rgba(0,0,0,.3);animation:stampIn .4s cubic-bezier(.2,1.5,.4,1);}
   .stamp svg{width:56px;height:56px;}
@@ -310,7 +311,7 @@
   .chip{border:none;border-radius:20px;padding:8px 14px;font-size:13px;color:var(--gold);background:var(--bg);cursor:pointer;
     white-space:nowrap;line-height:1;box-shadow:4px 4px 9px #cfcfbb,-4px -4px 9px #f7f7ee;}
   .ev .row .chip{flex:1 1 auto;text-align:center;}
-  .chip.on{background:var(--gold);color:#f4f4e8;font-weight:600;box-shadow:inset 3px 3px 6px rgba(120,45,20,.3),inset -2px -2px 5px rgba(255,255,255,.2);}
+  .chip.on{background:var(--gold);color:#f4f4e8;font-weight:600;box-shadow:inset 3px 3px 6px rgba(60,15,25,.3),inset -2px -2px 5px rgba(255,255,255,.2);}
   .chip.ghost{box-shadow:none;color:var(--mid);background:transparent;}
   .chip.locked{color:var(--mid);background:var(--surface2);font-size:12px;cursor:default;display:inline-flex;align-items:center;
     box-shadow:inset 2px 2px 5px #cfcfbb,inset -2px -2px 5px #f7f7ee;}
@@ -331,7 +332,7 @@
   .toast.show{opacity:1;}
   .tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));
     width:min(94%,500px);display:flex;padding:6px;border-radius:34px;
-    background:rgba(241,232,214,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    background:rgba(235,235,214,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
     box-shadow:0 12px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.7);
     transition:transform .2s cubic-bezier(.2,.8,.2,1),opacity .2s;}
   .tabbar.mini{transform:translateX(-50%) scale(.92) translateY(5px);opacity:.9;}
@@ -346,7 +347,7 @@
   @keyframes ac2In{from{opacity:0;transform:scale(.7);}to{opacity:1;transform:scale(1);}}
   @keyframes ringDraw{from{opacity:0;transform:scale(.55);}to{opacity:1;transform:scale(1);}}
   @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
-  @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(200,100,60,0);}50%{box-shadow:0 0 26px 3px rgba(200,100,60,.22);}}
+  @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(130,48,61,0);}50%{box-shadow:0 0 26px 3px rgba(130,48,61,.22);}}
   .gate{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:34px 26px;text-align:center;}
   .gate .ring{width:132px;height:132px;background:var(--medallion);border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;animation:ringDraw 1.2s cubic-bezier(.2,.7,.2,1) both,glow 3.4s ease 1.2s infinite;}
   .gate .ring img{width:86px;height:64px;object-fit:contain;animation:ac2In 1.2s ease .15s both;}
@@ -354,7 +355,7 @@
   .gate .sub{color:var(--mid);font-size:13px;letter-spacing:2px;text-transform:uppercase;margin-top:12px;animation:fadeUp .8s ease .75s both;}
   .gate .form{width:100%;max-width:330px;margin-top:30px;animation:fadeUp .9s ease 1.05s both;}
   .gate.ready .ring,.gate.ready .ring img,.gate.ready h1,.gate.ready .sub,.gate.ready .form{animation:none;}
-  .gate.ready .ring{box-shadow:0 0 22px 1px rgba(200,100,60,.16);}
+  .gate.ready .ring{box-shadow:0 0 22px 1px rgba(130,48,61,.16);}
   /* ---------- Публична витрина (само уеб) ---------- */
   /* приложението е в 520px "телефонен" контейнер; витрината има нужда от цялата ширина */
   #app.wide{max-width:1120px;padding-bottom:0;}
@@ -369,14 +370,14 @@
   .gatehero video,.gatehero .poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
   .gatehero .poster{background-size:cover;background-position:center;animation:kenburns 26s ease-in-out infinite alternate;transform-origin:52% 45%;}
   @keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.09)}}
-  .gatehero .warm{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,rgba(255,190,110,.16),transparent 60%);animation:warmpulse 4.5s ease-in-out infinite alternate;mix-blend-mode:screen;}
+  .gatehero .warm{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,rgba(191,192,194,.16),transparent 60%);animation:warmpulse 4.5s ease-in-out infinite alternate;mix-blend-mode:screen;}
   @keyframes warmpulse{from{opacity:.45}to{opacity:1}}
   .gatehero .grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");}
-  .gatehero .shade{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(20,14,10,.35) 0%,rgba(20,14,10,.15) 40%,rgba(20,14,10,.78) 100%);}
+  .gatehero .shade{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,.15) 40%,rgba(0,0,0,.78) 100%);}
   @media(prefers-reduced-motion:reduce){.gatehero .poster,.gatehero .warm{animation:none;}}
   .gatehero .tl{position:absolute;top:30px;left:40px;z-index:3;width:110px;color:#ebebd6;}
   .gatehero .tr{position:absolute;top:26px;right:40px;z-index:3;}
-  .gatehero .tr .pill{background:rgba(246,239,226,.14);color:#ebebd6;border-color:rgba(246,239,226,.35);box-shadow:none;}
+  .gatehero .tr .pill{background:rgba(235,235,214,.14);color:#ebebd6;border-color:rgba(235,235,214,.35);box-shadow:none;}
   .gatehero .bottom{position:relative;z-index:2;flex:0 0 auto;display:flex;flex-direction:column;padding:0 40px 48px;}
   .gatehero .bl{position:relative;max-width:640px;}
   .gatehero .tag{font-size:11.5px;letter-spacing:2px;line-height:1.75;text-transform:uppercase;color:#bfc0c2;max-width:480px;margin:-6px 0 24px;}
@@ -386,7 +387,7 @@
   .gatehero .acts a{color:#ebebd6;text-decoration:underline;text-underline-offset:5px;cursor:pointer;font-size:14px;}
   @media(max-width:640px){.gatehero .tr{right:20px;top:18px;}.gatehero .bottom{padding:0 20px 36px;}.gatehero .tag{font-size:10.5px;letter-spacing:1.5px;line-height:1.7;max-width:100%;}}
   /* --- начален екран: лого в центъра с лъч + жива лента с човечета --- */
-  .gatehero .beam{position:absolute;left:-30%;top:-40%;width:38%;height:180%;z-index:1;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,220,160,.10),transparent);transform:rotate(18deg);animation:gbeam 8s ease-in-out infinite;}
+  .gatehero .beam{position:absolute;left:-30%;top:-40%;width:38%;height:180%;z-index:1;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(235,235,214,.10),transparent);transform:rotate(18deg);animation:gbeam 8s ease-in-out infinite;}
   @keyframes gbeam{0%,22%{left:-45%}70%,100%{left:125%}}
   .gatehero .logoarea{position:relative;z-index:2;flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:84px 24px 16px;}
   .gatehero .biglogo{width:min(46vw,520px);max-height:100%;filter:drop-shadow(0 10px 40px rgba(0,0,0,.5));}
@@ -441,7 +442,7 @@
   /* страницата „За клуба" — лента отгоре */
   .land .topbar .brand .lg{display:inline-block;width:64px;color:var(--text);}
   .land .hero{text-align:center;padding:38px 0 30px;}
-  .land .hero .ring{width:120px;height:120px;margin:0 auto;background:var(--medallion);border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;box-shadow:0 0 22px 1px rgba(200,100,60,.16);}
+  .land .hero .ring{width:120px;height:120px;margin:0 auto;background:var(--medallion);border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;box-shadow:0 0 22px 1px rgba(130,48,61,.16);}
   .land .hero .ring img{width:80px;height:60px;object-fit:contain;}
   .land .hero h1{font-family:var(--serif);font-style:italic;font-size:clamp(28px,5vw,42px);font-weight:500;letter-spacing:0;line-height:1.15;margin:22px 0 10px;color:var(--text);}
   .land .hero .lead{color:var(--mid);font-size:16px;line-height:1.55;max-width:600px;margin:0 auto;}
@@ -523,12 +524,12 @@
 </head>
 <body>
 <div id="splash">
-  <div class="sp-ring"><img src="../cards/logo-ac2-dark.webp" alt="AC²"/></div>
+  <div class="sp-ring"><img src="../cards/logo-ac2-dark.webp?v=2" alt="AC²"/></div>
   <div class="sp-name">American College<br>Arcus Club</div>
 </div>
 <div id="app"></div>
 <div class="toast" id="toast"></div>
-<div id="ptr"><img src="../cards/logo-ac2-dark.webp" alt="AC²"/></div>
+<div id="ptr"><img src="../cards/logo-ac2-dark.webp?v=2" alt="AC²"/></div>
 <nav class="tabbar" id="tabbar"></nav>
 
 <!-- ЗАЩИТА: библиотеките се зареждат от НАШИЯ сървър, не от чужд CDN.
@@ -583,7 +584,7 @@ const FORMATS=[
  {id:'table',t:'AC² Food',c:'#507044',img:'../cards/logo-table.webp',b:{bg:['тематични вечери','гост-готвачи','гастрономически събития','брънч','частни резервации'],en:['themed dinners','guest chefs','gastronomic events','brunch','private reservations']}},
  {id:'conversation',t:'AC² Conversation',c:'#000000',img:'../cards/logo-conversation.webp',b:{bg:['разговори с гости','дискусии','образователни теми','професионални срещи','малки формати с подбрана публика'],en:['conversations with guests','discussions','educational topics','professional meetings','small formats with a select audience']}},
  {id:'community',t:'AC² Arcus Community',c:'#5f6064',img:'../cards/logo-community.webp',b:{bg:['семейни поводи','alumni събития','училищно-свързани формати','учениците на колежа','дискретни срещи в по-лична среда'],en:['family occasions','alumni gatherings','school-related formats','college students','discreet meetings in a more personal setting']}},
- {id:'online',t:'AC² Online',c:'#652430',img:'../cards/logo-ac2.webp',b:{bg:['онлайн излъчвания','разговори на живо','лекции и прожекции','записи за гледане после'],en:['online broadcasts','live talks','lectures and screenings','recordings to watch later']}}
+ {id:'online',t:'AC² Online',c:'#652430',img:'../cards/logo-ac2.webp?v=2',b:{bg:['онлайн излъчвания','разговори на живо','лекции и прожекции','записи за гледане после'],en:['online broadcasts','live talks','lectures and screenings','recordings to watch later']}}
 ];
 // стари формати (cinema/music/theater) → Culture; за стари записи в базата
 const FMT_ALIAS={cinema:'culture',music:'culture',theater:'culture'};
@@ -676,7 +677,7 @@ const MEMBERS=[
   d:{bg:'Категория за компании и организации, които споделят ценностите на клуба — култура, образование, качество и смислено общуване.',en:'A category for companies and organisations that share the club values.'},
   bn:{bg:['Членство за компании и организации','Достъп за до 5 представители','Покани за професионални формати','8% членска преференция в AC² Table','Дискретни срещи в уединена зона','Персонализирана Corporate карта'],en:['Membership for companies and organisations','Access for up to 5 representatives','Invitations to professional formats','8% member preference at AC² Table','Discreet meetings in a secluded area','A personalised Corporate card']}}
 ];
-const AC2='../cards/logo-ac2.webp';
+const AC2='../cards/logo-ac2.webp?v=2';
 // Логото и анимираната лента са в brand.js (общи с публичния сайт).
 const LOGO_SVG=window.LOGO_SVG, FRIEZE_SVG=window.FRIEZE_SVG, LOGO_SWEEP_SVG=window.LOGO_SWEEP_SVG;
 // В iOS приложението няма витрина — то отваря направо входа. На уеб витрината е първото, което се вижда.
@@ -877,7 +878,7 @@ function home(){
   let cards=fmtN.map(({f,n})=>{
     const badge=n?`<div class="evbadge"><span class="evdot" style="background:${f.c}"></span>${n} ${n===1?(lang==='bg'?'събитие':'event'):(lang==='bg'?'събития':'events')}</div>`:'';
     return `<div class="fcard${n?'':' dim'}" onclick="go('format/${f.id}')">
-    <div class="top"><div class="well" style="color:${f.c}">${MOTIF[f.id]||''}</div><div class="ac2" style="color:${f.c}">AC²</div></div>
+    <div class="top"><div class="well" style="color:${f.c}">${MOTIF[f.id]||''}</div><div class="ac2" style="color:${f.c}" aria-label="AC²">${LOGO_SVG}</div></div>
     <div class="body"><div class="lab" style="color:${f.c}">${lang==='bg'?'Формат':'Format'}</div>
       <h3>${f.t.replace('AC² ','')}</h3><span>${tx(f.b).slice(0,2).join(' · ')}</span>${badge}</div>
     </div>`;
@@ -2263,9 +2264,9 @@ function accountView(){
     ${DB.live?`<button class="btn btn-ghost" onclick="changePass()">${tr('changePass')}</button>`:''}
     <button class="btn btn-ghost" style="margin-top:12px;" onclick="signout()">${tr('signout')}</button>
     <div class="sec-title" style="padding-top:30px;color:#82303d;">${bg?'Опасна зона':'Danger zone'}</div>
-    <div class="ev" style="border:1px solid rgba(181,83,47,.3);">
+    <div class="ev" style="border:1px solid rgba(130,48,61,.3);">
       <div class="m" style="margin-bottom:10px;">${bg?'Изтриването премахва профила и всички твои данни (резервации, предпочитания) безвъзвратно.':'Deleting removes your profile and all your data (reservations, preferences) permanently.'}</div>
-      <button class="btn" style="background:rgba(181,83,47,.12);color:#82303d;border:1px solid rgba(181,83,47,.5);box-shadow:none;margin-top:0;" onclick="deleteAccount()">${tr('delAcc')}</button>
+      <button class="btn" style="background:rgba(130,48,61,.12);color:#82303d;border:1px solid rgba(130,48,61,.5);box-shadow:none;margin-top:0;" onclick="deleteAccount()">${tr('delAcc')}</button>
     </div></div>`;
 }
 async function deleteAccount(){
@@ -2372,7 +2373,7 @@ function resCard(r,dim){
   const click=ev?` cursor:pointer;`:'';
   const onclick=ev?` onclick="go('format/${ev.format}')"`:'';
   const isNew=newResSet&&newResSet[r.id];
-  const hl=isNew?`border:1px solid var(--gold);box-shadow:0 0 0 2px rgba(191,138,46,.18);`:'';
+  const hl=isNew?`border:1px solid var(--gold);box-shadow:0 0 0 2px rgba(107,107,99,.18);`:'';
   const newTag=isNew?` <span style="background:var(--gold);color:#f4f4e8;font-size:9px;font-weight:700;border-radius:8px;padding:2px 6px;vertical-align:middle;">${lang==='bg'?'НОВО':'NEW'}</span>`:'';
   const priceLine=(ev&&ev.price>0&&r.event_id)?`<div class="m" style="color:var(--gold);font-weight:600;">${lang==='bg'?'Общо: ':'Total: '}${fmtPrice(ev.price*(r.party||1))}</div>`:'';
   const canCancel=resCancellable(r);
@@ -2834,7 +2835,7 @@ function sessionLostUI(){
   const bg=lang==='bg';
   const ov=document.createElement('div');
   ov.id='sesslost';
-  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(30,22,16,.72);display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:var(--bg);border-radius:22px;padding:26px 22px;width:min(100%,360px);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35);">
     <img src="${AC2}" alt="AC²" style="width:56px;height:56px;border-radius:50%;background:var(--medallion);padding:8px;object-fit:contain;margin:0 auto 12px;display:block;"/>
     <h3 style="font-family:var(--serif);font-size:22px;font-weight:500;color:var(--cream);margin:0 0 8px;">${bg?'Сесията изтече':'Session expired'}</h3>
