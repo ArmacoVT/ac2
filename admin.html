@@ -19,22 +19,23 @@
 <meta name="theme-color" content="#f6efe2" />
 <title>Arcus Club · Админ панел</title>
 <link rel="icon" href="favicon.png" />
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Google+Sans+Flex:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
   :root{--bg:#f6efe2;--surface:#fffaf0;--gold:#c8643c;--gold-soft:#b07a4a;--cream:#3a2c23;--text:#5a4a3c;
-    --mid:#8a6f5c;--muted:#a8927c;--line:rgba(58,44,35,0.16);--ok:#4f7a43;--warn:#b5532f;--serif:'Cormorant Garamond',Georgia,serif;}
+    --mid:#8a6f5c;--muted:#a8927c;--line:rgba(58,44,35,0.16);--ok:#4f7a43;--warn:#b5532f;--serif:'Playfair Display',Georgia,serif;
+--sans:'Google Sans Flex','Google Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);}
   .wrap{max-width:760px;margin:0 auto;padding:0 16px 60px;}
   .top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;
     padding:14px 0;background:rgba(246,239,226,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin-bottom:18px;}
-  .top .b{font-family:var(--serif);color:var(--gold);font-size:19px;letter-spacing:1px;}
+  .top .b{font-family:var(--serif);font-style:italic;color:var(--gold);font-size:19px;letter-spacing:0;}
   .top .b small{color:var(--mid);font-size:12px;letter-spacing:0;}
   .tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
   .tab{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:22px;padding:8px 16px;font-size:14px;cursor:pointer;font-family:inherit;}
   .tab.on{background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:600;}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;}
-  h2{font-family:var(--serif);color:var(--cream);font-weight:500;font-size:22px;margin-bottom:12px;}
+  h2{font-family:var(--serif);font-style:italic;color:var(--cream);font-weight:700;font-size:22px;margin-bottom:12px;}
   h3{color:var(--cream);font-size:16px;font-weight:500;}
   label{display:block;color:var(--mid);font-size:13px;margin:10px 0 5px;}
   input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:11px;color:var(--cream);font-size:15px;font-family:inherit;}
@@ -55,8 +56,8 @@
   .badge.live{border-color:var(--ok);color:#3f6235;}
   .gate{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;}
   .gate .ring{width:120px;height:120px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;}
-  .gate .ring span{font-family:var(--serif);color:var(--gold);font-size:38px;}
-  .gate h1{font-family:var(--serif);color:var(--cream);font-size:26px;font-weight:500;margin-top:20px;}
+  .gate .ring span{font-family:var(--serif);font-style:italic;color:var(--gold);font-size:38px;}
+  .gate h1{font-family:var(--serif);font-style:italic;color:var(--cream);font-size:26px;font-weight:500;margin-top:20px;}
   .gate .f{width:100%;max-width:300px;margin-top:24px;}
   .gate input{margin-bottom:11px;}
   .empty{color:var(--muted);font-style:italic;padding:8px 0;}
