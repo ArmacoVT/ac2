@@ -42,12 +42,12 @@
   .right{position:relative;overflow:hidden;background:var(--wine)}
   /* Векторната рисунка (цялата, вкл. долната част) като маска → линиите са в тъмно бордо върху бордо фон */
   .right .art{position:absolute;inset:0;background:var(--wine-dark);
-    -webkit-mask:url(cards/contour.svg) center top/cover no-repeat;mask:url(cards/contour.svg) center top/cover no-repeat}
+    -webkit-mask:url(cards/contour-tall.svg) center/cover no-repeat;mask:url(cards/contour-tall.svg) center/cover no-repeat}
   @media (max-width:860px){
     .wrap{grid-template-columns:1fr}
     /* мобилни: по-широк кадър — рисунката на цяла ширина, показва се горната ѝ част (друго изрязване) */
     .right{order:-1;height:min(72vw,480px)}
-    .right .art{inset:0;-webkit-mask-size:cover;mask-size:cover;-webkit-mask-position:center top;mask-position:center top}
+    .right .art{-webkit-mask-image:url(cards/contour-wide.svg);mask-image:url(cards/contour-wide.svg)}
     .left{min-height:0;padding:28px 22px 32px}
     .logo{margin-top:4px}
     .mid{gap:30px}
