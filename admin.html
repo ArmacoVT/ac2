@@ -16,13 +16,13 @@
 <!-- Sentry — мониторинг на грешки -->
 <script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#f6efe2" />
+<meta name="theme-color" content="#ebebd6" />
 <title>Arcus Club · Админ панел</title>
 <link rel="icon" href="favicon.png" />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Google+Sans+Flex:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
-  :root{--bg:#f6efe2;--surface:#fffaf0;--gold:#c8643c;--gold-soft:#b07a4a;--cream:#3a2c23;--text:#5a4a3c;
-    --mid:#8a6f5c;--muted:#a8927c;--line:rgba(58,44,35,0.16);--ok:#4f7a43;--warn:#b5532f;--serif:'Playfair Display',Georgia,serif;
+  :root{--bg:#ebebd6;--surface:#f4f4e8;--gold:#82303d;--gold-soft:#652430;--cream:#000000;--text:#1c1c1b;
+    --mid:#4b4b45;--muted:#6b6b63;--line:rgba(0,0,0,0.16);--ok:#507044;--warn:#82303d;--serif:'Playfair Display',Georgia,serif;
 --sans:'Google Sans Flex','Google Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--bg);color:var(--text);font-family:var(--sans);}
@@ -45,15 +45,15 @@
   .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--gold);}
   .btn.sm{padding:7px 13px;font-size:13px;border-radius:18px;}
   .btn.ok{background:var(--ok);color:#fff;}
-  .btn.no{background:transparent;border:1px solid var(--warn);color:#d98b6e;}
+  .btn.no{background:transparent;border:1px solid var(--warn);color:#9a3a49;}
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
   .ck{border:1px solid var(--line);border-radius:20px;padding:7px 13px;font-size:13px;cursor:pointer;user-select:none;}
   .ck.on{background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:600;}
   .pill{display:inline-block;font-size:11px;letter-spacing:1px;border:1px solid var(--gold);color:var(--gold);border-radius:14px;padding:2px 9px;}
-  .pill.audAll{border-color:var(--ok);color:#3f6235;}
+  .pill.audAll{border-color:var(--ok);color:#3d5634;}
   .muted{color:var(--muted);font-size:13px;}
   .badge{font-size:11px;border-radius:12px;padding:2px 10px;border:1px solid var(--line);color:var(--mid);}
-  .badge.live{border-color:var(--ok);color:#3f6235;}
+  .badge.live{border-color:var(--ok);color:#3d5634;}
   .gate{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;}
   .gate .ring{width:120px;height:120px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;}
   .gate .ring span{font-family:var(--serif);font-style:italic;color:var(--gold);font-size:38px;}
@@ -104,7 +104,7 @@ function sessionLost(){
   if(_sessionLost||_loggingOut||!admin)return; _sessionLost=true;
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(30,22,16,.72);display:flex;align-items:center;justify-content:center;padding:20px;';
-  ov.innerHTML=`<div style="background:var(--card,#fffdf4);border-radius:16px;padding:24px;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+  ov.innerHTML=`<div style="background:var(--card,#f7f7ee);border-radius:16px;padding:24px;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
     <h3 style="margin:0 0 8px;">Сесията изтече</h3>
     <p style="color:var(--muted);font-size:13px;margin:0 0 16px;">Не сте вписан вече. Промените, които направите сега, няма да се запазят.</p>
     <button class="btn" style="width:100%;" onclick="location.reload()">Влез отново</button></div>`;
@@ -150,7 +150,7 @@ async function refresh(){
   try{ APPS=await DB.listApplications(); }catch(e){ APPS=APPS||[]; }
 }
 
-function tabBadge(n){return n?` <span style="background:#b5532f;color:#fffdf4;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${n}</span>`:'';}
+function tabBadge(n){return n?` <span style="background:#82303d;color:#f7f7ee;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${n}</span>`:'';}
 function render(){
   if(!admin){gate();return;}
   const badge=DB.live?`<span class="badge live">Свързан Supabase</span>`:`<span class="badge">Демо режим</span>`;
@@ -253,7 +253,7 @@ function archiveAdminView(){
     <select id="recHas" onchange="recArchiveFilter()" style="width:auto;"><option value="">Всички</option><option value="yes">Само със запис</option><option value="no">Без запис</option></select>
   </div>`;
   const rows=evs.map(e=>{
-    const has=e.recording_url?'<span class="pill" style="border-color:#4f7a43;color:#4f7a43;">има запис</span>':'';
+    const has=e.recording_url?'<span class="pill" style="border-color:#507044;color:#507044;">има запис</span>':'';
     return `<div class="card recrow" data-title="${esc((e.title||'').toLowerCase())}" data-year="${(e.date||'').slice(0,4)}" data-fmt="${esc(e.format||'')}" data-has="${e.recording_url?'yes':'no'}" style="margin-bottom:12px;">
       <h3>${esc(e.title)} ${has}</h3>
       <div class="muted" style="margin:3px 0 10px;font-size:12px;">${isoToBg(e.date)} · ${esc(e.format)} · видимо за: ${audLabel(e.aud)}</div>
@@ -273,7 +273,7 @@ function archiveAdminView(){
   }).join('');
   const naForm=`<div style="margin-bottom:14px;">
     <button class="btn ok sm" onclick="naToggle()">+ Нов запис в архива</button>
-    <div id="naForm" style="display:none;border:0.5px solid #e7d9c0;border-radius:10px;padding:12px;margin-top:10px;">
+    <div id="naForm" style="display:none;border:0.5px solid #d9d9c4;border-radius:10px;padding:12px;margin-top:10px;">
       <p class="muted" style="margin:0 0 8px;font-size:12px;">Самостоятелен запис (обобщен, без реално събитие) — показва се само във „Видео архив".</p>
       <label>Заглавие</label><input id="na_title" placeholder="напр. Най-доброто от 2025"/>
       <div class="row2" style="margin-top:8px;">
@@ -347,7 +347,7 @@ function seatsPending(evId){return RES.filter(r=>r.event_id===evId&&(!r.status||
 function seatsInfo(e){
   if(!e.capacity)return '';
   const taken=seatsTaken(e.id), left=e.capacity-taken, pend=seatsPending(e.id);
-  const col=left<=0?'#b5532f':(left<=Math.ceil(e.capacity*0.2)?'#bf8a2e':'#4f7a43');
+  const col=left<=0?'#82303d':(left<=Math.ceil(e.capacity*0.2)?'#6b6b63':'#507044');
   return `<span class="pill" style="border-color:${col};color:${col};">${left<=0?'няма места':'остават '+left+' от '+e.capacity}</span>`+
     (pend?` <span class="pill">${pend} чакащи</span>`:'');
 }
@@ -356,7 +356,7 @@ function tableTaken(evId){return RES.filter(r=>r.table_event_id===evId&&r.status
 function tableInfo(e){
   if(!e.table_capacity)return '';
   const taken=tableTaken(e.id), left=e.table_capacity-taken;
-  const col=left<=0?'#b5532f':(left<=Math.ceil(e.table_capacity*0.2)?'#bf8a2e':'#4f7a43');
+  const col=left<=0?'#82303d':(left<=Math.ceil(e.table_capacity*0.2)?'#6b6b63':'#507044');
   return `<span class="pill" style="border-color:${col};color:${col};">🍽 ${left<=0?'няма маси':'маси: остават '+left+' от '+e.table_capacity}</span>`;
 }
 // разгъващ се списък „кой е запазил" за дадено събитие (билети + маси)
@@ -366,7 +366,7 @@ function eventResList(e){
   const all=tickets.concat(tables);
   if(!all.length)return '';
   const stTxt={confirmed:'одобрена',declined:'отказана'};
-  const stCol={confirmed:'#4f7a43',declined:'#b5532f'};
+  const stCol={confirmed:'#507044',declined:'#82303d'};
   const row=(r,isTable)=>{
     const st=r.status||'requested';
     const nm=r.name||r.who||'член';
@@ -414,7 +414,7 @@ function eventsView(){
   const evCard=e=>{
     const liveNow=admLiveNow(e);
     const waiting=e.stream_url&&e.live_auto&&!liveNow&&!e.live_ended&&!admIsPast(e);
-    const liveBadge=liveNow?'<span class="pill" style="border-color:#d98b6e;color:#d98b6e;">● НА ЖИВО</span>'
+    const liveBadge=liveNow?'<span class="pill" style="border-color:#9a3a49;color:#9a3a49;">● НА ЖИВО</span>'
       :(waiting?`<span class="pill">⏱ авто старт ${esc(e.time||'')}</span>`
       :(e.stream_url?'<span class="pill">стрийм готов</span>':''));
     const liveBtn=e.stream_url
@@ -426,7 +426,7 @@ function eventsView(){
       <div><h3>${esc(e.title)} ${liveBadge}</h3>
         <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)}${e.end_date?' – '+isoToBg(e.end_date):''} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места · ${e.price>0?(e.price+' €/билет'):'безплатно'}</div>
         <div style="margin-top:6px;">${seatsInfo(e)} ${tableInfo(e)}</div>
-        <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)} ${(e.pub&&e.pub.members_only)?'<span class="pill">само членове</span>':'<span class="pill" style="border-color:#2f6b63;color:#2f6b63;">🌐 на сайта</span>'} ${(e.pub&&e.pub.guests)?'<span class="pill" style="border-color:#bf8a2e;color:#bf8a2e;">гости'+(e.pub.guest_from?' от '+isoToBg(e.pub.guest_from):'')+'</span>':''}</div></div>
+        <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)} ${(e.pub&&e.pub.members_only)?'<span class="pill">само членове</span>':'<span class="pill" style="border-color:#507044;color:#507044;">🌐 на сайта</span>'} ${(e.pub&&e.pub.guests)?'<span class="pill" style="border-color:#6b6b63;color:#6b6b63;">гости'+(e.pub.guest_from?' от '+isoToBg(e.pub.guest_from):'')+'</span>':''}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${liveBtn}
         <button class="btn ghost sm" onclick="editEvent('${e.id}')">Редактирай</button>
@@ -456,7 +456,7 @@ function formView(){
     <label>Заглавие</label><input id="f_title" value="${esc(e?e.title:'')}" placeholder="Напр. Гастрономическа вечер"/>
     <label>Описание (по желание)</label><textarea id="f_desc" rows="3" placeholder="Кратко описание — показва се под заглавието на картата.">${esc(e?(e.description||''):'')}</textarea>
     <label style="margin-top:10px;">Етикети (отметни само относимите)</label>
-    <div id="f_tags" style="border:0.5px solid #e7d9c0;border-radius:10px;padding:10px 12px;">
+    <div id="f_tags" style="border:0.5px solid #d9d9c4;border-radius:10px;padding:10px 12px;">
       ${[...new Set(EVTAGS.map(t=>t.g))].map(g=>`<div style="margin-bottom:8px;">
         <div class="muted" style="font-size:11px;letter-spacing:1px;margin-bottom:4px;">${g.toUpperCase()}</div>
         <div style="display:flex;flex-wrap:wrap;gap:10px;">${EVTAGS.filter(t=>t.g===g).map(t=>`<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" id="f_tag_${t.id}" data-tag="${t.id}" ${(e&&Array.isArray(e.tags)&&e.tags.includes(t.id))?'checked':''} style="width:auto;"/> ${t.t}</label>`).join('')}</div>
@@ -481,10 +481,10 @@ function formView(){
     </div>
     <p class="muted" style="margin:2px 0 0;font-size:12px;">Присъствие включва и онлайн + архива; онлайн включва архива. Неотметнато ниво = не се предлага. 0 = безплатно. Цената за архива се задава в таб „Архив".</p>
     <label>Постер / снимка на събитието (по желание)</label>
-    ${e&&e.image_url?`<div style="margin-bottom:8px;"><img src="${esc(e.image_url)}" style="max-width:100%;border-radius:10px;"/><div><a href="#" onclick="clearMedia('img');return false;" style="color:#b5532f;font-size:12px;">Премахни снимката</a></div></div>`:''}
+    ${e&&e.image_url?`<div style="margin-bottom:8px;"><img src="${esc(e.image_url)}" style="max-width:100%;border-radius:10px;"/><div><a href="#" onclick="clearMedia('img');return false;" style="color:#82303d;font-size:12px;">Премахни снимката</a></div></div>`:''}
     <input id="f_img" type="file" accept="image/*"/>
     <label>Видео на събитието (по желание — качи файл)</label>
-    ${e&&e.video_url?`<div style="margin-bottom:8px;"><video src="${esc(e.video_url)}" controls style="max-width:100%;border-radius:10px;"></video><div><a href="#" onclick="clearMedia('vid');return false;" style="color:#b5532f;font-size:12px;">Премахни видеото</a></div></div>`:''}
+    ${e&&e.video_url?`<div style="margin-bottom:8px;"><video src="${esc(e.video_url)}" controls style="max-width:100%;border-radius:10px;"></video><div><a href="#" onclick="clearMedia('vid');return false;" style="color:#82303d;font-size:12px;">Премахни видеото</a></div></div>`:''}
     <input id="f_vid" type="file" accept="video/*"/>
     <div id="f_media_keep" data-img="${esc(e?(e.image_url||''):'')}" data-vid="${esc(e?(e.video_url||''):'')}"></div>
     <label style="margin-top:14px;">Линк за live stream (по желание — YouTube, Vimeo или друг)</label>
@@ -620,23 +620,23 @@ function drawCal(){
   const t=new Date();
   const tIso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
   const sel=inp.dataset.iso||'';
-  let cells=wd.map((w,i)=>`<div style="font-size:11px;color:${i>4?'#c08a6e':'#9a8f7a'};text-align:center;padding:4px 0;">${w}</div>`).join('');
+  let cells=wd.map((w,i)=>`<div style="font-size:11px;color:${i>4?'#9a3a49':'#6b6b63'};text-align:center;padding:4px 0;">${w}</div>`).join('');
   for(let i=0;i<off;i++)cells+='<div></div>';
   for(let d=1;d<=dim;d++){
     const iso=calM.y+'-'+String(calM.m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    const st=iso===sel?'background:#c46a4a;color:#fffdf4;':(iso===tIso?'box-shadow:inset 0 0 0 1px #c46a4a;color:#c46a4a;':'');
+    const st=iso===sel?'background:#82303d;color:#f7f7ee;':(iso===tIso?'box-shadow:inset 0 0 0 1px #82303d;color:#82303d;':'');
     cells+=`<div onclick="pickDate('${iso}')" style="text-align:center;padding:7px 0;border-radius:9px;cursor:pointer;font-size:13px;${st}">${d}</div>`;
   }
   const pop=document.createElement('div');pop.id='acac-cal';
-  pop.style.cssText='position:absolute;z-index:999;background:#fffaf0;border:1px solid #e6d9bd;border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.14);padding:12px;width:266px;';
+  pop.style.cssText='position:absolute;z-index:999;background:#f4f4e8;border:1px solid #d9d9c4;border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.14);padding:12px;width:266px;';
   pop.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
       <button type="button" onclick="calNav(-1)" style="border:0;background:none;cursor:pointer;font-size:17px;padding:4px 12px;">‹</button>
       <b style="font-size:13px;">${months[calM.m]} ${calM.y}</b>
       <button type="button" onclick="calNav(1)" style="border:0;background:none;cursor:pointer;font-size:17px;padding:4px 12px;">›</button></div>
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">${cells}</div>
     <div style="display:flex;justify-content:space-between;margin-top:8px;">
-      <button type="button" onclick="pickDate('${tIso}')" style="border:0;background:none;cursor:pointer;color:#c46a4a;font-size:12px;">Днес</button>
-      <button type="button" onclick="pickDate('')" style="border:0;background:none;cursor:pointer;color:#9a8f7a;font-size:12px;">Изчисти</button></div>`;
+      <button type="button" onclick="pickDate('${tIso}')" style="border:0;background:none;cursor:pointer;color:#82303d;font-size:12px;">Днес</button>
+      <button type="button" onclick="pickDate('')" style="border:0;background:none;cursor:pointer;color:#6b6b63;font-size:12px;">Изчисти</button></div>`;
   const r=inp.getBoundingClientRect();
   pop.style.left=(r.left+window.scrollX)+'px';pop.style.top=(r.bottom+window.scrollY+6)+'px';
   document.body.appendChild(pop);
@@ -729,8 +729,8 @@ function resActs(id,st){
 }
 function resBadge(st){
   if(st==='confirmed')return '<span class="pill audAll">потвърдена</span>';
-  if(st==='declined')return '<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>';
-  if(st==='cancelled')return '<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отменена от член</span>';
+  if(st==='declined')return '<span class="pill" style="border-color:var(--warn);color:#9a3a49;">отказана</span>';
+  if(st==='cancelled')return '<span class="pill" style="border-color:var(--warn);color:#9a3a49;">отменена от член</span>';
   if(st==='pending_payment')return '<span class="pill">чака плащане</span>';
   return '<span class="pill">чакаща</span>';
 }
@@ -752,7 +752,7 @@ function resView(){
   const groups={};
   SRC.forEach(r=>{const k=r.event_id||'other';(groups[k]=groups[k]||[]).push(r);});
   const pend=list=>list.filter(r=>!r.status||r.status==='requested').length;
-  const cnt=n=>n?` <span style="display:inline-block;background:#b5532f;color:#fffdf4;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${n}</span>`:'';
+  const cnt=n=>n?` <span style="display:inline-block;background:#82303d;color:#f7f7ee;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${n}</span>`:'';
   let chips=`<button class="tab ${resFilter==='all'?'on':''}" onclick="setResFilter('all')">Всички${cnt(pend(SRC))}</button>`;
   EVENTS.forEach(e=>{
     if(!groups[e.id])return;
@@ -784,7 +784,7 @@ function resView(){
     const acts=resActs(r.id,st);
     return `<div class="card" id="rescard_${r.id}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
-        <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${r.guest?'<span class="pill" style="border-color:#bf8a2e;color:#bf8a2e;">гост от сайта</span>':esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}${r.paid?' · <b style="color:#3f6235;">платено</b>':''}${r.refunded_at?' · <b style="color:#b5532f;">възстановени '+(r.refund_cents/100).toFixed(2)+' €</b>':''}</div>
+        <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${r.guest?'<span class="pill" style="border-color:#6b6b63;color:#6b6b63;">гост от сайта</span>':esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}${r.paid?' · <b style="color:#3d5634;">платено</b>':''}${r.refunded_at?' · <b style="color:#82303d;">възстановени '+(r.refund_cents/100).toFixed(2)+' €</b>':''}</div>
         ${contact?`<div class="muted" style="margin-top:3px;">${contact}</div>`:''}
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
         <div style="margin-top:7px;" id="resbadge_${r.id}">${badge}${cap}</div></div>
@@ -799,9 +799,9 @@ function resView(){
 function toast(msg,bad){
   let t=document.getElementById('acac-toast');
   if(!t){t=document.createElement('div');t.id='acac-toast';
-    t.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);padding:12px 20px;border-radius:14px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:9999;opacity:0;transition:opacity .25s;max-width:90%;text-align:center;color:#fffdf4;';
+    t.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);padding:12px 20px;border-radius:14px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:9999;opacity:0;transition:opacity .25s;max-width:90%;text-align:center;color:#f7f7ee;';
     document.body.appendChild(t);}
-  t.style.background=bad?'#b05b3f':'#3f6b5e';
+  t.style.background=bad?'#82303d':'#507044';
   t.textContent=msg;t.style.opacity='1';
   clearTimeout(t._h);t._h=setTimeout(()=>{t.style.opacity='0';},3500);
 }
@@ -871,7 +871,7 @@ function statsView(){
   // запълване на предстоящи събития с капацитет
   const fill=upcoming.filter(e=>e.capacity).map(e=>{
     const t=seatsTaken(e.id);const pct=Math.min(100,Math.round(t/e.capacity*100));
-    const col=pct>=90?'#b5532f':(pct>=60?'#bf8a2e':'#4f7a43');
+    const col=pct>=90?'#82303d':(pct>=60?'#6b6b63':'#507044');
     return `<div style="margin-top:10px;"><div style="display:flex;justify-content:space-between;font-size:13px;"><span>${esc(e.title)}</span><span class="muted">${t}/${e.capacity}</span></div>
       <div style="height:8px;border-radius:5px;background:var(--surface2);margin-top:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${col};"></div></div></div>`;
   }).join('')||`<p class="muted" style="margin-top:8px;">Няма предстоящи събития с капацитет.</p>`;
@@ -884,14 +884,14 @@ function statsView(){
   return `<h2>Статистика</h2>
     <div style="display:flex;flex-wrap:wrap;gap:10px;">
       ${stat('Събития общо',EVENTS.length)}
-      ${stat('Предстоящи',upcoming.length,'#4f7a43')}
+      ${stat('Предстоящи',upcoming.length,'#507044')}
       ${stat('Изминали',past.length,'var(--muted)')}
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">
       ${stat('Резервации',RES.length)}
-      ${stat('Чакащи',requested,'#bf8a2e')}
-      ${stat('Одобрени',confirmed,'#4f7a43')}
-      ${stat('Откази',declined,'#b5532f')}
+      ${stat('Чакащи',requested,'#6b6b63')}
+      ${stat('Одобрени',confirmed,'#507044')}
+      ${stat('Откази',declined,'#82303d')}
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">
       ${stat('Билети за събития',tickets.length)}
@@ -1256,12 +1256,12 @@ function pField(f,base){
       ${i>0?`<button class="btn ghost sm" style="position:absolute;bottom:4px;left:4px;padding:2px 7px;" onclick="pubImgsMove('${path}',${i},-1)">‹</button>`:''}</div>`).join('')}</div>
       <input type="file" accept="image/*" multiple onchange="pubImgsAdd(this,'${path}')" style="margin-top:8px;"/>`; }
   if(f.t==='list'){ const list=pList(path);
-    const rows=list.map((it,i)=>`<div class="card" style="margin-top:8px;border-color:#e7d9c0;">
+    const rows=list.map((it,i)=>`<div class="card" style="margin-top:8px;border-color:#d9d9c4;">
       <div style="display:flex;justify-content:space-between;align-items:center;"><b>${i+1}.</b><div style="display:flex;gap:6px;">
         ${i>0?`<button class="btn ghost sm" onclick="pubListMove('${path}',${i},-1)">↑</button>`:''}${i<list.length-1?`<button class="btn ghost sm" onclick="pubListMove('${path}',${i},1)">↓</button>`:''}
         <button class="btn no sm" onclick="pubListDel('${path}',${i})">Изтрий</button></div></div>
       ${f.fields.map(sf=>pField(sf,path+'.'+i)).join('')}</div>`).join('');
-    return `<div style="margin-top:14px;padding-top:10px;border-top:1px dashed #e7d9c0;"><label>${esc(f.label)} (${list.length})</label>${rows}
+    return `<div style="margin-top:14px;padding-top:10px;border-top:1px dashed #d9d9c4;"><label>${esc(f.label)} (${list.length})</label>${rows}
       ${(!f.max||list.length<f.max)?`<button class="btn ghost sm" style="margin-top:8px;" onclick="pubListAdd('${path}')">+ Добави</button>`:''}</div>`; }
   return '';
 }
@@ -1286,7 +1286,7 @@ function publicView(){
   <div class="card"><b>${esc(sec.title)}</b>${sec.help?`<p class="muted">${esc(sec.help)}</p>`:''}
     ${sec.id==='levels'?levelsFields():sec.fields.map(f=>pField(f,'')).join('')}
   </div>
-  <div style="display:flex;gap:10px;margin-top:16px;align-items:center;position:sticky;bottom:10px;background:var(--bg,#f6efe2);padding:10px 0;">
+  <div style="display:flex;gap:10px;margin-top:16px;align-items:center;position:sticky;bottom:10px;background:var(--bg,#ebebd6);padding:10px 0;">
     <button class="btn" id="pubSaveBtn" onclick="savePublic()">Запази публичния сайт</button>
     <a class="btn ghost" href="./" target="_blank">Виж сайта ↗</a>
   </div>`;
@@ -1340,7 +1340,7 @@ function messagesView(){
   const rows=MSGS.map(m=>`<div class="card" style="${m.is_read?'opacity:.75;':'border-color:var(--gold-soft);'}">
     <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
       <div><b>${esc(m.name)}</b> · <a href="mailto:${esc(m.email)}">${esc(m.email)}</a>${m.phone?' · '+esc(m.phone):''}
-        <div class="muted" style="font-size:12px;">${fmt(m.created_at)} · ${m.lang||'bg'} ${m.mailed?'· ✉ изпратено до пощата':'· <span style="color:#b5532f">✉ НЕ е стигнало до пощата (SMTP?)</span>'}</div></div>
+        <div class="muted" style="font-size:12px;">${fmt(m.created_at)} · ${m.lang||'bg'} ${m.mailed?'· ✉ изпратено до пощата':'· <span style="color:#82303d">✉ НЕ е стигнало до пощата (SMTP?)</span>'}</div></div>
       <div style="display:flex;gap:6px;"><button class="btn ghost sm" onclick="msgRead('${m.id}',${m.is_read?'false':'true'})">${m.is_read?'Непрочетено':'Прочетено'}</button><button class="btn no sm" onclick="msgDel('${m.id}')">Изтрий</button></div></div>
     ${m.subject?`<div style="margin-top:8px;"><b>${esc(m.subject)}</b></div>`:''}
     <div style="margin-top:6px;white-space:pre-line;">${esc(m.message)}</div></div>`).join('');
@@ -1351,7 +1351,7 @@ function messagesView(){
     <h2 style="margin-top:28px;">Абонати за нюзлетъра (${subs.length})</h2>
     <p class="muted" style="margin-top:-6px;">Записват се от сайта със съгласие. Експортът е CSV за Mailchimp или друг инструмент.</p>
     <div style="display:flex;gap:10px;margin:8px 0 12px;"><button class="btn ghost sm" onclick="subsCsv()">⬇ Експорт CSV</button></div>
-    <div class="card" style="max-height:360px;overflow:auto;font-size:13px;">${subs.length?subs.map(s=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #f0e6d2;"><span>${esc(s.email)} <span class="muted">· ${s.lang||'bg'} · ${fmt(s.consent_at)}</span></span><button class="btn no sm" style="padding:1px 8px;" onclick="subDel('${esc(s.email)}')">×</button></div>`).join(''):'<span class="muted">Още няма абонати.</span>'}</div>`;
+    <div class="card" style="max-height:360px;overflow:auto;font-size:13px;">${subs.length?subs.map(s=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #e0e0c8;"><span>${esc(s.email)} <span class="muted">· ${s.lang||'bg'} · ${fmt(s.consent_at)}</span></span><button class="btn no sm" style="padding:1px 8px;" onclick="subDel('${esc(s.email)}')">×</button></div>`).join(''):'<span class="muted">Още няма абонати.</span>'}</div>`;
 }
 async function loadMessages(){ MSGS=await DB.listContactMessages(); SUBS=await DB.listSubscribers(); render(); }
 async function msgRead(id,r){ await DB.setMessageRead(id,r); await loadMessages(); }
@@ -1369,7 +1369,7 @@ let draftPubGal=[], draftGuests=false;
 function pubEventBlock(e){
   const p=(e&&e.pub)||{}; const b=(v)=>(v&&typeof v==='object')?v:{bg:v||'',en:''};
   const bi=(id,label,val,rows)=>{const v=b(val); const inp=l=>rows?`<textarea id="${id}_${l}" rows="${rows}" placeholder="${l.toUpperCase()}">${esc(v[l]||'')}</textarea>`:`<input id="${id}_${l}" placeholder="${l.toUpperCase()}" value="${esc(v[l]||'')}"/>`; return `<label style="margin-top:8px;">${label}</label><div class="row2">${inp('bg')}${inp('en')}</div>`;};
-  return `<div class="card" style="margin-top:14px;background:#fbf6ea;border-color:#e7d9c0;"><b>Публичен сайт (ac2.bg)</b>
+  return `<div class="card" style="margin-top:14px;background:#f7f7ee;border-color:#d9d9c4;"><b>Публичен сайт (ac2.bg)</b>
     <p class="muted" style="margin:2px 0 6px;font-size:12px;">Всяко събитие се показва на ac2.bg под своя формат (заглавие, дата, място, цена, снимка, описание) — освен ако е отметнато „само за членове". Гостите (нечленове) могат да купуват билети от сайта само ако е разрешено тук.</p>
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="f_pub_members_only" ${p.members_only?'checked':''} style="width:auto;"/> Само за членове — НЕ се показва на публичния сайт</label>
     <p class="muted" style="margin:4px 0 0;font-size:12px;">Дали гостите (нечленове) могат да резервират/купуват от сайта се отмята по-долу при „Видимо за" — чип „Гости", с дата „записване от" при вълните.</p>
@@ -1416,7 +1416,7 @@ function appsView(){
   const memName2=id=>(MEMBERS.find(m=>m.id===id)||{t:id||'—'}).t;
   const row=a=>{
     const st=a.status||'new';
-    const badge=st==='approved'?'<span class="pill audAll">одобрена</span>':st==='declined'?'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>':'<span class="pill">нова</span>';
+    const badge=st==='approved'?'<span class="pill audAll">одобрена</span>':st==='declined'?'<span class="pill" style="border-color:var(--warn);color:#9a3a49;">отказана</span>':'<span class="pill">нова</span>';
     const isCorp=a.kind==='corporate'||a.membership==='corporate';
     const lines=[];
     lines.push(`${esc(a.email||'')}${a.phone?' · '+esc(a.phone):''}`);
@@ -1448,7 +1448,7 @@ function appsView(){
 }
 function appMark(id,status){
   const a=(APPS||[]).find(x=>x.id===id);if(a)a.status=status;
-  const badge=status==='approved'?'<span class="pill audAll">одобрена</span>':'<span class="pill" style="border-color:var(--warn);color:#d98b6e;">отказана</span>';
+  const badge=status==='approved'?'<span class="pill audAll">одобрена</span>':'<span class="pill" style="border-color:var(--warn);color:#9a3a49;">отказана</span>';
   const be=document.getElementById('appbadge_'+id);if(be)be.innerHTML=badge;
   const ae=document.getElementById('appact_'+id);if(ae)ae.innerHTML=`<button class="btn ghost sm" onclick="delApp('${id}')">Изтрий</button>`;
 }
@@ -1484,7 +1484,7 @@ function peopleView(){
   if(PEOPLE===null){
     if(window.__membersErr)return `<h2>Членове</h2>
       <div class="card" style="border-color:var(--warn);">
-        <b style="color:#d98b6e;">Списъкът не се зареди</b>
+        <b style="color:#9a3a49;">Списъкът не се зареди</b>
         <div class="muted" style="margin-top:4px;">${esc(window.__membersErr)}</div>
         <button class="btn sm" style="margin-top:10px;" onclick="reloadPeople()">Опитай пак</button>
       </div>`;
@@ -1501,7 +1501,7 @@ function peopleView(){
   const personRow=p=>{
     const nm=p.full_name||p.username||p.email||'член';
     const exp=p.membership_until&&p.membership_until<today;
-    const until=p.membership_until?`Членство до ${isoToBg(p.membership_until)}${exp?' · <span style="color:#b5532f;">изтекло</span>':''}`:'Без зададен срок';
+    const until=p.membership_until?`Членство до ${isoToBg(p.membership_until)}${exp?' · <span style="color:#82303d;">изтекло</span>':''}`:'Без зададен срок';
     // връзка към фирма (корпоративни)
     let companyTag='';
     if(p.company_id){
@@ -1514,8 +1514,8 @@ function peopleView(){
     return `<div class="card" style="margin-top:8px;">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
         <div><b>${esc(nm)}</b>${p.role==='admin'?' <span class="pill" style="border-color:var(--gold);color:var(--gold);">админ</span>':''} ${companyTag}
-          <div class="muted" style="margin-top:2px;">${esc(p.email)}${p.phone?' · '+esc(p.phone):' · <span style="color:#bf8a2e;">без телефон</span>'}</div>
-          <div class="muted" style="margin-top:3px;color:${exp?'#b5532f':'var(--mid)'};">${until}</div></div>
+          <div class="muted" style="margin-top:2px;">${esc(p.email)}${p.phone?' · '+esc(p.phone):' · <span style="color:#6b6b63;">без телефон</span>'}</div>
+          <div class="muted" style="margin-top:3px;color:${exp?'#82303d':'var(--mid)'};">${until}</div></div>
       </div>
       <div class="row2" style="margin-top:10px;align-items:center;">
         <div><input id="${fid}" readonly placeholder="удължи от дата (по подразб. днес)" data-iso="" onclick="openCal('${fid}')" style="cursor:pointer;"/></div>

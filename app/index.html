@@ -19,7 +19,7 @@
 <!-- Sentry — мониторинг на грешки (зарежда се рано, за да улавя всичко) -->
 <script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#f6efe2" />
+<meta name="theme-color" content="#ebebd6" />
 <script>(function(){try{if(localStorage.getItem('acac_textbig')==='1')document.documentElement.style.zoom='1.15';}catch(e){}})();</script>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -34,11 +34,11 @@
 <style>
   :root{
     /* Топла редакторска палитра (палитра A) */
-    --bg:#f6efe2; --surface:#fffaf0; --surface2:#f7edda;
-    --gold:#c8643c; --gold-bright:#d77a4f; --gold-soft:#b07a4a;
-    --cream:#3a2c23; --text:#5a4a3c; --mid:#8a6f5c; --muted:#a8927c;
-    --line:rgba(58,44,35,0.16); --line-soft:rgba(58,44,35,0.07);
-    --oncolor:#fdf3e3; --medallion:#2e231b;
+    --bg:#ebebd6; --surface:#f4f4e8; --surface2:#e0e0c8;
+    --gold:#82303d; --gold-bright:#9a3a49; --gold-soft:#652430;
+    --cream:#000000; --text:#1c1c1b; --mid:#4b4b45; --muted:#6b6b63;
+    --line:rgba(0,0,0,0.16); --line-soft:rgba(0,0,0,0.07);
+    --oncolor:#ebebd6; --medallion:#000000;
     --serif:'Playfair Display',Georgia,serif;
 --sans:'Google Sans Flex','Google Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   }
@@ -50,8 +50,8 @@
   .topbar .mark{font-family:var(--serif);font-style:italic;color:var(--gold);font-size:18px;letter-spacing:0;display:flex;align-items:center;gap:8px;cursor:pointer;}
   .topbar .mark img{width:32px;height:32px;background:var(--medallion);border-radius:50%;padding:3px;object-fit:contain;}
   .pill{border:none;border-radius:20px;padding:7px 14px;color:var(--gold);font-size:13px;letter-spacing:1px;cursor:pointer;background:var(--bg);
-    box-shadow:3px 3px 7px #d9cdb6,-3px -3px 7px #fffdf4;}
-  .pill:active{box-shadow:inset 2px 2px 5px #d9cdb6,inset -2px -2px 5px #fffdf4;transform:scale(.98);}
+    box-shadow:3px 3px 7px #cfcfbb,-3px -3px 7px #f7f7ee;}
+  .pill:active{box-shadow:inset 2px 2px 5px #cfcfbb,inset -2px -2px 5px #f7f7ee;transform:scale(.98);}
   .back{color:var(--gold);font-size:22px;cursor:pointer;line-height:1;padding-right:6px;}
   .hero{text-align:center;padding:34px 20px 10px;}
   .hero .ac2{width:92px;height:92px;margin:0 auto 14px;display:block;background:var(--medallion);border-radius:50%;padding:12px;object-fit:contain;}
@@ -61,22 +61,22 @@
   .sec-title{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;padding:24px 20px 2px;}
   .resday{color:var(--mid);font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:capitalize;margin:14px 0 8px;border-left:3px solid var(--gold-soft);padding:2px 0 2px 10px;}
   .daybody{animation:fadeIn .2s ease;}
-  .memcard{position:relative;border-radius:20px;padding:20px;color:#f3e8d0;overflow:hidden;
-    background:linear-gradient(135deg,#4a3a2e 0%,#2e241d 60%,#3b2c22 100%);box-shadow:7px 7px 16px #d9cdb6,-7px -7px 16px #fffdf4;}
-  .memcard .mc-top{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#cbb389;}
+  .memcard{position:relative;border-radius:20px;padding:20px;color:#ebebd6;overflow:hidden;
+    background:linear-gradient(135deg,#1a1a1a 0%,#000000 60%,#161616 100%);box-shadow:7px 7px 16px #cfcfbb,-7px -7px 16px #f7f7ee;}
+  .memcard .mc-top{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#bfc0c2;}
   .memcard .mc-top img{width:26px;height:26px;border-radius:6px;}
-  .memcard .mc-name{font-family:var(--serif);font-style:italic;font-size:23px;margin-top:18px;color:#fbf3e2;}
-  .memcard .mc-lvl{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#d8b878;margin-top:3px;}
+  .memcard .mc-name{font-family:var(--serif);font-style:italic;font-size:23px;margin-top:18px;color:#ebebd6;}
+  .memcard .mc-lvl{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#bfc0c2;margin-top:3px;}
   .memcard .mc-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:18px;}
-  .memcard .mc-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#a9906c;}
-  .memcard .mc-val{font-size:15px;color:#f3e8d0;letter-spacing:1px;}
-  .memcard .mc-qr{width:64px;height:64px;border-radius:8px;background:#43352b;padding:3px;}
+  .memcard .mc-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#9a9a92;}
+  .memcard .mc-val{font-size:15px;color:#ebebd6;letter-spacing:1px;}
+  .memcard .mc-qr{width:64px;height:64px;border-radius:8px;background:#000000;padding:3px;}
   .evposter{width:100%;border-radius:12px;margin-bottom:12px;display:block;object-fit:cover;max-height:240px;}
   .evvideo{width:100%;border-radius:12px;margin:10px 0 4px;display:block;background:#000;max-height:300px;}
   .sec-sub{color:var(--muted);font-size:13px;padding:0 20px 10px;}
   /* Предстоящи — програма (timeline) във вдълбано поле */
   .fcard.dim{opacity:.5;}
-  .upbox{margin:0 20px;background:var(--bg);border-radius:16px;padding:16px 16px 8px;box-shadow:inset 5px 5px 11px #d6c9b1, inset -5px -5px 11px #fffdf6;}
+  .upbox{margin:0 20px;background:var(--bg);border-radius:16px;padding:16px 16px 8px;box-shadow:inset 5px 5px 11px #cfcfbb, inset -5px -5px 11px #f7f7ee;}
   .uptl{position:relative;}
   .uptl::before{content:"";position:absolute;left:55px;top:6px;bottom:16px;width:2px;background:var(--line);}
   .uprow{position:relative;padding-left:60px;margin-bottom:16px;cursor:pointer;}
@@ -90,7 +90,7 @@
   /* Новини от клуба — вдълбана карта, без лого */
   .newswrap{padding:0 20px;}
   .newscard{position:relative;background:var(--bg);border-radius:16px;padding:14px 16px;margin-bottom:12px;
-    box-shadow:inset 5px 5px 11px #d6c9b1, inset -5px -5px 11px #fffdf6;}
+    box-shadow:inset 5px 5px 11px #cfcfbb, inset -5px -5px 11px #f7f7ee;}
   .newscard .nrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
   .newscard h3{color:var(--cream);font-size:17px;margin:0;font-family:var(--serif,Georgia,serif);font-weight:600;line-height:1.25;display:flex;align-items:center;gap:8px;min-width:0;}
   .newscard .ntext{color:var(--text);font-size:13px;line-height:1.5;margin-top:5px;white-space:pre-wrap;}
@@ -101,12 +101,12 @@
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px;}
   .grid{gap:16px;}
   .fcard{display:flex;flex-direction:column;min-height:178px;border-radius:22px;padding:16px;
-    cursor:pointer;background:var(--bg);box-shadow:8px 8px 16px #d9cdb6,-8px -8px 16px #fffdf4;
+    cursor:pointer;background:var(--bg);box-shadow:8px 8px 16px #cfcfbb,-8px -8px 16px #f7f7ee;
     transition:box-shadow .25s,transform .2s;animation:fadeIn .45s ease both;}
-  .fcard:active{box-shadow:inset 6px 6px 12px #d9cdb6,inset -6px -6px 12px #fffdf4;transform:scale(.99);}
+  .fcard:active{box-shadow:inset 6px 6px 12px #cfcfbb,inset -6px -6px 12px #f7f7ee;transform:scale(.99);}
   .fcard .top{display:flex;justify-content:space-between;align-items:flex-start;}
   .fcard .well{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
-    background:var(--bg);box-shadow:inset 3px 3px 6px #d9cdb6,inset -3px -3px 6px #fffdf4;}
+    background:var(--bg);box-shadow:inset 3px 3px 6px #cfcfbb,inset -3px -3px 6px #f7f7ee;}
   .fcard .well svg{width:26px;height:26px;}
   .fcard .ac2{font-family:var(--serif);font-style:italic;font-size:17px;opacity:.85;}
   .fcard .body{margin-top:auto;}
@@ -114,7 +114,7 @@
   .fcard h3{font-family:var(--serif);font-style:italic;color:var(--cream);font-size:25px;font-weight:500;line-height:1;margin-top:3px;}
   .fcard .body span{color:var(--mid);font-size:11px;margin-top:4px;display:block;}
   .fcard .evbadge{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:var(--text);
-    background:var(--bg);padding:5px 11px;border-radius:12px;box-shadow:3px 3px 7px #d9cdb6,-3px -3px 7px #fffdf4;}
+    background:var(--bg);padding:5px 11px;border-radius:12px;box-shadow:3px 3px 7px #cfcfbb,-3px -3px 7px #f7f7ee;}
   .fcard .evdot{width:8px;height:8px;border-radius:50%;animation:evp 1.8s ease-in-out infinite;}
   @keyframes evp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
   .grid .fcard:nth-child(2){animation-delay:.05s}.grid .fcard:nth-child(3){animation-delay:.1s}
@@ -127,7 +127,7 @@
     transition:opacity .5s ease;}
   #splash.gone{opacity:0;pointer-events:none;}
   #splash .sp-ring{width:128px;height:128px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    box-shadow:9px 9px 22px #d6c9b1,-9px -9px 22px #fffdf6;
+    box-shadow:9px 9px 22px #cfcfbb,-9px -9px 22px #f7f7ee;
     animation:spRing .9s cubic-bezier(.2,.8,.2,1) both;}
   #splash .sp-ring::after{content:"";position:absolute;width:128px;height:128px;border-radius:50%;border:2px solid var(--gold);
     opacity:0;animation:spPulse 1.8s ease-out .5s infinite;}
@@ -140,7 +140,7 @@
   @keyframes spPulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.5);opacity:0}}
   /* Pull-to-refresh индикатор */
   #ptr{position:fixed;top:env(safe-area-inset-top,0px);left:50%;transform:translate(-50%,-46px);z-index:1500;width:34px;height:34px;border-radius:50%;
-    background:var(--surface);box-shadow:0 4px 12px rgba(58,44,35,.18);display:flex;align-items:center;justify-content:center;
+    background:var(--surface);box-shadow:0 4px 12px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;
     transition:transform .2s ease,opacity .2s ease;opacity:0;color:var(--gold);}
   #ptr.show{opacity:1;}
   #ptr svg{width:18px;height:18px;}
@@ -159,13 +159,13 @@
   .grid>*:nth-child(6){animation-delay:.25s}.grid>*:nth-child(7){animation-delay:.3s}.grid>*:nth-child(n+8){animation-delay:.35s}
   .page .ev{animation:cardIn .38s ease backwards}
   .chip.pop{animation:popIn .42s cubic-bezier(.3,1.5,.5,1)}
-  .skel{border-radius:16px;height:96px;margin-bottom:14px;background:linear-gradient(90deg,var(--surface2) 25%,#efe6d3 37%,var(--surface2) 63%);background-size:400px 100%;animation:shimmer 1.2s infinite linear;}
+  .skel{border-radius:16px;height:96px;margin-bottom:14px;background:linear-gradient(90deg,var(--surface2) 25%,#e0e0c8 37%,var(--surface2) 63%);background-size:400px 100%;animation:shimmer 1.2s infinite linear;}
   @media (prefers-reduced-motion:reduce){.grid>*,.page .ev,.chip.pop,#app.nav,.nb,.skel{animation:none!important}}
   .tile{background:var(--bg);border-radius:16px;padding:18px;text-align:center;cursor:pointer;
-    box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;transition:box-shadow .2s,transform .15s;}
-  .tile:active{box-shadow:inset 5px 5px 10px #d9cdb6,inset -5px -5px 10px #fffdf4;transform:scale(.99);}
+    box-shadow:7px 7px 14px #cfcfbb,-7px -7px 14px #f7f7ee;transition:box-shadow .2s,transform .15s;}
+  .tile:active{box-shadow:inset 5px 5px 10px #cfcfbb,inset -5px -5px 10px #f7f7ee;transform:scale(.99);}
   .tile .ic{width:54px;height:54px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;
-    background:var(--bg);box-shadow:inset 3px 3px 6px #d9cdb6,inset -3px -3px 6px #fffdf4;}
+    background:var(--bg);box-shadow:inset 3px 3px 6px #cfcfbb,inset -3px -3px 6px #f7f7ee;}
   .tile .ic svg{width:27px;height:27px;}
   .pill svg{width:17px;height:17px;display:block;}
   .tile .lb{color:var(--text);font-size:14px;margin-top:7px;}
@@ -182,12 +182,12 @@
   @media (prefers-reduced-motion:reduce){.livedot{animation:none;}}
   .ytbox iframe,.ytbox>div{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;border:0;}
   .liveposter{position:relative;padding-top:56.25%;margin-top:12px;border-radius:10px;overflow:hidden;cursor:pointer;
-    background:radial-gradient(circle at 50% 42%,#3a3330,#1a1614);}
+    background:radial-gradient(circle at 50% 42%,#2a2a2a,#000000);}
   .liveposter .playbtn{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);width:62px;height:62px;border-radius:50%;
     background:rgba(224,48,30,.92);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;padding-left:4px;
     box-shadow:0 6px 18px rgba(0,0,0,.4);transition:transform .15s;}
   .liveposter:active .playbtn{transform:translate(-50%,-50%) scale(.93);}
-  .liveposter .pl{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#f6efe2;font-size:13px;letter-spacing:.4px;}
+  .liveposter .pl{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#ebebd6;font-size:13px;letter-spacing:.4px;}
   .contact{margin:32px 20px 0;border-top:1px solid var(--line-soft);padding:22px 0;text-align:center;color:var(--mid);font-size:14px;line-height:1.9;}
   .contact .tag{color:var(--gold);letter-spacing:2px;margin-bottom:8px;font-size:13px;}
   .page{padding:16px;}
@@ -195,30 +195,30 @@
   .banner .ov{position:absolute;inset:0;background:rgba(26,20,16,.25);}
   .banner img{width:78px;height:78px;position:relative;}
   .banner h2{position:relative;font-family:var(--serif);font-style:italic;color:var(--oncolor);font-size:26px;letter-spacing:0;margin-top:6px;font-weight:500;}
-  .fbanner{background:var(--bg);border-radius:18px;padding:12px 12px 6px;text-align:center;box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;}
+  .fbanner{background:var(--bg);border-radius:18px;padding:12px 12px 6px;text-align:center;box-shadow:7px 7px 14px #cfcfbb,-7px -7px 14px #f7f7ee;}
   .fbanner img{width:100%;max-width:360px;display:block;margin:0 auto;}
   .fbanner h2{font-family:var(--serif);font-style:italic;font-size:25px;letter-spacing:0;font-weight:500;margin:2px 0 8px;}
   .bul{display:flex;gap:11px;padding:7px 4px;}
   .bul .d{color:var(--gold-soft);font-size:10px;margin-top:6px;}
   .bul .x{color:var(--text);font-size:16px;line-height:1.4;}
-  .btn{display:block;width:100%;background:var(--gold);color:#fff7ea;border:none;border-radius:14px;padding:15px;
+  .btn{display:block;width:100%;background:var(--gold);color:#f4f4e8;border:none;border-radius:14px;padding:15px;
     font-size:16px;font-weight:600;letter-spacing:1px;cursor:pointer;font-family:inherit;text-align:center;
-    box-shadow:6px 6px 14px #d9cdb6,-6px -6px 14px #fffdf4;transition:box-shadow .2s,transform .12s;}
+    box-shadow:6px 6px 14px #cfcfbb,-6px -6px 14px #f7f7ee;transition:box-shadow .2s,transform .12s;}
   .btn:active{box-shadow:inset 4px 4px 9px rgba(120,45,20,.35),inset -2px -2px 6px rgba(255,255,255,.15);transform:scale(.99);}
-  .btn-ghost{background:var(--bg);color:var(--gold);box-shadow:6px 6px 14px #d9cdb6,-6px -6px 14px #fffdf4;margin-top:11px;}
+  .btn-ghost{background:var(--bg);color:var(--gold);box-shadow:6px 6px 14px #cfcfbb,-6px -6px 14px #f7f7ee;margin-top:11px;}
   label{display:block;color:var(--mid);font-size:13px;margin:0 0 6px;}
   input,select,textarea{width:100%;background:var(--bg);border:none;border-radius:12px;
     padding:14px;color:var(--cream);font-size:16px;font-family:inherit;margin-bottom:14px;
-    box-shadow:inset 4px 4px 8px #d9cdb6,inset -4px -4px 8px #fffdf4;}
-  input:focus,select:focus,textarea:focus{outline:none;box-shadow:inset 5px 5px 10px #d9cdb6,inset -5px -5px 10px #fffdf4;}
-  .ev{background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;}
+    box-shadow:inset 4px 4px 8px #cfcfbb,inset -4px -4px 8px #f7f7ee;}
+  input:focus,select:focus,textarea:focus{outline:none;box-shadow:inset 5px 5px 10px #cfcfbb,inset -5px -5px 10px #f7f7ee;}
+  .ev{background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:7px 7px 14px #cfcfbb,-7px -7px 14px #f7f7ee;}
   .ev .t{color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase;}
   .ev h3{color:var(--cream);font-size:17px;font-weight:500;margin-top:6px;line-height:1.3;}
   .ev .m{color:var(--muted);font-size:13px;margin-top:6px;}
   .ev .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px;}
   .ev .suggest{display:flex;align-items:center;gap:11px;margin-top:13px;padding:11px 13px;border-radius:13px;cursor:pointer;
-    background:var(--bg);box-shadow:inset 3px 3px 6px #d9cdb6,inset -3px -3px 6px #fffdf4;}
-  .ev .suggest .si{color:#2f6b63;display:flex;flex:none;}
+    background:var(--bg);box-shadow:inset 3px 3px 6px #cfcfbb,inset -3px -3px 6px #f7f7ee;}
+  .ev .suggest .si{color:#507044;display:flex;flex:none;}
   .ev .suggest .si svg{width:24px;height:24px;}
   .ev .suggest b{display:block;color:var(--cream);font-size:13px;font-weight:500;}
   .ev .suggest small{color:var(--muted);font-size:11px;}
@@ -241,7 +241,7 @@
   .sheetbd.open{opacity:1;pointer-events:auto;}
   .sheet{position:fixed;left:50%;bottom:0;z-index:1900;width:100%;max-width:480px;background:var(--bg);border-radius:24px 24px 0 0;
     padding:8px 20px calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,110%);
-    transition:transform .34s cubic-bezier(.2,.8,.2,1);box-shadow:0 -8px 26px rgba(58,44,35,.22);max-height:86vh;overflow:auto;}
+    transition:transform .34s cubic-bezier(.2,.8,.2,1);box-shadow:0 -8px 26px rgba(0,0,0,.22);max-height:86vh;overflow:auto;}
   .sheet.open{transform:translate(-50%,0);}
   .sheet .handle{width:42px;height:5px;border-radius:3px;background:var(--line);margin:6px auto 14px;}
   .sheet h3{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--cream);font-weight:500;margin:0 0 2px;}
@@ -281,26 +281,26 @@
   /* Печат при успешна резервация */
   .stamp{position:fixed;inset:0;z-index:2200;display:flex;align-items:center;justify-content:center;pointer-events:none;background:rgba(40,30,22,.16);transition:opacity .3s;}
   .stamp.out{opacity:0;}
-  .stamp .stampin{width:96px;height:96px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 32px rgba(58,44,35,.3);animation:stampIn .4s cubic-bezier(.2,1.5,.4,1);}
+  .stamp .stampin{width:96px;height:96px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 32px rgba(0,0,0,.3);animation:stampIn .4s cubic-bezier(.2,1.5,.4,1);}
   .stamp svg{width:56px;height:56px;}
   .stamp .sc{fill:none;stroke:var(--gold);stroke-width:3;stroke-dasharray:151;stroke-dashoffset:151;animation:vdash .5s ease .08s forwards;}
   .stamp .sk{fill:none;stroke:var(--gold);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:42;stroke-dashoffset:42;animation:vdash .35s ease .42s forwards;}
   @keyframes stampIn{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
   @keyframes vdash{to{stroke-dashoffset:0}}
   /* Пръстен на валидността */
-  .vrow{display:flex;align-items:center;gap:14px;background:var(--bg);border-radius:15px;box-shadow:inset 5px 5px 11px #d6c9b1, inset -5px -5px 11px #fffdf6;padding:15px 17px;margin-top:12px;}
+  .vrow{display:flex;align-items:center;gap:14px;background:var(--bg);border-radius:15px;box-shadow:inset 5px 5px 11px #cfcfbb, inset -5px -5px 11px #f7f7ee;padding:15px 17px;margin-top:12px;}
   .vwell{position:relative;flex:none;width:54px;height:54px;}
-  .vwell .vin{position:absolute;inset:0;border-radius:50%;box-shadow:inset 3px 3px 7px #d6c9b1, inset -3px -3px 7px #fffdf6;}
+  .vwell .vin{position:absolute;inset:0;border-radius:50%;box-shadow:inset 3px 3px 7px #cfcfbb, inset -3px -3px 7px #f7f7ee;}
   .vwell svg{position:absolute;inset:0;width:54px;height:54px;}
   .vctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
   .vctr img{width:28px;height:auto;object-fit:contain;}
-  .vctr.num b{font-family:var(--serif);font-style:italic;font-size:16px;line-height:1;color:#b5532f;}
+  .vctr.num b{font-family:var(--serif);font-style:italic;font-size:16px;line-height:1;color:#82303d;}
   .vctr.num span{font-size:8px;text-transform:uppercase;color:var(--muted);}
   .vcol{flex:1;min-width:0;}
   .vtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
   .vdt{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--cream);}
   .vmuted{color:var(--muted);font-size:12px;white-space:nowrap;}
-  .vwarn{color:#b5532f;font-size:13px;margin-top:4px;}
+  .vwarn{color:#82303d;font-size:13px;margin-top:4px;}
   /* Изплуване при скрол */
   .sr{opacity:0;transform:translateY(16px);animation:none !important;}
   .sr.shown{opacity:1;transform:none;transition:opacity .55s cubic-bezier(.2,.7,.2,1),transform .55s cubic-bezier(.2,.7,.2,1);}
@@ -308,15 +308,15 @@
   @media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}}
   .ev .tablebox input{margin-bottom:0;}
   .chip{border:none;border-radius:20px;padding:8px 14px;font-size:13px;color:var(--gold);background:var(--bg);cursor:pointer;
-    white-space:nowrap;line-height:1;box-shadow:4px 4px 9px #d9cdb6,-4px -4px 9px #fffdf4;}
+    white-space:nowrap;line-height:1;box-shadow:4px 4px 9px #cfcfbb,-4px -4px 9px #f7f7ee;}
   .ev .row .chip{flex:1 1 auto;text-align:center;}
-  .chip.on{background:var(--gold);color:#fff7ea;font-weight:600;box-shadow:inset 3px 3px 6px rgba(120,45,20,.3),inset -2px -2px 5px rgba(255,255,255,.2);}
+  .chip.on{background:var(--gold);color:#f4f4e8;font-weight:600;box-shadow:inset 3px 3px 6px rgba(120,45,20,.3),inset -2px -2px 5px rgba(255,255,255,.2);}
   .chip.ghost{box-shadow:none;color:var(--mid);background:transparent;}
   .chip.locked{color:var(--mid);background:var(--surface2);font-size:12px;cursor:default;display:inline-flex;align-items:center;
-    box-shadow:inset 2px 2px 5px #e0d4bd,inset -2px -2px 5px #fffdf4;}
+    box-shadow:inset 2px 2px 5px #cfcfbb,inset -2px -2px 5px #f7f7ee;}
   .chip.locked svg{color:var(--gold);}
-  .mcard{background:var(--bg);border-radius:16px;margin-bottom:14px;overflow:hidden;box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;}
-  .panel{background:var(--bg);border-radius:18px;box-shadow:7px 7px 14px #d9cdb6,-7px -7px 14px #fffdf4;}
+  .mcard{background:var(--bg);border-radius:16px;margin-bottom:14px;overflow:hidden;box-shadow:7px 7px 14px #cfcfbb,-7px -7px 14px #f7f7ee;}
+  .panel{background:var(--bg);border-radius:18px;box-shadow:7px 7px 14px #cfcfbb,-7px -7px 14px #f7f7ee;}
   .mhead{display:flex;justify-content:space-between;align-items:center;padding:17px;cursor:pointer;}
   .mhead h3{font-family:var(--serif);font-style:italic;color:var(--cream);font-size:20px;font-weight:700;letter-spacing:0;}
   .mhead .tg{color:var(--gold);font-size:12px;letter-spacing:1px;margin-top:3px;}
@@ -327,22 +327,22 @@
   .selrow{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
   .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--bg);
     color:var(--cream);padding:12px 22px;border-radius:24px;font-size:14px;z-index:60;opacity:0;transition:opacity .3s;pointer-events:none;
-    box-shadow:6px 6px 14px #d9cdb6,-6px -6px 14px #fffdf4;}
+    box-shadow:6px 6px 14px #cfcfbb,-6px -6px 14px #f7f7ee;}
   .toast.show{opacity:1;}
   .tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));
     width:min(94%,500px);display:flex;padding:6px;border-radius:34px;
     background:rgba(241,232,214,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-    box-shadow:0 12px 30px rgba(58,44,35,.25),inset 0 1px 0 rgba(255,255,255,.7);
+    box-shadow:0 12px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.7);
     transition:transform .2s cubic-bezier(.2,.8,.2,1),opacity .2s;}
   .tabbar.mini{transform:translateX(-50%) scale(.92) translateY(5px);opacity:.9;}
   .tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 7px;color:var(--muted);font-size:9.5px;text-decoration:none;cursor:pointer;transition:color .2s;}
   .tabbar a .ti{display:flex;align-items:center;justify-content:center;position:relative;}
   .tabbar a .ti svg{width:23px;height:23px;}
-  .nb{position:absolute;top:-7px;right:-11px;background:#b5532f;color:#fffdf4;font-size:10px;line-height:1;font-weight:700;padding:3px 5px;border-radius:10px;min-width:9px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.25);animation:badgePulse 1.6s ease-in-out infinite;}
+  .nb{position:absolute;top:-7px;right:-11px;background:#82303d;color:#f7f7ee;font-size:10px;line-height:1;font-weight:700;padding:3px 5px;border-radius:10px;min-width:9px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.25);animation:badgePulse 1.6s ease-in-out infinite;}
   .livetab{position:absolute;top:-4px;right:-7px;width:9px;height:9px;border-radius:50%;background:#e0301e;box-shadow:0 0 0 2px var(--surface);animation:heartbeat 1.4s ease-in-out infinite;}
   @media (prefers-reduced-motion:reduce){.livetab{animation:none;}}
   .tabbar a.active{color:var(--gold);}
-  .tabbar a.active .ti{background:#f1e8d6;border-radius:50%;box-shadow:3px 3px 6px #d3c6ad,-3px -3px 6px #fff;padding:7px;margin-top:-2px;}
+  .tabbar a.active .ti{background:#e0e0c8;border-radius:50%;box-shadow:3px 3px 6px #cfcfbb,-3px -3px 6px #fff;padding:7px;margin-top:-2px;}
   @keyframes ac2In{from{opacity:0;transform:scale(.7);}to{opacity:1;transform:scale(1);}}
   @keyframes ringDraw{from{opacity:0;transform:scale(.55);}to{opacity:1;transform:scale(1);}}
   @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
@@ -365,7 +365,7 @@
   .land .topbar .acts{display:flex;gap:8px;align-items:center;}
   /* „Members only" екран — цял прозорец, подредба като BestSecret (лого горе вляво, текст и вход долу вляво) */
   #app.full{max-width:none;padding:0;}
-  .gatehero{position:relative;min-height:100vh;min-height:100svh;overflow:hidden;background:#1d1611;color:#f3e9d6;display:flex;flex-direction:column;}
+  .gatehero{position:relative;min-height:100vh;min-height:100svh;overflow:hidden;background:#000000;color:#ebebd6;display:flex;flex-direction:column;}
   .gatehero video,.gatehero .poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
   .gatehero .poster{background-size:cover;background-position:center;animation:kenburns 26s ease-in-out infinite alternate;transform-origin:52% 45%;}
   @keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.09)}}
@@ -374,23 +374,23 @@
   .gatehero .grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");}
   .gatehero .shade{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(20,14,10,.35) 0%,rgba(20,14,10,.15) 40%,rgba(20,14,10,.78) 100%);}
   @media(prefers-reduced-motion:reduce){.gatehero .poster,.gatehero .warm{animation:none;}}
-  .gatehero .tl{position:absolute;top:30px;left:40px;z-index:3;width:110px;color:#f3e9d6;}
+  .gatehero .tl{position:absolute;top:30px;left:40px;z-index:3;width:110px;color:#ebebd6;}
   .gatehero .tr{position:absolute;top:26px;right:40px;z-index:3;}
-  .gatehero .tr .pill{background:rgba(246,239,226,.14);color:#f3e9d6;border-color:rgba(246,239,226,.35);box-shadow:none;}
+  .gatehero .tr .pill{background:rgba(246,239,226,.14);color:#ebebd6;border-color:rgba(246,239,226,.35);box-shadow:none;}
   .gatehero .bottom{position:relative;z-index:2;flex:0 0 auto;display:flex;flex-direction:column;padding:0 40px 48px;}
   .gatehero .bl{position:relative;max-width:640px;}
-  .gatehero .tag{font-size:11.5px;letter-spacing:2px;line-height:1.75;text-transform:uppercase;color:#d8c39a;max-width:480px;margin:-6px 0 24px;}
-  .gatehero h1{font-family:var(--serif);font-style:italic;font-size:clamp(40px,7vw,84px);font-weight:700;line-height:1;letter-spacing:0;margin:0 0 18px;color:#f7efe0;}
+  .gatehero .tag{font-size:11.5px;letter-spacing:2px;line-height:1.75;text-transform:uppercase;color:#bfc0c2;max-width:480px;margin:-6px 0 24px;}
+  .gatehero h1{font-family:var(--serif);font-style:italic;font-size:clamp(40px,7vw,84px);font-weight:700;line-height:1;letter-spacing:0;margin:0 0 18px;color:#ebebd6;}
   .gatehero .acts{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
   .gatehero .acts .btn{margin:0;width:auto;min-width:220px;box-shadow:none;border-radius:6px;letter-spacing:2px;text-transform:uppercase;font-size:13px;}
-  .gatehero .acts a{color:#f3e9d6;text-decoration:underline;text-underline-offset:5px;cursor:pointer;font-size:14px;}
+  .gatehero .acts a{color:#ebebd6;text-decoration:underline;text-underline-offset:5px;cursor:pointer;font-size:14px;}
   @media(max-width:640px){.gatehero .tr{right:20px;top:18px;}.gatehero .bottom{padding:0 20px 36px;}.gatehero .tag{font-size:10.5px;letter-spacing:1.5px;line-height:1.7;max-width:100%;}}
   /* --- начален екран: лого в центъра с лъч + жива лента с човечета --- */
   .gatehero .beam{position:absolute;left:-30%;top:-40%;width:38%;height:180%;z-index:1;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,220,160,.10),transparent);transform:rotate(18deg);animation:gbeam 8s ease-in-out infinite;}
   @keyframes gbeam{0%,22%{left:-45%}70%,100%{left:125%}}
   .gatehero .logoarea{position:relative;z-index:2;flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:84px 24px 16px;}
   .gatehero .biglogo{width:min(46vw,520px);max-height:100%;filter:drop-shadow(0 10px 40px rgba(0,0,0,.5));}
-  .gatehero .frieze{position:relative;width:100%;color:#e9c98a;opacity:.95;pointer-events:none;filter:drop-shadow(0 0 2.5px rgba(233,201,138,.35));margin-bottom:max(40px,6vh);}
+  .gatehero .frieze{position:relative;width:100%;color:#bfc0c2;opacity:.95;pointer-events:none;filter:drop-shadow(0 0 2.5px rgba(191,192,194,.35));margin-bottom:max(40px,6vh);}
   .gatehero .frieze svg{display:block;width:100%;height:auto;overflow:visible;}
   .gatehero .frieze svg *{stroke:currentColor;fill:none;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;}
   .gatehero .frieze svg .d{opacity:.5;}
@@ -445,7 +445,7 @@
   .land .hero .ring img{width:80px;height:60px;object-fit:contain;}
   .land .hero h1{font-family:var(--serif);font-style:italic;font-size:clamp(28px,5vw,42px);font-weight:500;letter-spacing:0;line-height:1.15;margin:22px 0 10px;color:var(--text);}
   .land .hero .lead{color:var(--mid);font-size:16px;line-height:1.55;max-width:600px;margin:0 auto;}
-  .land .hero .heroimg{width:100%;max-height:360px;object-fit:cover;border-radius:22px;margin-top:26px;box-shadow:var(--shadow-out,0 10px 30px rgba(58,44,35,.12));}
+  .land .hero .heroimg{width:100%;max-height:360px;object-fit:cover;border-radius:22px;margin-top:26px;box-shadow:var(--shadow-out,0 10px 30px rgba(0,0,0,.12));}
   .land .cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px;}
   .land section{margin-top:44px;}
   .land .kicker{color:var(--gold);font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;}
@@ -476,7 +476,7 @@
   .land .ftxt .kicker{margin-bottom:2px;}
   .land .ftxt p{color:var(--mid);font-size:15px;line-height:1.65;margin:0;}
   /* членства — „За вас е, ако…" */
-  .land .mcard{background:var(--card,#fffdf4);border:1px solid var(--line-soft);border-radius:22px;padding:22px;display:flex;flex-direction:column;}
+  .land .mcard{background:var(--card,#f7f7ee);border:1px solid var(--line-soft);border-radius:22px;padding:22px;display:flex;flex-direction:column;}
   .land .mcard .tag{color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase;}
   .land .mcard h3{font-family:var(--serif);font-style:italic;font-size:24px;font-weight:500;margin:6px 0 8px;}
   .land .mcard .hook{font-family:var(--serif);font-style:italic;font-size:17px;line-height:1.4;color:var(--text);margin-bottom:8px;}
@@ -488,13 +488,13 @@
   .land .mcard .more .chip{font-size:12px;padding:5px 12px;}
   .land .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:16px;}
   .land .gal img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;}
-  .land .contact{background:var(--card,#fffdf4);border:1px solid var(--line-soft);border-radius:22px;padding:22px;}
+  .land .contact{background:var(--card,#f7f7ee);border:1px solid var(--line-soft);border-radius:22px;padding:22px;}
   .land .contact a{color:var(--gold);text-decoration:none;}
   .land .flogo{width:64px;aspect-ratio:256/171;margin:0 auto 10px;background:var(--text);opacity:.8;-webkit-mask:url(../cards/logo-ac2.svg) center/contain no-repeat;mask:url(../cards/logo-ac2.svg) center/contain no-repeat;}
   .land footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line-soft);color:var(--muted);font-size:12px;text-align:center;}
   @media(max-width:640px){.land .two,.land .frow{grid-template-columns:1fr;}.land .frow.rev .fpic{order:0;}.land .hero{padding-top:22px;}}
   /* ---------- Правилник преди кандидатстване ---------- */
-  .rulesov{position:fixed;inset:0;background:rgba(58,44,35,.5);display:flex;align-items:center;justify-content:center;z-index:120;padding:14px;}
+  .rulesov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:120;padding:14px;}
   .rulescard{background:var(--bg);border-radius:22px;width:min(100%,760px);max-height:100%;height:100%;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);}
   .rulescard .rh{padding:18px 22px 10px;border-bottom:1px solid var(--line-soft);}
   .rulescard .rh h3{font-family:var(--serif);font-style:italic;font-size:22px;font-weight:500;margin:0;}
@@ -514,21 +514,21 @@
   .rules p{margin:0 0 8px;color:var(--mid);}
   .rules table{font-size:13px;border-collapse:collapse;margin:8px 0;}
   .rules td,.rules th{border:1px solid var(--line-soft);padding:6px 8px;vertical-align:top;}
-  .pwov{position:fixed;inset:0;background:rgba(58,44,35,.38);display:flex;align-items:center;justify-content:center;z-index:99;}
+  .pwov{position:fixed;inset:0;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center;z-index:99;}
   .pwcard{background:var(--bg);border-radius:22px;padding:22px;width:min(90%,340px);
-    box-shadow:9px 9px 18px #d9cdb6,-9px -9px 18px #fffdf4;}
+    box-shadow:9px 9px 18px #cfcfbb,-9px -9px 18px #f7f7ee;}
   .pwcard h3{font-family:var(--serif);font-style:italic;color:var(--cream);font-size:21px;font-weight:500;margin-bottom:14px;text-align:center;}
-  .pwcard .pwerr{color:#b5532f;font-size:12px;min-height:16px;margin:2px 0 8px;text-align:center;}
+  .pwcard .pwerr{color:#82303d;font-size:12px;min-height:16px;margin:2px 0 8px;text-align:center;}
 </style>
 </head>
 <body>
 <div id="splash">
-  <div class="sp-ring"><img src="../cards/logo-ac2.webp" alt="AC²"/></div>
+  <div class="sp-ring"><img src="../cards/logo-ac2-dark.webp" alt="AC²"/></div>
   <div class="sp-name">American College<br>Arcus Club</div>
 </div>
 <div id="app"></div>
 <div class="toast" id="toast"></div>
-<div id="ptr"><img src="../cards/logo-ac2.webp" alt="AC²"/></div>
+<div id="ptr"><img src="../cards/logo-ac2-dark.webp" alt="AC²"/></div>
 <nav class="tabbar" id="tabbar"></nav>
 
 <!-- ЗАЩИТА: библиотеките се зареждат от НАШИЯ сървър, не от чужд CDN.
@@ -579,11 +579,11 @@ const T={
     resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion',alreadyBooked:'You already have a request for this event',booked:'Ticket requested',addTable:'Also reserve a table after the event',tableParty:'Table for how many',pastRes:'Past',noUpcomingRes:'No upcoming reservations.',yourName:'Your name',editName:'Edit name',nameSaved:'Name saved',bookingName:'Name for the booking',bioLogin:'Sign in with Face ID / fingerprint',bioReason:'Sign in to Arcus Club',bioNone:'Sign in with your password once first',pastEvents:'Past events',favFormats:'Favorite formats',favHint:'Pick what interests you — shown at the top under “For you”.',forYou:'For you',forYouSub:'Selected based on your favorite formats.',addCal:'＋ Calendar',bookFrom:'Tickets from',memberUntil:'Membership until',memberExpired:'Membership expired on',memberExpiredTitle:'Your membership has expired',memberExpiredMsg:'Please contact the club to renew your membership.',membershipOver:'Membership expired'}
 };
 const FORMATS=[
- {id:'culture',t:'AC² Culture',c:'#6b3a5b',img:'../cards/logo-culture.webp',b:{bg:['музика','изложби','литература','кино и прожекции','камерен театър','концерти','срещи с артисти и лектори'],en:['music','exhibitions','literature','film screenings','chamber theatre','concerts','meetings with artists and lecturers']}},
- {id:'table',t:'AC² Food',c:'#2f6b63',img:'../cards/logo-table.webp',b:{bg:['тематични вечери','гост-готвачи','гастрономически събития','брънч','частни резервации'],en:['themed dinners','guest chefs','gastronomic events','brunch','private reservations']}},
- {id:'conversation',t:'AC² Conversation',c:'#bf8a2e',img:'../cards/logo-conversation.webp',b:{bg:['разговори с гости','дискусии','образователни теми','професионални срещи','малки формати с подбрана публика'],en:['conversations with guests','discussions','educational topics','professional meetings','small formats with a select audience']}},
- {id:'community',t:'AC² Arcus Community',c:'#7d6553',img:'../cards/logo-community.webp',b:{bg:['семейни поводи','alumni събития','училищно-свързани формати','учениците на колежа','дискретни срещи в по-лична среда'],en:['family occasions','alumni gatherings','school-related formats','college students','discreet meetings in a more personal setting']}},
- {id:'online',t:'AC² Online',c:'#3d6b7d',img:'../cards/logo-ac2.webp',b:{bg:['онлайн излъчвания','разговори на живо','лекции и прожекции','записи за гледане после'],en:['online broadcasts','live talks','lectures and screenings','recordings to watch later']}}
+ {id:'culture',t:'AC² Culture',c:'#82303d',img:'../cards/logo-culture.webp',b:{bg:['музика','изложби','литература','кино и прожекции','камерен театър','концерти','срещи с артисти и лектори'],en:['music','exhibitions','literature','film screenings','chamber theatre','concerts','meetings with artists and lecturers']}},
+ {id:'table',t:'AC² Food',c:'#507044',img:'../cards/logo-table.webp',b:{bg:['тематични вечери','гост-готвачи','гастрономически събития','брънч','частни резервации'],en:['themed dinners','guest chefs','gastronomic events','brunch','private reservations']}},
+ {id:'conversation',t:'AC² Conversation',c:'#000000',img:'../cards/logo-conversation.webp',b:{bg:['разговори с гости','дискусии','образователни теми','професионални срещи','малки формати с подбрана публика'],en:['conversations with guests','discussions','educational topics','professional meetings','small formats with a select audience']}},
+ {id:'community',t:'AC² Arcus Community',c:'#5f6064',img:'../cards/logo-community.webp',b:{bg:['семейни поводи','alumni събития','училищно-свързани формати','учениците на колежа','дискретни срещи в по-лична среда'],en:['family occasions','alumni gatherings','school-related formats','college students','discreet meetings in a more personal setting']}},
+ {id:'online',t:'AC² Online',c:'#652430',img:'../cards/logo-ac2.webp',b:{bg:['онлайн излъчвания','разговори на живо','лекции и прожекции','записи за гледане после'],en:['online broadcasts','live talks','lectures and screenings','recordings to watch later']}}
 ];
 // стари формати (cinema/music/theater) → Culture; за стари записи в базата
 const FMT_ALIAS={cinema:'culture',music:'culture',theater:'culture'};
@@ -998,9 +998,9 @@ function eventCard(e,i){
   const media=e.image_url?`<img class="evposter" src="${esc(e.image_url)}" alt="" loading="lazy" onload="this.classList.add('imgloaded')" onerror="this.classList.add('imgloaded')"/>`:'';
   const vid=e.video_url?`<video class="evvideo" src="${esc(e.video_url)}" controls preload="metadata" playsinline></video>`:'';
   const cal=(!past&&e.date)?`<button class="chip" onclick="event.stopPropagation();addToCalendar('${e.id}')">${tr('addCal')}</button>`:'';
-  const priceTag=e.price>0?`<div style="margin-top:6px;color:var(--gold);font-weight:600;font-size:13px;">${lang==='bg'?'Билет':'Ticket'}: ${fmtPrice(e.price)}</div>`:(e.price===0?`<div style="margin-top:6px;color:#4f7a43;font-size:13px;">${lang==='bg'?'Безплатно':'Free'}</div>`:'');
+  const priceTag=e.price>0?`<div style="margin-top:6px;color:var(--gold);font-weight:600;font-size:13px;">${lang==='bg'?'Билет':'Ticket'}: ${fmtPrice(e.price)}</div>`:(e.price===0?`<div style="margin-top:6px;color:#507044;font-size:13px;">${lang==='bg'?'Безплатно':'Free'}</div>`:'');
   const si=(!past)?seatInfoText(e):'';
-  const siCol=soldOut?'#b5532f':((left!==null&&left<=10)?'#bf8a2e':'#4f7a43');
+  const siCol=soldOut?'#82303d':((left!==null&&left<=10)?'#6b6b63':'#507044');
   const seatTag=si?`<div style="margin-top:4px;color:${siCol};font-size:12px;">${si}</div>`:'';
   const longDesc=(e.description||'').length>140;
   const desc=e.description?`<div id="ed_${e.id}" style="margin-top:7px;color:var(--text);font-size:13px;line-height:1.5;${longDesc?'max-height:62px;overflow:hidden;':''}">${esc(e.description)}</div>${longDesc?`<button class="chip" style="margin-top:5px;font-size:11px;padding:3px 10px;" onclick="event.stopPropagation();toggleDesc('${e.id}',this)">${lang==='bg'?'Повече':'More'}</button>`:''}`:'';
@@ -1120,7 +1120,7 @@ function openBook(id,onlyKind){
     <div id="paybox_${e.id}" style="margin-top:14px;"></div>
     <div id="payhint_${e.id}" style="display:none;font-size:12px;color:var(--muted);margin-top:8px;">${lang==='bg'?'Избери начин на плащане, попълни данните и натисни „Плати" по-долу.':'Choose a payment method, fill in the details and press "Pay" below.'}</div>
     <button class="btn" id="buybtn_${e.id}" style="margin-top:14px;" onclick="confirmBuy('${e.id}')">—</button>
-    <div id="payerr_${e.id}" style="color:#b5532f;font-size:13px;margin-top:8px;min-height:18px;"></div>`;
+    <div id="payerr_${e.id}" style="color:#82303d;font-size:13px;margin-top:8px;min-height:18px;"></div>`;
   document.body.appendChild(bd); document.body.appendChild(sh);
   document.body.style.overflow='hidden';
   requestAnimationFrame(()=>{bd.classList.add('open');sh.classList.add('open');selectTier(e.id,bookTier);});
@@ -1259,7 +1259,7 @@ async function mountPayment(id,clientSecret){
   if(!box){return;}
   if(!window.Stripe||!(window.ACAC_CONFIG&&ACAC_CONFIG.STRIPE_PK)){toast('Stripe не е зареден');if(btn)updateBuy(id);return;}
   const stripe=Stripe(ACAC_CONFIG.STRIPE_PK);
-  const elements=stripe.elements({clientSecret,appearance:{theme:'flat',variables:{colorPrimary:'#c8643c'}}});
+  const elements=stripe.elements({clientSecret,appearance:{theme:'flat',variables:{colorPrimary:'#82303d'}}});
   const pe=elements.create('payment',{layout:{type:'tabs'},fields:{billingDetails:{name:'never',email:'never',phone:'never'}}}); pe.mount('#paybox_'+id);
   const hint=document.getElementById('payhint_'+id); if(hint)hint.style.display='block';
   pe.on('ready',()=>{ try{ box.scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){} });
@@ -1321,8 +1321,8 @@ function liveView(){
               <div class="pl">${lang==='bg'?'Докосни, за да гледаш':'Tap to watch'}</div>
             </div></div>
           ${streamGated(e)?'':`<div class="row" style="margin-top:10px;"><a class="chip ghost" href="${esc(e.stream_url)}" target="_blank" rel="noopener">${tr('openExt')}</a></div>`}`;
-      return `<div class="ev" style="border-color:#d98b6e;">
-        <div class="t" style="color:#d98b6e;">● ${tr('liveTag')} · ${e.format}</div>
+      return `<div class="ev" style="border-color:#9a3a49;">
+        <div class="t" style="color:#9a3a49;">● ${tr('liveTag')} · ${e.format}</div>
         <h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>
         ${inner}
       </div>`;
@@ -1345,7 +1345,7 @@ function liveView(){
           : `<div class="m" style="margin-top:10px;">${up.price>0?(lang==='bg'?'Това събитие ще се излъчва на живо. За да гледаш, купи билет предварително.':'This event will be streamed live. To watch, buy a ticket in advance.'):(lang==='bg'?'Това събитие ще се излъчва на живо. За да гледаш, запази мястото си предварително.':'This event will be streamed live. To watch, book your place in advance.')}</div>
             <button class="btn" style="margin:10px auto 0;max-width:240px;" onclick="event.stopPropagation();go('format/${up.format}')">${up.price>0?(lang==='bg'?'Купи билет':'Buy a ticket'):(lang==='bg'?'Запази, за да гледаш':'Book to watch')}</button>`;
       }else if(willStream&&upConfirmed){
-        cta=`<div class="m" style="margin-top:10px;color:#4f7a43;">${lang==='bg'?'✓ Имаш достъп — ще можеш да гледаш на живо тук.':'✓ You have access — you can watch live here.'}</div>`;
+        cta=`<div class="m" style="margin-top:10px;color:#507044;">${lang==='bg'?'✓ Имаш достъп — ще можеш да гледаш на живо тук.':'✓ You have access — you can watch live here.'}</div>`;
       }
       body+=`<div class="sec-title" style="padding:14px 0 8px;">${tr('nextUp')}</div>
         <div class="ev" style="cursor:pointer;" onclick="go('format/${up.format}')"><div class="t">${up.format}</div><h3>${esc(up.title)}</h3><div class="m">${evMeta(up)}</div>${cta}</div>`;
@@ -1514,7 +1514,7 @@ function showLiveSwitch(n){
   let b=document.getElementById('liveswitch');
   if(!b){
     b=document.createElement('div');b.id='liveswitch';
-    b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top));z-index:60;max-width:480px;width:calc(100% - 28px);background:#d98b6e;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.22);font-size:14px;font-weight:600;text-align:center;cursor:pointer;';
+    b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top));z-index:60;max-width:480px;width:calc(100% - 28px);background:#9a3a49;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.22);font-size:14px;font-weight:600;text-align:center;cursor:pointer;';
     b.onclick=function(){clearLiveSwitch();livePlaying=null;renderPath('live');window.scrollTo(0,0);};
     document.body.appendChild(b);
   }
@@ -1757,7 +1757,7 @@ function timePicker(id,val){
 }
 function syncTP(id){const h=document.getElementById(id+'_h').value,m=document.getElementById(id+'_m').value;document.getElementById(id).value=h?(h+':'+(m||'00')):'';}
 function reserve(q){
-  if(user&&!membershipActive())return topbar(tr('reserve'))+`<div class="page"><div class="ev" style="border:1px solid #b5532f;"><h3 style="font-size:15px;color:#b5532f;">${tr('memberExpiredTitle')}</h3><div class="m" style="color:#b5532f;margin-top:3px;">${tr('memberExpiredMsg')}</div></div></div>`;
+  if(user&&!membershipActive())return topbar(tr('reserve'))+`<div class="page"><div class="ev" style="border:1px solid #82303d;"><h3 style="font-size:15px;color:#82303d;">${tr('memberExpiredTitle')}</h3><div class="m" style="color:#82303d;margin-top:3px;">${tr('memberExpiredMsg')}</div></div></div>`;
   const preV=new URLSearchParams(q).get('v')||'';
   const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):4;
   let vsel=VENUES.map(v=>`<button type="button" class="chip ${v.id===preV?'on':''}" onclick="selVenue(this)" data-v="${v.id}">${tx(v.t)}</button>`).join('');
@@ -1811,11 +1811,11 @@ function drawResCal(){
   const t=new Date();
   const tIso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
   const sel=inp.dataset.iso||'';
-  let cells=wd.map((w,i)=>`<div style="font-size:11px;color:${i>4?'#b5532f':'var(--muted)'};text-align:center;padding:4px 0;">${w}</div>`).join('');
+  let cells=wd.map((w,i)=>`<div style="font-size:11px;color:${i>4?'#82303d':'var(--muted)'};text-align:center;padding:4px 0;">${w}</div>`).join('');
   for(let i=0;i<off;i++)cells+='<div></div>';
   for(let d=1;d<=dim;d++){
     const iso=rcalM.y+'-'+String(rcalM.m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    const st=iso===sel?'background:#b5532f;color:#fffdf4;':(iso===tIso?'box-shadow:inset 0 0 0 1px #b5532f;color:#b5532f;':'color:var(--text);');
+    const st=iso===sel?'background:#82303d;color:#f7f7ee;':(iso===tIso?'box-shadow:inset 0 0 0 1px #82303d;color:#82303d;':'color:var(--text);');
     cells+=`<div onclick="pickResDate('${iso}')" style="text-align:center;padding:8px 0;border-radius:9px;cursor:pointer;font-size:13px;${st}">${d}</div>`;
   }
   const pop=document.createElement('div');pop.id='res-cal';
@@ -1826,7 +1826,7 @@ function drawResCal(){
       <button type="button" onclick="resCalNav(1)" style="border:0;background:none;cursor:pointer;font-size:18px;padding:4px 12px;color:var(--text);">›</button></div>
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">${cells}</div>
     <div style="text-align:center;margin-top:8px;">
-      <button type="button" onclick="pickResDate('${tIso}')" style="border:0;background:none;cursor:pointer;color:#b5532f;font-size:12px;">${lang==='bg'?'Днес':'Today'}</button></div>`;
+      <button type="button" onclick="pickResDate('${tIso}')" style="border:0;background:none;cursor:pointer;color:#82303d;font-size:12px;">${lang==='bg'?'Днес':'Today'}</button></div>`;
   const r=inp.getBoundingClientRect();
   pop.style.left=(r.left+window.scrollX)+'px';pop.style.top=(r.bottom+window.scrollY+6)+'px';
   document.body.appendChild(pop);
@@ -2191,7 +2191,7 @@ function validityRing(){
   const days=Math.max(0,Math.ceil((end-new Date())/86400000));
   const frac=Math.max(0,Math.min(1,days/365));
   const warn=days<=45;
-  const col=warn?'#b5532f':'var(--gold)';
+  const col=warn?'#82303d':'var(--gold)';
   const R=25,C=2*Math.PI*R,off=C*(1-frac);
   const center=warn
     ? `<div class="vctr num"><b>${days}</b><span>${lang==='bg'?(days===1?'ден':'дни'):'days'}</span></div>`
@@ -2213,8 +2213,8 @@ function profile(){
   const sev=saved.map(id=>EVENTS.find(e=>e.id===id)).filter(Boolean).filter(e=>!isPast(e));
   const res=RES.filter(isMine);
   const active=membershipActive();
-  const untilLine=user.membership_until?`<div style="text-align:center;font-size:12px;margin-top:6px;color:${active?'var(--mid)':'#b5532f'};">${active?tr('memberUntil'):tr('memberExpired')} ${euDate(user.membership_until)}</div>`:'';
-  const expiredBanner=(!active&&user.membership_until)?`<div class="ev" style="border:1px solid #b5532f;margin-bottom:12px;"><h3 style="font-size:15px;color:#b5532f;">${tr('memberExpiredTitle')}</h3><div class="m" style="color:#b5532f;margin-top:3px;">${tr('memberExpiredMsg')}</div></div>`:'';
+  const untilLine=user.membership_until?`<div style="text-align:center;font-size:12px;margin-top:6px;color:${active?'var(--mid)':'#82303d'};">${active?tr('memberUntil'):tr('memberExpired')} ${euDate(user.membership_until)}</div>`:'';
+  const expiredBanner=(!active&&user.membership_until)?`<div class="ev" style="border:1px solid #82303d;margin-bottom:12px;"><h3 style="font-size:15px;color:#82303d;">${tr('memberExpiredTitle')}</h3><div class="m" style="color:#82303d;margin-top:3px;">${tr('memberExpiredMsg')}</div></div>`:'';
   return topbar(tr('profile'))+`<div class="page">
     ${expiredBanner}
     ${memberCard()}
@@ -2262,10 +2262,10 @@ function accountView(){
     <div class="sec-title" style="padding-top:28px;">${bg?'Сигурност':'Security'}</div>
     ${DB.live?`<button class="btn btn-ghost" onclick="changePass()">${tr('changePass')}</button>`:''}
     <button class="btn btn-ghost" style="margin-top:12px;" onclick="signout()">${tr('signout')}</button>
-    <div class="sec-title" style="padding-top:30px;color:#b5532f;">${bg?'Опасна зона':'Danger zone'}</div>
+    <div class="sec-title" style="padding-top:30px;color:#82303d;">${bg?'Опасна зона':'Danger zone'}</div>
     <div class="ev" style="border:1px solid rgba(181,83,47,.3);">
       <div class="m" style="margin-bottom:10px;">${bg?'Изтриването премахва профила и всички твои данни (резервации, предпочитания) безвъзвратно.':'Deleting removes your profile and all your data (reservations, preferences) permanently.'}</div>
-      <button class="btn" style="background:rgba(181,83,47,.12);color:#b5532f;border:1px solid rgba(181,83,47,.5);box-shadow:none;margin-top:0;" onclick="deleteAccount()">${tr('delAcc')}</button>
+      <button class="btn" style="background:rgba(181,83,47,.12);color:#82303d;border:1px solid rgba(181,83,47,.5);box-shadow:none;margin-top:0;" onclick="deleteAccount()">${tr('delAcc')}</button>
     </div></div>`;
 }
 async function deleteAccount(){
@@ -2300,7 +2300,7 @@ function memberCard(){
   const lvl=m?m.t:'Guest';
   const disc=m&&m.disc?m.disc:0;
   const no=user.id?user.id.replace(/[^a-z0-9]/gi,'').slice(0,8).toUpperCase():'--------';
-  const qr=qrDataUri('AC2:'+(user.id||''),'#43352b','#ecdcb6');
+  const qr=qrDataUri('AC2:'+(user.id||''),'#000000','#ebebd6');
   return `<div class="memcard">
     <div class="mc-top"><img src="${AC2}" alt="AC²"/><span>American College Arcus Club</span></div>
     <div class="mc-name">${esc(user.full_name||user.username||user.email)}</div>
@@ -2365,7 +2365,7 @@ async function cancelRes(id){
 }
 function resCard(r,dim){
   const SL={requested:lang==='bg'?'чакаща':'pending',confirmed:lang==='bg'?'одобрена':'approved',declined:lang==='bg'?'отказана':'declined',cancelled:lang==='bg'?'отменена':'cancelled',pending_payment:lang==='bg'?'чака плащане':'awaiting payment'};
-  const SC={confirmed:'#4f7a43',declined:'#b5532f',cancelled:'#b5532f'};
+  const SC={confirmed:'#507044',declined:'#82303d',cancelled:'#82303d'};
   const tm=r.time?(r.time+' · '):'';
   const evId=r.event_id||r.table_event_id;
   const ev=evId?EVENTS.find(x=>x.id===evId):null;
@@ -2373,7 +2373,7 @@ function resCard(r,dim){
   const onclick=ev?` onclick="go('format/${ev.format}')"`:'';
   const isNew=newResSet&&newResSet[r.id];
   const hl=isNew?`border:1px solid var(--gold);box-shadow:0 0 0 2px rgba(191,138,46,.18);`:'';
-  const newTag=isNew?` <span style="background:var(--gold);color:#fff7ea;font-size:9px;font-weight:700;border-radius:8px;padding:2px 6px;vertical-align:middle;">${lang==='bg'?'НОВО':'NEW'}</span>`:'';
+  const newTag=isNew?` <span style="background:var(--gold);color:#f4f4e8;font-size:9px;font-weight:700;border-radius:8px;padding:2px 6px;vertical-align:middle;">${lang==='bg'?'НОВО':'NEW'}</span>`:'';
   const priceLine=(ev&&ev.price>0&&r.event_id)?`<div class="m" style="color:var(--gold);font-weight:600;">${lang==='bg'?'Общо: ':'Total: '}${fmtPrice(ev.price*(r.party||1))}</div>`:'';
   const canCancel=resCancellable(r);
   const cancelBtn=canCancel?`<button onclick="event.stopPropagation();cancelRes('${r.id}')" style="margin-top:6px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;">${lang==='bg'?'Откажи резервацията':'Cancel reservation'}</button>`:'';
@@ -2386,7 +2386,7 @@ function resCard(r,dim){
   const ctx=[fmtName,venue].filter(Boolean).join(' · ');
   const ctxLine=ctx?`<div class="m" style="color:${col||'var(--gold-soft)'};margin-bottom:2px;font-weight:600;">${esc(ctx)}</div>`:'';
   const accent=(col&&!hl)?`border-left:3px solid ${col};`:'';
-  return `<div class="ev"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${accent}${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${r.party} ${tr('seats')} · <b style="color:${r.paid?'#4f7a43':(SC[r.status]||'var(--muted)')};">${(r.paid&&!['cancelled','declined'].includes(r.status))?(lang==='bg'?'платена':'paid'):(SL[r.status]||r.status)}${r.refunded_at?(lang==='bg'?' · сумата е възстановена':' · refunded'):((r.paid&&['cancelled','declined'].includes(r.status))?(lang==='bg'?' · платена — за връщане на сумата се свържете с клуба':' · paid — contact the club for a refund'):'')}</b></div>${priceLine}${cancelBtn}</div>`;
+  return `<div class="ev"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${accent}${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${r.party} ${tr('seats')} · <b style="color:${r.paid?'#507044':(SC[r.status]||'var(--muted)')};">${(r.paid&&!['cancelled','declined'].includes(r.status))?(lang==='bg'?'платена':'paid'):(SL[r.status]||r.status)}${r.refunded_at?(lang==='bg'?' · сумата е възстановена':' · refunded'):((r.paid&&['cancelled','declined'].includes(r.status))?(lang==='bg'?' · платена — за връщане на сумата се свържете с клуба':' · paid — contact the club for a refund'):'')}</b></div>${priceLine}${cancelBtn}</div>`;
 }
 // заглавие на дата: „петък, 6 юни 2026"
 function resDayLabel(iso){
