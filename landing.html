@@ -40,10 +40,14 @@
   .msg.ok{color:var(--green)}
   .cap{display:flex;justify-content:center;margin-top:8px;min-height:0}
   .right{position:relative;overflow:hidden;background:var(--wine)}
-  .right img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+  /* Векторната рисунка (цялата, вкл. долната част) като маска → линиите са в тъмно бордо върху бордо фон */
+  .right .art{position:absolute;inset:clamp(10px,2.5vw,36px);background:var(--wine-dark);
+    -webkit-mask:url(cards/contour.svg) center/contain no-repeat;mask:url(cards/contour.svg) center/contain no-repeat}
   @media (max-width:860px){
     .wrap{grid-template-columns:1fr}
-    .right{order:-1;height:62vw;max-height:520px}
+    /* мобилни: по-широк кадър — рисунката на цяла ширина, показва се горната ѝ част (друго изрязване) */
+    .right{order:-1;height:min(72vw,480px)}
+    .right .art{inset:0;-webkit-mask-size:cover;mask-size:cover;-webkit-mask-position:center top;mask-position:center top}
     .left{min-height:0;padding:28px 22px 32px}
     .logo{margin-top:4px}
     .mid{gap:30px}
@@ -73,7 +77,7 @@
     <div></div>
   </section>
   <aside class="right" aria-hidden="true">
-    <img src="cards/contour-red.webp" alt="" />
+    <div class="art"></div>
   </aside>
 </div>
 
