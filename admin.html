@@ -18,7 +18,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="theme-color" content="#ebebd6" />
 <title>Arcus Club · Админ панел</title>
-<link rel="icon" href="favicon.png?v=2" />
+<link rel="icon" href="favicon.png?v=3" />
 <link rel="stylesheet" href="fonts/fonts.css" />
 <style>
   :root{--bg:#ebebd6;--surface:#f4f4e8;--gold:#82303d;--gold-soft:#652430;--cream:#000000;--text:#1c1c1b;
@@ -92,8 +92,30 @@ const esc=s=>(''+(s??'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 // ПРЕДИ да се изпълни JS, значи ' се измъква от кавичките. Подавай само id и търси обекта.
 const byId=(arr,id)=>(arr||[]).find(x=>x.id===id)||{};
 
-let tab='events', editId=null, draftAud=['all'], admin=false, role='';
-const isEditor=()=>role==='editor';   // редактор: само събития, публичен сайт, сайт, съобщения
+let tab='events', editId=null, draftAud=['all'], admin=false, role='', PERMS=[];
+// ---- Права ----
+// Администраторът има всичко. Останалите служители — само отметнатите права (profiles.perms).
+const PERM_DEFS=[
+  {id:'events',t:'Събития',d:'създаване и редакция на събития, архив, видимост по членство'},
+  {id:'reservations',t:'Резервации',d:'одобряване/отказ, check-in, архив на резервациите'},
+  {id:'members_view',t:'Членове — преглед',d:'вижда списъка с членове (без промени)'},
+  {id:'members_edit',t:'Членове — редакция',d:'покани, подновяване, нива, телефони, пароли'},
+  {id:'applications',t:'Кандидатури',d:'преглед и одобряване на кандидатури'},
+  {id:'news',t:'Новини',d:'съобщения към членовете в приложението'},
+  {id:'site',t:'Публичен сайт',d:'текстове, снимки, меню, нива на членство на ac2.bg'},
+  {id:'messages',t:'Съобщения',d:'контактна форма и нюзлетър'},
+  {id:'stats',t:'Статистика',d:'справки и графики'},
+  {id:'audit',t:'Журнал',d:'кой какво е променил'}];
+const PERM_PRESETS=[
+  {id:'manager',t:'Мениджър',p:['events','reservations','members_view','members_edit','applications','news','site','messages','stats','audit']},
+  {id:'editor',t:'Редактор',p:['events','news','site']},
+  {id:'reception',t:'Рецепция',p:['reservations','members_view','messages']}];
+const can=p=>role==='admin'||PERMS.includes(p);
+const isEditor=()=>role!=='admin';   // „служител“ (не админ) — показва бележка под табовете
+// кои табове с кое право
+const TAB_PERM={events:'events',archive:'events',members:'events',res:'reservations',people:'members_view',apps:'applications',ann:'news',public:'site',messages:'messages',stats:'stats',audit:'audit',team:'__admin'};
+const tabAllowed=t=>TAB_PERM[t]==='__admin'?role==='admin':(TAB_PERM[t]?can(TAB_PERM[t]):role==='admin');
+function firstTab(){ for(const t of ['events','res','people','apps','ann','public','messages','stats','audit','team']) if(tabAllowed(t)) return t; return 'events'; }
 let EVENTS=[], RES=[];
 const root=document.getElementById('root');
 
@@ -113,7 +135,7 @@ function sessionLost(){
 async function checkSession(){ if(!_sessionLost && !(await DB.sessionAlive())) sessionLost(); }
 
 async function boot(){
-  if(DB.live){ const u=await DB.getUser(); role=u?u.role:''; admin=!!(u&&(u.role==='admin'||u.role==='editor')); }
+  if(DB.live){ const u=await DB.getUser(); role=u?u.role:''; MY_ID=u?u.id:''; PERMS=(u&&u.perms)||[]; if(role==='editor'&&!PERMS.length)PERMS=['events','news','site','messages']; admin=!!(u&&(u.role==='admin'||PERMS.length)); if(admin&&!tabAllowed(tab))tab=firstTab(); }
   else { admin=localStorage.getItem('acac_admin')==='1'; role='admin'; }
   if(admin) await refresh();
   render();
@@ -158,19 +180,20 @@ function render(){
     <div class="top"><div class="b">AC² · Админ панел<br><small>American College Arcus Club</small></div>
       <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn ghost sm" id="refreshBtn" onclick="adminRefresh()">↻ Опресни</button><button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
     <div class="tabs">
-      <button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>
-      ${isEditor()?'':`<button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации${tabBadge(RES.filter(r=>!r.status||r.status==='requested').length)}</button>
-      <button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>
-      <button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge((APPS||[]).filter(a=>(a.status||'new')==='new').length)}</button>
-      <button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>`}
-      <button class="tab ${tab==='public'?'on':''}" onclick="setTab('public')">Публичен сайт</button>
-      <button class="tab ${tab==='messages'?'on':''}" onclick="setTab('messages')">Съобщения${tabBadge((MSGS||[]).filter(m=>!m.is_read).length)}</button>
-      ${isEditor()?'':`<button class="tab ${tab==='archive'?'on':''}" onclick="setTab('archive')">Архив</button>
-      <button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>
-      <button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>
-      <button class="tab ${tab==='audit'?'on':''}" onclick="setTab('audit')">Журнал</button>`}
+      ${tabAllowed('events')?`<button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>`:''}
+      ${tabAllowed('res')?`<button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации${tabBadge(RES.filter(r=>!r.status||r.status==='requested').length)}</button>`:''}
+      ${tabAllowed('people')?`<button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>`:''}
+      ${tabAllowed('apps')?`<button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge((APPS||[]).filter(a=>(a.status||'new')==='new').length)}</button>`:''}
+      ${tabAllowed('ann')?`<button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>`:''}
+      ${tabAllowed('public')?`<button class="tab ${tab==='public'?'on':''}" onclick="setTab('public')">Публичен сайт</button>`:''}
+      ${tabAllowed('messages')?`<button class="tab ${tab==='messages'?'on':''}" onclick="setTab('messages')">Съобщения${tabBadge((MSGS||[]).filter(m=>!m.is_read).length)}</button>`:''}
+      ${tabAllowed('archive')?`<button class="tab ${tab==='archive'?'on':''}" onclick="setTab('archive')">Архив</button>`:''}
+      ${tabAllowed('members')?`<button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>`:''}
+      ${tabAllowed('stats')?`<button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>`:''}
+      ${tabAllowed('audit')?`<button class="tab ${tab==='audit'?'on':''}" onclick="setTab('audit')">Журнал</button>`:''}
+      ${tabAllowed('team')?`<button class="tab ${tab==='team'?'on':''}" onclick="setTab('team')">Екип</button>`:''}
     </div>
-    ${isEditor()?`<p class="muted" style="margin:6px 0 10px;font-size:12px;">Влезли сте като редактор: събития и съдържание на сайта. Членове, кандидатури и плащания са само за администратор.</p>`:''}`;
+    ${isEditor()?`<p class="muted" style="margin:6px 0 10px;font-size:12px;">Влезли сте като служител — виждате само разделите, за които имате права.</p>`:''}`;
   if(tab==='events')h+=eventsView();
   else if(tab==='res')h+=resView();
   else if(tab==='people')h+=peopleView();
@@ -182,9 +205,15 @@ function render(){
   else if(tab==='archive')h+=archiveAdminView();
   else if(tab==='stats')h+=statsView();
   else if(tab==='audit')h+=auditView();
+  else if(tab==='team')h+=teamView();
   else h+=membersView();
   h+=`</div>`;
   root.innerHTML=h;
+  // Членове само за преглед: махаме бутоните за промяна (сървърът така или иначе ги отказва)
+  if(tab==='people'&&!can('members_edit')){
+    root.querySelectorAll('button').forEach(b=>{ if(/changeName|savePhone|requestPhone|deletePerson|renewPerson|changeMembership|doInvite|doRenew|doReset|approveApp/.test(b.getAttribute('onclick')||''))b.remove(); });
+    root.querySelectorAll('input[id^="phf_"],input[id^="nmf_"]').forEach(i=>i.disabled=true);
+  }
   if(tab==='stats')setTimeout(animateCounts,30);
 }
 function animateCounts(){
@@ -328,6 +357,7 @@ async function recClear(id){
 async function reloadPeople(){ window.__membersErr=''; PEOPLE=null; render(); PEOPLE=await DB.listMembers(); render(); }
 async function setTab(t){tab=t;editId=null;await refresh();render();
   if(t==='people'){await reloadPeople();}
+  if(t==='team'){if(!PEOPLE)PEOPLE=await DB.listMembers();render();}
   if((t==='res'||t==='events')&&!PHONES){await loadPhones();render();}
   if(t==='ann'){ANN=await DB.listAnnouncements();if(!PEOPLE)PEOPLE=await DB.listMembers();render();}
   if(t==='site'){SITEC=await DB.getSiteContent();render();}
@@ -1711,6 +1741,81 @@ async function doRenew(){
   const f=document.getElementById('rn_from');if(f){f.dataset.iso='';f.value='';}
 }
 
+// ================= ЕКИП И ПРАВА (само админ) =================
+let teamPick='', teamQ='', teamDraft={};
+function teamView(){
+  if(role!=='admin')return '<p class="empty">Само администратор.</p>';
+  if(PEOPLE===null)return `<h2>Екип</h2><p class="empty">Зареждане…</p>`;
+  const staff=(PEOPLE||[]).filter(p=>p.role==='admin'||(p.perms&&p.perms.length));
+  const nm=p=>esc(p.full_name||p.username||p.email||'');
+  const chk=(p,id)=>{const cur=teamDraft[p.id]||p.perms||[];return cur.includes(id);};
+  const card=p=>{
+    const isA=p.role==='admin';
+    return `<div class="card" style="margin-top:10px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;">
+        <div><b>${nm(p)}</b> <span class="muted">${esc(p.email||'')}</span>${isA?' <span class="pill" style="border-color:var(--gold);color:var(--gold);">администратор</span>':''}${(p.membership||'guest')==='guest'?' <span class="muted" style="font-size:12px;">· без членство</span>':''}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${isA?(p.id===ME_ID()?'':`<button class="btn ghost sm" onclick="teamSetRole('${p.id}','member')">Махни админ</button>`):`<button class="btn ghost sm" onclick="teamSetRole('${p.id}','admin')">Направи админ</button>`}
+          ${isA?'':`<button class="btn no sm" onclick="teamRemove('${p.id}')">Премахни от екипа</button>`}
+        </div>
+      </div>
+      ${isA?'<div class="muted" style="margin-top:6px;font-size:12px;">Има всички права.</div>':`
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 6px;">${PERM_PRESETS.map(ps=>`<button class="btn ghost sm" onclick="teamPreset('${p.id}','${ps.id}')">${ps.t}</button>`).join('')}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 14px;">
+        ${PERM_DEFS.map(d=>`<label class="chk" style="display:flex;gap:8px;align-items:flex-start;font-size:13px;"><input type="checkbox" ${chk(p,d.id)?'checked':''} onchange="teamToggle('${p.id}','${d.id}',this.checked)"/><span><b>${d.t}</b><br><span class="muted" style="font-size:11px;">${d.d}</span></span></label>`).join('')}
+      </div>
+      <div style="margin-top:10px;"><button class="btn sm" onclick="teamSave('${p.id}')">Запази правата</button></div>`}
+    </div>`;
+  };
+  const q=teamQ.trim().toLowerCase();
+  const found=q?(PEOPLE||[]).filter(p=>!(p.role==='admin'||(p.perms&&p.perms.length))&&((p.full_name||'')+' '+(p.username||'')+' '+(p.email||'')).toLowerCase().includes(q)).slice(0,8):[];
+  return `<h2>Екип и права</h2>
+    <p class="muted" style="margin-top:-6px;">Администраторът има всичко. За останалите отметни правата (или приложи готов набор). Правата важат и в базата, не само в екрана.</p>
+    ${staff.map(card).join('')}
+    <div class="card" style="margin-top:16px;">
+      <b>Добави член на клуба към екипа</b>
+      <input placeholder="Търси по име / имейл…" value="${esc(teamQ)}" oninput="teamQ=this.value;render();document.querySelector('#root input[placeholder^=Търси]').focus()" style="margin-top:8px;"/>
+      ${found.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);"><span>${nm(p)} <span class="muted">${esc(p.email||'')}</span></span><button class="btn ghost sm" onclick="teamAdd('${p.id}')">Добави</button></div>`).join('')}
+      ${q&&!found.length?'<div class="muted" style="margin-top:6px;">Няма съвпадение.</div>':''}
+    </div>
+    <div class="card" style="margin-top:12px;">
+      <b>Покани служител по имейл</b> <span class="muted" style="font-size:12px;">(без членство — акаунт само за админ панела)</span>
+      <div class="row2" style="margin-top:8px;">
+        <div><label>Имейл</label><input id="ts_email" type="email" placeholder="ime@domain.bg"/></div>
+        <div><label>Име</label><input id="ts_name" placeholder="Име и фамилия"/></div>
+      </div>
+      <div style="margin-top:8px;"><label>Права при поканата</label>
+        <select id="ts_preset">${PERM_PRESETS.map(ps=>`<option value="${ps.id}">${ps.t}</option>`).join('')}</select></div>
+      <div style="margin-top:10px;"><button class="btn sm" onclick="teamInvite()">Изпрати покана</button></div>
+    </div>`;
+}
+let MY_ID='';
+function ME_ID(){ return MY_ID; }
+function teamToggle(id,perm,on){ const p=byId(PEOPLE,id); const cur=(teamDraft[id]||p.perms||[]).slice(); const i=cur.indexOf(perm); if(on&&i<0)cur.push(perm); if(!on&&i>=0)cur.splice(i,1); teamDraft[id]=cur; }
+function teamPreset(id,ps){ const pr=PERM_PRESETS.find(x=>x.id===ps); if(!pr)return; teamDraft[id]=pr.p.slice(); render(); }
+async function teamSave(id){
+  const perms=teamDraft[id]||(byId(PEOPLE,id).perms||[]);
+  const r=await DB.setPerms(id,perms); if(r.error){alert('Грешка: '+r.error.message);return;}
+  delete teamDraft[id]; toast('Правата са записани'); PEOPLE=await DB.listMembers(); render();
+}
+async function teamRemove(id){
+  if(!confirm('Да премахна този човек от екипа? Акаунтът му остава, но губи достъп до админа.'))return;
+  const r=await DB.setPerms(id,[]); if(r.error){alert('Грешка: '+r.error.message);return;}
+  delete teamDraft[id]; toast('Премахнат от екипа'); PEOPLE=await DB.listMembers(); render();
+}
+async function teamAdd(id){ teamDraft[id]=PERM_PRESETS[2].p.slice(); teamQ=''; const r=await DB.setPerms(id,teamDraft[id]); if(r.error){alert('Грешка: '+r.error.message);return;} delete teamDraft[id]; PEOPLE=await DB.listMembers(); render(); toast('Добавен към екипа (Рецепция) — коригирай правата, ако трябва'); }
+async function teamSetRole(id,roleNew){
+  if(!confirm(roleNew==='admin'?'Да направя този човек администратор (всички права, вкл. екипа)?':'Да махна админ правата?'))return;
+  const r=await DB.setRole(id,roleNew); if(r.error){alert('Грешка: '+r.error.message);return;}
+  toast('Записано'); PEOPLE=await DB.listMembers(); render();
+}
+async function teamInvite(){
+  const email=(document.getElementById('ts_email').value||'').trim(), name=(document.getElementById('ts_name').value||'').trim();
+  const ps=PERM_PRESETS.find(x=>x.id===document.getElementById('ts_preset').value)||PERM_PRESETS[2];
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('Невалиден имейл');return;}
+  const r=await DB.inviteStaff(email,name,ps.p); if(r.error){alert('Грешка: '+r.error.message);return;}
+  toast(r.data&&r.data.existed?'Акаунтът вече съществуваше — правата са зададени':'Поканата е изпратена'); PEOPLE=await DB.listMembers(); render();
+}
 function gate(){
   const live=DB.live;
   root.innerHTML=`<div class="gate">
@@ -1730,8 +1835,9 @@ async function doLogin(){
     const {error}=await DB.signIn(u,p);
     if(error){alert('Грешен вход: '+error.message);return;}
     const me=await DB.getUser();
-    if(!me||(me.role!=='admin'&&me.role!=='editor')){alert('Този акаунт няма админ права.');await DB.signOut();return;}
-    role=me.role;admin=true;await refresh();render();
+    MY_ID=me?me.id:''; PERMS=(me&&me.perms)||[]; if(me&&me.role==='editor'&&!PERMS.length)PERMS=['events','news','site','messages'];
+    if(!me||(me.role!=='admin'&&!PERMS.length)){alert('Този акаунт няма права за админ панела.');await DB.signOut();return;}
+    role=me.role;admin=true;if(!tabAllowed(tab))tab=firstTab();await refresh();render();
   }else{
     if((u||'').trim().toLowerCase()!=='admin'||(p||'').trim()!=='admin'){alert('Грешно име или парола');return;}
     admin=true;role='admin';localStorage.setItem('acac_admin','1');await refresh();render();
