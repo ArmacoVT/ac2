@@ -1,58 +1,49 @@
-<svg viewBox="0 0 420 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Декоративен колаж">
-  <defs><style>
-    .f1{transform-box:fill-box;transform-origin:center;animation:fa 7s ease-in-out infinite}
-    .f2{transform-box:fill-box;transform-origin:center;animation:fb 8.5s ease-in-out infinite}
-    .f3{transform-box:fill-box;transform-origin:center;animation:fa 6s ease-in-out infinite 1s}
-    .sp{transform-box:fill-box;transform-origin:center;animation:spin 24s linear infinite}
-    .tw{transform-box:fill-box;transform-origin:center;animation:tw 3s ease-in-out infinite}
-    @keyframes fa{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-    @keyframes fb{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    @keyframes tw{0%,100%{opacity:.3}50%{opacity:1}}
-  </style></defs>
+<svg viewBox="0 0 420 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AC² клуб">
+<style>
+*{stroke-linecap:round;stroke-linejoin:round}
+.l{fill:none;stroke:#1c1c1b;stroke-width:2}
+.w{stroke:#82303D} .g{stroke:#507044} .fw{fill:#82303D;stroke:none} .fg{fill:#507044;stroke:none}
+.d{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.3s cubic-bezier(.4,0,.2,1) forwards}
+.d2{animation-delay:.35s} .d3{animation-delay:.7s} .d4{animation-delay:1.05s} .d5{animation-delay:1.4s}
+.fi{opacity:0;animation:fade .8s ease forwards} .fi2{animation-delay:1.3s} .fi3{animation-delay:1.7s}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fade{to{opacity:1}}
+.sway{transform-box:fill-box;transform-origin:top center;animation:sway 5s ease-in-out infinite}
+.sway2{animation-delay:-2.5s}
+@keyframes sway{0%,100%{transform:skewX(-2deg)}50%{transform:skewX(2deg)}}
+.lamp{transform-box:fill-box;transform-origin:top center;animation:swing 4s ease-in-out infinite}
+.lamp2{animation-delay:-1.3s}.lamp3{animation-delay:-2.6s}
+@keyframes swing{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+.steam{fill:none;stroke:#1c1c1b;stroke-width:1.4;opacity:0;animation:steam 3s ease-in-out infinite}
+.steam2{animation-delay:1s}.steam3{animation-delay:2s}
+@keyframes steam{0%{opacity:0;transform:translateY(4px)}30%{opacity:.6}100%{opacity:0;transform:translateY(-14px)}}
+.note{opacity:0;animation:note 4s ease-in-out infinite}
+.note2{animation-delay:1.5s}.note3{animation-delay:2.7s}
+@keyframes note{0%{opacity:0;transform:translate(0,6px)}25%{opacity:1}100%{opacity:0;transform:translate(8px,-26px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;stroke-dashoffset:0!important;opacity:1!important}}
+</style>
 
-  <!-- свободни органични петна (асиметрично) -->
-  <path d="M20 150 q-16 -44 28 -50 q40 -4 40 30 q0 40 -40 42 q-36 2 -28 -22 Z" fill="#2f6b63" opacity=".92"/>
-  <path class="f2" d="M360 30 q26 -10 34 16 q8 26 -20 30 q-26 4 -30 -18 q-4 -20 16 -28 Z" fill="#6b3a5b" opacity=".9"/>
-  <path d="M372 168 q26 -8 30 16 q2 22 -24 22 q-24 0 -22 -22 q2 -16 16 -16 Z" fill="#9c424c" opacity=".9"/>
+<!-- под -->
+<path class="l d" pathLength="1" d="M14 172 C 120 170, 300 174, 406 171"/>
+<!-- завеса (ляво) -->
+<g class="sway"><path class="l d d2" pathLength="1" d="M26 24 C 22 60, 34 100, 24 150 M38 24 C 44 70, 30 110, 42 150 M14 22 Q 36 16 58 22"/></g>
+<g class="sway sway2"><path class="l d d2" pathLength="1" d="M92 24 C 88 60, 100 100, 90 150 M104 24 C 110 70, 96 110, 108 150 M80 22 Q 102 16 124 22"/></g>
+<!-- лампи -->
+<path class="l d d3" pathLength="1" d="M140 12 Q 210 30 280 12 T 400 14" style="stroke-width:1.2"/>
+<g class="lamp"><path class="l d d4 w" pathLength="1" d="M186 20 v10 m-7 0 h14 l3 8 h-20 z"/></g>
+<g class="lamp lamp2"><path class="l d d4 w" pathLength="1" d="M258 20 v10 m-7 0 h14 l3 8 h-20 z"/></g>
+<g class="lamp lamp3"><path class="l d d4 w" pathLength="1" d="M330 16 v10 m-7 0 h14 l3 8 h-20 z"/></g>
+<!-- маса с чаша и чаша кафе -->
+<path class="l d d3" pathLength="1" d="M150 130 h110 M205 130 v40 M186 170 h38"/>
+<path class="l d d4" pathLength="1" d="M172 104 c 0 14 7 22 13 22 c 6 0 13 -8 13 -22 z M185 126 v8 m-7 0 h14"/>
+<path class="l d d4" pathLength="1" d="M214 114 h20 v12 c0 4 -4 6 -10 6 s-10 -2 -10 -6 z M234 117 c6 0 6 8 0 8"/>
+<path class="steam" d="M219 104 c 3 -4 -3 -8 0 -12"/><path class="steam steam2" d="M226 104 c 3 -4 -3 -8 0 -12"/><path class="steam steam3" d="M232 102 c 3 -4 -3 -8 0 -12"/>
+<!-- пиано (дясно) -->
+<path class="l d d3" pathLength="1" d="M300 170 v-54 h74 v54 M300 128 h74 M300 142 h74 M306 128 v14 M314 128 v14 M322 128 v14 M334 128 v14 M342 128 v14 M354 128 v14 M362 128 v14"/>
+<g class="note"><path class="l w" d="M388 104 v-16 l10 -3 v16" style="stroke-width:1.6"/><circle class="fw" cx="385" cy="105" r="3"/><circle class="fw" cx="395" cy="102" r="3"/></g>
+<g class="note note2"><path class="l w" d="M374 100 v-14" style="stroke-width:1.6"/><circle class="fw" cx="371" cy="101" r="3"/></g>
+<g class="note note3"><path class="l w" d="M400 112 v-14 l8 -2" style="stroke-width:1.6"/><circle class="fw" cx="397" cy="113" r="3"/></g>
+<!-- хора (публика, силуети) -->
+<g class="fi fi2"><path class="l" d="M130 172 c0 -12 8 -18 14 -18 s14 6 14 18 M144 148 a6 6 0 1 1 0.1 0 M262 172 c0 -12 8 -18 14 -18 s14 6 14 18 M276 148 a6 6 0 1 1 0.1 0" style="stroke-width:1.6"/></g>
 
-  <!-- слънце с въртящи се лъчи (горе вляво от центъра) -->
-  <g class="sp" opacity=".85"><g stroke="#d99a2b" stroke-width="4" stroke-linecap="round">
-    <line x1="120" y1="42" x2="120" y2="26"/><line x1="120" y1="74" x2="120" y2="90"/>
-    <line x1="104" y1="58" x2="88" y2="58"/><line x1="136" y1="58" x2="152" y2="58"/>
-    <line x1="108" y1="46" x2="98" y2="36"/><line x1="132" y1="70" x2="142" y2="80"/>
-    <line x1="132" y1="46" x2="142" y2="36"/><line x1="108" y1="70" x2="98" y2="80"/>
-  </g></g>
-  <circle class="f1" cx="120" cy="58" r="15" fill="#d99a2b"/>
-
-  <!-- малка арка вдясно (не централна) -->
-  <path d="M250 150 V108 a34 34 0 0 1 68 0 V150" fill="none" stroke="#c8643c" stroke-width="5" stroke-linecap="round"/>
-  <circle class="f3" cx="284" cy="120" r="9" fill="#9c424c"/>
-
-  <!-- чаша / бокал в средата -->
-  <g class="f1"><path d="M196 150 c-9 0 -16 -10 -16 -24 h32 c0 14 -7 24 -16 24 Z" fill="#b5532f"/>
-    <path d="M196 150 v14" stroke="#9c6b4a" stroke-width="3"/><path d="M188 164 h16" stroke="#9c6b4a" stroke-width="3" stroke-linecap="round"/></g>
-
-  <!-- листо/клонка -->
-  <g class="f2"><path d="M70 150 q-14 -10 -18 -28 q16 2 18 26" fill="#6f7a39"/>
-    <path d="M70 150 q14 -10 18 -28 q-16 2 -18 26" fill="#2f6b63"/></g>
-
-  <!-- нота -->
-  <g class="f3"><line x1="344" y1="120" x2="344" y2="86" stroke="#6f7a39" stroke-width="4"/><ellipse cx="338" cy="120" rx="8" ry="6" fill="#6f7a39"/></g>
-
-  <!-- полумесец вляво долу -->
-  <path class="f2" d="M44 60 a14 14 0 1 1 -5 -27 a11 11 0 0 0 5 27 Z" fill="#bf8a2e"/>
-
-  <!-- звезди -->
-  <path class="tw" d="M210 44 l3 7 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1 Z" fill="#c8643c"/>
-  <path class="tw" style="animation-delay:1.2s" d="M300 60 l2 5 5 1 -4 4 1 5 -4 -2 -5 2 1 -5 -4 -4 5 -1 Z" fill="#2f6b63"/>
-
-  <!-- вълничка -->
-  <path d="M150 176 q18 -14 36 0 q18 14 36 0" fill="none" stroke="#bf8a2e" stroke-width="4" stroke-linecap="round"/>
-
-  <!-- разпръснати точки -->
-  <g fill="#c8643c"><circle cx="240" cy="70" r="4"/><circle cx="90" cy="120" r="4"/><circle cx="400" cy="100" r="4"/></g>
-  <g fill="#6b3a5b"><circle cx="170" cy="60" r="3.5"/><circle cx="330" cy="150" r="4"/></g>
-
-  <path d="M20 180 H400" stroke="#3a2c23" stroke-width="2" stroke-linecap="round" opacity=".3"/>
 </svg>

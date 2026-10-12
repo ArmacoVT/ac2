@@ -1,12 +1,37 @@
-<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Table">
-<style>.l{transform-box:fill-box;transform-origin:200px 20px;animation:l 5s ease-in-out infinite}@keyframes l{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}</style>
-<g class="l"><line x1="200" y1="14" x2="200" y2="44" stroke="#9c6b4a" stroke-width="3"/><path d="M186 44 h28 l-6 16 h-16 Z" fill="#d99a2b"/></g>
-<rect x="120" y="96" width="160" height="9" rx="4" fill="#9c6b4a"/>
-<rect x="138" y="105" width="7" height="34" fill="#9c6b4a"/><rect x="255" y="105" width="7" height="34" fill="#9c6b4a"/>
-<path d="M150 96 v-12 a10 10 0 0 1 20 0 v12 Z" fill="#b5532f"/>
-<path d="M230 96 v-12 a10 10 0 0 1 20 0 v12 Z" fill="#2f6b63"/>
-<circle cx="200" cy="90" r="7" fill="#6b3a5b"/>
-<g fill="#6f7a39"><path d="M300 100 q14 -8 20 -24 q-16 4 -20 22Z"/><path d="M300 100 q-14 -8 -20 -24 q16 4 20 22Z"/></g>
-<g fill="#d99a2b"><circle cx="96" cy="60" r="5"/><circle cx="320" cy="60" r="4"/></g>
-<path d="M40 139 H360" stroke="#3a2c23" stroke-width="2" opacity=".3"/>
+<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AC² Food">
+<style>
+*{stroke-linecap:round;stroke-linejoin:round}
+.l{fill:none;stroke:#1c1c1b;stroke-width:2}
+.w{stroke:#82303D} .g{stroke:#507044} .fw{fill:#82303D;stroke:none} .fg{fill:#507044;stroke:none}
+.d{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.3s cubic-bezier(.4,0,.2,1) forwards}
+.d2{animation-delay:.35s} .d3{animation-delay:.7s} .d4{animation-delay:1.05s} .d5{animation-delay:1.4s}
+.fi{opacity:0;animation:fade .8s ease forwards} .fi2{animation-delay:1.3s} .fi3{animation-delay:1.7s}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fade{to{opacity:1}}
+.gl{transform-box:fill-box;transform-origin:bottom center;animation:cl 4s ease-in-out infinite}
+.gr{transform-box:fill-box;transform-origin:bottom center;animation:cr 4s ease-in-out infinite}
+@keyframes cl{0%,60%,100%{transform:rotate(0)}75%{transform:rotate(9deg)}85%{transform:rotate(7deg)}}
+@keyframes cr{0%,60%,100%{transform:rotate(0)}75%{transform:rotate(-9deg)}85%{transform:rotate(-7deg)}}
+.steam{fill:none;stroke:#1c1c1b;stroke-width:1.4;opacity:0;animation:steam 3.2s ease-in-out infinite}
+.steam2{animation-delay:1.1s}.steam3{animation-delay:2.2s}
+@keyframes steam{0%{opacity:0;transform:translateY(3px)}30%{opacity:.6}100%{opacity:0;transform:translateY(-14px)}}
+.sprig{transform-box:fill-box;transform-origin:bottom left;animation:sprig 6s ease-in-out infinite}
+@keyframes sprig{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(5deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;stroke-dashoffset:0!important;opacity:1!important}}
+</style>
+
+<path class="l d" pathLength="1" d="M20 136 h360"/>
+<!-- маса -->
+<path class="l d d2" pathLength="1" d="M70 100 h260 M90 100 v36 M310 100 v36 M86 108 h228"/>
+<!-- чаши -->
+<g class="gl"><path class="l d d3 w" pathLength="1" d="M138 60 c0 18 8 28 16 28 s16 -10 16 -28 z M154 88 v12 m-9 0 h18 M140 70 h28" /></g>
+<g class="gr"><path class="l d d3 w" pathLength="1" d="M194 60 c0 18 8 28 16 28 s16 -10 16 -28 z M210 88 v12 m-9 0 h18 M196 70 h28" /></g>
+<!-- чиния с капак (клош) -->
+<path class="l d d4" pathLength="1" d="M248 100 h74 M254 96 c0 -20 14 -30 31 -30 s31 10 31 30 M285 66 v-6 m-4 0 h8"/>
+<path class="steam" d="M275 56 c3 -4 -3 -8 0 -12"/><path class="steam steam2" d="M285 54 c3 -4 -3 -8 0 -12"/><path class="steam steam3" d="M295 56 c3 -4 -3 -8 0 -12"/>
+<!-- хляб / купа -->
+<path class="l d d4" pathLength="1" d="M92 100 c0 -10 8 -14 18 -14 s18 4 18 14 M96 90 c6 -10 26 -10 28 0"/>
+<!-- стръкче -->
+<g class="fi fi2"><g class="sprig"><path class="l g" d="M338 100 c0 -14 8 -24 20 -30 M344 86 c6 -2 10 -6 12 -12 M348 76 c-6 0 -10 -2 -12 -8 M352 70 c6 0 10 -4 12 -10"/></g></g>
+
 </svg>

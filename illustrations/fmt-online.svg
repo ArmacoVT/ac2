@@ -1,17 +1,35 @@
-<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Online">
-<style>.w{transform-box:fill-box;transform-origin:center;animation:w 3s ease-in-out infinite}@keyframes w{0%,100%{opacity:.3}50%{opacity:1}}</style>
-<g fill="none" stroke="#3d6b7d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-<rect x="150" y="48" width="100" height="66" rx="9"/>
-<line x1="184" y1="126" x2="216" y2="126"/>
-<line x1="200" y1="114" x2="200" y2="126"/>
-</g>
-<path d="M189 64 L189 98 L217 81 Z" fill="#3d6b7d"/>
-<g fill="none" stroke="#bf8a2e" stroke-width="4" stroke-linecap="round">
-<path class="w" d="M126 62 q-13 19 0 38"/>
-<path class="w" style="animation-delay:.5s" d="M106 50 q-23 31 0 62"/>
-<path class="w" d="M274 62 q13 19 0 38"/>
-<path class="w" style="animation-delay:.5s" d="M294 50 q23 31 0 62"/>
-</g>
-<g fill="#b5532f"><circle cx="150" cy="38" r="4"/><circle cx="250" cy="38" r="4"/></g>
-<path d="M40 140 H360" stroke="#3a2c23" stroke-width="2" opacity=".3"/>
+<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AC² Online">
+<style>
+*{stroke-linecap:round;stroke-linejoin:round}
+.l{fill:none;stroke:#1c1c1b;stroke-width:2}
+.w{stroke:#82303D} .g{stroke:#507044} .fw{fill:#82303D;stroke:none} .fg{fill:#507044;stroke:none}
+.d{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.3s cubic-bezier(.4,0,.2,1) forwards}
+.d2{animation-delay:.35s} .d3{animation-delay:.7s} .d4{animation-delay:1.05s} .d5{animation-delay:1.4s}
+.fi{opacity:0;animation:fade .8s ease forwards} .fi2{animation-delay:1.3s} .fi3{animation-delay:1.7s}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fade{to{opacity:1}}
+.wv{opacity:0;animation:wv 2.4s ease-out infinite}
+.wv2{animation-delay:.6s}.wv3{animation-delay:1.2s}
+@keyframes wv{0%{opacity:0}20%{opacity:.9}100%{opacity:0}}
+.play{transform-box:fill-box;transform-origin:center;animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.live{animation:blink 1.6s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;stroke-dashoffset:0!important;opacity:1!important}}
+</style>
+
+<path class="l d" pathLength="1" d="M20 140 h360"/>
+<!-- екран -->
+<path class="l d d2" pathLength="1" d="M138 40 h124 a8 8 0 0 1 8 8 v64 a8 8 0 0 1 -8 8 h-124 a8 8 0 0 1 -8 -8 v-64 a8 8 0 0 1 8 -8 z M200 120 v14 m-22 0 h44"/>
+<!-- play -->
+<g class="play"><path class="l d d3 w" pathLength="1" d="M190 64 l24 16 l-24 16 z"/></g>
+<!-- live точка -->
+<g class="fi fi2"><circle class="fw live" cx="252" cy="52" r="3.5"/><path class="l w" d="M240 52 h6" style="stroke-width:1.4"/></g>
+<!-- вълни -->
+<path class="l wv g" d="M116 64 a26 26 0 0 0 0 32 M284 64 a26 26 0 0 1 0 32"/>
+<path class="l wv wv2 g" d="M100 56 a40 40 0 0 0 0 48 M300 56 a40 40 0 0 1 0 48"/>
+<path class="l wv wv3 g" d="M84 48 a56 56 0 0 0 0 64 M316 48 a56 56 0 0 1 0 64"/>
+<!-- зрител вкъщи -->
+<g class="fi fi3"><path class="l" d="M318 140 c0 -14 8 -22 16 -22 s16 8 16 22 M334 108 a7 7 0 1 1 0.1 0 M300 140 v-10 h68 v10" style="stroke-width:1.6"/></g>
+
 </svg>

@@ -1,9 +1,35 @@
-<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Conversation">
-<style>.t{transform-box:fill-box;transform-origin:center;animation:t 3.5s ease-in-out infinite}@keyframes t{0%,100%{opacity:.4}50%{opacity:1}}</style>
-<g><circle cx="138" cy="84" r="26" fill="#bf8a2e"/><path d="M112 130 q26 -22 52 0 Z" fill="#bf8a2e"/></g>
-<g><circle cx="262" cy="84" r="26" fill="#2f6b63"/><path d="M236 130 q26 -22 52 0 Z" fill="#2f6b63"/></g>
-<path d="M170 60 h44 a6 6 0 0 1 6 6 v14 a6 6 0 0 1 -6 6 h-30 l-10 9 v-9 h-4 a6 6 0 0 1 -6 -6 V66 a6 6 0 0 1 6 -6 Z" fill="#fffaf0" stroke="#9c424c" stroke-width="3"/>
-<g class="t" fill="#9c424c"><circle cx="183" cy="73" r="2.5"/><circle cx="194" cy="73" r="2.5"/><circle cx="205" cy="73" r="2.5"/></g>
-<g fill="#d99a2b"><circle cx="80" cy="46" r="5"/><circle cx="330" cy="60" r="5"/></g>
-<path d="M40 134 H360" stroke="#3a2c23" stroke-width="2" opacity=".3"/>
+<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AC² Conversation">
+<style>
+*{stroke-linecap:round;stroke-linejoin:round}
+.l{fill:none;stroke:#1c1c1b;stroke-width:2}
+.w{stroke:#82303D} .g{stroke:#507044} .fw{fill:#82303D;stroke:none} .fg{fill:#507044;stroke:none}
+.d{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.3s cubic-bezier(.4,0,.2,1) forwards}
+.d2{animation-delay:.35s} .d3{animation-delay:.7s} .d4{animation-delay:1.05s} .d5{animation-delay:1.4s}
+.fi{opacity:0;animation:fade .8s ease forwards} .fi2{animation-delay:1.3s} .fi3{animation-delay:1.7s}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fade{to{opacity:1}}
+.b1{opacity:0;animation:bub 6s ease-in-out infinite}
+.b2{opacity:0;animation:bub 6s ease-in-out infinite;animation-delay:3s}
+@keyframes bub{0%{opacity:0;transform:translateY(4px)}8%,40%{opacity:1;transform:none}48%,100%{opacity:0}}
+.dot{animation:dot 1.2s ease-in-out infinite}.dot2{animation-delay:.2s}.dot3{animation-delay:.4s}
+@keyframes dot{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.nod{transform-box:fill-box;transform-origin:bottom center;animation:nod 5s ease-in-out infinite}
+.nod2{animation-delay:-2.5s}
+@keyframes nod{0%,100%{transform:rotate(0)}50%{transform:rotate(3deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;stroke-dashoffset:0!important;opacity:1!important}}
+</style>
+
+<path class="l d" pathLength="1" d="M20 140 h360"/>
+<!-- лява фигура -->
+<g class="nod"><path class="l d d2" pathLength="1" d="M100 140 c0 -24 12 -36 28 -36 s28 12 28 36 M128 100 m-13 0 a13 13 0 1 0 26 0 a13 13 0 1 0 -26 0 M134 96 a2 2 0 1 1 0.1 0 M130 104 c3 2 6 2 8 0"/></g>
+<!-- дясна фигура -->
+<g class="nod nod2"><path class="l d d2" pathLength="1" d="M244 140 c0 -24 12 -36 28 -36 s28 12 28 36 M272 100 m-13 0 a13 13 0 1 0 26 0 a13 13 0 1 0 -26 0 M266 96 a2 2 0 1 1 0.1 0 M262 104 c3 2 6 2 8 0"/></g>
+<!-- балончета -->
+<g class="b1"><path class="l w" d="M140 34 h60 a8 8 0 0 1 8 8 v18 a8 8 0 0 1 -8 8 h-46 l-10 10 v-10 h-4 a8 8 0 0 1 -8 -8 v-18 a8 8 0 0 1 8 -8 z"/>
+<circle class="fw dot" cx="158" cy="52" r="2.6"/><circle class="fw dot dot2" cx="170" cy="52" r="2.6"/><circle class="fw dot dot3" cx="182" cy="52" r="2.6"/></g>
+<g class="b2"><path class="l g" d="M260 34 h-60 a8 8 0 0 0 -8 8 v18 a8 8 0 0 0 8 8 h46 l10 10 v-10 h4 a8 8 0 0 0 8 -8 v-18 a8 8 0 0 0 -8 -8 z"/>
+<circle class="fg dot" cx="218" cy="52" r="2.6"/><circle class="fg dot dot2" cx="230" cy="52" r="2.6"/><circle class="fg dot dot3" cx="242" cy="52" r="2.6"/></g>
+<!-- масичка с две чаши -->
+<path class="l d d4" pathLength="1" d="M178 140 v-24 h44 v24 M188 116 c0 -8 3 -12 6 -12 s6 4 6 12 M202 116 c0 -8 3 -12 6 -12 s6 4 6 12" style="stroke-width:1.6"/>
+
 </svg>

@@ -1,11 +1,37 @@
-<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Culture">
-<style>.b{transform-box:fill-box;transform-origin:center;animation:b 6s ease-in-out infinite}@keyframes b{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}</style>
-<rect x="150" y="26" width="110" height="74" rx="4" fill="#fffaf0" stroke="#6b3a5b" stroke-width="4"/>
-<path d="M156 94 l26 -36 16 20 16 -22 24 38 Z" fill="#2f6b63"/>
-<circle cx="172" cy="48" r="8" fill="#d99a2b"/>
-<path d="M150 100 h110" stroke="#6b3a5b" stroke-width="4"/>
-<g class="b"><rect x="78" y="104" width="28" height="24" rx="3" fill="#9c424c"/>
-<path d="M92 104 q-18 -14 -12 -38 M92 104 q18 -14 12 -38 M92 104 v-34" stroke="#6f7a39" stroke-width="4" fill="none" stroke-linecap="round"/></g>
-<g fill="#c8643c"><circle cx="300" cy="50" r="5"/><circle cx="320" cy="90" r="4"/><circle cx="290" cy="110" r="4"/></g>
-<path d="M40 132 H360" stroke="#3a2c23" stroke-width="2" opacity=".3"/>
+<svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AC² Culture">
+<style>
+*{stroke-linecap:round;stroke-linejoin:round}
+.l{fill:none;stroke:#1c1c1b;stroke-width:2}
+.w{stroke:#82303D} .g{stroke:#507044} .fw{fill:#82303D;stroke:none} .fg{fill:#507044;stroke:none}
+.d{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.3s cubic-bezier(.4,0,.2,1) forwards}
+.d2{animation-delay:.35s} .d3{animation-delay:.7s} .d4{animation-delay:1.05s} .d5{animation-delay:1.4s}
+.fi{opacity:0;animation:fade .8s ease forwards} .fi2{animation-delay:1.3s} .fi3{animation-delay:1.7s}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fade{to{opacity:1}}
+.breathe{transform-box:fill-box;transform-origin:center;animation:br 6s ease-in-out infinite}
+@keyframes br{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+.head{transform-box:fill-box;transform-origin:bottom center;animation:tilt 7s ease-in-out infinite}
+@keyframes tilt{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(5deg)}}
+.leaf{transform-box:fill-box;transform-origin:bottom center;animation:leaf 5s ease-in-out infinite}
+@keyframes leaf{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.sun{transform-box:fill-box;transform-origin:center;animation:sun 10s linear infinite}
+@keyframes sun{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;stroke-dashoffset:0!important;opacity:1!important}}
+</style>
+
+<path class="l d" pathLength="1" d="M20 140 h360"/>
+<!-- голяма картина -->
+<g class="breathe"><path class="l d d2" pathLength="1" d="M150 28 h150 v92 h-150 z M158 36 h134 v76 h-134 z"/>
+<path class="l d d3 g" pathLength="1" d="M166 104 l34 -40 l20 24 l16 -18 l40 34"/>
+<g class="sun"><path class="l d d4 w" pathLength="1" d="M262 58 m-9 0 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 M262 44 v-4 M262 72 v4 M248 58 h-4 M276 58 h4"/></g></g>
+<!-- малка картина -->
+<path class="l d d3" pathLength="1" d="M318 48 h56 v44 h-56 z M326 56 h40 v28 h-40 z"/>
+<path class="l d d4 w" pathLength="1" d="M332 80 c6 -14 14 -14 20 0 M352 70 c4 -8 8 -8 12 0" />
+<!-- зрител -->
+<g class="fi fi2"><path class="l" d="M86 140 c0 -24 10 -34 24 -34 s24 10 24 34"/>
+<g class="head"><path class="l" d="M110 104 m-12 0 a12 12 0 1 0 24 0 a12 12 0 1 0 -24 0 M100 96 c6 -8 14 -8 20 0"/></g></g>
+<!-- растение -->
+<g class="fi fi3"><path class="l w" d="M30 140 v-16 h22 v16"/>
+<g class="leaf"><path class="l g" d="M41 124 v-26 M41 110 c-10 -2 -14 -10 -14 -18 c8 0 14 6 14 18 M41 104 c10 -2 14 -10 14 -18 c-8 0 -14 6 -14 18"/></g></g>
+
 </svg>
