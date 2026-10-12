@@ -32,7 +32,7 @@
 - Не слагай плащане/цена/линк за членство в приложението (Apple IAP правило). Членството ще се плаща на сайта с код (план в паметта).
 
 ## Мобилни
-- iOS проект на Mac: `~/Desktop/arcus-club-mobile` (Capacitor 8, плъгини biometric/calendar/haptics/local-notifications/badge). Apple Pay в iOS WebView работи през Stripe Payment Element.
+- iOS проект на Mac: `~/Desktop/arcus-club-mobile` (Capacitor 8.5+ с UIScene миграция за Xcode 27 — виж mobile-setup/REBUILD-iOS.md §0; плъгини biometric/calendar/haptics/local-notifications/badge). Apple Pay в iOS WebView работи през Stripe Payment Element.
 - Android проект на Windows: `C:\Users\ygrozdev\arcus-club-android` (Capacitor 8, appId bg.arcusclub.app). Google Pay в WebView не работи → нативен плъгин `@capacitor-community/stripe` (код `nativePay` в app/index.html, стъпки в `mobile-setup/WALLETS-ApplePay-GooglePay.md`) — чака платените Apple/Google акаунти. Google Play акаунт е одобрен; публикуване планирано ~средата на октомври 2026 (`mobile-setup/BUILD-Android.md`).
 
 ## Отворени задачи

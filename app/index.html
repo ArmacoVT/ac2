@@ -1027,11 +1027,16 @@ async function addToCalendar(id){
   // 1) Телефон: отваря директно системния календар за ново събитие
   const Cal=CalPlugin();
   if(Cal&&Cal.createEventWithPrompt){
+    // Системният редактор на събитие не изисква разрешение (iOS 17+); не искаме „всички“ разрешения (напомняния и т.н.).
+    // Ако плъгинът не отговори до 8 s или върне грешка → резервният уеб вариант + съобщение.
+    const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
     try{
-      try{ if(Cal.requestAllPermissions) await Cal.requestAllPermissions(); }catch(_){}
-      await Cal.createEventWithPrompt({title:e.title,location:e.place||'',startDate:start,endDate:end,notes:'American College Arcus Club'});
+      await Promise.race([Cal.createEventWithPrompt({title:e.title,location:e.place||'',startDate:start,endDate:end,description:'American College Arcus Club'}),timeout]);
       return;
-    }catch(err){/* пада към уеб варианта */}
+    }catch(err){
+      const m=(err&&(err.message||err.code))||'';
+      if(m&&m!=='timeout'){ try{toast(lang==='bg'?('Календар: '+m):('Calendar: '+m));}catch(_){} }
+    }
   }
   // 2) Браузър: меню за избор на календар
   calMenu(e,start,end);

@@ -8,6 +8,19 @@ https://ac2.bg/app/ и държи нативните плъгини.
 
 ---
 
+## 0) Xcode 27 / iOS UIScene (направено на 12.10.2026)
+Xcode 27 изисква „UIScene“ жизнен цикъл → Capacitor **8.5+** и миграция на iOS проекта. Правено веднъж, но ако проектът се създава наново:
+```bash
+cd ~/Desktop/arcus-club-mobile
+npm i @capacitor/core@^8.5.0 @capacitor/ios@^8.5.0 @capacitor/android@^8.5.0
+npm i -D @capacitor/cli@latest
+npx cap migrate          # y → y → NPM; добавя SceneDelegate.swift, Info.plist манифест, AppDelegate hook
+npx cap sync ios && npx cap open ios
+```
+Ръчни стъпки (ако миграторът откаже): https://capacitorjs.com/docs/updating/8-5
+Симптом без миграцията: Xcode спира с EXC_BREAKPOINT в AppDelegate и текст „UIKit scene-based life cycle…“.
+Същото обновление (без iOS миграция) и за Android проекта на Windows: `npm i @capacitor/core@^8.5.0 @capacitor/android@^8.5.0 @capacitor/cli@^8.5.0` + `npx cap sync android`.
+
 ## 1) Пакети — ВСИЧКО на версия 8 (един ред)
 
 ```bash
@@ -70,6 +83,8 @@ npx cap open ios
 Таб **Info** — трябва да има:
 - **Privacy – Face ID Usage Description** = „За бърз и сигурен вход с Face ID."
 - **Privacy – Calendars Full Access Usage Description** = „За добавяне на събития в календара ти."
+- **Privacy – Calendars Write Only Access Usage Description** = същия текст (iOS 17+; плъгинът 8.9+ отказва без него)
+- **Privacy – Calendars Usage Description** = същия текст (за по-стари iOS)
 
 Таб **General**:
 - **Minimum Deployments** = **iOS 16.0**
