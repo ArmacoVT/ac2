@@ -294,6 +294,7 @@
   .vwell svg{position:absolute;inset:0;width:54px;height:54px;}
   .vctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
   .vctr img{width:28px;height:auto;object-fit:contain;}
+  .vctr.logo svg{width:30px!important;height:20px!important;display:block;}
   .vctr.num b{font-family:var(--serif);font-style:italic;font-size:16px;line-height:1;color:#82303d;}
   .vctr.num span{font-size:8px;text-transform:uppercase;color:var(--muted);}
   .vcol{flex:1;min-width:0;}
@@ -2194,7 +2195,7 @@ function validityRing(){
   const R=25,C=2*Math.PI*R,off=C*(1-frac);
   const center=warn
     ? `<div class="vctr num"><b>${days}</b><span>${lang==='bg'?(days===1?'ден':'дни'):'days'}</span></div>`
-    : `<div class="vctr"><img src="${AC2}" alt="AC²"/></div>`;
+    : `<div class="vctr logo" style="color:var(--cream)">${LOGO_SVG}</div>`;
   const dateStr=(lang==='bg'?'до ':'until ')+euDate(user.membership_until);
   const warnLine=warn?`<div class="vwarn">${lang==='bg'?('остават '+days+' '+(days===1?'ден':'дни')):(days+' days left')}</div>`:'';
   return `<div class="vrow">
