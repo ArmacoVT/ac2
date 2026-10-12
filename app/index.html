@@ -125,6 +125,7 @@
   #splash{position:fixed;inset:0;z-index:5000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;
     transition:opacity .5s ease;}
   #splash.gone{opacity:0;pointer-events:none;}
+  #splash video{width:100%;height:100%;object-fit:contain;display:block;background:var(--bg);}
   #splash .sp-ring{width:128px;height:128px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     box-shadow:9px 9px 22px #cfcfbb,-9px -9px 22px #f7f7ee;
     animation:spRing .9s cubic-bezier(.2,.8,.2,1) both;}
@@ -522,8 +523,7 @@
 </head>
 <body>
 <div id="splash">
-  <div class="sp-ring"><img src="../cards/logo-ac2-dark.webp?v=2" alt="AC²"/></div>
-  <div class="sp-name">American College<br>Arcus Club</div>
+  <video id="splashv" autoplay muted playsinline preload="auto" poster="../media/poster.webp"><source src="../media/intro.webm" type="video/webm"/><source src="../media/intro.mp4" type="video/mp4"/></video>
 </div>
 <div id="app"></div>
 <div class="toast" id="toast"></div>
@@ -2901,7 +2901,15 @@ async function refreshProfile(){
 // Скриване на splash след кратка анимация
 (function(){
   function hide(){var s=document.getElementById('splash');if(!s)return;s.classList.add('gone');setTimeout(function(){if(s&&s.parentNode)s.parentNode.removeChild(s);},600);}
-  setTimeout(hide,1900);
+  // Анимацията от дизайнера (~5 s): край на видеото → приложението; докосване → пропускане; ако не тръгне — 1.9 s както преди
+  var v=document.getElementById('splashv');
+  if(v){
+    v.addEventListener('ended',function(){setTimeout(hide,300);});
+    v.addEventListener('error',function(){setTimeout(hide,1900);});
+    var p=v.play&&v.play(); if(p&&p.catch)p.catch(function(){setTimeout(hide,1900);});
+    document.getElementById('splash').addEventListener('click',hide);
+    setTimeout(hide,6500);
+  } else setTimeout(hide,1900);
 })();
 // Pull-to-refresh (издърпване отгоре → опресняване)
 (function(){
