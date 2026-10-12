@@ -891,7 +891,7 @@ function home(){
   return topbar('')+`
     <div class="hero"><img class="ac2" src="${AC2}" alt="AC²"/>
       <h1>American College<br>Arcus Club</h1>
-      <img class="hero-illu" src="../illustrations/hero.svg?v=3" alt="" />
+      <img class="hero-illu" src="../illustrations/hero.svg?v=4" alt="" />
       </div>
     ${greeting()}
     ${annHtml()}
@@ -908,7 +908,7 @@ function formatPage(id){
   const fevents=EVENTS.filter(e=>e.format===f.id&&canAccess(e)&&!e.archive_only);
   const prog=(!dataReady&&!EVENTS.length)?skel(3):eventsHtml(fevents,lang==='bg'?'Все още няма обявени събития.':'No events announced yet.');
   return topbar(f.t)+`<div class="page">
-    <div class="fbanner" style="border-color:${f.c}33"><img src="../illustrations/fmt-${f.id}.svg?v=3" alt=""/><h2 style="color:${f.c}">${f.t}</h2></div>
+    <div class="fbanner" style="border-color:${f.c}33"><img src="../illustrations/fmt-${f.id}.svg?v=4" alt=""/><h2 style="color:${f.c}">${f.t}</h2></div>
     <div class="sec-title" style="padding:18px 4px 6px;">${tr('includes')}</div>${bul}
     <div class="sec-title" style="padding:20px 4px 8px;">${lang==='bg'?'Програма':'Programme'}</div>${prog}
     </div>`;
