@@ -291,10 +291,10 @@
   .vrow{display:flex;align-items:center;gap:14px;background:var(--bg);border-radius:15px;box-shadow:inset 5px 5px 11px #cfcfbb, inset -5px -5px 11px #f7f7ee;padding:15px 17px;margin-top:12px;}
   .vwell{position:relative;flex:none;width:54px;height:54px;}
   .vwell .vin{position:absolute;inset:0;border-radius:50%;box-shadow:inset 3px 3px 7px #cfcfbb, inset -3px -3px 7px #f7f7ee;}
-  .vwell svg{position:absolute;inset:0;width:54px;height:54px;}
+  .vwell>svg{position:absolute;inset:0;width:54px;height:54px;}
   .vctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
   .vctr img{width:28px;height:auto;object-fit:contain;}
-  .vctr.logo svg{width:30px!important;height:20px!important;display:block;}
+  .vwell .vctr.logo svg{position:static;width:30px!important;height:20px!important;display:block;}
   .vctr.num b{font-family:var(--serif);font-style:italic;font-size:16px;line-height:1;color:#82303d;}
   .vctr.num span{font-size:8px;text-transform:uppercase;color:var(--muted);}
   .vcol{flex:1;min-width:0;}
