@@ -24,10 +24,10 @@
 <meta name="description" content="AC² — културен център, ресторант и клуб във Велико Търново. Сцена, галерия, кино, тематични вечери и членство." />
 <meta property="og:title" content="AC² — American College Arcus Club" />
 <meta property="og:description" content="Културен център, ресторант и клуб във Велико Търново." />
-<meta property="og:image" content="https://ac2.bg/icon-512.png?v=3" />
+<meta property="og:image" content="https://ac2.bg/icon-512.png?v=2" />
 <meta property="og:type" content="website" />
-<link rel="icon" href="favicon.png?v=3" />
-<link rel="apple-touch-icon" href="icon-192.png?v=3" />
+<link rel="icon" href="favicon.png?v=2" />
+<link rel="apple-touch-icon" href="icon-192.png?v=2" />
 <link rel="manifest" href="manifest.json" />
 <link rel="preconnect" href="https://twcxfqgknhqicxqghcrx.supabase.co" crossorigin />
 <link rel="stylesheet" href="fonts/fonts.css" />
@@ -354,6 +354,7 @@
 <div id="intro"></div>
 <header class="hdr" id="hdr"></header>
 <div class="mnav" id="mnav"></div>
+<div class="soonback"><a href="landing.html">← Към началната страница</a></div>
 <main id="page"></main>
 <footer class="ft" id="foot"></footer>
 <div class="cookie" id="cookie"></div>
@@ -364,7 +365,18 @@
 <script src="config.js"></script>
 <!-- COMING_SOON (config.js): докато е true, целият публичен сайт е скрит зад landing.html.
      Пълният сайт се вижда само с ac2.bg/?site=1 (за преглед). Правните страници (#/legal/…) остават достъпни. -->
-<script>(function(){try{var c=window.ACAC_CONFIG||{};if(!c.COMING_SOON)return;if(/[?&]site=1/.test(location.search)){sessionStorage.setItem('ac2_site','1');return;}if(sessionStorage.getItem('ac2_site')==='1')return;if(/^#\/legal\//.test(location.hash))return;location.replace('landing.html');}catch(e){}})();</script>
+<script>(function(){try{var c=window.ACAC_CONFIG||{};if(!c.COMING_SOON)return;
+if(/[?&]site=1/.test(location.search)){sessionStorage.setItem('ac2_site','1');return;}
+if(sessionStorage.getItem('ac2_site')==='1')return;
+var legal=function(){return /^#\/legal\//.test(location.hash);};
+if(!legal()){location.replace('landing.html');return;}
+// правна страница по време на „очаквайте скоро“: без меню/футър и без излизане към останалия сайт
+document.documentElement.className+=' soon';
+window.addEventListener('hashchange',function(){ if(!legal()) location.replace('landing.html'); });
+}catch(e){}})();</script>
+<style>html.soon .hdr,html.soon .mnav,html.soon footer.ft,html.soon .cookie,html.soon #intro{display:none!important}
+html.soon body{padding-top:0} html.soon .soonback{display:block}
+.soonback{display:none;padding:18px 0 0;text-align:center;font-family:var(--sans);font-size:14px} .soonback a{color:var(--text)}</style>
 <script src="brand.js"></script>
 <script src="db.js"></script>
 <script>
