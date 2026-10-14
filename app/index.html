@@ -63,13 +63,13 @@
   .memcard{position:relative;border-radius:20px;padding:20px;color:#ebebd6;overflow:hidden;
     background:linear-gradient(135deg,#1a1a1a 0%,#000000 60%,#161616 100%);box-shadow:7px 7px 16px #cfcfbb,-7px -7px 16px #f7f7ee;}
   .memcard .mc-top{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#bfc0c2;}
-  .memcard .mc-top img{width:26px;height:26px;border-radius:6px;}
+  .memcard .mc-top img{width:44px;height:44px;border-radius:8px;}
   .memcard .mc-name{font-family:var(--serif);font-style:italic;font-size:23px;margin-top:18px;color:#ebebd6;}
   .memcard .mc-lvl{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#bfc0c2;margin-top:3px;}
   .memcard .mc-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:18px;}
   .memcard .mc-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#9a9a92;}
   .memcard .mc-val{font-size:15px;color:#ebebd6;letter-spacing:1px;}
-  .memcard .mc-qr{width:64px;height:64px;border-radius:8px;background:#000000;padding:3px;}
+  .memcard .mc-qr{width:92px;height:92px;border-radius:8px;background:#EBEBD6;padding:6px;}  /* черен QR на светло + бяло поле = четим от всеки скенер */
   .evposter{width:100%;border-radius:12px;margin-bottom:12px;display:block;object-fit:cover;max-height:240px;}
   .evvideo{width:100%;border-radius:12px;margin:10px 0 4px;display:block;background:#000;max-height:300px;}
   .sec-sub{color:var(--muted);font-size:13px;padding:0 20px 10px;}
@@ -2356,15 +2356,15 @@ function memberCard(){
   const m=MEMBERS.find(x=>x.id===user.membership);
   const lvl=m?m.t:'Guest';
   const disc=m&&m.disc?m.disc:0;
-  const no=user.id?user.id.replace(/[^a-z0-9]/gi,'').slice(0,8).toUpperCase():'--------';
-  const qr=qrDataUri('AC2:'+(user.id||''),'#000000','#ebebd6');
+  const qr=qrDataUri('AC2:'+(user.id||''),'#EBEBD6','#000000');   // фон бежов, модули черни
+  const until=user.membership_until?euDate(user.membership_until):'';
   return `<div class="memcard">
     <div class="mc-top"><img src="${AC2}" alt="AC²"/><span>American College Arcus Club</span></div>
     <div class="mc-name">${esc(user.full_name||user.username||user.email)}</div>
     <div class="mc-lvl">${esc(lvl)}</div>
     <div class="mc-foot">
-      <div class="mc-info"><div class="mc-lbl">${lang==='bg'?'№ член':'Member no.'}</div><div class="mc-val">${no}</div>
-        ${disc?`<div class="mc-lbl" style="margin-top:8px;">AC² Table</div><div class="mc-val">−${disc}%</div>`:''}</div>
+      <div class="mc-info">${until?`<div class="mc-lbl">${lang==='bg'?'Валидна до':'Valid until'}</div><div class="mc-val">${until}</div>`:''}
+        ${disc?`<div class="mc-lbl" style="margin-top:8px;">AC² Food</div><div class="mc-val">−${disc}%</div>`:''}</div>
       <img class="mc-qr" src="${qr}" alt="QR" loading="lazy"/>
     </div></div>`;
 }
