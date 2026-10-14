@@ -356,6 +356,31 @@ window.PUB_DEFAULTS={
     },
 
     // ---------- СЪБИТИЯ ----------
+    // ---- Режим „Вход“ (скенер на вратата; служител с право reservations или админ) ----
+    async doorLookup(id) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data: p, error } = await sb.from('profiles').select('id,full_name,username,membership,membership_until').eq('id', id).maybeSingle();
+      authErr(error);
+      if (error) return { error };
+      if (!p) return { error: { message: 'not_found' } };
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: rs } = await sb.from('reservations').select('id,event_id,table_event_id,date,time,party_size,status,paid,kind,place,format,checked_in_at')
+        .eq('user_id', id).eq('date', today).in('status', ['confirmed', 'requested']);
+      return { error: null, profile: p, today: rs || [] };
+    },
+    async doorSearch(q) {
+      if (!LIVE) return [];
+      const { data, error } = await sb.from('profiles').select('id,full_name,username,membership,membership_until')
+        .or('full_name.ilike.%' + q.replace(/[%,]/g, '') + '%,username.ilike.%' + q.replace(/[%,]/g, '') + '%').limit(10);
+      authErr(error);
+      return data || [];
+    },
+    async doorCheckIn(resId, undo) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.from('reservations').update({ checked_in_at: undo ? null : new Date().toISOString() }).eq('id', resId);
+      authErr(error);
+      return { error };
+    },
     async listEvents() {
       if (!LIVE) return seedDemo();
       const { data, error } = await sb.from('events').select('*').order('date', { ascending: true });
@@ -452,7 +477,7 @@ window.PUB_DEFAULTS={
         place: placeName(r.place), date: r.date, time: r.time, party: r.party_size, note: r.note, status: r.status,
         kind: r.kind || '', paid: !!r.paid,
         name: r.res_name || r.guest_name || '', email: r.contact_email || r.guest_email || '', phone: r.contact_phone || r.guest_phone || '',
-        guest: !r.user_id && !!r.guest_email, refunded_at: r.refunded_at || '', refund_cents: r.refund_cents || 0 }));
+        guest: !r.user_id && !!r.guest_email, refunded_at: r.refunded_at || '', refund_cents: r.refund_cents || 0, checked_in_at: r.checked_in_at || '' }));
     },
     async addReservation(o) {
       if (!LIVE) { const r = jget(K.res, []); o.id = 'r' + Date.now(); o.status = 'requested'; r.unshift(o); jset(K.res, r); return { error: null }; }

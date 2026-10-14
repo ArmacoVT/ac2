@@ -85,6 +85,7 @@ npx cap open ios
 - **Privacy – Calendars Full Access Usage Description** = „За добавяне на събития в календара ти."
 - **Privacy – Calendars Write Only Access Usage Description** = същия текст (iOS 17+; плъгинът 8.9+ отказва без него)
 - **Privacy – Calendars Usage Description** = същия текст (за по-стари iOS)
+- **Privacy – Camera Usage Description** = „За сканиране на членски карти на входа.“ (режим „Вход“ за служители)
 
 Таб **General**:
 - **Minimum Deployments** = **iOS 16.0**

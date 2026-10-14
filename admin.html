@@ -819,7 +819,7 @@ function resView(){
     const acts=resActs(r.id,st);
     return `<div class="card" id="rescard_${r.id}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
-        <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${r.guest?'<span class="pill" style="border-color:#6b6b63;color:#6b6b63;">гост от сайта</span>':esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}${r.paid?' · <b style="color:#3d5634;">платено</b>':''}${r.refunded_at?' · <b style="color:#82303d;">възстановени '+(r.refund_cents/100).toFixed(2)+' €</b>':''}</div>
+        <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${r.guest?'<span class="pill" style="border-color:#6b6b63;color:#6b6b63;">гост от сайта</span>':esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}${r.paid?' · <b style="color:#3d5634;">платено</b>':''}${r.refunded_at?' · <b style="color:#82303d;">възстановени '+(r.refund_cents/100).toFixed(2)+' €</b>':''}${r.checked_in_at?' · <b style="color:#507044;">✓ присъствал '+r.checked_in_at.slice(11,16)+'</b>':''}</div>
         ${contact?`<div class="muted" style="margin-top:3px;">${contact}</div>`:''}
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
         <div style="margin-top:7px;" id="resbadge_${r.id}">${badge}${cap}</div></div>

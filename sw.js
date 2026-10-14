@@ -1,9 +1,9 @@
 // Service worker — прави приложението инсталируемо и достъпно офлайн (обвивката).
 // Обслужва и публичния сайт (/) и членското приложение (/app/).
-const CACHE = 'acac-v311';
+const CACHE = 'acac-v312';
 const ASSETS = [
   './', './index.html', './landing.html', './cards/contour-tall.svg', './cards/contour-wide.svg', './app/index.html', './admin.html', './config.js', './db.js', './brand.js', './rules.html',
-  './vendor/supabase.js', './vendor/qrcode.js',
+  './vendor/supabase.js', './vendor/qrcode.js', './vendor/jsqr.js',
   './cards/logo-ac2.webp', './cards/logo-ac2.svg', './cards/logo-culture.webp', './cards/logo-cinema.webp',
   './cards/logo-table.webp', './cards/logo-music.webp', './cards/logo-conversation.webp',
   './cards/logo-community.webp', './cards/logo-theater.webp',

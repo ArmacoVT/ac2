@@ -548,6 +548,7 @@
      това приложение не го засяга. (OWASP A03:2025 — Software Supply Chain) -->
 <script src="../vendor/supabase.js"></script>
 <script src="../vendor/qrcode.js"></script>
+<script src="../vendor/jsqr.js"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <script src="https://js.stripe.com/v3/"></script>
 <script src="../config.js"></script>
@@ -2274,6 +2275,7 @@ function profile(){
   const expiredBanner=(!active&&user.membership_until)?`<div class="ev" style="border:1px solid #82303d;margin-bottom:12px;"><h3 style="font-size:15px;color:#82303d;">${tr('memberExpiredTitle')}</h3><div class="m" style="color:#82303d;margin-top:3px;">${tr('memberExpiredMsg')}</div></div>`:'';
   return topbar(tr('profile'))+`<div class="page">
     ${expiredBanner}
+    ${canDoor()?`<div class="ev" onclick="go('door')" style="margin-bottom:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;"><div><h3 style="font-size:15px;margin:0;">${lang==='bg'?'Вход · скенер':'Door · scanner'}</h3><div style="color:var(--mid);font-size:12px;">${lang==='bg'?'Сканирай членска карта и отбележи присъствие':'Scan a membership card and check in'}</div></div><span style="font-size:20px;">›</span></div>`:''}
     ${isStaffView()?`<div class="ev" style="margin-bottom:12px;"><h3 style="font-size:15px;">${lang==='bg'?'Служебен акаунт':'Staff account'}</h3><p style="color:var(--mid);font-size:13px;">${lang==='bg'?'Без членство — достъп за преглед и до админ панела според правата ти.':'No membership — read-only access and admin panel per your permissions.'}</p></div>`:memberCard()}
     <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:10px;">${esc(user.email)}</div>
     <div style="text-align:center;color:var(--muted);font-size:12px;margin-top:4px;">${lang==='bg'?'Телефон':'Phone'}: ${user.phone?esc(user.phone):'—'}</div>
@@ -2690,6 +2692,82 @@ function appBadge(){
 }
 let _activeTab='home';
 function refreshTabbar(){try{tabbar(_activeTab);}catch(e){}}
+// ================= РЕЖИМ „ВХОД“ (скенер на вратата) =================
+const canDoor=()=>!!user&&(user.role==='admin'||(Array.isArray(user.perms)&&user.perms.includes('reservations')));
+let _doorStream=null,_doorRaf=0,_doorLast='',_doorBusy=false;
+function doorView(){
+  if(!canDoor())return topbar(lang==='bg'?'Вход':'Door')+`<div class="page"><div class="ev">${lang==='bg'?'Нямате право за този екран.':'No permission.'}</div></div>`;
+  return topbar(lang==='bg'?'Вход · скенер':'Door · scanner')+`<div class="page">
+    <div style="position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:1/1;max-width:420px;margin:0 auto;">
+      <video id="doorvid" playsinline muted autoplay style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+      <div style="position:absolute;inset:14%;border:2px solid rgba(235,235,214,.8);border-radius:14px;pointer-events:none;"></div>
+      <div id="doorhint" style="position:absolute;left:0;right:0;bottom:10px;text-align:center;color:#EBEBD6;font-size:12px;text-shadow:0 1px 3px #000;">${lang==='bg'?'Насочи към QR кода на картата':'Point at the card QR code'}</div>
+    </div>
+    <div style="display:flex;gap:8px;margin:12px 0;"><input id="doorq" placeholder="${lang==='bg'?'…или търси по име':'…or search by name'}" style="flex:1;" oninput="doorSearch(this.value)"/></div>
+    <div id="doorres"></div>
+    <div id="doorlist"></div>
+  </div>`;
+}
+async function doorStart(){
+  const v=document.getElementById('doorvid'); if(!v)return;
+  try{
+    _doorStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:1280}}});
+    v.srcObject=_doorStream; await v.play();
+    const cv=document.createElement('canvas'), cx=cv.getContext('2d',{willReadFrequently:true});
+    const tick=()=>{
+      if(!document.getElementById('doorvid')){doorStop();return;}
+      if(v.readyState===4&&!_doorBusy){
+        const s=Math.min(v.videoWidth,v.videoHeight), sx=(v.videoWidth-s)/2, sy=(v.videoHeight-s)/2;
+        cv.width=cv.height=480; cx.drawImage(v,sx,sy,s,s,0,0,480,480);
+        const img=cx.getImageData(0,0,480,480);
+        try{ const code=window.jsQR&&jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
+          if(code&&code.data&&code.data!==_doorLast){_doorLast=code.data;doorFound(code.data);setTimeout(()=>{_doorLast='';},4000);}
+        }catch(e){}
+      }
+      _doorRaf=requestAnimationFrame(tick);
+    };
+    tick();
+  }catch(e){ const h=document.getElementById('doorhint'); if(h)h.textContent=(lang==='bg'?'Камерата не е достъпна — ползвай търсенето по име':'Camera unavailable — use the name search'); }
+}
+function doorStop(){ cancelAnimationFrame(_doorRaf); if(_doorStream){_doorStream.getTracks().forEach(t=>t.stop());_doorStream=null;} }
+async function doorFound(txt){
+  const m=/^AC2:([0-9a-f-]{20,})$/i.exec(String(txt).trim());
+  if(!m){toast(lang==='bg'?'Това не е членска карта на AC²':'Not an AC² membership card');return;}
+  hap('medium'); await doorShow(m[1]);
+}
+async function doorSearch(q){
+  const box=document.getElementById('doorlist'); if(!box)return; q=(q||'').trim(); if(q.length<2){box.innerHTML='';return;}
+  const list=await DB.doorSearch(q);
+  box.innerHTML=list.map(p=>`<div class="ev" style="margin-top:8px;cursor:pointer;padding:12px 16px;" onclick="doorShow('${p.id}')"><b>${esc(p.full_name||p.username||'')}</b> <span style="color:var(--muted);font-size:12px;">· ${esc((MEMBERS.find(x=>x.id===p.membership)||{}).t||p.membership||'')}</span></div>`).join('')||`<div class="muted" style="margin-top:8px;">${lang==='bg'?'Няма съвпадение':'No match'}</div>`;
+}
+async function doorShow(id){
+  _doorBusy=true; const box=document.getElementById('doorres'); if(box)box.innerHTML=`<div class="ev">${lang==='bg'?'Проверка…':'Checking…'}</div>`;
+  const r=await DB.doorLookup(id); _doorBusy=false; if(!box)return;
+  if(r.error){box.innerHTML=`<div class="ev" style="border:1px solid #82303d;"><b style="color:#82303d;">${r.error.message==='not_found'?(lang==='bg'?'Няма такъв член':'No such member'):(lang==='bg'?'Грешка':'Error')}</b></div>`;return;}
+  const p=r.profile, m=MEMBERS.find(x=>x.id===p.membership), lvl=m?m.t:(p.membership||'guest');
+  const active=!!p.membership&&p.membership!=='guest'&&(!p.membership_until||p.membership_until>=todayISO());
+  const col=active?'#507044':'#82303d';
+  const rows=(r.today||[]).map(x=>{
+    const ev=EVENTS.find(e=>e.id===(x.event_id||x.table_event_id)); const title=ev?ev.title:(x.place||x.format||'');
+    const st=x.checked_in_at?`<span style="color:#507044;font-weight:700;">✓ ${lang==='bg'?'Присъствал':'Checked in'} ${x.checked_in_at.slice(11,16)}</span>`:(x.status==='confirmed'?`<span style="color:#507044;">${lang==='bg'?'Потвърдена':'Confirmed'}${x.paid?' · '+(lang==='bg'?'платена':'paid'):''}</span>`:`<span style="color:#6b6b63;">${lang==='bg'?'Изчаква одобрение':'Pending'}</span>`);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line-soft);">
+      <div><b>${esc(title)}</b><div style="font-size:12px;color:var(--mid);">${x.time||''} · ${x.party_size||1} ${tr('seats')} · ${st}</div></div>
+      ${x.status==='confirmed'?`<button class="btn sm${x.checked_in_at?' ghost':''}" onclick="doorCheck('${x.id}','${id}',${x.checked_in_at?'true':'false'})">${x.checked_in_at?(lang==='bg'?'Отмени':'Undo'):(lang==='bg'?'Присъства':'Check in')}</button>`:''}
+    </div>`;}).join('');
+  box.innerHTML=`<div class="ev" style="border:2px solid ${col};">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+      <div><h3 style="font-size:18px;margin:0;">${esc(p.full_name||p.username||'')}</h3><div style="color:var(--mid);font-size:13px;">${esc(lvl)}${p.membership_until?' · '+(lang==='bg'?'до ':'until ')+euDate(p.membership_until):''}</div></div>
+      <div style="font-weight:800;color:${col};white-space:nowrap;">${active?(lang==='bg'?'✓ АКТИВЕН':'✓ ACTIVE'):(lang==='bg'?'✕ НЕАКТИВЕН':'✕ INACTIVE')}</div>
+    </div>
+    <div style="margin-top:10px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);">${lang==='bg'?'Днес':'Today'}</div>
+    ${rows||`<div style="color:var(--mid);font-size:13px;padding:8px 0;">${lang==='bg'?'Няма резервация за днес':'No reservation for today'}</div>`}
+  </div>`;
+  const q=document.getElementById('doorq'); if(q){q.value='';} const l=document.getElementById('doorlist'); if(l)l.innerHTML='';
+}
+async function doorCheck(resId,userId,undo){
+  const r=await DB.doorCheckIn(resId,undo); if(r.error){toast((lang==='bg'?'Грешка: ':'Error: ')+r.error.message);return;}
+  hap('success'); toast(undo?(lang==='bg'?'Отменено':'Undone'):(lang==='bg'?'Присъствието е отбелязано':'Checked in')); doorShow(userId);
+}
 function tabbar(active){
   _activeTab=active;
   const n=appBadge();
@@ -2714,6 +2792,7 @@ function renderPath(path,q,parts){
   else if(path==='account'){html=accountView();active='profile';}
   else if(path==='nominate'){html=appForm('nominate');active='profile';}
   else if(path==='company'){html=companyView();active='profile';}
+  else if(path==='door'){html=doorView();active='profile';setTimeout(doorStart,50);}
   else{html=home();}
   app.innerHTML=html;
   // лек преход при смяна на екран
@@ -2821,6 +2900,7 @@ async function route(){
   const parts=path.split('/');
   // 1) Рисуваме веднага с наличните данни (без чакане → без забавяне)
   if(path==='company')COMPANY=null;
+  if(path!=='door')doorStop();   // спираме камерата при излизане от „Вход“
   // но ако вече гледаме стрийм на „На живо" — не пипаме екрана (иначе плеърът се рестартира)
   if(!(path==='live'&&isWatchingLive())){renderPath(path,q,parts);window.scrollTo(0,0);}
   // фирмени профили — зареждаме във фон
