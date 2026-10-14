@@ -344,6 +344,14 @@
   .pagehead{padding:64px 0 28px;}
   .pagehead h1{font-size:clamp(34px,4.6vw,56px);margin-bottom:12px;}
   .subnav{display:flex;gap:6px;flex-wrap:wrap;margin-top:18px;}
+  /* поп-ъп с правилника */
+  .rmodal{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:18px;}
+  .rcard{background:var(--bg);color:var(--text);border-radius:20px;width:min(100%,780px);max-height:100%;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+  .rcard .rh{display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid var(--line-soft);}
+  .rcard .rh h3{margin:0;font-size:22px;}
+  .rcard .rx{background:none;border:1px solid var(--line);border-radius:50%;width:34px;height:34px;cursor:pointer;color:var(--text);font-size:16px;}
+  .rcard .rb{overflow:auto;padding:10px 22px 22px;flex:1 1 auto;min-height:0;-webkit-overflow-scrolling:touch;font-size:15px;line-height:1.6;}
+  .rcard .rb h2,.rcard .rb h3{font-size:19px;margin:20px 0 8px;} .rcard .rb p{margin:0 0 10px;} .rcard .rb .rules-note{color:var(--muted);font-size:13px;}
   .subnav a{text-decoration:none;color:var(--text);border:1px solid var(--line);border-radius:20px;padding:7px 14px;font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;}
   .subnav a.on{background:var(--dark);border-color:var(--dark);color:var(--ondark);}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--dark);color:var(--ondark);padding:12px 18px;border-radius:12px;font-size:14px;z-index:160;opacity:0;pointer-events:none;transition:opacity .25s;}
@@ -405,7 +413,7 @@ const UI={
   all:['Всички','All'],upcoming:['Предстоящо','Upcoming'],whole:['Цялата програма','Full programme'],
   tickets:['Билети','Tickets'],reserve:['Резервация','Reserve'],details:['Подробности','Details'],table:['Резервирай маса','Book a table'],
   free:['Вход свободен','Free entry'],lv:['€','€'],from:['от','from'],until:['до','until'],
-  apply:['Кандидатствай','Apply'],allBenefits:['Всички предимства','All benefits'],readRules:['Правилник на клуба','Club rules'],
+  apply:['Кандидатствай','Apply'],allBenefits:['Всички предимства','All benefits'],readRules:['Правилник на клуба','Club rules'],prContacts:['Контакти по теми','Contacts by topic'],
   faq:['Често задавани въпроси','Frequently asked questions'],perYear:['/ година','/ year'],
   subscribe:['Запиши се','Subscribe'],email:['Имейл','Email'],name:['Име','Name'],phone:['Телефон','Phone'],subject:['Тема','Subject'],message:['Съобщение','Message'],
   send:['Изпрати','Send'],sending:['Изпращане…','Sending…'],sent:['Благодарим! Ще се свържем с вас.','Thank you! We will be in touch.'],
@@ -547,7 +555,7 @@ const ICON_PLAY='<svg viewBox="0 0 24 24"><path d="M3.6 2.3 13 12l-9.4 9.7c-.3-.
 const NAV=()=>[
   {id:'',l:t('home')},
   {id:'program',l:t('program'),sub:FORMATS.map(f=>['program/'+f.id,f.t])},
-  {id:'restaurant',l:t('restaurant'),sub:[['restaurant/menu',t('menu')],['restaurant/dinners',t('dinners')],['restaurant/brunch',t('brunch')]]},
+  {id:'restaurant',l:t('restaurant')},
   {id:'membership',l:t('membership')},
   {id:'about',l:t('about'),sub:[['about/team',t('team')],['about/rent',t('rent')]]},
   {id:'college',l:t('college')},
@@ -657,7 +665,7 @@ function pageHome(){
         ${picOr(pT('home.restaurant.image'),'', 'Restaurant')}
         <div><div class="kicker">${t('restaurant')}</div><h2 style="font-size:clamp(28px,3.4vw,40px);margin-bottom:14px;">${esc(pT('home.restaurant.title'))}</h2>
           <div class="lead">${esc(pT('home.restaurant.body'))}</div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;"><a class="btn" href="#/restaurant">${t('restaurantPage')}</a><a class="btn ghost" href="#/restaurant/menu">${t('seeMenu')}</a></div></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;"><a class="btn" href="#/restaurant">${t('restaurantPage')}</a></div></div>
       </div>
       ${dn.length?`<div style="margin-top:56px;"><div class="sechead"><div><div class="kicker">${t('restaurant')}</div><h2>${t('dinners')}</h2></div><a class="tlink" href="#/restaurant/dinners">${t('all')} →</a></div>
         <div class="grid3">${dn.map(e=>evCard(e,false)).join('')}</div></div>`:''}
@@ -763,51 +771,36 @@ function pageEvent(id,book){
 }
 
 // ---------- РЕСТОРАНТ ----------
-const restNav=cur=>subnav([['restaurant',t('restaurant')],['restaurant/menu',t('menu')],['restaurant/dinners',t('dinners')],['restaurant/brunch',t('brunch')]],cur);
 function reserveBtn(){
   const u=pT('restaurant.reserve_url'), ph=pT('restaurant.reserve_phone')||pT('general.phone');
   if(u)return `<a class="btn" href="${esc(u)}" target="_blank" rel="noopener" onclick="track('reservation_click',{where:'restaurant'})">${t('table')}</a>`;
   if(ph)return `<a class="btn" href="tel:${esc(ph.replace(/\s+/g,''))}" onclick="track('reservation_click',{where:'restaurant'})">${t('table')} · ${esc(ph)}</a>`;
-  return `<a class="btn" href="#/contacts/reserve" onclick="track('reservation_click',{where:'restaurant'})">${t('table')}</a>`;
+  return `<a class="btn" href="#/restaurant/reserve" onclick="track('reservation_click',{where:'restaurant'})">${t('table')}</a>`;
 }
 function pageRestaurant(){
-  const imgs=pImgs('restaurant.images'); const dn=dinners(); const chef=pV('restaurant.chef')||{}; const br=pImgs('restaurant.brunch.images');
-  return pageHead(t('restaurant'),pT('restaurant.title'),pT('restaurant.body'),restNav('restaurant'))+`
+  const imgs=pImgs('restaurant.images'); const dn=dinners(); const chef=pV('restaurant.chef')||{};
+  const secs=pA('restaurant.sections').filter(x=>x&&(loc(x.title)||loc(x.body)||x.image));
+  return pageHead(t('restaurant'),pT('restaurant.title'),pT('restaurant.body'))+`
     <div class="wrap">
       ${imgs.length?galleryHtml(imgs,true):''}
-      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:30px;">${reserveBtn()}<a class="btn ghost" href="#/restaurant/menu">${t('seeMenu')}</a><span class="hint" style="margin:0 0 0 8px;white-space:pre-line;">${esc(pT('restaurant.hours'))}</span></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:30px;">${reserveBtn()}<span class="hint" style="margin:0 0 0 8px;white-space:pre-line;">${esc(pT('restaurant.hours'))}</span></div>
+      ${secs.map((x,k)=>`<section class="sec tight"><div class="two${k%2?' rev':''}">${x.image?`<div><img src="${esc(x.image)}" alt="" loading="lazy"/></div>`:'<div></div>'}<div>${loc(x.title)?`<h2 style="font-size:clamp(26px,3vw,36px);margin-bottom:12px;">${esc(loc(x.title))}</h2>`:''}<div class="body" style="white-space:pre-line;">${esc(loc(x.body))}</div></div></div></section>`).join('')}
       ${(chef.name||loc(chef.body))?`<section class="sec tight"><div class="two">${picOr(chef.image,'',chef.name)}<div><div class="kicker">${t('chef')}</div><h2 style="font-size:32px;margin-bottom:12px;">${esc(chef.name||'')}</h2><div class="body">${esc(loc(chef.body))}</div></div></div></section>`:''}
     </div>
-    ${dn.length?`<section class="sec dark"><div class="wrap"><div class="sechead"><div><div class="kicker">${t('restaurant')}</div><h2>${t('dinners')}</h2><div class="lead" style="margin-top:8px;">${esc(pT('restaurant.dinners_intro'))}</div></div></div>
+    ${dn.length?`<section class="sec dark"><div class="wrap"><div class="sechead"><div><div class="kicker">${t('restaurant')}</div><h2>${t('dinners')}</h2><div class="lead" style="margin-top:8px;">${esc(pT('restaurant.dinners_intro'))}</div></div><a class="tlink" href="#/restaurant/dinners">${t('all')} →</a></div>
       <div class="grid3">${dn.map(e=>evCard(e,true)).join('')}</div></div></section>`:''}
-    <section class="sec"><div class="wrap"><div class="two rev">
-      <div>${br.length?`<img src="${esc(br[0])}" alt="" loading="lazy"/>`:ph('ph')}</div>
-      <div><div class="kicker">${t('restaurant')}</div><h2 style="font-size:clamp(28px,3.4vw,40px);margin-bottom:14px;">${esc(pT('restaurant.brunch.title'))}</h2><div class="lead">${esc(pT('restaurant.brunch.body'))}</div><div style="margin-top:22px;">${reserveBtn()}</div></div>
+    <section class="sec"><div class="wrap"><div id="enquiry" style="background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:26px;">
+      <div class="kicker">${t('restaurant')}</div><h2 style="font-size:30px;margin-bottom:8px;">${t('enquiryTitle')}</h2><p class="hint" style="margin:0 0 18px;">${t('enquiryIntro')}</p>
+      ${enquiryForm()}
     </div></div></section>`;
-}
-function pageMenu(){
-  const secs=pA('menu.sections'); const pdf=pT('menu.pdf_url');
-  return pageHead(t('restaurant'),t('menu'),pT('menu.intro'),restNav('restaurant/menu'))+`
-    <div class="wrap menu" style="padding-bottom:80px;max-width:860px;">
-      ${pdf?`<a class="btn ghost" href="${esc(pdf)}" target="_blank" rel="noopener">PDF ↗</a>`:''}
-      ${secs.length?secs.map(s=>`<div class="msec">${s.image?`<img src="${esc(s.image)}" alt="" loading="lazy"/>`:''}<h3>${esc(loc(s.title))}</h3>
-        ${(s.items||[]).map(i=>`<div class="mi"><div><div class="n">${esc(loc(i.name))}</div>${loc(i.desc)?`<div class="d">${esc(loc(i.desc))}</div>`:''}</div>${i.price?`<div class="p">${esc(i.price)}</div>`:''}</div>`).join('')}</div>`).join('')
-        :`<div class="empty">${L('Менюто се подготвя.','The menu is being prepared.')}</div>`}
-      <div style="margin-top:36px;">${reserveBtn()}</div>
-    </div>`;
 }
 function pageDinners(){
   const dn=dinners(); const past=pastEvents().filter(isDinner);
-  return pageHead(t('restaurant'),t('dinners'),pT('restaurant.dinners_intro'),restNav('restaurant/dinners'))+`
+  return pageHead(t('restaurant'),t('dinners'),pT('restaurant.dinners_intro'),subnav([['restaurant',t('restaurant')],['restaurant/dinners',t('dinners')]],'restaurant/dinners'))+`
     <div class="wrap" style="padding-bottom:80px;">
       ${dn.length?`<div class="grid3">${dn.map(e=>evCard(e,false)).join('')}</div>`:`<div class="empty">${L('Няма обявени тематични вечери. Следете програмата.','No themed dinners announced yet. Watch the programme.')}</div>`}
-      ${past.length?`<div style="margin-top:56px;"><button class="btn ghost" type="button" onclick="const d=this.nextElementSibling;const o=d.style.display!=='none';d.style.display=o?'none':'block';this.textContent=(o?'${t('pastEvents')} (${past.length}) ▾':'${t('pastEvents')} ▴');">${t('pastEvents')} (${past.length}) ▾</button><div style="display:none;margin-top:22px;"><div class="grid3" style="opacity:.85;">${past.slice(0,6).map(e=>evCard(e,false)).join('')}</div></div></div>`:''}
+      ${past.length?`<div style="margin-top:56px;"><button class="btn ghost" type="button" onclick="const d=this.nextElementSibling;const o=d.style.display!=='none';d.style.display=o?'none':'block';this.textContent=(o?'${t('pastEvents')} (${past.length}) ▾':'${t('pastEvents')} ▴');">${t('pastEvents')} (${past.length}) ▾</button><div style="display:none;margin-top:18px;" class="grid3">${past.map(e=>evCard(e,false)).join('')}</div></div>`:''}
     </div>`;
-}
-function pageBrunch(){
-  const br=pImgs('restaurant.brunch.images');
-  return pageHead(t('restaurant'),pT('restaurant.brunch.title'),pT('restaurant.brunch.body'),restNav('restaurant/brunch'))+`
-    <div class="wrap" style="padding-bottom:80px;">${galleryHtml(br,true)}<div style="margin-top:30px;">${reserveBtn()}</div></div>`;
 }
 
 // ---------- ЧЛЕНСТВО ----------
@@ -828,7 +821,7 @@ function pageMembership(){
       <div class="kicker" style="margin-top:20px;">${t('levels')}</div>
       <div class="body">${esc(lT('memberships.intro'))}</div>
       <div class="mgrid">${mem}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:28px;"><a class="btn" href="${esc(APP_URL)}#apply" onclick="track('apply_click',{})">${t('apply')}</a><a class="btn ghost" href="${esc(terms)}" target="_blank" rel="noopener">${t('readRules')} ↗</a></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:28px;"><a class="btn" href="${esc(APP_URL)}#apply" onclick="track('apply_click',{})">${t('apply')}</a>${pT('membership.terms_url')?`<a class="btn ghost" href="${esc(terms)}" target="_blank" rel="noopener">${t('readRules')} ↗</a>`:`<button class="btn ghost" type="button" onclick="openRules()">${t('readRules')}</button>`}</div>
       <section class="sec tight"><div class="two">
         <div><div class="kicker">${t('how')}</div><h2 style="font-size:32px;margin-bottom:12px;">${esc(pT('membership.how_title'))}</h2><div class="body">${esc(pT('membership.how_body'))}</div></div>
         <div><div class="kicker">${t('faq')}</div><div class="faq">${faq.map(f=>`<details><summary>${esc(loc(f.q))}</summary><p>${esc(loc(f.a))}</p></details>`).join('')||`<div class="empty">—</div>`}</div></div>
@@ -1015,10 +1008,6 @@ function pageContacts(){
   const email=pT('general.email'), phone=pT('general.phone'), maps=pT('general.maps_link');
   const kv=(k,v)=>v?`<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`:'';
   return pageHead(t('contacts'),t('contacts'),pT('contacts.intro'))+`<div class="wrap" style="padding-bottom:80px;">
-    <div id="enquiry" style="background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:26px;margin-bottom:44px;">
-      <div class="kicker">${t('restaurant')}</div><h2 style="font-size:30px;margin-bottom:8px;">${t('enquiryTitle')}</h2><p class="hint" style="margin:0 0 18px;">${t('enquiryIntro')}</p>
-      ${enquiryForm()}
-    </div>
     <div class="contactgrid">
       <div>
         <div class="kicker">${t('orWrite')}</div>
@@ -1040,12 +1029,24 @@ function pageContacts(){
         ${kv(t('parking'),pT('general.parking'))}
         ${kv(t('access'),pT('general.access'))}
         ${maps?`<div style="margin-top:14px;"><a class="tlink" href="${esc(maps)}" target="_blank" rel="noopener">${t('openMaps')} ↗</a></div>`:''}
+        ${(()=>{const ppl=pA('contacts.people').filter(p=>p&&(loc(p.role)||p.name||p.phone||p.email));if(!ppl.length)return '';
+          return `<div class="k" style="margin-top:30px;">${t('prContacts')}</div>`+ppl.map(p=>`<div class="v" style="margin-bottom:10px;"><b>${esc(loc(p.role))}</b>${p.name?` · ${esc(p.name)}`:''}${p.phone?`<br><a href="tel:${esc(p.phone.replace(/\s+/g,''))}">${esc(p.phone)}</a>`:''}${p.email?`<br><a href="mailto:${esc(p.email)}">${esc(p.email)}</a>`:''}</div>`).join('');})()}
       </div>
     </div>
     ${mapHtml()}
   </div>`;
 }
 
+// ---------- ПРАВИЛНИК (поп-ъп, като в приложението) ----------
+async function openRules(){
+  document.getElementById('rulesmodal')?.remove();
+  const m=document.createElement('div'); m.id='rulesmodal'; m.className='rmodal';
+  m.innerHTML=`<div class="rcard"><div class="rh"><h3>${t('readRules')}</h3><button class="rx" type="button" aria-label="close" onclick="document.getElementById('rulesmodal').remove()">✕</button></div><div class="rb"><div class="empty">${L('Зареждане…','Loading…')}</div></div></div>`;
+  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
+  document.body.appendChild(m);
+  try{const r=await fetch('rules.html',{cache:'no-store'});const html=await r.text();m.querySelector('.rb').innerHTML=html;}
+  catch(e){m.querySelector('.rb').innerHTML=`<div class="empty">${L('Правилникът не се зареди.','Could not load the rules.')}</div>`;}
+}
 // ---------- ПРАВНА ИНФОРМАЦИЯ ----------
 function pageLegal(kind){
   const map={terms:['legal.terms',t('legal')],privacy:['legal.privacy',t('privacy')],cookies:['legal.cookies',t('cookies')]};
@@ -1072,9 +1073,7 @@ function pageFor(r){
     case 'program': return {html:pageProgram(FORMATS.some(f=>f.id===r.p1)?r.p1:''),nav:'program',title:t('program')};
     case 'event': return {html:pageEvent(r.p1,r.p2==='book'),nav:'program',title:(()=>{const e=(EVENTS||[]).find(x=>x.id===r.p1);return e?evTitle(e):t('program');})()};
     case 'restaurant':
-      if(r.p1==='menu')return {html:pageMenu(),nav:'restaurant',title:t('menu')};
       if(r.p1==='dinners')return {html:pageDinners(),nav:'restaurant',title:t('dinners')};
-      if(r.p1==='brunch')return {html:pageBrunch(),nav:'restaurant',title:t('brunch')};
       return {html:pageRestaurant(),nav:'restaurant',title:t('restaurant')};
     case 'membership': return {html:pageMembership(),nav:'membership',title:t('membership')};
     case 'about':
