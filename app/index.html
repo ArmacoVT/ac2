@@ -642,8 +642,8 @@ const VENUES=[
  {id:'restaurant',t:{bg:'Ресторант',en:'Restaurant'}},
  {id:'chamber',t:{bg:'Камерна зала',en:'Chamber hall'}},
  {id:'online',t:{bg:'Онлайн',en:'Online'}},
- {id:'foyer',t:{bg:'Изложбено фоайе',en:'Exhibition foyer'}},
- {id:'vip',t:{bg:'VIP зала',en:'VIP hall'}}
+ {id:'foyer',t:{bg:'Галерия',en:'Gallery'}},
+ {id:'vip',t:{bg:'Private room',en:'Private room'}}
 ];
 const venueLabel=id=>{const v=VENUES.find(x=>x.id===id);return v?tx(v.t):id;};
 let previewAs=null; // за преглед „как изглежда за дадено членство"
@@ -1781,7 +1781,7 @@ function reserve(q){
   if(user&&!membershipActive())return topbar(tr('reserve'))+`<div class="page"><div class="ev" style="border:1px solid #82303d;"><h3 style="font-size:15px;color:#82303d;">${tr('memberExpiredTitle')}</h3><div class="m" style="color:#82303d;margin-top:3px;">${tr('memberExpiredMsg')}</div></div></div>`;
   const preV=new URLSearchParams(q).get('v')||'';
   const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):4;
-  let vsel=VENUES.map(v=>`<button type="button" class="chip ${v.id===preV?'on':''}" onclick="selVenue(this)" data-v="${v.id}">${tx(v.t)}</button>`).join('');
+  let vsel=VENUES.filter(v=>v.id!=='online').map(v=>`<button type="button" class="chip ${v.id===preV?'on':''}" onclick="selVenue(this)" data-v="${v.id}">${tx(v.t)}</button>`).join('');
   pickedVenue=preV||null;
   const memInfo=user?`<p style="color:var(--muted);font-size:12px;margin:6px 0 16px;">${tr('memb')}: ${MEMBERS.find(m=>m.id===user.membership)?.t||'Guest'}</p>`
     :`<div class="ev" style="border-color:var(--gold-soft);margin:10px 0 16px;"><h3 style="font-size:15px;">${tr('signinSave')}</h3><div class="row"><button class="chip on" onclick="go('login')">${tr('signin')}</button></div></div>`;
@@ -1795,6 +1795,9 @@ function reserve(q){
     <label>${tr('party')} *</label><input id="r_party" type="number" inputmode="numeric" min="1" max="50" value="1"/><div style="color:var(--muted);font-size:12px;margin-top:4px;">${lang==='bg'?'До 50 души. За по-голямо събитие напишете броя в бележката — ще се свържем с вас.':'Up to 50 people. For a larger event write the number in the note — we will contact you.'}</div>
     <label>${tr('contactEmail')} *</label><input id="r_email" type="email" autocapitalize="none" value="${user?esc(user.email||''):''}"/>
     <label>${tr('contactPhone')} *</label><input id="r_phone" type="tel" value="${user?esc(user.phone||''):''}" placeholder="${lang==='bg'?'Въведете телефонен номер':'Enter phone number'}"/>
+    <div id="streamwrap" style="display:${preV==='chamber'?'':'none'};margin:8px 0 4px;">
+      <label class="tcheck"><input type="checkbox" id="r_stream"/><span>${lang==='bg'?'Желая и <b>онлайн излъчване</b> на събитието':'I would also like the event <b>streamed online</b>'} <small>· ${lang==='bg'?'за публика извън залата; условията се уточняват с екипа':'for an audience outside the hall; details agreed with the team'}</small></span></label>
+    </div>
     <div id="algwrap" style="display:${preV==='restaurant'?'':'none'};">
       <label>${lang==='bg'?'Алергени / хранителни ограничения':'Allergens / dietary'} *</label>
       <div class="selrow" id="algsel">${(lang==='bg'?['Нямам алергии','Глутен','Мляко/лактоза','Яйца','Ядки','Фъстъци','Риба','Ракообразни','Соя','Сусам','Целина','Синап','Сулфити']:['No allergies','Gluten','Milk/lactose','Eggs','Tree nuts','Peanuts','Fish','Crustaceans','Soy','Sesame','Celery','Mustard','Sulphites']).map((a,i)=>`<button type="button" class="chip" data-alg="${esc(a)}"${i===0?' data-none="1"':''} onclick="toggleAlg(this)">${a}</button>`).join('')}</div>
@@ -1804,7 +1807,8 @@ function reserve(q){
 }
 let pickedVenue=null;
 function selVenue(b){document.querySelectorAll('#vensel .chip').forEach(c=>c.classList.remove('on'));b.classList.add('on');pickedVenue=b.dataset.v;
-  const aw=document.getElementById('algwrap');if(aw)aw.style.display=(pickedVenue==='restaurant')?'':'none';}
+  const aw=document.getElementById('algwrap');if(aw)aw.style.display=(pickedVenue==='restaurant')?'':'none';
+  const sw=document.getElementById('streamwrap');if(sw)sw.style.display=(pickedVenue==='chamber')?'':'none';}
 function toggleAlg(btn){
   try{hap('select');}catch(e){}
   if(btn.dataset.none){document.querySelectorAll('#algsel .chip').forEach(c=>{if(c!==btn)c.classList.remove('on');});}
@@ -1885,6 +1889,7 @@ async function sendRes(seats){
     const algLine=noneSel?(lang==='bg'?'Без алергии':'No allergies'):(lang==='bg'?'Алергени: ':'Allergens: ')+algOn.map(c=>c.dataset.alg).join(', ');
     fullNote=algLine+(note?' · '+note:'');
   }
+  if(venue==='chamber'&&document.getElementById('r_stream')?.checked){fullNote=(lang==='bg'?'[+ онлайн излъчване] ':'[+ online stream] ')+fullNote;}
   await DB.addReservation({fmt:venue,place:venueLabel(venue),date:rdate,time:rtime,party:n,note:fullNote,res_name:name,email,phone});
   hap('success');
   toast(tr('resToast'));setTimeout(()=>go('profile'),700);

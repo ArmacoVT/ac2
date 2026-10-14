@@ -147,6 +147,10 @@ window.PUB_DEFAULTS={
   const MEM = ['founder', 'founding', 'club', 'alumni', 'corporate'];
   // старите формати cinema/music/theater вече са част от Culture
   const FMT_ALIAS = { cinema: 'culture', music: 'culture', theater: 'culture' };
+  // преименувани зали (14.10.2026): старите стойности в базата се показват с новите имена
+  const PLACE_RENAME = { 'VIP зала': 'Private room', 'VIP hall': 'Private room', 'VIP room': 'Private room', 'Изложбено фоайе': 'Галерия', 'Exhibition foyer': 'Gallery' };
+  const placeName = p => (p && PLACE_RENAME[p]) || p;
+  window.placeName = placeName;
   const fmtId = (f) => FMT_ALIAS[f] || f;
   const SEED = [
     { id: 'e1', title: 'Разговор за съвременната българска проза', format: 'conversation', place: 'Клубна зала', date: '2026-06-12', time: '19:00', ends: '21:00', capacity: 30, aud: 'all' },
@@ -284,7 +288,7 @@ window.PUB_DEFAULTS={
         .or('pub->>members_only.is.null,pub->>members_only.neq.true')
         .or('archive_only.is.null,archive_only.eq.false')
         .order('date', { ascending: true });
-      return (data || []).map(e => ({ id: e.id, title: e.title, format: fmtId(e.format), place: e.place || '',
+      return (data || []).map(e => ({ id: e.id, title: e.title, format: fmtId(e.format), place: placeName(e.place) || '',
         date: e.date || '', end_date: e.end_date || '', time: e.time || '', ends: e.ends || '',
         capacity: e.capacity || 0, price: e.price || 0, image_url: e.image_url || '',
         description: e.description || '', tags: Array.isArray(e.tags) ? e.tags : [],
@@ -355,7 +359,7 @@ window.PUB_DEFAULTS={
       if (!LIVE) return seedDemo();
       const { data, error } = await sb.from('events').select('*').order('date', { ascending: true });
       authErr(error);
-      return (data || []).map(e => ({ id: e.id, title: e.title, format: fmtId(e.format), place: e.place,
+      return (data || []).map(e => ({ id: e.id, title: e.title, format: fmtId(e.format), place: placeName(e.place),
         date: e.date, end_date: e.end_date || '', time: e.time, ends: e.ends || '', capacity: e.capacity,
         price: e.price || 0, price_online: e.price_online || 0, price_archive: e.price_archive || 0,
         offer_physical: e.offer_physical !== false, offer_online: !!e.offer_online, offer_archive: !!e.offer_archive,
@@ -444,7 +448,7 @@ window.PUB_DEFAULTS={
       authErr(error);
       return (data || []).map(r => ({ id: r.id, user_id: r.user_id || null, event_id: r.event_id || null, table_event_id: r.table_event_id || null,
         who: r.who || '', membership: r.membership || '', fmt: r.format,
-        place: r.place, date: r.date, time: r.time, party: r.party_size, note: r.note, status: r.status,
+        place: placeName(r.place), date: r.date, time: r.time, party: r.party_size, note: r.note, status: r.status,
         kind: r.kind || '', paid: !!r.paid,
         name: r.res_name || r.guest_name || '', email: r.contact_email || r.guest_email || '', phone: r.contact_phone || r.guest_phone || '',
         guest: !r.user_id && !!r.guest_email, refunded_at: r.refunded_at || '', refund_cents: r.refund_cents || 0 }));

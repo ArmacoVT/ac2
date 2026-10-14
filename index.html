@@ -968,11 +968,12 @@ function dateSelects(){
 }
 function enquiryForm(){
   const sel=(n,opts)=>`<select name="${n}" class="sel">${opts}</select>`;
-  const plBg=['Ресторант','Камерна зала','Изложбено фоайе','VIP зала'], plEn=['Restaurant','Chamber hall','Exhibition foyer','VIP room'];
+  const plBg=['Ресторант','Камерна зала','Галерия','Private room'], plEn=['Restaurant','Chamber hall','Gallery','Private room'];
   const places=lang==='bg'?plBg:plEn;
   return `<form class="form" onsubmit="submitEnquiry(this);return false;">
     <div class="r2"><div><label>${t('format')}</label>${sel('format',FORMATS.map(f=>`<option value="${f.id}" ${f.id==='table'?'selected':''}>${f.t}</option>`).join(''))}</div>
-      <div><label>${t('place')}</label>${sel('place',places.map((p,i)=>`<option value="${esc(plBg[i])}">${esc(p)}</option>`).join(''))}</div></div>
+      <div><label>${t('place')}</label><select name="place" class="sel" onchange="document.getElementById('rq_stream').style.display=this.value==='Камерна зала'?'':'none'">${places.map((p,i)=>`<option value="${esc(plBg[i])}">${esc(p)}</option>`).join('')}</select></div></div>
+    <label class="chk" id="rq_stream" style="display:none;"><input type="checkbox" name="stream"/> <span>${L('Желая и <b>онлайн излъчване</b> на събитието — за публика извън залата; условията се уточняват с екипа.','I would also like the event <b>streamed online</b> — for an audience outside the hall; details agreed with the team.')}</span></label>
     <div class="r2"><div><label>${t('dateLbl')} *</label>${dateSelects()}</div><div><label>${t('timeLbl')}</label>
       <div style="display:flex;gap:6px;align-items:center;">${sel('hh','<option value="">--</option>'+Array.from({length:24},(_,h)=>`<option value="${String(h).padStart(2,'0')}">${String(h).padStart(2,'0')}</option>`).join(''))}<b style="opacity:.5">:</b>${sel('mm',['00','15','30','45'].map(m=>`<option value="${m}">${m}</option>`).join(''))}</div></div></div>
     <div class="r2"><div><label>${t('people')} *</label><input name="party" type="number" inputmode="numeric" min="1" max="50" value="1"/><div class="hint" style="margin-top:4px;">${L('До 50 души. За по-голямо събитие напишете броя в описанието.','Up to 50 people. For a larger event write the number in the description.')}</div></div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
@@ -996,7 +997,8 @@ async function submitEnquiry(f){
   if(!f.consent.checked){setMsg('rq_msg',t('errConsent'));return false;}
   const tok=captchaToken('rq_captcha'); if(CFG.TURNSTILE_SITE_KEY&&!tok){setMsg('rq_msg',t('errCaptcha'));return false;}
   const b=f.querySelector('button[type=submit]'); b.disabled=true; const old=b.textContent; b.textContent=t('sending'); setMsg('rq_msg','');
-  const r=await DB.publicForm('reservation',{name,email,phone,date,time,party,note,format:f.format.value,place:f.place.value,lang,captcha_token:tok});
+  const noteFull=(f.place.value==='Камерна зала'&&f.stream&&f.stream.checked)?(L('[+ онлайн излъчване] ','[+ online stream] ')+note):note;
+  const r=await DB.publicForm('reservation',{name,email,phone,date,time,party,note:noteFull,format:f.format.value,place:f.place.value,lang,captcha_token:tok});
   b.disabled=false; b.textContent=old;
   if(r.error){ resetCaptcha('rq_captcha'); setMsg('rq_msg',r.error.captcha?t('errCaptcha'):(r.error.cooldown?L('Твърде много заявки. Опитайте по-късно.','Too many requests. Try later.'):(r.error.message||t('errGeneric')))); return false; }
   f.reset(); resetCaptcha('rq_captcha'); setMsg('rq_msg',t('enquiryOk'),true); track('reservation_request',{where:'enquiry'}); return false;
