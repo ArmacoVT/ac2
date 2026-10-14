@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex" />
+<title>Моят билет · AC²</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://twcxfqgknhqicxqghcrx.supabase.co; base-uri 'self';" />
+<meta name="theme-color" content="#EBEBD6" />
+<link rel="icon" href="favicon.png?v=3" />
+<link rel="stylesheet" href="fonts/fonts.css" />
+<style>
+  :root{--beige:#EBEBD6;--card:#F4F4E8;--ink:#1c1c1b;--muted:#6b6b63;--wine:#82303D;--green:#507044;--line:#BFC0C2}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%;background:var(--beige);color:var(--ink);font-family:"Google Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:440px;margin:0 auto;padding:28px 18px 48px}
+  .logo{width:72px;margin:0 0 6px -6px}
+  .kick{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--wine);margin-bottom:18px}
+  .card{background:var(--card);border-radius:20px;padding:24px 22px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+  .badge{display:inline-block;border-radius:12px;padding:5px 12px;font-size:11px;font-weight:700;letter-spacing:.3px;margin-bottom:14px}
+  .ok{background:#dfe8d8;color:var(--green)} .no{background:#ecd9dc;color:var(--wine)} .wait{background:#e4e4d4;color:#5a5a52}
+  h1{font-family:"Playfair Display",Georgia,serif;font-style:italic;font-weight:700;font-size:26px;line-height:1.15;margin:0 0 6px}
+  .ctx{color:var(--wine);font-weight:600;font-size:14px} .meta{color:var(--muted);font-size:14px;margin-top:4px}
+  .qr{background:#fff;border-radius:14px;padding:14px;margin:22px auto 12px;width:232px}
+  .qr img{display:block;width:204px;height:204px}
+  .code{text-align:center;font-size:22px;font-weight:800;letter-spacing:4px;margin:6px 0 2px}
+  .who{text-align:center;color:var(--muted);font-size:13px}
+  .btns{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+  .btn{display:block;text-align:center;text-decoration:none;border-radius:12px;padding:13px 16px;font-weight:600;font-size:15px;cursor:pointer;font-family:inherit}
+  .btn.p{background:var(--wine);color:var(--beige);border:0} .btn.g{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+  .fine{color:var(--muted);font-size:12.5px;line-height:1.5;text-align:center;margin-top:18px}
+  .off h1,.off .ctx,.off .meta{opacity:.55} .off .qr{opacity:.35;filter:grayscale(1)}
+  .err{text-align:center;padding:30px 10px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <img class="logo" src="cards/logo-ac2-dark.png?v=3" alt="AC²" />
+  <div class="kick">American College Arcus Club · Моят билет</div>
+  <div class="card" id="card"><div class="err">Зареждане…</div></div>
+  <p class="fine">Покажете QR кода на входа — важи за цялата група. При въпроси: <a href="mailto:welcome@ac2.bg" style="color:inherit">welcome@ac2.bg</a> · +359 876 156 006</p>
+</div>
+<script src="vendor/qrcode.js"></script>
+<script src="config.js"></script>
+<script>
+(async function(){
+  const CFG=window.ACAC_CONFIG||{}; const card=document.getElementById('card');
+  const code=(location.hash||'').replace('#','').toUpperCase().replace(/[^A-Z0-9]/g,'').replace(/^AC2T?/,'');
+  const fmt=c=>'AC2-'+c.slice(0,4)+'-'+c.slice(4);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  if(code.length!==8){card.innerHTML='<div class="err">Невалиден линк към билет.</div>';return;}
+  let t=null;
+  try{
+    const r=await fetch(CFG.SUPABASE_URL+'/functions/v1/ticket-info',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.SUPABASE_ANON_KEY,'Authorization':'Bearer '+CFG.SUPABASE_ANON_KEY},body:JSON.stringify({code})});
+    t=await r.json(); if(!r.ok||t.error)throw new Error(t.error||'err');
+  }catch(e){card.innerHTML='<div class="err">Билетът не беше намерен. Проверете линка или ни пишете на welcome@ac2.bg.</div>';return;}
+  const off=['cancelled','declined'].includes(t.status);
+  const st=t.refunded?['wait','↩ Сумата е възстановена']:off?['no','✕ '+(t.status==='declined'?'Отказан':'Отменен')]:t.status==='confirmed'?['ok','✓ '+(t.paid?'Платен билет':'Потвърден билет')]:t.status==='pending_payment'?['wait','… Чака плащане']:['wait','… Изчаква одобрение'];
+  const d=t.date?t.date.split('-').reverse().join('.'):'';
+  const WD=['неделя','понеделник','вторник','сряда','четвъртък','петък','събота']; const wd=t.date?WD[new Date(t.date+'T00:00:00').getDay()]:'';
+  let qr='';
+  try{const q=qrcode(0,'M');q.addData('AC2T:'+t.code);q.make();const n=q.getModuleCount();let p='';for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))p+=`M${c} ${r}h1v1h-1z`;
+    qr='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges"><rect width="${n}" height="${n}" fill="#fff"/><path d="${p}" fill="#000"/></svg>`);}catch(e){}
+  const ics=()=>{
+    const s=(t.date||'').replace(/-/g,'')+'T'+((t.time||'09:00').replace(':','')+'00'), e=(t.date||'').replace(/-/g,'')+'T'+((t.ends||t.time||'09:00').replace(':','')+'00');
+    const body=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//AC2//ticket//BG','BEGIN:VEVENT','UID:'+t.code+'@ac2.bg','DTSTART:'+s,'DTEND:'+e,'SUMMARY:'+t.title,'LOCATION:'+(t.place||'')+(t.address?', '+t.address:''),'DESCRIPTION:Билет '+fmt(t.code),'END:VEVENT','END:VCALENDAR'].join('\r\n');
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([body],{type:'text/calendar'}));a.download='ac2-'+t.code+'.ics';document.body.appendChild(a);a.click();a.remove();
+  };
+  card.className='card'+(off?' off':'');
+  card.innerHTML=`<span class="badge ${st[0]}">${st[1]}</span>
+    <h1>${esc(t.title)}</h1>
+    <div class="ctx">${esc(t.format?('AC² '+t.format.charAt(0).toUpperCase()+t.format.slice(1)):'')}${t.place?' · '+esc(t.place):''}</div>
+    <div class="meta">${wd?wd+', ':''}${d}${t.time?' · '+esc(t.time):''} · ${t.party} ${t.party==1?'място':'места'}</div>
+    <div class="qr">${qr?`<img src="${qr}" alt="QR"/>`:''}</div>
+    <div class="code">${fmt(t.code)}</div>
+    <div class="who">${esc(t.name||'')}${t.guest?' · гост':''}${t.checked_in_at?' · влязъл '+t.checked_in_at.slice(11,16):''}</div>
+    <div class="btns"><button class="btn p" id="ics">Добави в календара</button>${t.maps?`<a class="btn g" href="${esc(t.maps)}" target="_blank" rel="noopener">Как да стигна · карта</a>`:''}</div>`;
+  document.getElementById('ics').onclick=ics;
+  document.title='Билет '+fmt(t.code)+' · AC²';
+})();
+</script>
+</body>
+</html>

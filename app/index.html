@@ -222,6 +222,9 @@
   .ev.rcard .stub span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#EBEBD6;white-space:nowrap;}
   .ev.rcard .stub.ok{background:#507044} .ev.rcard .stub.no{background:#82303d} .ev.rcard .stub.wait{background:#6b6b63} .ev.rcard .stub.ref{background:#6b6b63;background-image:repeating-linear-gradient(135deg,transparent 0 6px,rgba(235,235,214,.18) 6px 8px)}
   .ev.rcard.off h3,.ev.rcard.off .m{opacity:.6}
+  .rbadge-inline{display:inline-block;border-radius:12px;padding:5px 12px;font-size:11px;font-weight:700;}
+  .rbadge-inline.ok{background:#dfe8d8;color:#507044} .rbadge-inline.no{background:#ecd9dc;color:#82303d} .rbadge-inline.wait,.rbadge-inline.ref{background:#e4e4d4;color:#5a5a52}
+  .ev.tkv.off h3,.ev.tkv.off .m{opacity:.55} .ev.tkv.off img{opacity:.35;filter:grayscale(1)}
   .ev.rcard.stamped .stub{animation:stubIn .45s cubic-bezier(.2,1.2,.4,1) both;}
   @keyframes stubIn{from{transform:translateX(100%)}to{transform:none}}
   .ev .t{color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase;}
@@ -1029,7 +1032,7 @@ function eventCard(e,i){
   const left=seatsLeft(e); const soldOut=left!==null&&left<=0;
   const book=past?'':(isStaffView()?`<span class="chip locked" onclick="event.stopPropagation();toast(lang==='bg'?'Служебен акаунт — само преглед':'Staff account — read-only')">${lockSvg}${lang==='bg'?'Само преглед':'Read-only'}</span>`
     :expiredMember?`<button class="chip locked" onclick="event.stopPropagation();go('profile')">${lockSvg}${tr('membershipOver')}</button>`
-    :booked?`<button class="chip on${popCls}" onclick="event.stopPropagation();toast(tr('alreadyBooked'))">✓ ${bookedLabel(e.id)}</button>`
+    :booked?`<button class="chip on${popCls}" onclick="event.stopPropagation();(function(){const r=myBookingFor('${e.id}');if(r&&r.status==='confirmed')go('ticket/'+r.id);else toast(tr('alreadyBooked'));})()">✓ ${bookedLabel(e.id)}</button>`
     :locked?`<button class="chip locked" onclick="event.stopPropagation();toast(tr('bookFrom')+' '+'${lockEu}')">${lockSvg}${tr('bookFrom')} ${lockEu}</button>`
     :soldOut?`<button class="chip locked" onclick="event.stopPropagation();toast(lang==='bg'?'Изчерпано':'Sold out')">${lang==='bg'?'Изчерпано':'Sold out'}</button>`
     :`<button class="chip" onclick="event.stopPropagation();openBook('${e.id}')">${e.price>0?(lang==='bg'?'Купи билет':'Buy ticket'):tr('ticket')}</button>`);
@@ -2428,8 +2431,8 @@ function resCard(r,dim){
   const tm=r.time?(r.time+' · '):'';
   const evId=r.event_id||r.table_event_id;
   const ev=evId?EVENTS.find(x=>x.id===evId):null;
-  const click=ev?` cursor:pointer;`:'';
-  const onclick=ev?` onclick="go('format/${ev.format}')"`:'';
+  const click=` cursor:pointer;`;
+  const onclick=` onclick="go('ticket/${r.id}')"`;
   const isNew=newResSet&&newResSet[r.id];
   const hl=isNew?`border:1px solid var(--gold);box-shadow:0 0 0 2px rgba(107,107,99,.18);`:'';
   const newTag=isNew?` <span style="background:var(--gold);color:#f4f4e8;font-size:9px;font-weight:700;border-radius:8px;padding:2px 6px;vertical-align:middle;">${lang==='bg'?'НОВО':'NEW'}</span>`:'';
@@ -2692,6 +2695,32 @@ function appBadge(){
 }
 let _activeTab='home';
 function refreshTabbar(){try{tabbar(_activeTab);}catch(e){}}
+// ================= МОЯТ БИЛЕТ =================
+const fmtTicket=c=>c?('AC2-'+c.slice(0,4)+'-'+c.slice(4)):'';
+function ticketView(resId){
+  const r=RES.find(x=>x.id===resId&&isMine(x)); if(!r)return topbar(lang==='bg'?'Билет':'Ticket')+`<div class="page"><div class="ev">${lang==='bg'?'Билетът не е намерен.':'Ticket not found.'}</div></div>`;
+  const ev=EVENTS.find(e=>e.id===(r.event_id||r.table_event_id)); const f=ev?FORMATS.find(x=>x.id===ev.format):null;
+  const off=['cancelled','declined'].includes(r.status);
+  const st=r.refunded_at?['ref','↩ '+(lang==='bg'?'Възстановена':'Refunded')]:off?['no','✕ '+(r.status==='declined'?(lang==='bg'?'Отказан':'Declined'):(lang==='bg'?'Отменен':'Cancelled'))]:r.status==='confirmed'?['ok','✓ '+(r.paid?(lang==='bg'?'Платен билет':'Paid ticket'):(lang==='bg'?'Потвърден билет':'Confirmed ticket'))]:r.status==='pending_payment'?['wait','… '+(lang==='bg'?'Чака плащане':'Awaiting payment')]:['wait','… '+(lang==='bg'?'Изчаква одобрение':'Pending approval')];
+  const qr=r.ticket_code?qrDataUri('AC2T:'+r.ticket_code,'#FFFFFF','#000000'):'';
+  const maps=PUB&&PUB.general&&PUB.general.maps_link;
+  const title=ev?ev.title:(r.place||r.fmt||''); const d=r.date?euDate(r.date):'';
+  return topbar(lang==='bg'?'Моят билет':'My ticket')+`<div class="page">
+    <div class="ev tkv${off?' off':''}" style="text-align:center;padding:22px 18px;">
+      <div class="rbadge-inline ${st[0]}">${st[1]}</div>
+      <h3 style="font-size:20px;margin:10px 0 4px;">${esc(title)}</h3>
+      <div style="color:${f?f.c:'var(--gold)'};font-weight:600;font-size:13px;">${f?f.t:''}${(ev&&ev.place)||r.place?' · '+esc((ev&&ev.place)||r.place):''}</div>
+      <div class="m" style="margin-top:4px;">${d}${r.time?' · '+esc(r.time):''} · ${r.party||1} ${tr('seats')}${r.paid&&ev&&ev.price>0?' · '+fmtPrice(ev.price*(r.party||1)):''}</div>
+      ${qr?`<div style="background:#fff;border-radius:14px;padding:12px;width:216px;margin:18px auto 10px;"><img src="${qr}" alt="QR" style="display:block;width:192px;height:192px;"/></div>`:''}
+      <div style="font-size:21px;font-weight:800;letter-spacing:4px;">${fmtTicket(r.ticket_code)}</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:4px;">${esc(user.full_name||user.username||'')}${r.checked_in_at?' · '+(lang==='bg'?'влязъл ':'checked in ')+r.checked_in_at.slice(11,16):''}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:18px;">
+        ${ev&&!off?`<button class="btn" onclick="addToCalendar('${ev.id}')">${tr('addCal')}</button>`:''}
+        ${maps?`<a class="btn ghost" href="${esc(maps)}" target="_blank" rel="noopener" style="text-decoration:none;">${lang==='bg'?'Как да стигна · карта':'Directions · map'}</a>`:''}
+      </div>
+      <div style="color:var(--muted);font-size:12px;margin-top:16px;line-height:1.5;">${lang==='bg'?'Покажи QR кода на входа — важи за цялата група.':'Show the QR code at the door — valid for the whole group.'}</div>
+    </div></div>`;
+}
 // ================= РЕЖИМ „ВХОД“ (скенер на вратата) =================
 const canDoor=()=>!!user&&(user.role==='admin'||(Array.isArray(user.perms)&&user.perms.includes('reservations')));
 let _doorStream=null,_doorRaf=0,_doorLast='',_doorBusy=false;
@@ -2731,9 +2760,32 @@ async function doorStart(){
 }
 function doorStop(){ cancelAnimationFrame(_doorRaf); if(_doorStream){_doorStream.getTracks().forEach(t=>t.stop());_doorStream=null;} }
 async function doorFound(txt){
-  const m=/^AC2:([0-9a-f-]{20,})$/i.exec(String(txt).trim());
-  if(!m){toast(lang==='bg'?'Това не е членска карта на AC²':'Not an AC² membership card');return;}
+  const s=String(txt).trim();
+  const mt=/^AC2T:([A-Z0-9]{8})$/i.exec(s); if(mt){hap('medium');await doorTicket(mt[1].toUpperCase());return;}
+  const m=/^AC2:([0-9a-f-]{20,})$/i.exec(s);
+  if(!m){toast(lang==='bg'?'Това не е карта или билет на AC²':'Not an AC² card or ticket');return;}
   hap('medium'); await doorShow(m[1]);
+}
+async function doorTicket(code){
+  _doorBusy=true; const box=document.getElementById('doorres'); if(box)box.innerHTML=`<div class="ev">${lang==='bg'?'Проверка на билет…':'Checking ticket…'}</div>`;
+  const r=await DB.doorTicket(code); _doorBusy=false; if(!box)return;
+  if(r.error){box.innerHTML=`<div class="ev" style="border:1px solid #82303d;"><b style="color:#82303d;">${r.error.message==='not_found'?(lang==='bg'?'Няма такъв билет':'No such ticket'):(lang==='bg'?'Грешка':'Error')}</b></div>`;return;}
+  const t=r.ticket, p=r.profile; const ev=EVENTS.find(e=>e.id===(t.event_id||t.table_event_id)); const title=ev?ev.title:(t.place||t.format||'');
+  const name=(p&&(p.full_name||p.username))||t.res_name||t.guest_name||''; const m=p?MEMBERS.find(x=>x.id===p.membership):null;
+  const valid=t.status==='confirmed'; const already=!!t.checked_in_at; const today=t.date===todayISO();
+  const col=valid&&!already?'#507044':(already?'#b5531e':'#82303d');
+  box.innerHTML=`<div class="ev" style="border:2px solid ${col};">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+      <div><h3 style="font-size:18px;margin:0;">${esc(name)}</h3><div style="color:var(--mid);font-size:13px;">${p?esc(m?m.t:(p.membership||'')):(lang==='bg'?'гост':'guest')} · ${lang==='bg'?'билет':'ticket'} ${fmtTicket(t.ticket_code)}</div></div>
+      <div style="font-weight:800;color:${col};white-space:nowrap;text-align:right;">${already?('⚠ '+(lang==='bg'?'ВЕЧЕ ВЛЯЗЪЛ ':'ALREADY IN ')+t.checked_in_at.slice(11,16)):valid?(lang==='bg'?'✓ ВАЛИДЕН':'✓ VALID'):(lang==='bg'?'✕ НЕВАЛИДЕН':'✕ INVALID')}</div>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft);"><b>${esc(title)}</b><div style="font-size:12px;color:var(--mid);">${t.date?euDate(t.date):''}${t.time?' · '+t.time:''} · ${t.party_size||1} ${tr('seats')}${t.paid?' · '+(lang==='bg'?'платен':'paid'):''}${!today?' · <span style="color:#82303d;">'+(lang==='bg'?'не е за днес':'not today')+'</span>':''}</div></div>
+    ${valid?`<button class="btn sm${already?' ghost':''}" style="margin-top:10px;" onclick="doorCheckT('${t.id}','${t.ticket_code}',${already?'true':'false'})">${already?(lang==='bg'?'Отмени влизането':'Undo'):(lang==='bg'?'Присъстват ('+(t.party_size||1)+')':'Check in ('+(t.party_size||1)+')')}</button>`:''}
+  </div>`;
+}
+async function doorCheckT(resId,code,undo){
+  const r=await DB.doorCheckIn(resId,undo); if(r.error){toast((lang==='bg'?'Грешка: ':'Error: ')+r.error.message);return;}
+  hap('success'); toast(undo?(lang==='bg'?'Отменено':'Undone'):(lang==='bg'?'Присъствието е отбелязано':'Checked in')); doorTicket(code);
 }
 async function doorSearch(q){
   const box=document.getElementById('doorlist'); if(!box)return; q=(q||'').trim(); if(q.length<2){box.innerHTML='';return;}
@@ -2793,6 +2845,7 @@ function renderPath(path,q,parts){
   else if(path==='nominate'){html=appForm('nominate');active='profile';}
   else if(path==='company'){html=companyView();active='profile';}
   else if(path==='door'){html=doorView();active='profile';setTimeout(doorStart,50);}
+  else if(path.startsWith('ticket/')){html=ticketView(path.slice(7));active='profile';}
   else{html=home();}
   app.innerHTML=html;
   // лек преход при смяна на екран
