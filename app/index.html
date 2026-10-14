@@ -2607,6 +2607,29 @@ function shareEvent(id){
 }
 // ---------- ЛОКАЛНИ ИЗВЕСТИЯ (в приложението; иска @capacitor/local-notifications) ----------
 function LocalNotif(){try{const C=window.Capacitor;if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return null;return (C.Plugins&&C.Plugins.LocalNotifications)||(C.registerPlugin&&C.registerPlugin('LocalNotifications'))||null;}catch(e){return null;}}
+// ---- Push известия (remote): регистрираме устройството след вход; токенът отива в push_tokens ----
+let _pushTok='';
+function PushPlugin(){try{const C=window.Capacitor;if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return null;return (C.Plugins&&C.Plugins.PushNotifications)||(C.registerPlugin&&C.registerPlugin('PushNotifications'))||null;}catch(e){return null;}}
+async function registerPush(){
+  const P=PushPlugin(); if(!P||!user)return;
+  try{
+    let p=await P.checkPermissions();
+    if(p.receive==='prompt'||p.receive==='prompt-with-rationale')p=await P.requestPermissions();
+    if(!p||p.receive!=='granted')return;
+    const plat=(window.Capacitor.getPlatform&&window.Capacitor.getPlatform())||'ios';
+    P.removeAllListeners&&await P.removeAllListeners();
+    P.addListener('registration',async t=>{ _pushTok=t.value; await DB.savePushToken(t.value,plat); });
+    P.addListener('registrationError',e=>{ console.warn('push reg',e); });
+    // известие, докато приложението е отворено → показваме го като toast
+    P.addListener('pushNotificationReceived',n=>{ try{toast((n.title?n.title+' — ':'')+(n.body||''));}catch(e){} });
+    // докосване на известието → отваряме екрана от data.path
+    P.addListener('pushNotificationActionPerformed',a=>{ const path=a&&a.notification&&a.notification.data&&a.notification.data.path; if(path)go(String(path).replace(/^#?\/?/,'')); });
+    await P.register();
+    // Android: канал за известията
+    if(plat==='android'&&P.createChannel){try{await P.createChannel({id:'ac2',name:'AC² известия',importance:4,visibility:1,sound:'default'});}catch(e){}}
+  }catch(e){ console.warn('push',e); }
+}
+async function unregisterPush(){ try{ if(_pushTok){await DB.removePushToken(_pushTok);_pushTok='';} }catch(e){} }
 async function scheduleLocalNotifs(){
   const LN=LocalNotif(); if(!LN||!user||!membershipActive())return;
   try{
@@ -2649,7 +2672,7 @@ function checkUnlocks(){
     setTimeout(()=>toast(msg),1400);
   }
 }
-async function signout(){_loggingOut=true;try{await DB.signOut();}finally{user=null;saved=[];RES=[];go('');setTimeout(()=>{_loggingOut=false;},1500);}}
+async function signout(){_loggingOut=true;await unregisterPush();try{await DB.signOut();}finally{user=null;saved=[];RES=[];go('');setTimeout(()=>{_loggingOut=false;},1500);}}
 // брой нови известия (резервации с променен статус, които още не са видени)
 function notifCount(){
   try{
@@ -3087,6 +3110,7 @@ async function refreshProfile(){
     RES=await DB.listReservations();
     checkUnlocks();
     scheduleLocalNotifs();
+    registerPush();
     subscribeLive(); // реалтайм за ръчно пускане/спиране
     startLiveTimer(); // часовников авто-старт
     const p0=location.hash.replace(/^#/,'').split('?')[0];

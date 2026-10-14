@@ -356,6 +356,30 @@ window.PUB_DEFAULTS={
     },
 
     // ---------- СЪБИТИЯ ----------
+    // ---- Push известия ----
+    async savePushToken(token, platform) {
+      if (!LIVE || !token) return { error: null };
+      const { data: { session } } = await sb.auth.getSession(); if (!session) return { error: null };
+      const { error } = await sb.from('push_tokens').upsert({ token, user_id: session.user.id, platform, updated_at: new Date().toISOString() });
+      return { error };
+    },
+    async removePushToken(token) {
+      if (!LIVE || !token) return { error: null };
+      const { error } = await sb.from('push_tokens').delete().eq('token', token);
+      return { error };
+    },
+    async sendPush(o) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('send-push', { body: o });
+      if (error) { let m = error.message; try { const b = await error.context.json(); if (b && b.error) m = b.error; } catch (e) {} return { error: { message: m } }; }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, data };
+    },
+    async pushStats() {
+      if (!LIVE) return { ios: 0, android: 0 };
+      const { data } = await sb.from('push_tokens').select('platform');
+      const s = { ios: 0, android: 0 }; (data || []).forEach(t => { s[t.platform] = (s[t.platform] || 0) + 1; }); return s;
+    },
     // ---- Режим „Вход“ (скенер на вратата; служител с право reservations или админ) ----
     async doorLookup(id) {
       if (!LIVE) return { error: { message: 'demo' } };
