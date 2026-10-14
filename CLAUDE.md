@@ -19,6 +19,7 @@
 - SQL миграции в `supabase/sql/` (последни: public_site.sql, public_site_2.sql, realtime_admin.sql, refunds.sql, `2026-09-29-all.sql` = всичко от 29.09, idempotent).
 - Stripe: тестов sandbox (pk_test_/sk_test_), EUR, Payment Element в приложението и сайта; webhook endpoint `…/functions/v1/stripe-webhook` с payment_intent.succeeded/failed/canceled + charge.refunded. Apple Pay/Google Pay включени, домейн ac2.bg добавен. Чеклист за live в паметта (acac-payments-plan).
 - SMTP (имейли от функциите): кутия welcome@ac2.bg при Calderra, SMTP_HOST mail.ac2.bg, порт 587 STARTTLS (кодът поддържа и 465); подател „AC² Arcus Club <welcome@ac2.bg>“; CONTACT_TO по подразбиране welcome@ac2.bg.
+- Доставимост (14.10.2026): Supabase Auth ползва Custom SMTP (същата кутия, Sender „AC² – American College Arcus Club“); шаблоните на писмата са в `supabase/auth-email-templates.md` (BG, лого PNG от сайта, <html> обвивка). DNS при Calderra: SPF/DKIM/DMARC(p=reject) ОК, Mailchimp Authenticated (k2/k3 CNAME), Postfix добавя Message-ID. mail-tester 9.5/10 (остатъкът е supabase.co в линка). Без include:servers.mcsv.net в SPF (не е нужно).
 - Turnstile: site key в config.js, secret само в Supabase Secrets. SMTP_* и CONTACT_TO в Secrets.
 - Keep-alive: cron-job.org + Calderra cron на 12 ч.
 
