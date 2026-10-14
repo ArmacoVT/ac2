@@ -45,7 +45,7 @@ window.SITE_DEFAULTS={
   contact:{
     title:{bg:'Свържете се с нас',en:'Get in touch'},
     body:{bg:'За въпроси относно членство и събития.',en:'For questions about membership and events.'},
-    email:'info@arcusclub.bg',phone:'',address:{bg:'София, България',en:'Sofia, Bulgaria'}
+    email:'welcome@ac2.bg',phone:'+359 876 156 006',address:{bg:'Велико Търново, ул. Христо Ботев №3',en:'Veliko Tarnovo, 3 Hristo Botev St.'}
   }
 };
 
@@ -60,8 +60,8 @@ window.PUB_DEFAULTS={
     facebook:'', instagram:'',
     appstore_url:'', playstore_url:'',
     show_intro:true,                 // кратката анимация с логото преди сайта
-    email:'welcome@ac2.bg', phone:'',
-    address:_b('Велико Търново','Veliko Tarnovo'),
+    email:'welcome@ac2.bg', phone:'+359 876 156 006',
+    address:_b('Велико Търново, ул. Христо Ботев №3','Veliko Tarnovo, 3 Hristo Botev St.'),
     hours:_b('Вторник – неделя: 10:00 – 23:00\nПонеделник: почивен ден','Tuesday – Sunday: 10:00 – 23:00\nMonday: closed'),
     parking:_b('','' ), access:_b('',''),
     maps_embed:'',                   // адрес от Google Maps → Share → Embed a map → само src="…"

@@ -126,7 +126,7 @@
   #splash{position:fixed;inset:0;z-index:5000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;
     transition:opacity .5s ease;}
   #splash.gone{opacity:0;pointer-events:none;}
-  #splash video{width:100%;height:100%;object-fit:contain;display:block;background:transparent;clip-path:inset(2px);}
+  #splash video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;background:transparent;clip-path:inset(2px);}
   #splash .sp-ring{width:128px;height:128px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     box-shadow:9px 9px 22px #cfcfbb,-9px -9px 22px #f7f7ee;
     animation:spRing .9s cubic-bezier(.2,.8,.2,1) both;}
@@ -213,6 +213,16 @@
     box-shadow:inset 4px 4px 8px #cfcfbb,inset -4px -4px 8px #f7f7ee;}
   input:focus,select:focus,textarea:focus{outline:none;box-shadow:inset 5px 5px 10px #cfcfbb,inset -5px -5px 10px #f7f7ee;}
   .ev{background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:7px 7px 14px #cfcfbb,-7px -7px 14px #f7f7ee;}
+  /* резервация като билет: перфорация + печат със статуса */
+  .ev.tkt{position:relative;padding-right:118px;overflow:hidden;}
+  .ev.tkt .perf{position:absolute;top:0;bottom:0;right:98px;border-left:1.5px dashed rgba(0,0,0,.28);}
+  .ev.tkt .perf::before,.ev.tkt .perf::after{content:"";position:absolute;left:-8px;width:14px;height:14px;border-radius:50%;background:var(--bg);box-shadow:inset 2px 2px 4px #cfcfbb;}
+  .ev.tkt .perf::before{top:-7px} .ev.tkt .perf::after{bottom:-7px}
+  .ev.tkt .stamp{position:absolute;right:10px;top:50%;transform:translateY(-50%) rotate(-12deg);border:2px solid currentColor;border-radius:6px;padding:5px 7px;font-size:9.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;line-height:1.1;text-align:center;max-width:82px;opacity:.9;}
+  .ev.tkt .stamp.ok{color:#507044} .ev.tkt .stamp.no{color:#82303d} .ev.tkt .stamp.wait{color:#6b6b63} .ev.tkt .stamp.ref{color:#6b6b63;border-style:dashed}
+  .ev.tkt.stamped .stamp{animation:stampIn .45s cubic-bezier(.2,1.4,.4,1) both;}
+  @keyframes stampIn{from{transform:translateY(-50%) rotate(-12deg) scale(2.2);opacity:0}to{transform:translateY(-50%) rotate(-12deg) scale(1);opacity:.9}}
+  .ev.tkt.off h3,.ev.tkt.off .m{opacity:.55}
   .ev .t{color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase;}
   .ev h3{color:var(--cream);font-size:17px;font-weight:500;margin-top:6px;line-height:1.3;}
   .ev .m{color:var(--muted);font-size:13px;margin-top:6px;}
@@ -560,7 +570,7 @@ const T={
     newPassTitle:'Нова парола',passConfirm:'Потвърди паролата',passMismatch:'Паролите не съвпадат',pwSave:'Запази',cancelBtn:'Отказ',
     setPassTitle:'Задай своята парола',passSet:'Паролата е създадена успешно. Добре дошъл!',
     currentPass:'Текуща парола',wrongCurrent:'Грешна текуща парола',checking:'Проверка…',inviteOnly:'Достъпът е само с покана от клуба.',demoOnlyLive:'Налично след свързване на Supabase',ticket:'Запази билет',tableSuggest:'Запазете маса в AC² Table',afterEvent:'След събитието',ticketToast:'Заявката е изпратена',fav:'В любими',
-    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души',pastRes:'Изминали',noUpcomingRes:'Няма предстоящи резервации.',yourName:'Вашето име',editName:'Редактирай име',nameSaved:'Името е запазено',bookingName:'Име на резервацията',bioLogin:'Влез с Face ID / отпечатък',bioReason:'Влизане в Arcus Club',bioNone:'Първо влез с парола веднъж',pastEvents:'Изминали събития',favFormats:'Любими формати',favHint:'Избери какво те интересува — показва се най-отгоре „За теб".',forYou:'За теб',forYouSub:'Подбрано според любимите ти формати.',addCal:'＋ Календар',bookFrom:'Билети от',memberUntil:'Членство до',memberExpired:'Членството изтече на',memberExpiredTitle:'Членството ви е изтекло',memberExpiredMsg:'Свържете се с клуба за подновяване на членството.',membershipOver:'Изтекло членство'},
+    resName:'Име за резервацията',placeChoose:'Избор на място в клуба',contactEmail:'Имейл за връзка',contactPhone:'Телефон за връзка',notePlaceholder:'Опишете повода — какво събитие или среща искате да организирате.',reqName:'Въведете име за резервацията',reqVenue:'Изберете място в клуба',reqEmail:'Въведете валиден имейл',reqPhone:'Въведете телефон',reqNote:'Опишете накратко повода',alreadyBooked:'Вече имате заявка за това събитие',booked:'Заявен билет · изчаква',addTable:'Запази и маса след събитието',tableParty:'Маса за колко души',pastRes:'Изминали',noUpcomingRes:'Няма предстоящи резервации.',yourName:'Вашето име',editName:'Редактирай име',nameSaved:'Името е запазено',bookingName:'Име на резервацията',bioLogin:'Влез с Face ID / отпечатък',bioReason:'Влизане в Arcus Club',bioNone:'Първо влез с парола веднъж',pastEvents:'Изминали събития',favFormats:'Любими формати',favHint:'Избери какво те интересува — показва се най-отгоре „За теб".',forYou:'За теб',forYouSub:'Подбрано според любимите ти формати.',addCal:'＋ Календар',bookFrom:'Билети от',memberUntil:'Членство до',memberExpired:'Членството изтече на',memberExpiredTitle:'Членството ви е изтекло',memberExpiredMsg:'Свържете се с клуба за подновяване на членството.',membershipOver:'Изтекло членство'},
   en:{home:'Home',events:'Events',reserve:'Reserve',membership:'Membership',signin:'Sign in',profile:'Profile',
     formats:'Formats',formatsSub:'The club formats. Tap a card.',quick:'Quick actions',
     includes:'What it includes',enquiry:'Enquiry / reservation',seeEvents:'See events',
@@ -577,7 +587,7 @@ const T={
     newPassTitle:'New password',passConfirm:'Confirm password',passMismatch:'Passwords do not match',pwSave:'Save',cancelBtn:'Cancel',
     setPassTitle:'Set your password',passSet:'Password created successfully. Welcome!',
     currentPass:'Current password',wrongCurrent:'Wrong current password',checking:'Checking…',inviteOnly:'Access is by club invitation only.',demoOnlyLive:'Available after Supabase is connected',ticket:'Reserve a ticket',tableSuggest:'Reserve a table at AC² Table',afterEvent:'After the event',ticketToast:'Request sent',fav:'Favorites',
-    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion',alreadyBooked:'You already have a request for this event',booked:'Ticket requested',addTable:'Also reserve a table after the event',tableParty:'Table for how many',pastRes:'Past',noUpcomingRes:'No upcoming reservations.',yourName:'Your name',editName:'Edit name',nameSaved:'Name saved',bookingName:'Name for the booking',bioLogin:'Sign in with Face ID / fingerprint',bioReason:'Sign in to Arcus Club',bioNone:'Sign in with your password once first',pastEvents:'Past events',favFormats:'Favorite formats',favHint:'Pick what interests you — shown at the top under “For you”.',forYou:'For you',forYouSub:'Selected based on your favorite formats.',addCal:'＋ Calendar',bookFrom:'Tickets from',memberUntil:'Membership until',memberExpired:'Membership expired on',memberExpiredTitle:'Your membership has expired',memberExpiredMsg:'Please contact the club to renew your membership.',membershipOver:'Membership expired'}
+    resName:'Name for the reservation',placeChoose:'Choose a place in the club',contactEmail:'Contact email',contactPhone:'Contact phone',notePlaceholder:'Describe the occasion — what event or meeting you would like to hold.',reqName:'Enter a name for the reservation',reqVenue:'Choose a place in the club',reqEmail:'Enter a valid email',reqPhone:'Enter a phone number',reqNote:'Briefly describe the occasion',alreadyBooked:'You already have a request for this event',booked:'Requested · pending',addTable:'Also reserve a table after the event',tableParty:'Table for how many',pastRes:'Past',noUpcomingRes:'No upcoming reservations.',yourName:'Your name',editName:'Edit name',nameSaved:'Name saved',bookingName:'Name for the booking',bioLogin:'Sign in with Face ID / fingerprint',bioReason:'Sign in to Arcus Club',bioNone:'Sign in with your password once first',pastEvents:'Past events',favFormats:'Favorite formats',favHint:'Pick what interests you — shown at the top under “For you”.',forYou:'For you',forYouSub:'Selected based on your favorite formats.',addCal:'＋ Calendar',bookFrom:'Tickets from',memberUntil:'Membership until',memberExpired:'Membership expired on',memberExpiredTitle:'Your membership has expired',memberExpiredMsg:'Please contact the club to renew your membership.',membershipOver:'Membership expired'}
 };
 const FORMATS=[
  {id:'culture',t:'AC² Culture',c:'#82303d',img:'../cards/logo-culture.webp',b:{bg:['музика','изложби','литература','кино и прожекции','камерен театър','концерти','срещи с артисти и лектори'],en:['music','exhibitions','literature','film screenings','chamber theatre','concerts','meetings with artists and lecturers']}},
@@ -703,6 +713,8 @@ const IN_APP=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capa
 // попълнено там, се показва оттук. Всеки текст е {bg, en}.
 const SITE_DEFAULTS=window.SITE_DEFAULTS; // общи за приложението и админ панела — в db.js
 let SITE=null; // съдържание от базата (или {} ако няма); null = още не е заредено
+let PUB={};    // съдържание на публичния сайт (Общи: контакти)
+function pubContact(){const g=(PUB&&PUB.general)||{},d=(window.PUB_DEFAULTS&&PUB_DEFAULTS.general)||{};const pick=k=>{const v=g[k]!==undefined&&g[k]!==''&&g[k]!==null?g[k]:d[k];return v&&typeof v==='object'?(v[lang]||v.bg||''):(v||'');};return {email:pick('email'),phone:pick('phone'),address:pick('address')};}
 // текст от базата, ако е попълнен; иначе от подразбиране
 function sT(path){
   const get=(o,p)=>p.split('.').reduce((a,k)=>(a&&a[k]!==undefined)?a[k]:undefined,o);
@@ -714,6 +726,9 @@ async function loadSite(){
   if(SITE!==null)return;
   SITE={};
   try{ SITE=(await DB.getSiteContent())||{}; }catch(e){}
+  // контактите (имейл/телефон/адрес) идват от Админ → Публичен сайт → Общи (общи за сайта и приложението)
+  try{ PUB=(await DB.getSiteContent('public'))||{}; }catch(e){}
+  if(user&&location.hash.replace('#','')==='')route();
   if(!user&&document.querySelector('.land,.gatehero'))route();  // пречертаваме с реалното съдържание
 }
 // Единен набор линейни икони (в стила на мотивите)
@@ -912,8 +927,7 @@ function home(){
     ${forYouHtml}
     <div class="sec-title">${tr('formats')}</div><div class="sec-sub">${tr('formatsSub')}</div>
     <div class="grid">${cards}</div>
-    <div class="contact"><div class="tag">${lang==='bg'?'Култура · Общност · Споделени стандарти':'Culture · Community · Shared Standards'}</div>
-      info@arcusclub.bg<br>+359 (0) 000 000<br>${lang==='bg'?'София, България':'Sofia, Bulgaria'}</div>`;
+    ${(()=>{const c=pubContact();return `<div class="contact">${c.email?`<a href="mailto:${esc(c.email)}" style="color:inherit;text-decoration:none;">${esc(c.email)}</a><br>`:''}${c.phone?`<a href="tel:${esc(c.phone.replace(/[^+\d]/g,''))}" style="color:inherit;text-decoration:none;">${esc(c.phone)}</a><br>`:''}${esc(c.address)}</div>`;})()}`;
 }
 function formatPage(id){
   const f=FORMATS.find(x=>x.id===id); if(!f)return home();
@@ -932,6 +946,13 @@ const isMine=r=>!!(user&&r.user_id===user.id); // само МОИТЕ резер
 // приложението насред плащане, той трябва да може да опита пак. Сървърът разчиства
 // стария опит (и отменя намерението в Stripe), преди да създаде ново.
 const hasBooking=id=>RES.some(r=>isMine(r)&&r.event_id===id&&(!r.status||r.status==='requested'||r.status==='confirmed'));
+// моята резервация за събитието (за етикета на бутона: заявен / потвърден / платен)
+const myBookingFor=id=>RES.find(r=>isMine(r)&&r.event_id===id&&(!r.status||r.status==='requested'||r.status==='confirmed'));
+function bookedLabel(id){
+  const r=myBookingFor(id); if(!r) return tr('booked');
+  if(r.status==='confirmed') return r.paid?(lang==='bg'?'Платен билет':'Paid ticket'):(lang==='bg'?'Потвърден билет':'Confirmed ticket');
+  return tr('booked');
+}
 let justBooked=null; // за bounce ефекта на бутона след заявка
 let TAKEN={}; // заети места по събитие (само число)
 // свободни места: null = без лимит; иначе оставащи
@@ -997,7 +1018,7 @@ function eventCard(e,i){
   const left=seatsLeft(e); const soldOut=left!==null&&left<=0;
   const book=past?'':(isStaffView()?`<span class="chip locked" onclick="event.stopPropagation();toast(lang==='bg'?'Служебен акаунт — само преглед':'Staff account — read-only')">${lockSvg}${lang==='bg'?'Само преглед':'Read-only'}</span>`
     :expiredMember?`<button class="chip locked" onclick="event.stopPropagation();go('profile')">${lockSvg}${tr('membershipOver')}</button>`
-    :booked?`<button class="chip on${popCls}" onclick="event.stopPropagation();toast(tr('alreadyBooked'))">✓ ${tr('booked')}</button>`
+    :booked?`<button class="chip on${popCls}" onclick="event.stopPropagation();toast(tr('alreadyBooked'))">✓ ${bookedLabel(e.id)}</button>`
     :locked?`<button class="chip locked" onclick="event.stopPropagation();toast(tr('bookFrom')+' '+'${lockEu}')">${lockSvg}${tr('bookFrom')} ${lockEu}</button>`
     :soldOut?`<button class="chip locked" onclick="event.stopPropagation();toast(lang==='bg'?'Изчерпано':'Sold out')">${lang==='bg'?'Изчерпано':'Sold out'}</button>`
     :`<button class="chip" onclick="event.stopPropagation();openBook('${e.id}')">${e.price>0?(lang==='bg'?'Купи билет':'Buy ticket'):tr('ticket')}</button>`);
@@ -2412,7 +2433,17 @@ function resCard(r,dim){
   const ctx=[fmtName,venue].filter(Boolean).join(' · ');
   const ctxLine=ctx?`<div class="m" style="color:${col||'var(--gold-soft)'};margin-bottom:2px;font-weight:600;">${esc(ctx)}</div>`:'';
   const accent=(col&&!hl)?`border-left:3px solid ${col};`:'';
-  return `<div class="ev"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${accent}${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${r.party} ${tr('seats')} · <b style="color:${r.paid?'#507044':(SC[r.status]||'var(--muted)')};">${(r.paid&&!['cancelled','declined'].includes(r.status))?(lang==='bg'?'платена':'paid'):(SL[r.status]||r.status)}${r.refunded_at?(lang==='bg'?' · сумата е възстановена':' · refunded'):((r.paid&&['cancelled','declined'].includes(r.status))?(lang==='bg'?' · платена — за връщане на сумата се свържете с клуба':' · paid — contact the club for a refund'):'')}</b></div>${priceLine}${cancelBtn}</div>`;
+  // печат: статус → текст/цвят
+  const off=['cancelled','declined'].includes(r.status);
+  let stampTxt, stampCls;
+  if(r.refunded_at){stampTxt=lang==='bg'?'Възстановена':'Refunded';stampCls='ref';}
+  else if(off){stampTxt=r.status==='declined'?(lang==='bg'?'Отказана':'Declined'):(lang==='bg'?'Отменена':'Cancelled');stampCls='no';}
+  else if(r.status==='confirmed'){stampTxt=r.paid?(lang==='bg'?'Платен':'Paid'):(lang==='bg'?'Потвърден':'Confirmed');stampCls='ok';}
+  else if(r.status==='pending_payment'){stampTxt=lang==='bg'?'Чака плащане':'Awaiting payment';stampCls='wait';}
+  else {stampTxt=lang==='bg'?'Изчаква':'Pending';stampCls='wait';}
+  const refundNote=r.refunded_at?`<div class="m" style="color:var(--muted);">${lang==='bg'?'Сумата е възстановена':'Amount refunded'}</div>`:((r.paid&&off)?`<div class="m" style="color:#82303d;">${lang==='bg'?'Платена — за връщане на сумата се свържете с клуба':'Paid — contact the club for a refund'}</div>`:'');
+  const stampedNow=isNew||(newResSet&&newResSet[r.id]);
+  return `<div class="ev tkt${off?' off':''}${stampedNow?' stamped':''}"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${accent}${dim?'opacity:.6;':''}${hl}${click}"${onclick}><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${r.party} ${tr('seats')}</div>${priceLine}${refundNote}${cancelBtn}<div class="perf"></div><div class="stamp ${stampCls}">${stampTxt}</div></div>`;
 }
 // заглавие на дата: „петък, 6 юни 2026"
 function resDayLabel(iso){
@@ -2902,6 +2933,7 @@ async function refreshProfile(){
   // дошъл от имейл-покана → задава си парола веднага (с потвърждение)
   if(user&&(DB.urlType==='invite'||DB.urlType==='recovery')) await promptInitialPassword();
   route(); // рисува веднага (skeleton при нужда), данните идват на фон
+  loadSite(); // контакти/настройки от админа (на фон; пречертава началото, като дойдат)
   // телефонът е задължителен — искаме го, ако липсва или админ е поискал нов
   if(user&&(!user.phone||user.phone_recheck)&&membershipActive()){await ensurePhone();route();}
   // ако сесията е изтекла, но има запазени данни → предлагаме Face ID веднага
