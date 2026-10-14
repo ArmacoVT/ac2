@@ -2616,11 +2616,13 @@ function PushPlugin(){try{const C=window.Capacitor;if(!(C&&C.isNativePlatform&&C
 function clearDelivered(){ try{const P=PushPlugin(); if(P&&P.removeAllDeliveredNotifications)P.removeAllDeliveredNotifications();}catch(e){} }
 // след известие: презареждаме новините/резервациите, за да е актуален броячът
 async function refreshAfterPush(){ try{ const [rs,an]=await Promise.all([DB.listReservations(),DB.listAnnouncements()]); RES=rs||RES; ANN=an||ANN; }catch(e){} try{appBadge();refreshTabbar();route();}catch(e){} }
+function pushPermSettled(){ _pushPermDone=true; if(_badgePending!==null){const n=_badgePending;_badgePending=null;setIconBadge(n);} }
 async function registerPush(){
-  const P=PushPlugin(); if(!P||!user)return;
+  const P=PushPlugin(); if(!P){_pushPermDone=true;return;} if(!user){return;}
   try{
     let p=await P.checkPermissions();
     if(p.receive==='prompt'||p.receive==='prompt-with-rationale')p=await P.requestPermissions();
+    pushPermSettled();
     if(!p||p.receive!=='granted')return;
     const plat=(window.Capacitor.getPlatform&&window.Capacitor.getPlatform())||'ios';
     P.removeAllListeners&&await P.removeAllListeners();
@@ -2634,7 +2636,7 @@ async function registerPush(){
     await P.register();
     // Android: канал за известията
     if(plat==='android'&&P.createChannel){try{await P.createChannel({id:'ac2',name:'AC² известия',importance:4,visibility:1,sound:'default'});}catch(e){}}
-  }catch(e){ console.warn('push',e); }
+  }catch(e){ console.warn('push',e); pushPermSettled(); }
 }
 async function unregisterPush(){ try{ if(_pushTok){await DB.removePushToken(_pushTok);_pushTok='';} }catch(e){} }
 async function scheduleLocalNotifs(){
@@ -2707,11 +2709,12 @@ function markResSeen(){
 // число върху иконата на приложението
 // нативно (iOS/Android) → плъгин @capawesome/capacitor-badge; иначе → Web Badging (PWA)
 function NativeBadge(){try{const C=window.Capacitor;if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return null;return (C.Plugins&&C.Plugins.Badge)||(C.registerPlugin&&C.registerPlugin('Badge'))||null;}catch(e){return null;}}
+let _pushPermDone=false,_badgePending=null;   // iOS: Badge.set сам иска разрешение (само badge) → чакаме push плъгинът да поиска пълните права
 async function setIconBadge(n){
   const NB=NativeBadge();
   if(NB){
+    if(PushPlugin()&&!_pushPermDone){_badgePending=n;return;}
     try{
-      // не искаме разрешение оттук (само за badge) — iOS пита веднъж; пълните права (банер+звук+badge) ги иска push плъгинът
       if(NB.checkPermissions){const p=await NB.checkPermissions();if(p&&p.display==='denied')return;}
       if(n>0)await NB.set({count:n}); else (NB.clear?await NB.clear():await NB.set({count:0}));
     }catch(e){}
