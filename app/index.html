@@ -213,14 +213,17 @@
     box-shadow:inset 4px 4px 8px #cfcfbb,inset -4px -4px 8px #f7f7ee;}
   input:focus,select:focus,textarea:focus{outline:none;box-shadow:inset 5px 5px 10px #cfcfbb,inset -5px -5px 10px #f7f7ee;}
   .ev{background:var(--bg);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:7px 7px 14px #cfcfbb,-7px -7px 14px #f7f7ee;}
-  /* резервация: етикет със статуса горе вдясно */
-  .ev.rcard{position:relative;padding-right:118px;}
-  .ev.rcard .rbadge{position:absolute;right:14px;top:14px;border-radius:12px;padding:5px 10px;font-size:11px;font-weight:700;letter-spacing:.3px;white-space:nowrap;line-height:1.2;}
-  .ev.rcard .rbadge.ok{background:#dfe8d8;color:#507044} .ev.rcard .rbadge.no{background:#ecd9dc;color:#82303d} .ev.rcard .rbadge.wait{background:#e4e4d4;color:#5a5a52} .ev.rcard .rbadge.ref{background:#e4e4d4;color:#5a5a52}
+  /* резервация = билет с кочан: дясната част е в цвета на статуса, с вертикален текст; перфорация с изрези */
+  .ev.rcard{position:relative;padding-right:78px;overflow:hidden;}
+  .ev.rcard .stub{position:absolute;top:0;bottom:0;right:0;width:60px;display:flex;align-items:center;justify-content:center;border-radius:0 16px 16px 0;}
+  .ev.rcard .stub::before{content:"";position:absolute;left:-1px;top:6px;bottom:6px;border-left:2px dashed rgba(235,235,214,.9);}
+  .ev.rcard .stub::after,.ev.rcard .notch{content:"";position:absolute;left:-8px;width:16px;height:16px;border-radius:50%;background:var(--bg);}
+  .ev.rcard .stub::after{top:-8px} .ev.rcard .notch{bottom:-8px}
+  .ev.rcard .stub span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#EBEBD6;white-space:nowrap;}
+  .ev.rcard .stub.ok{background:#507044} .ev.rcard .stub.no{background:#82303d} .ev.rcard .stub.wait{background:#6b6b63} .ev.rcard .stub.ref{background:#6b6b63;background-image:repeating-linear-gradient(135deg,transparent 0 6px,rgba(235,235,214,.18) 6px 8px)}
   .ev.rcard.off h3,.ev.rcard.off .m{opacity:.6}
-  .ev.rcard.off h3{text-decoration:line-through;text-decoration-thickness:1px;}
-  .ev.rcard.stamped .rbadge{animation:badgeIn .4s cubic-bezier(.2,1.3,.4,1) both;}
-  @keyframes badgeIn{from{transform:scale(1.4);opacity:0}to{transform:scale(1);opacity:1}}
+  .ev.rcard.stamped .stub{animation:stubIn .45s cubic-bezier(.2,1.2,.4,1) both;}
+  @keyframes stubIn{from{transform:translateX(100%)}to{transform:none}}
   .ev .t{color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase;}
   .ev h3{color:var(--cream);font-size:17px;font-weight:500;margin-top:6px;line-height:1.3;}
   .ev .m{color:var(--muted);font-size:13px;margin-top:6px;}
@@ -2450,7 +2453,7 @@ function resCard(r,dim){
   else {stampTxt='… '+(lang==='bg'?'Изчаква':'Pending');stampCls='wait';}
   const refundNote=r.refunded_at?`<div class="m" style="color:var(--muted);">${lang==='bg'?'Сумата е възстановена':'Amount refunded'}</div>`:((r.paid&&off)?`<div class="m" style="color:#82303d;">${lang==='bg'?'Платена — за връщане на сумата се свържете с клуба':'Paid — contact the club for a refund'}</div>`:'');
   const stampedNow=isNew||(newResSet&&newResSet[r.id]);
-  return `<div class="ev rcard${off?' off':''}${stampedNow?' stamped':''}"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${dim?'opacity:.6;':''}${hl}${click}"${onclick}><div class="rbadge ${stampCls}">${stampTxt}</div><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${r.party} ${tr('seats')}</div>${priceLine}${refundNote}${cancelBtn}</div>`;
+  return `<div class="ev rcard${off?' off':''}${stampedNow?' stamped':''}"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${dim?'opacity:.6;':''}${hl}${click}"${onclick}><div class="stub ${stampCls}"><span>${stampTxt.replace(/^[✓✕…↩]\s*/,'')}</span><i class="notch"></i></div><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${r.party} ${tr('seats')}</div>${priceLine}${refundNote}${cancelBtn}</div>`;
 }
 // заглавие на дата: „петък, 6 юни 2026"
 function resDayLabel(iso){
