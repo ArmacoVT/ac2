@@ -1234,7 +1234,8 @@ const PUB_SCHEMA=[
     F('restaurant.chef.name','txt','Шеф-готвач — име'),F('restaurant.chef.body','bit','Шеф-готвач — представяне',{rows:3}),F('restaurant.chef.image','img','Шеф-готвач — снимка'),
     F('restaurant.dinners_intro','bi','Тематични вечери — увод'),
     F('restaurant.hours','bit','Работно време на ресторанта',{rows:2}),
-    F('restaurant.reserve_url','url','Външна система за резервации (линк). Празно = телефон / формата за запитване'),F('restaurant.reserve_phone','txt','Телефон за резервации (по избор)')
+    F('restaurant.reserve_url','url','Външна система за резервации (линк). Празно = телефон / формата за запитване'),F('restaurant.reserve_phone','txt','Телефон за резервации (по избор)'),
+    F('restaurant.order','txt','Ред на блоковете (през запетая): gallery = галерия, sections = секции, chef = шеф-готвач, dinners = тематични вечери, enquiry = запитване. Празно = gallery, sections, chef, dinners, enquiry')
   ]},
   {id:'levels',title:'Нива на членство (Club / Alumni / Corporate)',help:'Заглавие, „за вас е, ако…", резюме, цена, описание и ползи за всяко ниво. Същите текстове вижда и приложението (кандидатстване, членска карта). Founder и Founding Member не се показват публично.',fields:[]},
   {id:'membership',title:'Членство — страница',help:'Текстовете около нивата: защо да стана член, как се кандидатства, въпроси и отговори.',fields:[

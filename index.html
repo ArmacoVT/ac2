@@ -780,19 +780,19 @@ function reserveBtn(){
 function pageRestaurant(){
   const imgs=pImgs('restaurant.images'); const dn=dinners(); const chef=pV('restaurant.chef')||{};
   const secs=pA('restaurant.sections').filter(x=>x&&(loc(x.title)||loc(x.body)||x.image));
+  const blocks={
+    gallery:()=>imgs.length?`<div class="wrap">${galleryHtml(imgs,true)}</div>`:'',
+    sections:()=>secs.length?`<div class="wrap">${secs.map((x,k)=>`<section class="sec tight"><div class="two${k%2?' rev':''}">${x.image?`<div><img src="${esc(x.image)}" alt="" loading="lazy"/></div>`:'<div></div>'}<div>${loc(x.title)?`<h2 style="font-size:clamp(26px,3vw,36px);margin-bottom:12px;">${esc(loc(x.title))}</h2>`:''}<div class="body" style="white-space:pre-line;">${esc(loc(x.body))}</div></div></div></section>`).join('')}</div>`:'',
+    chef:()=>(chef.name||loc(chef.body)||chef.image)?`<div class="wrap"><section class="sec tight"><div class="two">${picOr(chef.image,'',chef.name)}<div><div class="kicker">${t('chef')}</div><h2 style="font-size:32px;margin-bottom:12px;">${esc(chef.name||'')}</h2><div class="body" style="white-space:pre-line;">${esc(loc(chef.body))}</div></div></div></section></div>`:'',
+    dinners:()=>dn.length?`<section class="sec dark"><div class="wrap"><div class="sechead"><div><div class="kicker">${t('restaurant')}</div><h2>${t('dinners')}</h2><div class="lead" style="margin-top:8px;">${esc(pT('restaurant.dinners_intro'))}</div></div><a class="tlink" href="#/restaurant/dinners">${t('all')} →</a></div><div class="grid3">${dn.map(e=>evCard(e,true)).join('')}</div></div></section>`:'',
+    enquiry:()=>`<section class="sec"><div class="wrap"><div id="enquiry" style="background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:26px;"><div class="kicker">${t('restaurant')}</div><h2 style="font-size:30px;margin-bottom:8px;">${t('enquiryTitle')}</h2><p class="hint" style="margin:0 0 18px;">${t('enquiryIntro')}</p>${enquiryForm()}</div></div></section>`
+  };
+  const def=['gallery','sections','chef','dinners','enquiry'];
+  let order=(pT('restaurant.order')||'').split(',').map(x=>x.trim().toLowerCase()).filter(x=>blocks[x]);
+  def.forEach(k=>{if(!order.includes(k))order.push(k);});   // пропуснатите се добавят накрая
   return pageHead(t('restaurant'),pT('restaurant.title'),pT('restaurant.body'))+`
-    <div class="wrap">
-      ${imgs.length?galleryHtml(imgs,true):''}
-      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:30px;">${reserveBtn()}<span class="hint" style="margin:0 0 0 8px;white-space:pre-line;">${esc(pT('restaurant.hours'))}</span></div>
-      ${secs.map((x,k)=>`<section class="sec tight"><div class="two${k%2?' rev':''}">${x.image?`<div><img src="${esc(x.image)}" alt="" loading="lazy"/></div>`:'<div></div>'}<div>${loc(x.title)?`<h2 style="font-size:clamp(26px,3vw,36px);margin-bottom:12px;">${esc(loc(x.title))}</h2>`:''}<div class="body" style="white-space:pre-line;">${esc(loc(x.body))}</div></div></div></section>`).join('')}
-      ${(chef.name||loc(chef.body))?`<section class="sec tight"><div class="two">${picOr(chef.image,'',chef.name)}<div><div class="kicker">${t('chef')}</div><h2 style="font-size:32px;margin-bottom:12px;">${esc(chef.name||'')}</h2><div class="body">${esc(loc(chef.body))}</div></div></div></section>`:''}
-    </div>
-    ${dn.length?`<section class="sec dark"><div class="wrap"><div class="sechead"><div><div class="kicker">${t('restaurant')}</div><h2>${t('dinners')}</h2><div class="lead" style="margin-top:8px;">${esc(pT('restaurant.dinners_intro'))}</div></div><a class="tlink" href="#/restaurant/dinners">${t('all')} →</a></div>
-      <div class="grid3">${dn.map(e=>evCard(e,true)).join('')}</div></div></section>`:''}
-    <section class="sec"><div class="wrap"><div id="enquiry" style="background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:26px;">
-      <div class="kicker">${t('restaurant')}</div><h2 style="font-size:30px;margin-bottom:8px;">${t('enquiryTitle')}</h2><p class="hint" style="margin:0 0 18px;">${t('enquiryIntro')}</p>
-      ${enquiryForm()}
-    </div></div></section>`;
+    <div class="wrap"><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:8px;">${reserveBtn()}<span class="hint" style="margin:0 0 0 8px;white-space:pre-line;">${esc(pT('restaurant.hours'))}</span></div></div>
+    ${order.map(k=>blocks[k]()).join('')}`;
 }
 function pageDinners(){
   const dn=dinners(); const past=pastEvents().filter(isDinner);
