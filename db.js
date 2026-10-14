@@ -377,8 +377,9 @@ window.PUB_DEFAULTS={
     },
     async pushStats() {
       if (!LIVE) return { ios: 0, android: 0 };
-      const { data } = await sb.from('push_tokens').select('platform');
-      const s = { ios: 0, android: 0 }; (data || []).forEach(t => { s[t.platform] = (s[t.platform] || 0) + 1; }); return s;
+      const s = { ios: 0, android: 0 };
+      const [i, a] = await Promise.all(['ios', 'android'].map(pl => sb.from('push_tokens').select('token', { count: 'exact', head: true }).eq('platform', pl)));
+      s.ios = i.count || 0; s.android = a.count || 0; return s;
     },
     // ---- Режим „Вход“ (скенер на вратата; служител с право reservations или админ) ----
     async doorLookup(id) {

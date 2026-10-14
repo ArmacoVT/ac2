@@ -360,7 +360,7 @@ async function setTab(t){tab=t;editId=null;await refresh();render();
   if(t==='people'){await reloadPeople();}
   if(t==='team'){if(!PEOPLE)PEOPLE=await DB.listMembers();render();}
   if((t==='res'||t==='events')&&!PHONES){await loadPhones();render();}
-  if(t==='ann'){ANN=await DB.listAnnouncements();if(!PEOPLE)PEOPLE=await DB.listMembers();try{PUSHSTATS=await DB.pushStats();}catch(e){}render();}
+  if(t==='ann'){ANN=await DB.listAnnouncements();if(!PEOPLE)PEOPLE=await DB.listMembers();render();if(!PUSHSTATS)DB.pushStats().then(s=>{PUSHSTATS=s;const el=document.getElementById('pushStat');if(el)el.textContent=`(регистрирани: ${s.ios||0} iOS · ${s.android||0} Android)`;}).catch(()=>{});}
   if(t==='site'){SITEC=await DB.getSiteContent();render();}
   if(t==='public'){PUBC=await DB.getSiteContent('public');SITEC=await DB.getSiteContent('landing');render();}
   if(t==='messages'){await loadMessages();}
@@ -1009,7 +1009,7 @@ function announcementsView(){
       ${annAud==='specific'?`<input class="annsrch" placeholder="Търси член…" value="${esc(annUserFilter)}" oninput="annFilterUsers(this.value)">
         <div id="annUserList" class="annlist">${annUserListHTML()}</div>
         <div class="muted" style="font-size:12px;margin-top:7px;">Избрани: <span id="annUserCount" style="color:var(--gold);font-weight:600;">${annUserPicked.length}</span></div>`:''}
-      <label style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px;font-size:13px;cursor:pointer;"><input type="checkbox" id="annPush" style="width:16px;height:16px;margin:0;flex:none;" checked/> <span>Изпрати и като известие на телефоните${PUSHSTATS?` <span class="muted">(регистрирани: ${PUSHSTATS.ios||0} iOS · ${PUSHSTATS.android||0} Android)</span>`:''}</span></label>
+      <label style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px;font-size:13px;cursor:pointer;"><input type="checkbox" id="annPush" style="width:16px;height:16px;margin:0;flex:none;" checked/> <span>Изпрати и като известие на телефоните<span class="muted" id="pushStat">${PUSHSTATS?` (регистрирани: ${PUSHSTATS.ios||0} iOS · ${PUSHSTATS.android||0} Android)`:''}</span></span></label>
       <button class="btn ok" style="margin-top:10px;" onclick="sendAnn()">Публикувай новината</button>
     </div>
     <h3 style="margin-top:20px;">Публикувани новини</h3>
