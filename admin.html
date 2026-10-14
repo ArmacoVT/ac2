@@ -778,10 +778,11 @@ function resIsOld(r){
   const cut=new Date(); cut.setDate(cut.getDate()-2);
   return d<cut.toISOString().slice(0,10);
 }
+const doorBtn=()=>`<a class="btn ghost sm" href="${(window.ACAC_CONFIG&&ACAC_CONFIG.APP_URL)||'app/'}#door" target="_blank" rel="noopener" style="float:right;margin-top:4px;">📷 Скенер за вход</a>`;
 function resView(){
-  if(!RES.length)return `<h2>Резервации</h2><p class="empty">Все още няма запитвания за резервация.</p>`;
+  if(!RES.length)return `${doorBtn()}<h2>Резервации</h2><p class="empty">Все още няма запитвания за резервация.</p>`;
   const OLD=RES.filter(resIsOld); const CUR=RES.filter(r=>!resIsOld(r));
-  if(!CUR.length&&!resArchive)return `<h2>Резервации</h2><p class="empty">Няма текущи резервации.</p>${OLD.length?`<button class="btn ghost" onclick="toggleResArchive()">Архив (${OLD.length}) ▾</button>`:''}`;
+  if(!CUR.length&&!resArchive)return `${doorBtn()}<h2>Резервации</h2><p class="empty">Няма текущи резервации.</p>${OLD.length?`<button class="btn ghost" onclick="toggleResArchive()">Архив (${OLD.length}) ▾</button>`:''}`;
   const SRC=resArchive?OLD:CUR;
   // групиране по събитие
   const groups={};
@@ -826,7 +827,7 @@ function resView(){
       <div style="display:flex;flex-direction:column;gap:6px;" id="resact_${r.id}">${acts}</div>
     </div></div>`;}).join('');
   if(!rows)rows=`<p class="empty">Няма заявки в този раздел.</p>`;
-  return `<h2>Резервации${resArchive?' — архив':''}</h2>
+  return `${doorBtn()}<h2>Резервации${resArchive?' — архив':''}</h2>
   <div style="margin:-4px 0 10px;"><button class="btn ghost sm" onclick="toggleResArchive()">${resArchive?'‹ Текущи':'Архив ('+OLD.length+') ▾'}</button> <span class="muted" style="font-size:12px;">${resArchive?'Резервации за събития, минали преди повече от 2 дни.':'Минали събития (2+ дни) са в архива.'}</span></div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px;">${chips}</div>
     ${head}${rows}`;
