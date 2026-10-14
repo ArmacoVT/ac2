@@ -227,6 +227,7 @@ function animateCounts(){
     requestAnimationFrame(step);
   });
 }
+let PUSHSTATS=null;
 let PEOPLE=null,APPS=null,PHONES=null,ANN=null,AUDIT=null,annAud='all',annTitleDraft='',annBodyDraft='',annMemPicked=[],annUserPicked=[],annUserFilter='';
 async function annSetAud(v){
   const t=document.getElementById('annTitle'); if(t)annTitleDraft=t.value;
@@ -359,7 +360,7 @@ async function setTab(t){tab=t;editId=null;await refresh();render();
   if(t==='people'){await reloadPeople();}
   if(t==='team'){if(!PEOPLE)PEOPLE=await DB.listMembers();render();}
   if((t==='res'||t==='events')&&!PHONES){await loadPhones();render();}
-  if(t==='ann'){ANN=await DB.listAnnouncements();if(!PEOPLE)PEOPLE=await DB.listMembers();render();}
+  if(t==='ann'){ANN=await DB.listAnnouncements();if(!PEOPLE)PEOPLE=await DB.listMembers();try{PUSHSTATS=await DB.pushStats();}catch(e){}render();}
   if(t==='site'){SITEC=await DB.getSiteContent();render();}
   if(t==='public'){PUBC=await DB.getSiteContent('public');SITEC=await DB.getSiteContent('landing');render();}
   if(t==='messages'){await loadMessages();}
@@ -1008,7 +1009,8 @@ function announcementsView(){
       ${annAud==='specific'?`<input class="annsrch" placeholder="Търси член…" value="${esc(annUserFilter)}" oninput="annFilterUsers(this.value)">
         <div id="annUserList" class="annlist">${annUserListHTML()}</div>
         <div class="muted" style="font-size:12px;margin-top:7px;">Избрани: <span id="annUserCount" style="color:var(--gold);font-weight:600;">${annUserPicked.length}</span></div>`:''}
-      <button class="btn ok" style="margin-top:12px;" onclick="sendAnn()">Публикувай новината</button>
+      <label class="chk" style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;"><input type="checkbox" id="annPush" checked/> <span>Изпрати и като известие на телефоните${PUSHSTATS?` <span class="muted">(регистрирани: ${PUSHSTATS.ios||0} iOS · ${PUSHSTATS.android||0} Android)</span>`:''}</span></label>
+      <button class="btn ok" style="margin-top:10px;" onclick="sendAnn()">Публикувай новината</button>
     </div>
     <h3 style="margin-top:20px;">Публикувани новини</h3>
     ${list}`;
@@ -1023,6 +1025,17 @@ async function sendAnn(){
   const r=await DB.createAnnouncement(a);
   if(r&&r.error){alert('Грешка: '+(r.error.message||r.error));return;}
   await DB.logAudit('announcement_posted',title,a.audience==='all'?'до всички':(a.audience==='membership'?'категории: '+a.memberships.join(','):a.user_ids.length+' членове'));
+  // push към телефоните (ако е отметнато)
+  const pushOn=document.getElementById('annPush')?.checked;
+  if(pushOn){
+    const sendOne=async(o)=>{const r=await DB.sendPush(Object.assign({title,body:body.slice(0,180),path:'profile'},o));return r;};
+    let res;
+    if(a.audience==='all')res=await sendOne({audience:'all'});
+    else if(a.audience==='specific')res=await sendOne({audience:'users',user_ids:a.user_ids});
+    else { let s=0,f=0; for(const m of a.memberships){const r=await sendOne({audience:m,log:false}); if(r&&r.data){s+=r.data.sent||0;f+=r.data.failed||0;}} res={data:{sent:s,failed:f}}; }
+    if(res&&res.error)toast('Новината е публикувана, но известието не тръгна: '+res.error.message);
+    else if(res&&res.data)toast(`Известие: изпратено до ${res.data.sent||0} устройства${res.data.failed?', неуспешни '+res.data.failed:''}${res.data.note?' · '+res.data.note:''}`);
+  }
   annAud='all';annTitleDraft='';annBodyDraft='';annMemPicked=[];annUserPicked=[];annUserFilter='';ANN=await DB.listAnnouncements();render();
 }
 async function delAnn(id){

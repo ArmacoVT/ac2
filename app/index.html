@@ -1968,6 +1968,7 @@ async function bioLogin(){
     if(!user){toast(lang==='bg'?'Влез наново':'Sign in again');return;}
     saved=await DB.listSaved();EVENTS=await DB.listEvents();
     toast(tr('loginToast'));location.hash='';route();
+    registerPush();
   }catch(e){/* отказан/неуспешен Face ID — нищо */}
 }
 let entered=false;
@@ -2188,6 +2189,7 @@ async function doAuth(){
   saved=await DB.listSaved();EVENTS=await DB.listEvents();
   hap('success');
   toast(tr('loginToast'));location.hash='';route();
+  registerPush();
 }
 async function doForgot(){
   if(!DB.live){toast(tr('demoOnlyLive'));return;}
