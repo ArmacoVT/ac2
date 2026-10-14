@@ -63,6 +63,7 @@ window.PUB_DEFAULTS={
     email:'welcome@ac2.bg', phone:'+359 876 156 006',
     address:_b('Велико Търново, ул. Христо Ботев №3','Veliko Tarnovo, 3 Hristo Botev St.'),
     hours:_b('Вторник – неделя: 10:00 – 23:00\nПонеделник: почивен ден','Tuesday – Sunday: 10:00 – 23:00\nMonday: closed'),
+    table_cutoff:'22:30',            // маса след събитие се предлага, ако събитието свършва до този час (сменя се лятно/зимно)
     parking:_b('','' ), access:_b('',''),
     maps_embed:'',                   // адрес от Google Maps → Share → Embed a map → само src="…"
     maps_link:''                     // линк „Отвори в Google Maps"

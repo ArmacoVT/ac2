@@ -679,7 +679,13 @@ function fmtDay(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d
 function fmtPrice(n){n=Number(n)||0;const s=(n%1===0)?String(n):n.toFixed(2);return (lang==='bg'?s.replace('.',',')+' €':s+' €');}
 function evMeta(e){const ds=e.end_date&&e.end_date!==e.date?(fmtDay(e.date)+' – '+fmtDay(e.end_date)):fmtDay(e.date);const t=e.time?(e.time+(e.ends?('–'+e.ends):'')):'';return [ds,t,e.place].filter(Boolean).join(' · ');}
 // събитие, което приключва до 22:30 → предлагаме маса в ресторанта (AC² Table)
-function endsEarly(e){return e.ends && e.format!=='table' && e.format!=='online' && e.ends<='22:30';}
+function tableCutoff(){const v=PUB&&PUB.general&&PUB.general.table_cutoff;return (v&&/^\d{1,2}:\d{2}$/.test(String(v).trim()))?String(v).trim().padStart(5,'0'):'22:30';}
+function endsEarly(e){
+  if(e.format==='table'||e.format==='online')return false;
+  const ta=e.pub&&e.pub.table_after;
+  if(ta==='yes')return true; if(ta==='no')return false;
+  return !!e.ends && e.ends<=tableCutoff();
+}
 function audNames(aud){if(aud==='all'||(Array.isArray(aud)&&aud.length>=MEMBERSHIP_LIST.length))return lang==='bg'?'Всички членове':'All members';if(!Array.isArray(aud)||!aud.length)return '—';return aud.map(a=>MEMBERS.find(m=>m.id===a)?.t||a).join(', ');}
 const MEMBERS=[
  {id:'founder',t:'Founder',seats:4,disc:0,tag:{bg:'Основателски статус',en:'Founding status'},
@@ -714,7 +720,7 @@ const IN_APP=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capa
 const SITE_DEFAULTS=window.SITE_DEFAULTS; // общи за приложението и админ панела — в db.js
 let SITE=null; // съдържание от базата (или {} ако няма); null = още не е заредено
 let PUB={};    // съдържание на публичния сайт (Общи: контакти)
-function pubContact(){const g=(PUB&&PUB.general)||{},d=(window.PUB_DEFAULTS&&PUB_DEFAULTS.general)||{};const pick=k=>{const v=g[k]!==undefined&&g[k]!==''&&g[k]!==null?g[k]:d[k];return v&&typeof v==='object'?(v[lang]||v.bg||''):(v||'');};return {email:pick('email'),phone:pick('phone'),address:pick('address')};}
+function pubContact(){const g=(PUB&&PUB.general)||{},d=(window.PUB_DEFAULTS&&PUB_DEFAULTS.general)||{};const pick=k=>{const v=g[k]!==undefined&&g[k]!==''&&g[k]!==null?g[k]:d[k];return v&&typeof v==='object'?(v[lang]||v.bg||''):(v||'');};return {email:pick('email'),phone:pick('phone'),address:pick('address'),hours:pick('hours')};}
 // текст от базата, ако е попълнен; иначе от подразбиране
 function sT(path){
   const get=(o,p)=>p.split('.').reduce((a,k)=>(a&&a[k]!==undefined)?a[k]:undefined,o);
@@ -927,7 +933,7 @@ function home(){
     ${forYouHtml}
     <div class="sec-title">${tr('formats')}</div><div class="sec-sub">${tr('formatsSub')}</div>
     <div class="grid">${cards}</div>
-    ${(()=>{const c=pubContact();return `<div class="contact">${c.email?`<a href="mailto:${esc(c.email)}" style="color:inherit;text-decoration:none;">${esc(c.email)}</a><br>`:''}${c.phone?`<a href="tel:${esc(c.phone.replace(/[^+\d]/g,''))}" style="color:inherit;text-decoration:none;">${esc(c.phone)}</a><br>`:''}${esc(c.address)}</div>`;})()}`;
+    ${(()=>{const c=pubContact();return `<div class="contact">${c.email?`<a href="mailto:${esc(c.email)}" style="color:inherit;text-decoration:none;">${esc(c.email)}</a><br>`:''}${c.phone?`<a href="tel:${esc(c.phone.replace(/[^+\d]/g,''))}" style="color:inherit;text-decoration:none;">${esc(c.phone)}</a><br>`:''}${esc(c.address)}${c.hours?`<div style="margin-top:8px;font-size:13px;white-space:pre-line;">${esc(c.hours)}</div>`:''}</div>`;})()}`;
 }
 function formatPage(id){
   const f=FORMATS.find(x=>x.id===id); if(!f)return home();
