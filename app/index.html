@@ -2612,6 +2612,10 @@ function LocalNotif(){try{const C=window.Capacitor;if(!(C&&C.isNativePlatform&&C
 // ---- Push известия (remote): регистрираме устройството след вход; токенът отива в push_tokens ----
 let _pushTok='';
 function PushPlugin(){try{const C=window.Capacitor;if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return null;return (C.Plugins&&C.Plugins.PushNotifications)||(C.registerPlugin&&C.registerPlugin('PushNotifications'))||null;}catch(e){return null;}}
+// махаме показаните известия от шатъра (Android: точката върху иконата стои, докато известието е там)
+function clearDelivered(){ try{const P=PushPlugin(); if(P&&P.removeAllDeliveredNotifications)P.removeAllDeliveredNotifications();}catch(e){} }
+// след известие: презареждаме новините/резервациите, за да е актуален броячът
+async function refreshAfterPush(){ try{ const [rs,an]=await Promise.all([DB.listReservations(),DB.listAnnouncements()]); RES=rs||RES; ANN=an||ANN; }catch(e){} try{appBadge();refreshTabbar();route();}catch(e){} }
 async function registerPush(){
   const P=PushPlugin(); if(!P||!user)return;
   try{
@@ -2623,9 +2627,10 @@ async function registerPush(){
     P.addListener('registration',async t=>{ _pushTok=t.value; await DB.savePushToken(t.value,plat); });
     P.addListener('registrationError',e=>{ console.warn('push reg',e); });
     // известие, докато приложението е отворено → показваме го като toast
-    P.addListener('pushNotificationReceived',n=>{ try{toast((n.title?n.title+' — ':'')+(n.body||''));}catch(e){} });
+    P.addListener('pushNotificationReceived',n=>{ try{toast((n.title?n.title+' — ':'')+(n.body||''));}catch(e){} refreshAfterPush(); });
     // докосване на известието → отваряме екрана от data.path
-    P.addListener('pushNotificationActionPerformed',a=>{ const path=a&&a.notification&&a.notification.data&&a.notification.data.path; if(path)go(String(path).replace(/^#?\/?/,'')); });
+    P.addListener('pushNotificationActionPerformed',a=>{ clearDelivered(); refreshAfterPush(); const path=a&&a.notification&&a.notification.data&&a.notification.data.path; if(path)go(String(path).replace(/^#?\/?/,'')); });
+    document.addEventListener('visibilitychange',()=>{ if(!document.hidden)clearDelivered(); });
     await P.register();
     // Android: канал за известията
     if(plat==='android'&&P.createChannel){try{await P.createChannel({id:'ac2',name:'AC² известия',importance:4,visibility:1,sound:'default'});}catch(e){}}
