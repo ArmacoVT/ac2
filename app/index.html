@@ -77,13 +77,13 @@
   .fcard.dim{opacity:.5;}
   .upbox{margin:0 20px;background:var(--bg);border-radius:16px;padding:16px 16px 8px;box-shadow:inset 5px 5px 11px #cfcfbb, inset -5px -5px 11px #f7f7ee;}
   .uptl{position:relative;}
-  .uptl::before{content:"";position:absolute;left:55px;top:6px;bottom:16px;width:2px;background:var(--line);}
-  .uprow{position:relative;padding-left:60px;margin-bottom:16px;cursor:pointer;}
+  .uptl::before{content:"";position:absolute;left:61px;top:6px;bottom:16px;width:2px;background:var(--line);}
+  .uprow{position:relative;padding-left:66px;margin-bottom:16px;cursor:pointer;}
   .uprow:last-child{margin-bottom:8px;}
-  .uprow .udt{position:absolute;left:0;top:-1px;width:42px;text-align:right;line-height:1;}
-  .uprow .udt .d{font-family:var(--serif);font-style:italic;font-size:20px;color:var(--cream);}
-  .uprow .udt .mo{font-size:10px;color:var(--muted);margin-top:2px;}
-  .uprow .upt{position:absolute;left:50px;top:5px;width:11px;height:11px;border-radius:50%;border:2px solid var(--bg);box-sizing:border-box;}
+  .uprow .udt{position:absolute;left:0;top:-2px;width:48px;text-align:center;line-height:1;}
+  .uprow .udt .d{font-family:var(--serif);font-style:italic;font-weight:700;font-size:18px;color:var(--cream);}
+  .uprow .udt .mo{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--cream);margin-top:3px;white-space:nowrap;}
+  .uprow .upt{position:absolute;left:56px;top:5px;width:11px;height:11px;border-radius:50%;border:2px solid var(--bg);box-sizing:border-box;}
   .uprow h4{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--cream);margin:0 0 2px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .uprow .umt{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* Новини от клуба — вдълбана карта, без лого */
@@ -833,8 +833,11 @@ function upRow(e){
   const f=FORMATS.find(x=>x.id===e.format);
   const fl=f?f.t:(e.format||''); const col=f?f.c:'var(--gold)';
   const dt=e.date?new Date(e.date+'T00:00:00'):null;
-  const dn=dt?dt.getDate():''; const dm=dt?dt.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{month:'short'}).replace('.',''):'';
-  const meta=[e.time,e.place,fl].filter(Boolean).join(' · ');
+  // кратки имена на месеците (bg-BG „short“ в браузъра дава число → объркващо „22 / 10“)
+  const MON_BG=['яну','фев','мар','апр','май','юни','юли','авг','сеп','окт','ное','дек'], MON_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const WD_BG=['нд','пн','вт','ср','чт','пт','сб'], WD_EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dn=dt?dt.getDate():''; const dm=dt?(lang==='bg'?MON_BG:MON_EN)[dt.getMonth()]:''; const wd=dt?(lang==='bg'?WD_BG:WD_EN)[dt.getDay()]:'';
+  const meta=[wd,e.time,e.place,fl].filter(Boolean).join(' · ');
   return `<div class="uprow" onclick="go('format/${e.format}')">
     <div class="udt"><div class="d">${dn}</div><div class="mo">${esc(dm)}</div></div>
     <span class="upt" style="background:${col}"></span>
