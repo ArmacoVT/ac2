@@ -2711,7 +2711,8 @@ async function setIconBadge(n){
   const NB=NativeBadge();
   if(NB){
     try{
-      if(NB.checkPermissions){let p=await NB.checkPermissions();if((!p||p.display!=='granted')&&NB.requestPermissions)await NB.requestPermissions();}
+      // не искаме разрешение оттук (само за badge) — iOS пита веднъж; пълните права (банер+звук+badge) ги иска push плъгинът
+      if(NB.checkPermissions){const p=await NB.checkPermissions();if(p&&p.display==='denied')return;}
       if(n>0)await NB.set({count:n}); else (NB.clear?await NB.clear():await NB.set({count:0}));
     }catch(e){}
   }else{
