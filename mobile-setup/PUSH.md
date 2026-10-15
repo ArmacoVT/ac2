@@ -38,3 +38,13 @@ Firebase → проект → Android app `bg.arcusclub.app` → свали `goo
 - Supabase → Table Editor → `push_tokens` — трябва да се появи ред след вход от телефона.
 - Admin → Новини показва „регистрирани: X iOS · Y Android“.
 - Логове: `push_log` (ръчните известия) и Edge Functions → send-push → Logs (грешки от Apple/Google в `errors`).
+
+## Известия към екипа (нова заявка / отказ / кандидатура / съобщение) — 15.10.2026
+1. Secrets: `WEBHOOK_SECRET` = дълъг случаен низ (измисли си, напр. 32 знака).
+2. Deploy `notify-staff` (Verify JWT **OFF**) и редеплой `send-push` (v2, audience 'staff').
+3. Supabase → Database → Webhooks → Create:
+   - **reservations**: events Insert + Update → Type „Supabase Edge Function“ → notify-staff → HTTP Headers: `x-webhook-secret` = същия низ.
+   - **applications**: Insert → notify-staff (същата заглавка).
+   - **contact_messages**: Insert → notify-staff (същата заглавка).
+   (Ако менюто иска URL вместо функция: `https://twcxfqgknhqicxqghcrx.supabase.co/functions/v1/notify-staff`, метод POST.)
+Известието отива на телефоните на админите и на служителите със съответното право (reservations / applications / messages), ако са влезли в приложението.

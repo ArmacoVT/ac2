@@ -35,6 +35,18 @@
   .tab{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:22px;padding:8px 16px;font-size:14px;cursor:pointer;font-family:inherit;}
   .tab.on{background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:600;}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;}
+  /* „за действие“: непрегледани / чакащи записи */
+  .card.att{border-left:4px solid #82303D;background:#F7F7EE;box-shadow:0 2px 10px rgba(130,48,61,.10);}
+  .card.att.amber{border-left-color:#C98A2B;}
+  .tagn{display:inline-block;font-size:10px;font-weight:800;letter-spacing:1px;padding:3px 8px;border-radius:8px;vertical-align:middle;margin-left:6px;color:#F7F7EE;background:#82303D;}
+  .tagn.amber{background:#C98A2B;}
+  .tagn.grey{background:#5F6064;}
+  .inbox{background:#F7F7EE;border:1px solid #82303D;border-radius:14px;padding:14px 16px;margin:0 0 16px;}
+  .inbox h3{margin:0 0 8px;font-size:15px;}
+  .inbox .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #E3E3D3;flex-wrap:wrap;}
+  .inbox .row:first-of-type{border-top:0;}
+  .inbox .row .t{font-size:13.5px;line-height:1.35;}
+  .inbox .row .a{display:flex;gap:6px;flex-wrap:wrap;}
   h2{font-family:var(--serif);font-style:italic;color:var(--cream);font-weight:700;font-size:22px;margin-bottom:12px;}
   h3{color:var(--cream);font-size:16px;font-weight:500;}
   label{display:block;color:var(--mid);font-size:13px;margin:10px 0 5px;}
@@ -170,7 +182,78 @@ async function refresh(){
   try{ EVENTS=await DB.listEvents(); }catch(e){ EVENTS=[]; }
   try{ RES=await DB.listReservations(); }catch(e){ RES=[]; }
   try{ APPS=await DB.listApplications(); }catch(e){ APPS=APPS||[]; }
+  if(can('messages')){ try{ MSGS=await DB.listContactMessages(); }catch(e){} }
 }
+// ---------- „За действие“: какво чака човек ----------
+// резервация: нова заявка (requested) · непрегледана (seen_at празно) · отказ от член (cancelled) непрегледан · платена+отменена без върната сума
+function resNeedsRefund(r){ return r.paid && !r.refunded_at && (r.status==='cancelled'||r.status==='declined'); }
+function resAttention(r){
+  if(resIsOld(r))return '';
+  const st=r.status||'requested';
+  if(st==='requested')return 'new';
+  if(resNeedsRefund(r))return 'refund';
+  if(!r.seen_at&&st==='cancelled')return 'cancel';
+  if(!r.seen_at)return 'new';
+  return '';
+}
+function attItems(){
+  const out=[];
+  if(can('reservations'))RES.forEach(r=>{const a=resAttention(r);if(a)out.push({k:'res',a,r});});
+  if(can('applications'))(APPS||[]).forEach(x=>{if((x.status||'new')==='new'||!x.seen_at)out.push({k:'app',a:'new',r:x});});
+  if(can('messages'))(MSGS||[]).forEach(m=>{if(!m.is_read)out.push({k:'msg',a:'new',r:m});});
+  return out;
+}
+function attCount(k){ return attItems().filter(i=>!k||i.k===k).length; }
+function setTitleCount(){ const n=attItems().length; document.title=(n?'('+n+') ':'')+'AC² · Админ'; }
+async function markSeenRes(id){
+  const r=RES.find(x=>x.id===id); if(!r||r.seen_at)return;
+  r.seen_at=new Date().toISOString();
+  const c=document.getElementById('rescard_'+id); if(c&&!resAttention(r)){c.classList.remove('att','amber');const t=c.querySelector('.tagn');if(t)t.remove();}
+  try{await DB.markSeen('reservations',[id]);}catch(e){}
+  renderTabsOnly();
+}
+async function markSeenApp(id){
+  const a=(APPS||[]).find(x=>x.id===id); if(!a||a.seen_at)return;
+  a.seen_at=new Date().toISOString(); try{await DB.markSeen('applications',[id]);}catch(e){} setTitleCount();
+}
+async function markAllSeen(){
+  const rid=RES.filter(r=>!r.seen_at&&(r.status||'requested')!=='requested').map(r=>r.id);
+  const aid=(APPS||[]).filter(a=>!a.seen_at&&(a.status||'new')!=='new').map(a=>a.id);
+  const now=new Date().toISOString();
+  RES.forEach(r=>{if(rid.includes(r.id))r.seen_at=now;}); (APPS||[]).forEach(a=>{if(aid.includes(a.id))a.seen_at=now;});
+  try{await DB.markSeen('reservations',rid);await DB.markSeen('applications',aid);}catch(e){}
+  render();
+}
+async function markRefundedRes(id){
+  const r=RES.find(x=>x.id===id); if(!r)return;
+  const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null; const cents=ev&&ev.price?Math.round(ev.price*100*(r.party||1)):0;
+  if(!confirm('Да отбележа ли, че сумата'+(cents?' ('+(cents/100).toFixed(2)+' €)':'')+' е върната на „'+(r.name||r.who||'члена')+'“?\n\n(Ако връщаш през Stripe, това става автоматично — не е нужно.)'))return;
+  const x=await DB.markRefunded(id,cents); if(x&&x.error){alert('Грешка: '+x.error.message);return;}
+  r.refunded_at=new Date().toISOString(); r.refund_cents=cents; r.seen_at=r.seen_at||new Date().toISOString();
+  try{await DB.logAudit('reservation_refund_marked',r.name||r.who||'',(cents/100).toFixed(2)+' €');}catch(e){}
+  render(); toast('Отбелязано като възстановена');
+}
+function renderTabsOnly(){ const t=document.querySelector('.tabs'); if(!t)return; const tmp=document.createElement('div'); tmp.innerHTML=tabsHtml(); t.innerHTML=tmp.firstElementChild.innerHTML; refreshInbox(); }
+function refreshInbox(){ const box=document.getElementById('inboxBox'); if(!box)return; box.innerHTML=inboxView(); setTitleCount(); }
+// кутията „За действие“ — горе на всеки раздел, само ако има нещо
+function inboxView(){
+  const items=attItems(); if(!items.length)return '';
+  const MAX=8; const show=items.slice(0,MAX);
+  const rows=show.map(i=>{
+    if(i.k==='res'){
+      const r=i.r, nm=esc(r.name||r.who||'член'), what=esc(r.place||r.fmt||'Резервация')+' · '+isoToBg(r.date||'')+(r.time?' '+esc(r.time):'')+' · '+(r.party||1)+' '+(r.party==1?'място':'места');
+      const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null; const sum=ev&&ev.price?' · '+(ev.price*(r.party||1)).toFixed(2)+' €':'';
+      if(i.a==='new'&&(r.status||'requested')==='requested')return `<div class="row"><div class="t"><span class="tagn">НОВА ЗАЯВКА</span> <b>${nm}</b> — ${what}</div><div class="a"><button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Потвърди</button><button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
+      if(i.a==='refund')return `<div class="row"><div class="t"><span class="tagn amber">ЗА ВРЪЩАНЕ НА СУМА</span> <b>${nm}</b> — ${what}${sum}<br><span class="muted" style="font-size:12px;">Върни сумата в Stripe (става автоматично „възстановена“) или отбележи ръчно.</span></div><div class="a"><button class="btn ghost sm" onclick="markRefundedRes('${r.id}')">Отбележи върната</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
+      if(i.a==='cancel')return `<div class="row"><div class="t"><span class="tagn amber">ОТКАЗ ОТ ЧЛЕН</span> <b>${nm}</b> — ${what}</div><div class="a"><button class="btn ghost sm" onclick="markSeenRes('${r.id}')">Прегледано</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
+      return `<div class="row"><div class="t"><span class="tagn">НОВО</span> <b>${nm}</b> — ${what} · ${resBadge(r.status)}</div><div class="a"><button class="btn ghost sm" onclick="markSeenRes('${r.id}')">Прегледано</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
+    }
+    if(i.k==='app'){const a=i.r;return `<div class="row"><div class="t"><span class="tagn">КАНДИДАТУРА</span> <b>${esc(a.name||a.full_name||a.email||'')}</b>${a.membership?' — '+esc(memName(a.membership)):''}</div><div class="a"><button class="btn ghost sm" onclick="setTab('apps')">Отвори</button></div></div>`;}
+    const m=i.r;return `<div class="row"><div class="t"><span class="tagn grey">СЪОБЩЕНИЕ</span> <b>${esc(m.name||m.email||'')}</b>${m.subject?' — '+esc(m.subject):''}</div><div class="a"><button class="btn ghost sm" onclick="setTab('messages')">Отвори</button></div></div>`;
+  }).join('');
+  return `<div class="inbox"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;"><h3>За действие <span class="tagn">${items.length}</span></h3><button class="btn ghost sm" onclick="markAllSeen()">Всичко е прегледано</button></div>${rows}${items.length>MAX?`<div class="muted" style="font-size:12px;margin-top:6px;">… и още ${items.length-MAX}</div>`:''}</div>`;
+}
+async function goRes(id){ const r=RES.find(x=>x.id===id); resArchive=false; resFilter=r&&r.event_id&&EVENTS.some(e=>e.id===r.event_id)?r.event_id:'all'; if(tab!=='res'){await setTab('res');} else render(); const c=document.getElementById('rescard_'+id); if(c){c.scrollIntoView({behavior:'smooth',block:'center'});c.style.outline='2px solid #82303D';setTimeout(()=>{c.style.outline='';},2500);} }
 
 function tabBadge(n){return n?` <span style="background:#82303d;color:#f7f7ee;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${n}</span>`:'';}
 function render(){
@@ -179,21 +262,9 @@ function render(){
   let h=`<div class="wrap">
     <div class="top"><div class="b">AC² · Админ панел<br><small>American College Arcus Club</small></div>
       <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn ghost sm" id="refreshBtn" onclick="adminRefresh()">↻ Опресни</button><button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
-    <div class="tabs">
-      ${tabAllowed('events')?`<button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>`:''}
-      ${tabAllowed('res')?`<button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации${tabBadge(RES.filter(r=>!r.status||r.status==='requested').length)}</button>`:''}
-      ${tabAllowed('people')?`<button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>`:''}
-      ${tabAllowed('apps')?`<button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge((APPS||[]).filter(a=>(a.status||'new')==='new').length)}</button>`:''}
-      ${tabAllowed('ann')?`<button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>`:''}
-      ${tabAllowed('public')?`<button class="tab ${tab==='public'?'on':''}" onclick="setTab('public')">Публичен сайт</button>`:''}
-      ${tabAllowed('messages')?`<button class="tab ${tab==='messages'?'on':''}" onclick="setTab('messages')">Съобщения${tabBadge((MSGS||[]).filter(m=>!m.is_read).length)}</button>`:''}
-      ${tabAllowed('archive')?`<button class="tab ${tab==='archive'?'on':''}" onclick="setTab('archive')">Архив</button>`:''}
-      ${tabAllowed('members')?`<button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>`:''}
-      ${tabAllowed('stats')?`<button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>`:''}
-      ${tabAllowed('audit')?`<button class="tab ${tab==='audit'?'on':''}" onclick="setTab('audit')">Журнал</button>`:''}
-      ${tabAllowed('team')?`<button class="tab ${tab==='team'?'on':''}" onclick="setTab('team')">Екип</button>`:''}
-    </div>
-    ${isEditor()?`<p class="muted" style="margin:6px 0 10px;font-size:12px;">Влезли сте като служител — виждате само разделите, за които имате права.</p>`:''}`;
+    ${tabsHtml()}
+    ${isEditor()?`<p class="muted" style="margin:6px 0 10px;font-size:12px;">Влезли сте като служител — виждате само разделите, за които имате права.</p>`:''}
+    <div id="inboxBox">${inboxView()}</div>`;
   if(tab==='events')h+=eventsView();
   else if(tab==='res')h+=resView();
   else if(tab==='people')h+=peopleView();
@@ -209,6 +280,26 @@ function render(){
   else h+=membersView();
   h+=`</div>`;
   root.innerHTML=h;
+  setTitleCount();
+  renderAfter();
+}
+function tabsHtml(){
+  return `<div class="tabs">
+      ${tabAllowed('events')?`<button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>`:''}
+      ${tabAllowed('res')?`<button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации${tabBadge(attCount('res'))}</button>`:''}
+      ${tabAllowed('people')?`<button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>`:''}
+      ${tabAllowed('apps')?`<button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge(attCount('app'))}</button>`:''}
+      ${tabAllowed('ann')?`<button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>`:''}
+      ${tabAllowed('public')?`<button class="tab ${tab==='public'?'on':''}" onclick="setTab('public')">Публичен сайт</button>`:''}
+      ${tabAllowed('messages')?`<button class="tab ${tab==='messages'?'on':''}" onclick="setTab('messages')">Съобщения${tabBadge((MSGS||[]).filter(m=>!m.is_read).length)}</button>`:''}
+      ${tabAllowed('archive')?`<button class="tab ${tab==='archive'?'on':''}" onclick="setTab('archive')">Архив</button>`:''}
+      ${tabAllowed('members')?`<button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>`:''}
+      ${tabAllowed('stats')?`<button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>`:''}
+      ${tabAllowed('audit')?`<button class="tab ${tab==='audit'?'on':''}" onclick="setTab('audit')">Журнал</button>`:''}
+      ${tabAllowed('team')?`<button class="tab ${tab==='team'?'on':''}" onclick="setTab('team')">Екип</button>`:''}
+    </div>`;
+}
+function renderAfter(){
   // Членове само за преглед: махаме бутоните за промяна (сървърът така или иначе ги отказва)
   if(tab==='people'&&!can('members_edit')){
     root.querySelectorAll('button').forEach(b=>{ if(/changeName|savePhone|requestPhone|deletePerson|renewPerson|changeMembership|doInvite|doRenew|doReset|approveApp/.test(b.getAttribute('onclick')||''))b.remove(); });
@@ -819,13 +910,16 @@ function resView(){
     const ph=r.phone||(info&&info.phone)||'';
     const contact=[em,ph].filter(Boolean).map(esc).join(' · ');
     const acts=resActs(r.id,st);
-    return `<div class="card" id="rescard_${r.id}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-      <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} места</h3>
+    const att=resAttention(r);
+    const tag=att==='refund'?'<span class="tagn amber">ЗА ВРЪЩАНЕ НА СУМА</span>':att==='cancel'?'<span class="tagn amber">ОТКАЗ ОТ ЧЛЕН</span>':att==='new'?(st==='requested'?'<span class="tagn">НОВА ЗАЯВКА</span>':'<span class="tagn">НОВО</span>'):'';
+    const attCls=att?' att'+(att==='refund'||att==='cancel'?' amber':''):'';
+    return `<div class="card${attCls}" id="rescard_${r.id}" onclick="markSeenRes('${r.id}')"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+      <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} ${r.party==1?'място':'места'}${tag}</h3>
         <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${r.guest?'<span class="pill" style="border-color:#6b6b63;color:#6b6b63;">гост от сайта</span>':esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}${r.paid?' · <b style="color:#3d5634;">платено</b>':''}${r.refunded_at?' · <b style="color:#82303d;">възстановени '+(r.refund_cents/100).toFixed(2)+' €</b>':''}${r.checked_in_at?' · <b style="color:#507044;">✓ присъствал '+r.checked_in_at.slice(11,16)+'</b>':''}</div>
         ${contact?`<div class="muted" style="margin-top:3px;">${contact}</div>`:''}
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
         <div style="margin-top:7px;" id="resbadge_${r.id}">${badge}${cap}</div></div>
-      <div style="display:flex;flex-direction:column;gap:6px;" id="resact_${r.id}">${acts}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;" id="resact_${r.id}">${acts}${att==='refund'?`<button class="btn ghost sm" onclick="markRefundedRes('${r.id}')">Отбележи върната</button>`:''}</div>
     </div></div>`;}).join('');
   if(!rows)rows=`<p class="empty">Няма заявки в този раздел.</p>`;
   return `${doorBtn()}<h2>Резервации${resArchive?' — архив':''}</h2>
@@ -873,6 +967,9 @@ async function setRes(id,st){
   const cap=ev&&ev.capacity?` ${seatsInfo(ev)}`:'';
   const be=document.getElementById('resbadge_'+id);if(be)be.innerHTML=resBadge(st)+cap;
   const ae=document.getElementById('resact_'+id);if(ae)ae.innerHTML=resActs(id,st);
+  if(rr&&!rr.seen_at){rr.seen_at=new Date().toISOString();DB.markSeen('reservations',[id]).catch(()=>{});}
+  const ce=document.getElementById('rescard_'+id);if(ce){ce.classList.remove('att','amber');const t=ce.querySelector('.tagn');if(t)t.remove();}
+  renderTabsOnly();
   if(st==='confirmed'||st==='declined'){
     toast('Изпращане на имейл до члена…');
     const n=await DB.notifyReservation(id,st);
@@ -1483,7 +1580,8 @@ function appsView(){
          <button class="btn no sm" onclick="setApp('${a.id}','declined')">Откажи</button>
          <button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button>`
       : `<button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button>`;
-    return `<div class="card" id="appcard_${a.id}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+    const attA=((a.status||'new')==='new'||!a.seen_at);
+    return `<div class="card${attA?' att':''}" id="appcard_${a.id}" onclick="markSeenApp('${a.id}')"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(a.name||'—')} <span class="muted" style="font-weight:400;">· ${esc(memName2(a.membership))}${a.type==='nomination'?' · предложение':''}</span></h3>
         ${lines.map(l=>`<div class="muted" style="margin-top:3px;">${l}</div>`).join('')}
         ${a.about?`<div class="muted" style="margin-top:5px;">„${esc(a.about)}"</div>`:''}

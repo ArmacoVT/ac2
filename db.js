@@ -512,7 +512,8 @@ window.PUB_DEFAULTS={
         place: placeName(r.place), date: r.date, time: r.time, party: r.party_size, note: r.note, status: r.status,
         kind: r.kind || '', paid: !!r.paid,
         name: r.res_name || r.guest_name || '', email: r.contact_email || r.guest_email || '', phone: r.contact_phone || r.guest_phone || '',
-        guest: !r.user_id && !!r.guest_email, refunded_at: r.refunded_at || '', refund_cents: r.refund_cents || 0, checked_in_at: r.checked_in_at || '', ticket_code: r.ticket_code || '' }));
+        guest: !r.user_id && !!r.guest_email, refunded_at: r.refunded_at || '', refund_cents: r.refund_cents || 0, checked_in_at: r.checked_in_at || '', ticket_code: r.ticket_code || '',
+        seen_at: r.seen_at || '', created_at: r.created_at || '' }));
     },
     async addReservation(o) {
       if (!LIVE) { const r = jget(K.res, []); o.id = 'r' + Date.now(); o.status = 'requested'; r.unshift(o); jset(K.res, r); return { error: null }; }
@@ -752,6 +753,18 @@ window.PUB_DEFAULTS={
       if (!LIVE) return [];
       const { data } = await sb.from('applications').select('*').order('created_at', { ascending: false });
       return data || [];
+    },
+    // „прегледано“ от админ (seen_at) — резервации / кандидатури
+    async markSeen(table, ids) {
+      if (!LIVE || !ids || !ids.length) return { error: null };
+      const { error } = await sb.from(table === 'applications' ? 'applications' : 'reservations').update({ seen_at: new Date().toISOString() }).in('id', ids);
+      return { error };
+    },
+    // ръчно отбелязване „сумата е върната“ (когато е върната извън Stripe)
+    async markRefunded(id, cents) {
+      if (!LIVE) return { error: null };
+      const { error } = await sb.from('reservations').update({ refunded_at: new Date().toISOString(), refund_cents: cents || 0 }).eq('id', id);
+      return { error };
     },
     async setApplicationStatus(id, status) {
       if (!LIVE) return { error: { message: 'demo' } };

@@ -58,7 +58,7 @@
   .hero-illu{display:block;width:min(360px,86%);margin:18px auto 0;animation:illuIn 1.1s cubic-bezier(.2,.7,.2,1) both;}
   @keyframes illuIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   .sec-title{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;padding:24px 20px 2px;}
-  .resday{color:var(--mid);font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:capitalize;margin:14px 0 8px;border-left:3px solid var(--gold-soft);padding:2px 0 2px 10px;}
+  .resday{color:var(--mid);font-size:12px;font-weight:600;letter-spacing:.5px;margin:14px 0 8px;border-left:3px solid var(--gold-soft);padding:2px 0 2px 10px;}
   .daybody{animation:fadeIn .2s ease;}
   .memcard{position:relative;border-radius:20px;padding:20px;color:#ebebd6;overflow:hidden;
     background:linear-gradient(135deg,#1a1a1a 0%,#000000 60%,#161616 100%);box-shadow:7px 7px 16px #cfcfbb,-7px -7px 16px #f7f7ee;}
@@ -2458,15 +2458,17 @@ function resCard(r,dim){
   else if(r.status==='confirmed'){stampTxt='✓ '+(r.paid?(lang==='bg'?'Платена':'Paid'):(lang==='bg'?'Потвърдена':'Confirmed'));stampCls='ok';}
   else if(r.status==='pending_payment'){stampTxt='… '+(lang==='bg'?'Чака плащане':'Awaiting payment');stampCls='wait';}
   else {stampTxt='… '+(lang==='bg'?'Изчаква':'Pending');stampCls='wait';}
-  const refundNote=r.refunded_at?`<div class="m" style="color:var(--muted);">${lang==='bg'?'Сумата е възстановена':'Amount refunded'}</div>`:((r.paid&&off)?`<div class="m" style="color:#82303d;">${lang==='bg'?'Платена — за връщане на сумата се свържете с клуба':'Paid — contact the club for a refund'}</div>`:'');
+  const refundNote=r.refunded_at?`<div class="m" style="color:var(--muted);">${lang==='bg'?'Сумата е възстановена':'Amount refunded'}</div>`:((r.paid&&off)?`<div class="m" style="color:#82303d;">${lang==='bg'?'Очаквайте възстановяване на сумата':'Refund on the way'}</div>`:'');
   const stampedNow=isNew||(newResSet&&newResSet[r.id]);
-  return `<div class="ev rcard${off?' off':''}${stampedNow?' stamped':''}"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${dim?'opacity:.6;':''}${hl}${click}"${onclick}><div class="stub ${stampCls}"><span>${stampTxt.replace(/^[✓✕…↩]\s*/,'')}</span><i class="notch"></i></div><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${r.party} ${tr('seats')}</div>${priceLine}${refundNote}${cancelBtn}</div>`;
+  return `<div class="ev rcard${off?' off':''}${stampedNow?' stamped':''}"${isNew?' data-newres="1"':''}${swipe} style="margin-bottom:8px;${dim?'opacity:.6;':''}${hl}${click}"${onclick}><div class="stub ${stampCls}"><span>${stampTxt.replace(/^[✓✕…↩]\s*/,'')}</span><i class="notch"></i></div><h3 style="font-size:15px;">${heading}${newTag}</h3>${ctxLine}<div class="m">${tm}${seatsTxt(r.party)}</div>${priceLine}${refundNote}${cancelBtn}</div>`;
 }
 // заглавие на дата: „петък, 6 юни 2026"
+function seatsTxt(n){n=Number(n)||1;return n+' '+(lang==='bg'?(n===1?'място':'места'):(n===1?'seat':'seats'));}
 function resDayLabel(iso){
   if(!iso)return lang==='bg'?'Без дата':'No date';
   const d=new Date(iso+'T00:00:00');
-  return d.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  if(lang==='bg'){const W=['Неделя','Понеделник','Вторник','Сряда','Четвъртък','Петък','Събота'],M=['януари','февруари','март','април','май','юни','юли','август','септември','октомври','ноември','декември'];return W[d.getDay()]+', '+d.getDate()+' '+M[d.getMonth()]+' '+d.getFullYear()+' г.';}
+  return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 }
 // групиране по дата — всеки ден е сгъваем (по подразбиране разгънат)
 function resGroups(list,dim,prefix){
@@ -2744,7 +2746,7 @@ function ticketView(resId){
       <div class="rbadge-inline ${st[0]}">${st[1]}</div>
       <h3 style="font-size:20px;margin:10px 0 4px;">${esc(title)}</h3>
       <div style="color:${f?f.c:'var(--gold)'};font-weight:600;font-size:13px;">${f?f.t:''}${(ev&&ev.place)||r.place?' · '+esc((ev&&ev.place)||r.place):''}</div>
-      <div class="m" style="margin-top:4px;">${d}${r.time?' · '+esc(r.time):''} · ${r.party||1} ${tr('seats')}${r.paid&&ev&&ev.price>0?' · '+fmtPrice(ev.price*(r.party||1)):''}</div>
+      <div class="m" style="margin-top:4px;">${d}${r.time?' · '+esc(r.time):''} · ${seatsTxt(r.party)}${r.paid&&ev&&ev.price>0?' · '+fmtPrice(ev.price*(r.party||1)):''}</div>
       ${qr?`<div style="background:#fff;border-radius:14px;padding:12px;width:216px;margin:18px auto 10px;"><img src="${qr}" alt="QR" style="display:block;width:192px;height:192px;"/></div>`:''}
       <div style="font-size:21px;font-weight:800;letter-spacing:4px;">${fmtTicket(r.ticket_code)}</div>
       <div style="color:var(--muted);font-size:12px;margin-top:4px;">${esc(user.full_name||user.username||'')}${r.checked_in_at?' · '+(lang==='bg'?'влязъл ':'checked in ')+r.checked_in_at.slice(11,16):''}</div>
@@ -2813,7 +2815,7 @@ async function doorTicket(code){
       <div><h3 style="font-size:18px;margin:0;">${esc(name)}</h3><div style="color:var(--mid);font-size:13px;">${p?esc(m?m.t:(p.membership||'')):(lang==='bg'?'гост':'guest')} · ${lang==='bg'?'билет':'ticket'} ${fmtTicket(t.ticket_code)}</div></div>
       <div style="font-weight:800;color:${col};white-space:nowrap;text-align:right;">${already?('⚠ '+(lang==='bg'?'ВЕЧЕ ВЛЯЗЪЛ ':'ALREADY IN ')+t.checked_in_at.slice(11,16)):valid?(lang==='bg'?'✓ ВАЛИДЕН':'✓ VALID'):(lang==='bg'?'✕ НЕВАЛИДЕН':'✕ INVALID')}</div>
     </div>
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft);"><b>${esc(title)}</b><div style="font-size:12px;color:var(--mid);">${t.date?euDate(t.date):''}${t.time?' · '+t.time:''} · ${t.party_size||1} ${tr('seats')}${t.paid?' · '+(lang==='bg'?'платен':'paid'):''}${!today?' · <span style="color:#82303d;">'+(lang==='bg'?'не е за днес':'not today')+'</span>':''}</div></div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft);"><b>${esc(title)}</b><div style="font-size:12px;color:var(--mid);">${t.date?euDate(t.date):''}${t.time?' · '+t.time:''} · ${seatsTxt(t.party_size)}${t.paid?' · '+(lang==='bg'?'платен':'paid'):''}${!today?' · <span style="color:#82303d;">'+(lang==='bg'?'не е за днес':'not today')+'</span>':''}</div></div>
     ${valid?`<button class="btn sm${already?' ghost':''}" style="margin-top:10px;" onclick="doorCheckT('${t.id}','${t.ticket_code}',${already?'true':'false'})">${already?(lang==='bg'?'Отмени влизането':'Undo'):(lang==='bg'?'Присъстват ('+(t.party_size||1)+')':'Check in ('+(t.party_size||1)+')')}</button>`:''}
   </div>`;
 }
@@ -2837,7 +2839,7 @@ async function doorShow(id){
     const ev=EVENTS.find(e=>e.id===(x.event_id||x.table_event_id)); const title=ev?ev.title:(x.place||x.format||'');
     const st=x.checked_in_at?`<span style="color:#507044;font-weight:700;">✓ ${lang==='bg'?'Присъствал':'Checked in'} ${x.checked_in_at.slice(11,16)}</span>`:(x.status==='confirmed'?`<span style="color:#507044;">${lang==='bg'?'Потвърдена':'Confirmed'}${x.paid?' · '+(lang==='bg'?'платена':'paid'):''}</span>`:`<span style="color:#6b6b63;">${lang==='bg'?'Изчаква одобрение':'Pending'}</span>`);
     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line-soft);">
-      <div><b>${esc(title)}</b><div style="font-size:12px;color:var(--mid);">${x.time||''} · ${x.party_size||1} ${tr('seats')} · ${st}</div></div>
+      <div><b>${esc(title)}</b><div style="font-size:12px;color:var(--mid);">${x.time||''} · ${seatsTxt(x.party_size)} · ${st}</div></div>
       ${x.status==='confirmed'?`<button class="btn sm${x.checked_in_at?' ghost':''}" onclick="doorCheck('${x.id}','${id}',${x.checked_in_at?'true':'false'})">${x.checked_in_at?(lang==='bg'?'Отмени':'Undo'):(lang==='bg'?'Присъства':'Check in')}</button>`:''}
     </div>`;}).join('');
   box.innerHTML=`<div class="ev" style="border:2px solid ${col};">
