@@ -64,6 +64,7 @@ window.PUB_DEFAULTS={
     address:_b('Велико Търново, ул. Христо Ботев №3','Veliko Tarnovo, 3 Hristo Botev St.'),
     hours:_b('Вторник – неделя: 10:00 – 23:00\nПонеделник: почивен ден','Tuesday – Sunday: 10:00 – 23:00\nMonday: closed'),
     table_cutoff:'22:30',            // маса след събитие се предлага, ако събитието свършва до този час (сменя се лятно/зимно)
+    auto_refund:false,               // автоматично връщане на сумата при отказ от член (в срок) — през Stripe
     parking:_b('','' ), access:_b('',''),
     maps_embed:'',                   // адрес от Google Maps → Share → Embed a map → само src="…"
     maps_link:''                     // линк „Отвори в Google Maps"
@@ -759,6 +760,14 @@ window.PUB_DEFAULTS={
       if (!LIVE || !ids || !ids.length) return { error: null };
       const { error } = await sb.from(table === 'applications' ? 'applications' : 'reservations').update({ seen_at: new Date().toISOString() }).in('id', ids);
       return { error };
+    },
+    // връщане на сумата през Stripe (Edge Function refund-payment); cents празно = цялата сума
+    async refundReservation(id, cents) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('refund-payment', { body: { reservation_id: id, amount_cents: cents || undefined } });
+      if (error) return { error: { message: (data && data.error) || error.message } };
+      if (data && data.error) return { error: { message: data.error } };
+      return { data };
     },
     // ръчно отбелязване „сумата е върната“ (когато е върната извън Stripe)
     async markRefunded(id, cents) {

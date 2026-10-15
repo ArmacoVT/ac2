@@ -224,6 +224,16 @@ async function markAllSeen(){
   try{await DB.markSeen('reservations',rid);await DB.markSeen('applications',aid);}catch(e){}
   render();
 }
+async function refundRes(id){
+  const r=RES.find(x=>x.id===id); if(!r)return;
+  const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null; const sum=ev&&ev.price?(ev.price*(r.party||1)).toFixed(2)+' €':'цялата сума';
+  if(!confirm('Да върна ли '+sum+' по картата на „'+(r.name||r.who||'члена')+'“ през Stripe?\n\nПарите стигат до картата за 5–10 работни дни. Действието е необратимо.'))return;
+  toast('Връщане през Stripe…');
+  const x=await DB.refundReservation(id);
+  if(x&&x.error){alert('Връщането не мина: '+x.error.message);return;}
+  r.refunded_at=new Date().toISOString(); r.refund_cents=(x.data&&x.data.amount)||0; if(x.data&&x.data.full){r.paid=false;if(r.status!=='declined')r.status='cancelled';} r.seen_at=r.seen_at||r.refunded_at;
+  render(); toast('Сумата е върната ✓ · членът получава имейл');
+}
 async function markRefundedRes(id){
   const r=RES.find(x=>x.id===id); if(!r)return;
   const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null; const cents=ev&&ev.price?Math.round(ev.price*100*(r.party||1)):0;
@@ -244,7 +254,7 @@ function inboxView(){
       const r=i.r, nm=esc(r.name||r.who||'член'), what=esc(r.place||r.fmt||'Резервация')+' · '+isoToBg(r.date||'')+(r.time?' '+esc(r.time):'')+' · '+(r.party||1)+' '+(r.party==1?'място':'места');
       const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null; const sum=ev&&ev.price?' · '+(ev.price*(r.party||1)).toFixed(2)+' €':'';
       if(i.a==='new'&&(r.status||'requested')==='requested')return `<div class="row"><div class="t"><span class="tagn">НОВА ЗАЯВКА</span> <b>${nm}</b> — ${what}</div><div class="a"><button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Потвърди</button><button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
-      if(i.a==='refund')return `<div class="row"><div class="t"><span class="tagn amber">ЗА ВРЪЩАНЕ НА СУМА</span> <b>${nm}</b> — ${what}${sum}<br><span class="muted" style="font-size:12px;">Върни сумата в Stripe (става автоматично „възстановена“) или отбележи ръчно.</span></div><div class="a"><button class="btn ghost sm" onclick="markRefundedRes('${r.id}')">Отбележи върната</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
+      if(i.a==='refund')return `<div class="row"><div class="t"><span class="tagn amber">ЗА ВРЪЩАНЕ НА СУМА</span> <b>${nm}</b> — ${what}${sum}<br><span class="muted" style="font-size:12px;">„Върни сумата“ връща парите по картата през Stripe (5–10 работни дни). „Върната другояче“ = само отбелязване (напр. по банка).</span></div><div class="a"><button class="btn ok sm" onclick="refundRes('${r.id}')">↩ Върни сумата</button><button class="btn ghost sm" onclick="markRefundedRes('${r.id}')">Върната другояче</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
       if(i.a==='cancel')return `<div class="row"><div class="t"><span class="tagn amber">ОТКАЗ ОТ ЧЛЕН</span> <b>${nm}</b> — ${what}</div><div class="a"><button class="btn ghost sm" onclick="markSeenRes('${r.id}')">Прегледано</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
       return `<div class="row"><div class="t"><span class="tagn">НОВО</span> <b>${nm}</b> — ${what} · ${resBadge(r.status)}</div><div class="a"><button class="btn ghost sm" onclick="markSeenRes('${r.id}')">Прегледано</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
     }
@@ -919,7 +929,7 @@ function resView(){
         ${contact?`<div class="muted" style="margin-top:3px;">${contact}</div>`:''}
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
         <div style="margin-top:7px;" id="resbadge_${r.id}">${badge}${cap}</div></div>
-      <div style="display:flex;flex-direction:column;gap:6px;" id="resact_${r.id}">${acts}${att==='refund'?`<button class="btn ghost sm" onclick="markRefundedRes('${r.id}')">Отбележи върната</button>`:''}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;" id="resact_${r.id}">${acts}${att==='refund'?`<button class="btn ok sm" onclick="refundRes('${r.id}')">↩ Върни сумата</button><button class="btn ghost sm" onclick="markRefundedRes('${r.id}')">Върната другояче</button>`:''}</div>
     </div></div>`;}).join('');
   if(!rows)rows=`<p class="empty">Няма заявки в този раздел.</p>`;
   return `${doorBtn()}<h2>Резервации${resArchive?' — архив':''}</h2>
@@ -958,6 +968,9 @@ async function delRes(id){
   toast('Резервацията е изтрита');
 }
 async function setRes(id,st){
+  { const rr0=RES.find(x=>x.id===id);
+    if(st==='declined'&&rr0&&rr0.paid&&!rr0.refunded_at){ const ev0=rr0.event_id?EVENTS.find(e=>e.id===rr0.event_id):null; const sum=ev0&&ev0.price?(ev0.price*(rr0.party||1)).toFixed(2)+' €':'сумата';
+      if(!confirm('Това е ПЛАТЕН билет. Да откажа ли резервацията и да върна '+sum+' по картата през Stripe?'))return; } }
   const r=await DB.setReservationStatus(id,st);
   if(r&&r.error){alert('Грешка при промяна на статуса: '+r.error.message);return;}
   // обновяваме само картата — без пречертаване, без скок
@@ -970,6 +983,14 @@ async function setRes(id,st){
   if(rr&&!rr.seen_at){rr.seen_at=new Date().toISOString();DB.markSeen('reservations',[id]).catch(()=>{});}
   const ce=document.getElementById('rescard_'+id);if(ce){ce.classList.remove('att','amber');const t=ce.querySelector('.tagn');if(t)t.remove();}
   renderTabsOnly();
+  // отказ на ПЛАТЕН билет от клуба → връщаме сумата автоматично
+  if(st==='declined'&&rr&&rr.paid&&!rr.refunded_at){
+    toast('Връщане на сумата през Stripe…');
+    const x=await DB.refundReservation(id);
+    if(x&&x.error)toast('Отказана, но връщането НЕ мина: '+x.error.message+' — виж „За действие“.',true);
+    else { rr.refunded_at=new Date().toISOString(); rr.refund_cents=(x.data&&x.data.amount)||0; rr.paid=false; toast('Отказана · сумата е върната ✓'); }
+    renderTabsOnly();
+  }
   if(st==='confirmed'||st==='declined'){
     toast('Изпращане на имейл до члена…');
     const n=await DB.notifyReservation(id,st);
@@ -1313,7 +1334,7 @@ const PUB_SCHEMA=[
   {id:'general',title:'Общи: контакти, социални мрежи, магазини, карта',fields:[
     F('general.tagline','bi','Кратко описание на сайта (за търсачки)'),
     F('general.email','txt','Имейл за контакт (получава формата от сайта)'),F('general.phone','txt','Телефон'),
-    F('general.address','bi','Адрес'),F('general.hours','bit','Работно време (един ред = един ред на сайта; показва се и в приложението)',{rows:3}),F('general.table_cutoff','txt','Маса след събитие — предлага се, ако събитието свършва до (ЧЧ:ММ, напр. 22:30)'),
+    F('general.address','bi','Адрес'),F('general.hours','bit','Работно време (един ред = един ред на сайта; показва се и в приложението)',{rows:3}),F('general.table_cutoff','txt','Маса след събитие — предлага се, ако събитието свършва до (ЧЧ:ММ, напр. 22:30)'),F('general.auto_refund','bool','Автоматично връщане на сумата (Stripe), когато член сам откаже платен билет в срок. Изключено = отива в „За действие“ за решение от екипа.'),
     F('general.parking','bit','Паркиране (по избор)',{rows:2}),F('general.access','bit','Достъп за хора с увреждания (по избор)',{rows:2}),
     F('general.facebook','url','Facebook (пълен адрес)'),F('general.instagram','url','Instagram (пълен адрес)'),
     F('general.appstore_url','url','App Store линк (празно = „очаквайте скоро")'),F('general.playstore_url','url','Google Play линк (празно = „очаквайте скоро")'),
