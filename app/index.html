@@ -1045,16 +1045,51 @@ function eventCard(e,i){
         <input id="tbp_${e.id}" type="number" min="1" value="2"/></div></div>`:'';
   const form='';
   const media=e.image_url?`<img class="evposter" src="${esc(e.image_url)}" alt="" loading="lazy" onload="this.classList.add('imgloaded')" onerror="this.classList.add('imgloaded')"/>`:'';
-  const vid=e.video_url?`<video class="evvideo" src="${esc(e.video_url)}" controls preload="metadata" playsinline></video>`:'';
+  const vid=e.video_url?`<video class="evvideo" src="${esc(e.video_url)}" controls preload="metadata" playsinline onclick="event.stopPropagation()"></video>`:'';
   const cal=(!past&&e.date)?`<button class="chip" onclick="event.stopPropagation();addToCalendar('${e.id}')">${tr('addCal')}</button>`:'';
   const priceTag=e.price>0?`<div style="margin-top:6px;color:var(--gold);font-weight:600;font-size:13px;">${lang==='bg'?'Билет':'Ticket'}: ${fmtPrice(e.price)}</div>`:(e.price===0?`<div style="margin-top:6px;color:#507044;font-size:13px;">${lang==='bg'?'Безплатно':'Free'}</div>`:'');
   const si=(!past)?seatInfoText(e):'';
   const siCol=soldOut?'#82303d':((left!==null&&left<=10)?'#6b6b63':'#507044');
   const seatTag=si?`<div style="margin-top:4px;color:${siCol};font-size:12px;">${si}</div>`:'';
   const longDesc=(e.description||'').length>140;
-  const desc=e.description?`<div id="ed_${e.id}" style="margin-top:7px;color:var(--text);font-size:13px;line-height:1.5;${longDesc?'max-height:62px;overflow:hidden;':''}">${esc(e.description)}</div>${longDesc?`<button class="chip" style="margin-top:5px;font-size:11px;padding:3px 10px;" onclick="event.stopPropagation();toggleDesc('${e.id}',this)">${lang==='bg'?'Повече':'More'}</button>`:''}`:'';
-  return `<div class="ev" style="${delay}">${media}<div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>${desc}${tagPills(e.tags)}${priceTag}${seatTag}${vid}
-    <div class="row">${fav}${book}${cal}</div>${form}</div>`;
+  const desc=e.description?`<div id="ed_${e.id}" style="margin-top:7px;color:var(--text);font-size:13px;line-height:1.5;${longDesc?'max-height:62px;overflow:hidden;':''}">${esc(e.description)}</div>`:'';
+  const more=`<div style="margin-top:6px;color:var(--gold);font-size:12px;font-weight:600;">${lang==='bg'?'Виж събитието ›':'View event ›'}</div>`;
+  return `<div class="ev evtap" style="${delay}" onclick="go('event/${e.id}')">${media}<div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>${desc}${more}${tagPills(e.tags)}${priceTag}${seatTag}${vid}
+    <div class="row" onclick="event.stopPropagation()">${fav}${book}${cal}</div>${form}</div>`;
+}
+// ---------- ЕКРАН НА СЪБИТИЕТО (детайли: снимка, пълно описание, участници, галерия) ----------
+function eventView(id){
+  const e=EVENTS.find(x=>x.id===id);
+  if(!e)return topbar(lang==='bg'?'Събитие':'Event')+`<div class="page"><div class="ev">${lang==='bg'?'Събитието не е намерено.':'Event not found.'}</div></div>`;
+  const p=e.pub||{}; const L2=o=>o?((lang==='en'&&o.en)?o.en:(o.bg||o.en||'')):''; const f=FORMATS.find(x=>x.id===e.format);
+  const past=isPast(e);
+  const short=(lang==='en'&&p.desc_en)?p.desc_en:(e.description||'');
+  const long=L2(p.long);
+  const gal=Array.isArray(p.gallery)?p.gallery.filter(Boolean):[];
+  const kv=(k,v)=>v?`<div style="margin-top:14px;"><div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">${k}</div><div style="font-size:14px;line-height:1.55;white-space:pre-line;">${esc(v)}</div></div>`:'';
+  const T=(bg,en)=>lang==='bg'?bg:en;
+  // бутоните — същите като на картата (билет / календар / любими)
+  const rowHtml=(()=>{const d=document.createElement('div');d.innerHTML=eventCard(e,0);const r=d.querySelector('.row');return r?r.innerHTML:'';})();
+  return topbar(f?f.t:(lang==='bg'?'Събитие':'Event'))+`<div class="page">
+    ${e.image_url?`<img src="${esc(e.image_url)}" alt="" style="width:100%;border-radius:14px;display:block;max-height:320px;object-fit:cover;"/>`:''}
+    <div class="ev" style="margin-top:12px;">
+      <div class="t">${f?f.t:e.format}${past?' · '+T('минало','past'):''}</div>
+      <h3 style="font-size:22px;line-height:1.2;">${esc((lang==='en'&&p.title_en)?p.title_en:e.title)}</h3>
+      <div class="m">${evMeta(e)}</div>
+      ${e.price>0?`<div style="margin-top:6px;color:var(--gold);font-weight:600;font-size:13px;">${T('Билет','Ticket')}: ${fmtPrice(e.price)}</div>`:(e.price===0?`<div style="margin-top:6px;color:#507044;font-size:13px;">${T('Безплатно','Free')}</div>`:'')}
+      ${!past&&seatInfoText(e)?`<div style="margin-top:4px;color:#507044;font-size:12px;">${seatInfoText(e)}</div>`:''}
+      ${tagPills(e.tags)}
+      <div class="row" style="margin-top:12px;">${rowHtml}</div>
+    </div>
+    ${(short||long)?`<div class="ev">${short?`<div style="font-size:15px;line-height:1.55;font-weight:500;${long?'margin-bottom:12px;':''}">${esc(short)}</div>`:''}${long?`<div style="font-size:14px;line-height:1.6;white-space:pre-line;color:var(--text);">${esc(long)}</div>`:''}</div>`:''}
+    ${(L2(p.participants)||L2(p.curator)||L2(p.authors)||L2(p.visit))?`<div class="ev" style="padding-top:4px;">${kv(T('Участници','Participants'),L2(p.participants))}${kv(T('Куратор','Curator'),L2(p.curator))}${kv(T('Автори','Artists'),L2(p.authors))}${kv(T('Посещение','Visiting'),L2(p.visit))}</div>`:''}
+    ${gal.length?`<div style="margin:4px -16px 0;padding:0 16px 8px;display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;">${gal.map(u=>`<img src="${esc(u)}" alt="" loading="lazy" style="height:200px;border-radius:12px;flex:none;scroll-snap-align:start;max-width:85vw;object-fit:cover;" onclick="openImg('${esc(u)}')"/>`).join('')}</div>`:''}
+    ${e.video_url?`<div class="ev"><video class="evvideo" src="${esc(e.video_url)}" controls preload="metadata" playsinline style="margin:0;"></video></div>`:''}
+  </div>`;
+}
+function openImg(u){
+  let o=document.getElementById('imgov'); if(!o){o=document.createElement('div');o.id='imgov';o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;';o.onclick=()=>o.remove();document.body.appendChild(o);}
+  o.innerHTML=`<img src="${u}" style="max-width:100%;max-height:100%;border-radius:10px;object-fit:contain;"/>`;
 }
 function toggleDesc(id,btn){
   const d=document.getElementById('ed_'+id); if(!d)return;
@@ -2882,6 +2917,7 @@ function renderPath(path,q,parts){
   else if(path==='company'){html=companyView();active='profile';}
   else if(path==='door'){html=doorView();active='profile';setTimeout(doorStart,50);}
   else if(path.startsWith('ticket/')){html=ticketView(path.slice(7));active='profile';}
+  else if(path.startsWith('event/')){html=eventView(path.slice(6));active='events';}
   else{html=home();}
   app.innerHTML=html;
   // лек преход при смяна на екран

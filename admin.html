@@ -1541,13 +1541,14 @@ let draftPubGal=[], draftGuests=false;
 function pubEventBlock(e){
   const p=(e&&e.pub)||{}; const b=(v)=>(v&&typeof v==='object')?v:{bg:v||'',en:''};
   const bi=(id,label,val,rows)=>{const v=b(val); const inp=l=>rows?`<textarea id="${id}_${l}" rows="${rows}" placeholder="${l.toUpperCase()}">${esc(v[l]||'')}</textarea>`:`<input id="${id}_${l}" placeholder="${l.toUpperCase()}" value="${esc(v[l]||'')}"/>`; return `<label style="margin-top:8px;">${label}</label><div class="row2">${inp('bg')}${inp('en')}</div>`;};
-  return `<div class="card" style="margin-top:14px;background:#f7f7ee;border-color:#d9d9c4;"><b>Публичен сайт (ac2.bg)</b>
+  return `<div class="card" style="margin-top:14px;background:#f7f7ee;border-color:#d9d9c4;"><b>Страница на събитието (сайт + приложение)</b>
     <p class="muted" style="margin:2px 0 6px;font-size:12px;">Всяко събитие се показва на ac2.bg под своя формат (заглавие, дата, място, цена, снимка, описание) — освен ако е отметнато „само за членове". Гостите (нечленове) могат да купуват билети от сайта само ако е разрешено тук.</p>
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="f_pub_members_only" ${p.members_only?'checked':''} style="width:auto;"/> Само за членове — НЕ се показва на публичния сайт</label>
     <p class="muted" style="margin:4px 0 0;font-size:12px;">Дали гостите (нечленове) могат да резервират/купуват от сайта се отмята по-долу при „Видимо за" — чип „Гости", с дата „записване от" при вълните.</p>
     <div class="row2" style="margin-top:8px;"><div><label>Категория (етикет на картата)</label><select id="f_pub_cat">${PUB_CATS.map(c=>`<option value="${c[0]}" ${(p.category||'')===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select></div></div>
     <label style="margin-top:8px;">Заглавие на английски (по избор)</label><input id="f_pub_title_en" value="${esc(p.title_en||'')}"/>
-    <label style="margin-top:8px;">Описание на английски (по избор)</label><textarea id="f_pub_desc_en" rows="3">${esc(p.desc_en||'')}</textarea>
+    <label style="margin-top:8px;">Кратко описание на английски (по избор; за картата)</label><textarea id="f_pub_desc_en" rows="3">${esc(p.desc_en||'')}</textarea>
+    ${bi('f_pub_long','Пълно описание — показва се, когато събитието се отвори (сайт и приложение). Празен ред = нов абзац.',p.long,8)}
     ${bi('f_pub_part','Участници',p.participants,2)}
     ${bi('f_pub_curator','Куратор (изложби)',p.curator)}
     ${bi('f_pub_authors','Представени автори (изложби)',p.authors,2)}
@@ -1565,14 +1566,14 @@ function grabPub(){
   if(!mo)return null;
   const ch=g('f_cancel_h');
   return {table_after:(g('f_table_after')||'auto'),members_only:mo.checked,guests:!!draftGuests,guest_from:(draftGuests&&gf)?(gf.dataset.iso||''):'',cancel_hours:(ch===''?null:Math.max(0,parseInt(ch,10)||0)),category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
-    participants:bi('f_pub_part'),curator:bi('f_pub_curator'),authors:bi('f_pub_authors'),visit:bi('f_pub_visit'),ticket_url:g('f_pub_ticket'),gallery:draftPubGal.slice()};
+    long:bi('f_pub_long'),participants:bi('f_pub_part'),curator:bi('f_pub_curator'),authors:bi('f_pub_authors'),visit:bi('f_pub_visit'),ticket_url:g('f_pub_ticket'),gallery:draftPubGal.slice()};
 }
 function putPub(p){
   if(!p)return; const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   const mo=document.getElementById('f_pub_members_only'); if(mo)mo.checked=!!p.members_only;
   const gf=document.getElementById('f_pub_gfrom'); if(gf){gf.dataset.iso=p.guest_from||'';gf.value=p.guest_from?isoToBg(p.guest_from):'';}
   s('f_pub_cat',p.category);s('f_cancel_h',(p.cancel_hours==null?'':String(p.cancel_hours)));s('f_table_after',p.table_after||'auto');s('f_pub_title_en',p.title_en);s('f_pub_desc_en',p.desc_en);s('f_pub_ticket',p.ticket_url);
-  ['part','curator','authors','visit'].forEach((k,i)=>{const v=p[['participants','curator','authors','visit'][i]]||{};s('f_pub_'+k+'_bg',v.bg);s('f_pub_'+k+'_en',v.en);});
+  ['part','curator','authors','visit','long'].forEach((k,i)=>{const v=p[['participants','curator','authors','visit','long'][i]]||{};s('f_pub_'+k+'_bg',v.bg);s('f_pub_'+k+'_en',v.en);});
 }
 async function pubGalAdd(input){
   const files=Array.from(input.files||[]); if(!files.length)return;
