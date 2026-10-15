@@ -1000,7 +1000,8 @@ async function submitEnquiry(f){
 
 // ---------- КОНТАКТИ ----------
 function mapHtml(){
-  const src=pT('general.maps_embed');
+  let src=pT('general.maps_embed')||'';
+  { const m=src.match(/src\s*=\s*["']([^"']+)["']/); if(m)src=m[1]; src=src.trim(); }
   if(src&&/^https:\/\/(www\.google\.com|maps\.google\.com)\/maps/.test(src))return `<div class="map"><iframe src="${esc(src)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen title="Google Maps"></iframe></div>`;
   return `<div class="map"><div class="noq">${L('Картата се добавя от админ панела (Google Maps → Споделяне → Вграждане).','The map is added from the admin panel (Google Maps → Share → Embed).')}</div></div>`;
 }

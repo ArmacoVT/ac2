@@ -1338,7 +1338,7 @@ const PUB_SCHEMA=[
     F('general.parking','bit','Паркиране (по избор)',{rows:2}),F('general.access','bit','Достъп за хора с увреждания (по избор)',{rows:2}),
     F('general.facebook','url','Facebook (пълен адрес)'),F('general.instagram','url','Instagram (пълен адрес)'),
     F('general.appstore_url','url','App Store линк (празно = „очаквайте скоро")'),F('general.playstore_url','url','Google Play линк (празно = „очаквайте скоро")'),
-    F('general.maps_embed','url','Google Maps — адрес за вграждане',{help:'Google Maps → Споделяне → Вграждане на карта → копирай САМО адреса от src="…" (започва с https://www.google.com/maps/embed?…).'}),
+    F('general.maps_embed','url','Google Maps — адрес за вграждане',{help:'Google Maps → Споделяне → Вграждане на карта → копирай кода (може и целия <iframe …> — адресът се извлича сам).'}),
     F('general.maps_link','url','Google Maps — линк „Отвори в Google Maps"'),
     F('general.show_intro','bool','Кратка анимация с логото преди сайта (веднъж на посещение)')
   ]},
@@ -1493,6 +1493,8 @@ function pubListDel(path,i){ if(!confirm('Да изтрия ли този зап
 function pubListMove(path,i,d){ pubGrab(); const l=pList(path).slice(); const j=i+d; if(j<0||j>=l.length)return; [l[i],l[j]]=[l[j],l[i]]; pSet(path,l); render(); }
 async function savePublic(){
   pubGrab(); if(SITEC!==null)siteGrab();
+  // Google Maps: ако е залепен целият <iframe …>, вадим само адреса от src
+  try{ const g=PUBC.general||{}; if(g.maps_embed){const m=String(g.maps_embed).match(/src\s*=\s*["']([^"']+)["']/); if(m)g.maps_embed=m[1]; g.maps_embed=g.maps_embed.trim();} }catch(e){}
   const b=document.getElementById('pubSaveBtn'); if(b){b.disabled=true;b.textContent='Запазване…';}
   let r=await DB.saveSiteContent(PUBC,'public');
   if(!(r&&r.error)&&SITEC!==null)r=await DB.saveSiteContent(SITEC,'landing');
