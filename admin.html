@@ -226,13 +226,18 @@ async function markAllSeen(){
 }
 async function refundRes(id){
   const r=RES.find(x=>x.id===id); if(!r)return;
-  const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null; const sum=ev&&ev.price?(ev.price*(r.party||1)).toFixed(2)+' €':'цялата сума';
-  if(!confirm('Да върна ли '+sum+' по картата на „'+(r.name||r.who||'члена')+'“ през Stripe?\n\nПарите стигат до картата за 5–10 работни дни. Действието е необратимо.'))return;
+  const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null; const total=ev&&ev.price?Math.round(ev.price*100*(r.party||1)):0;
+  const inp=prompt('Сума за връщане в € по картата на „'+(r.name||r.who||'члена')+'“ през Stripe.\n\nЦялата сума е '+(total?(total/100).toFixed(2):'?')+' €. За частично връщане напиши по-малка сума (напр. 10 или 12.50).\nПарите стигат до картата за 5–10 работни дни. Действието е необратимо.', total?(total/100).toFixed(2):'');
+  if(inp===null)return;
+  const eur=parseFloat(String(inp).replace(',','.')); if(!(eur>0)){alert('Невалидна сума.');return;}
+  const cents=Math.round(eur*100); if(total&&cents>total){alert('Сумата е по-голяма от платеното ('+(total/100).toFixed(2)+' €).');return;}
+  const partial=total&&cents<total;
+  if(!confirm((partial?'ЧАСТИЧНО връщане: ':'Връщане: ')+(cents/100).toFixed(2)+' €'+(partial?' от '+(total/100).toFixed(2)+' €':'')+'. Потвърждаваш ли?'))return;
   toast('Връщане през Stripe…');
-  const x=await DB.refundReservation(id);
+  const x=await DB.refundReservation(id,(total&&!partial)?undefined:cents);
   if(x&&x.error){alert('Връщането не мина: '+x.error.message);return;}
   r.refunded_at=new Date().toISOString(); r.refund_cents=(x.data&&x.data.amount)||0; if(x.data&&x.data.full){r.paid=false;if(r.status!=='declined')r.status='cancelled';} r.seen_at=r.seen_at||r.refunded_at;
-  render(); toast('Сумата е върната ✓ · членът получава имейл');
+  render(); toast((x.data&&x.data.full?'Сумата е върната ✓':'Върнати '+((x.data&&x.data.amount||0)/100).toFixed(2)+' € (частично) ✓')+' · членът получава имейл');
 }
 async function markRefundedRes(id){
   const r=RES.find(x=>x.id===id); if(!r)return;
