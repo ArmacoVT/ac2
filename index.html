@@ -294,6 +294,9 @@
   /* форми */
   .form{display:grid;gap:12px;max-width:560px;}
   .form label{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mid);display:block;margin-bottom:5px;}
+  .form .selrow{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0 14px;}
+  .form .achip{border:1px solid var(--line);border-radius:20px;padding:8px 14px;font-size:13px;color:var(--wine);background:var(--card);cursor:pointer;font-family:inherit;}
+  .form .achip.on{background:var(--wine);color:var(--beige);border-color:var(--wine);}
   .form input,.form textarea,.nl input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:12px 14px;font:inherit;font-size:15px;color:var(--text);}
   .form input:focus,.form textarea:focus,.nl input:focus{outline:none;border-color:var(--gold);}
   .form .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -791,7 +794,7 @@ function pageRestaurant(){
   let order=(pT('restaurant.order')||'').split(',').map(x=>x.trim().toLowerCase()).filter(x=>blocks[x]);
   def.forEach(k=>{if(!order.includes(k))order.push(k);});   // пропуснатите се добавят накрая
   return pageHead(t('restaurant'),pT('restaurant.title'),pT('restaurant.body'))+`
-    <div class="wrap"><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:8px;">${reserveBtn()}<span class="hint" style="margin:0 0 0 8px;white-space:pre-line;">${esc(pT('restaurant.hours'))}</span></div></div>
+    <div class="wrap"><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:8px 0 64px;">${reserveBtn()}<span class="hint" style="margin:0 0 0 8px;white-space:pre-line;">${esc(pT('restaurant.hours'))}</span></div></div>
     ${order.map(k=>blocks[k]()).join('')}`;
 }
 function pageDinners(){
@@ -966,18 +969,25 @@ function enquiryForm(){
   const places=lang==='bg'?plBg:plEn;
   return `<form class="form" onsubmit="submitEnquiry(this);return false;">
     <div class="r2"><div><label>${t('format')}</label>${sel('format',FORMATS.map(f=>`<option value="${f.id}" ${f.id==='table'?'selected':''}>${f.t}</option>`).join(''))}</div>
-      <div><label>${t('place')}</label><select name="place" class="sel" onchange="document.getElementById('rq_stream').style.display=this.value==='Камерна зала'?'':'none'">${places.map((p,i)=>`<option value="${esc(plBg[i])}">${esc(p)}</option>`).join('')}</select></div></div>
+      <div><label>${t('place')}</label><select name="place" class="sel" onchange="document.getElementById('rq_stream').style.display=this.value==='Камерна зала'?'':'none';document.getElementById('rq_alg').style.display=this.value==='Ресторант'?'':'none'">${places.map((p,i)=>`<option value="${esc(plBg[i])}">${esc(p)}</option>`).join('')}</select></div></div>
     <label class="chk" id="rq_stream" style="display:none;"><input type="checkbox" name="stream"/> <span>${L('Желая и <b>онлайн излъчване</b> на събитието — за публика извън залата; условията се уточняват с екипа.','I would also like the event <b>streamed online</b> — for an audience outside the hall; details agreed with the team.')}</span></label>
     <div class="r2"><div><label>${t('dateLbl')} *</label>${dateSelects()}</div><div><label>${t('timeLbl')}</label>
       <div style="display:flex;gap:6px;align-items:center;">${sel('hh','<option value="">--</option>'+Array.from({length:24},(_,h)=>`<option value="${String(h).padStart(2,'0')}">${String(h).padStart(2,'0')}</option>`).join(''))}<b style="opacity:.5">:</b>${sel('mm',['00','15','30','45'].map(m=>`<option value="${m}">${m}</option>`).join(''))}</div></div></div>
     <div class="r2"><div><label>${t('people')} *</label><input name="party" type="number" inputmode="numeric" min="1" max="50" value="1"/><div class="hint" style="margin-top:4px;">${L('До 50 души. За по-голямо събитие напишете броя в описанието.','Up to 50 people. For a larger event write the number in the description.')}</div></div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
     <div class="r2"><div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div></div>
+    <div id="rq_alg"><label>${L('Алергени / хранителни ограничения','Allergens / dietary')} *</label>
+      <div class="selrow" id="rq_algsel">${(lang==='bg'?['Нямам алергии','Глутен','Мляко/лактоза','Яйца','Ядки','Фъстъци','Риба','Ракообразни','Соя','Сусам','Целина','Синап','Сулфити']:['No allergies','Gluten','Milk/lactose','Eggs','Tree nuts','Peanuts','Fish','Crustaceans','Soy','Sesame','Celery','Mustard','Sulphites']).map((a,i)=>`<button type="button" class="achip" data-alg="${esc(a)}"${i===0?' data-none="1"':''} onclick="toggleAlgPub(this)">${a}</button>`).join('')}</div></div>
     <div><label>${L('Повод / описание','Occasion / description')} *</label><textarea name="note" rows="3" required placeholder="${L('Опишете повода — какво събитие или среща искате да организирате.','Describe the occasion — what event or gathering you would like to hold.')}"></textarea></div>
     <label class="chk"><input type="checkbox" name="consent"/> <span>${t('consentContact')}</span></label>
     <div id="rq_captcha" class="cap"></div>
     <div class="msg" id="rq_msg"></div>
     <div><button class="btn" type="submit">${t('send')}</button></div>
   </form>`;
+}
+function toggleAlgPub(btn){
+  if(btn.dataset.none){document.querySelectorAll('#rq_algsel .achip').forEach(c=>{if(c!==btn)c.classList.remove('on');});}
+  else{const none=document.querySelector('#rq_algsel .achip[data-none]');if(none)none.classList.remove('on');}
+  btn.classList.toggle('on');
 }
 async function submitEnquiry(f){
   const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), party=parseInt(f.party.value,10)||1, note=f.note.value.trim();
@@ -991,7 +1001,13 @@ async function submitEnquiry(f){
   if(!f.consent.checked){setMsg('rq_msg',t('errConsent'));return false;}
   const tok=captchaToken('rq_captcha'); if(CFG.TURNSTILE_SITE_KEY&&!tok){setMsg('rq_msg',t('errCaptcha'));return false;}
   const b=f.querySelector('button[type=submit]'); b.disabled=true; const old=b.textContent; b.textContent=t('sending'); setMsg('rq_msg','');
-  const noteFull=(f.place.value==='Камерна зала'&&f.stream&&f.stream.checked)?(L('[+ онлайн излъчване] ','[+ online stream] ')+note):note;
+  let noteFull=(f.place.value==='Камерна зала'&&f.stream&&f.stream.checked)?(L('[+ онлайн излъчване] ','[+ online stream] ')+note):note;
+  if(f.place.value==='Ресторант'){
+    const algOn=[...f.querySelectorAll('#rq_algsel .achip.on')];
+    if(!algOn.length){b.disabled=false;b.textContent=old;setMsg('rq_msg',L('Изберете алергени (или „Нямам алергии“).','Select allergens (or "No allergies").'));return false;}
+    const none=algOn.some(c=>c.dataset.none);
+    noteFull=(none?L('Без алергии','No allergies'):L('Алергени: ','Allergens: ')+algOn.map(c=>c.dataset.alg).join(', '))+' · '+noteFull;
+  }
   const r=await DB.publicForm('reservation',{name,email,phone,date,time,party,note:noteFull,format:f.format.value,place:f.place.value,lang,captcha_token:tok});
   b.disabled=false; b.textContent=old;
   if(r.error){ resetCaptcha('rq_captcha'); setMsg('rq_msg',r.error.captcha?t('errCaptcha'):(r.error.cooldown?L('Твърде много заявки. Опитайте по-късно.','Too many requests. Try later.'):(r.error.message||t('errGeneric')))); return false; }
