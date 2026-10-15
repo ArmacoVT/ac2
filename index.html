@@ -752,7 +752,7 @@ function pageEvent(id,book){
     <div class="wrap"><div class="evbody">
       <div>
         ${past?`<div class="archive-note">${t('archive')}</div>`:''}
-        ${(evDesc(e)||loc(p.long))?`<div class="kicker">${ex?t('concept'):L('За събитието','About the event')}</div>${evDesc(e)?`<div class="body" style="font-weight:500;margin-bottom:${loc(p.long)?'14px':'0'};">${esc(evDesc(e))}</div>`:''}${loc(p.long)?`<div class="body">${esc(loc(p.long))}</div>`:''}`:''}
+        ${(evDesc(e)||loc(p.long))?`<div class="kicker">${ex?t('concept'):L('За събитието','About the event')}</div><div class="body">${esc(loc(p.long)||evDesc(e))}</div>`:''}
         ${kv(t('participants'),loc(p.participants))}
         ${kv(t('curator'),loc(p.curator))}
         ${kv(t('authors'),loc(p.authors))}
