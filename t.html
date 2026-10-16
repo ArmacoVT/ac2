@@ -31,6 +31,10 @@
   .fine{color:var(--muted);font-size:12.5px;line-height:1.5;text-align:center;margin-top:18px}
   .off h1,.off .ctx,.off .meta{opacity:.55} .off .qr{opacity:.35;filter:grayscale(1)}
   .err{text-align:center;padding:30px 10px;color:var(--muted)}
+  .cl{display:inline-block;margin-top:16px;color:var(--wine);font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;background:none;border:0;font-family:inherit}
+  .conf{background:var(--beige);border-radius:12px;padding:14px;margin-top:14px;font-size:13.5px;line-height:1.5;text-align:left}
+  .conf .row{display:flex;gap:8px;margin-top:12px}.conf .row .btn{flex:1;padding:10px;font-size:13.5px}
+  .done{margin-top:14px;font-size:13.5px;line-height:1.55;color:var(--ink)}
 </style>
 </head>
 <body>
@@ -75,8 +79,31 @@
     <div class="qr">${qr?`<img src="${qr}" alt="QR"/>`:''}</div>
     <div class="code">${fmt(t.code)}</div>
     <div class="who">${esc(t.name||'')}${t.guest?' · гост':''}${t.checked_in_at?' · влязъл '+t.checked_in_at.slice(11,16):''}</div>
-    <div class="btns"><button class="btn p" id="ics">Добави в календара</button></div>`;
+    <div class="btns"><button class="btn p" id="ics">Добави в календара</button></div>
+    ${t.can_cancel?`<button class="cl" id="cl">Откажи резервацията</button><div id="clbox"></div>`:''}`;
   document.getElementById('ics').onclick=ics;
+  // отказ от резервацията (в срок) — потвърждение на място
+  const clb=document.getElementById('cl');
+  if(clb)clb.onclick=()=>{
+    const box=document.getElementById('clbox'); clb.style.display='none';
+    const until=t.cancel_until?new Date(t.cancel_until):null;
+    const untilTxt=until?until.toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+    const sum=t.amount?(t.amount/100).toFixed(2).replace('.',',')+' €':'';
+    box.innerHTML=`<div class="conf"><b>Да откажем ли резервацията?</b><br>${t.party} ${t.party==1?'място':'места'}${sum?' · '+sum+' ще бъдат върнати по картата ви (5–10 работни дни)':''}. Действието е необратимо.${untilTxt?'<br><span style="color:var(--muted);font-size:12px;">Безплатен отказ до '+untilTxt+' ч.</span>':''}
+      <div class="row"><button class="btn g" id="clno">Не, запази</button><button class="btn p" id="clyes">Да, откажи</button></div></div>`;
+    document.getElementById('clno').onclick=()=>{box.innerHTML='';clb.style.display='';};
+    document.getElementById('clyes').onclick=async()=>{
+      const y=document.getElementById('clyes'); y.disabled=true; y.textContent='Момент…';
+      try{
+        const r=await fetch(CFG.SUPABASE_URL+'/functions/v1/ticket-cancel',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.SUPABASE_ANON_KEY,'Authorization':'Bearer '+CFG.SUPABASE_ANON_KEY},body:JSON.stringify({code})});
+        const j=await r.json();
+        if(!r.ok||j.error){ box.innerHTML='<div class="done" style="color:var(--wine);">'+(j.error==='late'?'Срокът за отказ е изтекъл. За въпроси: welcome@ac2.bg · +359 876 156 006':j.error==='checked_in'?'Резервацията вече е използвана.':'Нещо се обърка. Опитайте пак или ни пишете на welcome@ac2.bg.')+'</div>'; return; }
+        card.classList.add('off'); card.querySelector('.badge').className='badge no'; card.querySelector('.badge').textContent='✕ Отменена';
+        box.innerHTML='<div class="done">Резервацията е отменена.'+(j.refund_pending?' Сумата'+(sum?' '+sum:'')+' ще бъде върната по картата ви до 5–10 работни дни — ще получите имейл.':'')+'</div>';
+        document.getElementById('ics').style.display='none';
+      }catch(e){ box.innerHTML='<div class="done" style="color:var(--wine);">Няма връзка. Опитайте пак.</div>'; }
+    };
+  };
   document.title='Билет '+fmt(t.code)+' · AC²';
 })();
 </script>
