@@ -761,7 +761,7 @@ function pageEvent(id,book){
         ${book&&!past?bookingBox(e):''}
       </div>
       <aside><div class="box">
-        <div class="row"><span>${t('date')}</span><span>${esc(evWhen(e,true))}</span></div>
+        <div class="row"><span>${t('date')}</span><span>${esc((e.end_date&&e.end_date!==e.date)?evWhen(e,true):fmtD(e.date,true))}</span></div>
         ${e.time&&!ex?`<div class="row"><span>${t('time')}</span><span>${esc(fmtTime(e.time))}${e.ends?' – '+esc(fmtTime(e.ends)):''}</span></div>`:''}
         ${e.place?`<div class="row"><span>${t('place')}</span><span>${esc(e.place)}</span></div>`:''}
         <div class="row"><span>${t('price')}</span><span>${esc(fmtPrice(e))}</span></div>
@@ -942,6 +942,7 @@ async function submitTicket(f,eventId){
     const box=document.getElementById('bk_pay'); box.style.display='block';
     // имейлът/името/телефонът са от нашата форма — Stripe не пита пак (и не подменя с запомнен Link имейл)
     const pe=elements.create('payment',{fields:{billingDetails:{name:'never',email:'never',phone:'never'}}}); pe.mount('#bk_pay');
+    pe.on('loaderror',ev=>{ setMsg('bk_msg',L('Платежната форма не се зареди','Payment form failed to load')+': '+((ev&&ev.error&&ev.error.message)||'')); });
     try{sessionStorage.setItem('ac2_pay_event',eventId);}catch(e){}
     const total=(r.data.amount/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv');
     [...f.querySelectorAll('input,select')].forEach(i=>{ if(i.name!=='consent'){i.readOnly=true; if(i.tagName==='SELECT')i.disabled=true;} });
@@ -952,7 +953,8 @@ async function submitTicket(f,eventId){
       try{
         const {error}=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{return_url:location.origin+location.pathname+'#/event/'+eventId+'/book',payment_method_data:{billing_details:{name,email,phone}}}});
         if(error){setMsg('bk_msg',error.message||t('payFail'));b.disabled=false;b.textContent=t('pay')+' '+total;return;}
-        f.innerHTML=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`; track('purchase',{event_id:eventId});
+        const tc=r.data.ticket_code||''; const tl=tc?(CFG.SITE_URL||'https://ac2.bg/')+'t.html#'+tc:'';
+        f.innerHTML=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>${tc?`<div style="margin-top:14px;padding:16px;background:var(--bg);border-radius:14px;text-align:center;"><div style="font-size:11px;letter-spacing:2px;color:var(--wine);text-transform:uppercase;">${L('Код на билета','Ticket code')}</div><div style="font-size:24px;font-weight:800;letter-spacing:4px;margin:4px 0 10px;">AC2-${tc.slice(0,4)}-${tc.slice(4)}</div><a class="btn" href="${tl}" target="_blank" rel="noopener">${L('Моят билет (QR код)','My ticket (QR code)')}</a><div class="hint" style="margin-top:8px;">${L('Запазете този линк — билетът е и в имейла ви.','Save this link — the ticket is also in your email.')}</div></div>`:''}`; track('purchase',{event_id:eventId});
       }catch(err){ setMsg('bk_msg',(err&&err.message)||t('payFail')); b.disabled=false; b.textContent=t('pay')+' '+total; }
     };
   }catch(e){ setMsg('bk_msg',L('Плащането не се зареди: ','Payment could not load: ')+((e&&e.message)||'')); b.disabled=false; b.textContent=old; }
