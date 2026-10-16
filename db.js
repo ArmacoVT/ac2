@@ -57,7 +57,7 @@ window.PUB_DEFAULTS={
   general:{
     site_name:'AC² — American College Arcus Club',
     tagline:_b('Културен център, ресторант и клуб във Велико Търново','Cultural centre, restaurant and club in Veliko Tarnovo'),
-    facebook:'', instagram:'',
+    facebook:'https://www.facebook.com/ac2.bg', instagram:'https://www.instagram.com/ac2.bg',
     appstore_url:'', playstore_url:'',
     show_intro:true,                 // кратката анимация с логото преди сайта
     email:'welcome@ac2.bg', phone:'+359 876 156 006',
