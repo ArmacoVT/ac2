@@ -38,7 +38,7 @@
   <img class="logo" src="cards/logo-ac2-dark.png?v=3" alt="AC²" />
   <div class="kick">American College Arcus Club · Моят билет</div>
   <div class="card" id="card"><div class="err">Зареждане…</div></div>
-  <p class="fine">Покажете QR кода на входа — важи за цялата група. При въпроси: <a href="mailto:welcome@ac2.bg" style="color:inherit">welcome@ac2.bg</a> · +359 876 156 006</p>
+  <p class="fine">QR кодът е за цялата резервация. При въпроси: <a href="mailto:welcome@ac2.bg" style="color:inherit">welcome@ac2.bg</a> · +359 876 156 006</p>
 </div>
 <script src="vendor/qrcode.js"></script>
 <script src="config.js"></script>
@@ -71,10 +71,11 @@
     <h1>${esc(t.title)}</h1>
     <div class="ctx">${esc(t.format?('AC² '+t.format.charAt(0).toUpperCase()+t.format.slice(1)):'')}${t.place?' · '+esc(t.place):''}</div>
     <div class="meta">${wd?wd+', ':''}${d}${t.time?' · '+esc(t.time):''} · ${t.party} ${t.party==1?'място':'места'}</div>
+    ${t.address?`<a href="${t.maps?esc(t.maps):'#'}" ${t.maps?'target="_blank" rel="noopener"':''} style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;color:var(--wine);font-size:13px;text-decoration:none;">📍 <span style="${t.maps?'text-decoration:underline;text-underline-offset:3px;':''}">${esc(t.address)}</span>${t.maps?' ↗':''}</a>`:''}
     <div class="qr">${qr?`<img src="${qr}" alt="QR"/>`:''}</div>
     <div class="code">${fmt(t.code)}</div>
     <div class="who">${esc(t.name||'')}${t.guest?' · гост':''}${t.checked_in_at?' · влязъл '+t.checked_in_at.slice(11,16):''}</div>
-    <div class="btns"><button class="btn p" id="ics">Добави в календара</button>${t.maps?`<a class="btn g" href="${esc(t.maps)}" target="_blank" rel="noopener">Как да стигна · карта</a>`:''}</div>`;
+    <div class="btns"><button class="btn p" id="ics">Добави в календара</button></div>`;
   document.getElementById('ics').onclick=ics;
   document.title='Билет '+fmt(t.code)+' · AC²';
 })();

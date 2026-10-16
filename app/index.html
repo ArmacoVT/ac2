@@ -2774,7 +2774,7 @@ function ticketView(resId){
   const off=['cancelled','declined'].includes(r.status);
   const st=r.refunded_at?['ref','↩ '+(lang==='bg'?'Възстановена':'Refunded')]:off?['no','✕ '+(r.status==='declined'?(lang==='bg'?'Отказан':'Declined'):(lang==='bg'?'Отменен':'Cancelled'))]:r.status==='confirmed'?['ok','✓ '+(r.paid?(lang==='bg'?'Платен билет':'Paid ticket'):(lang==='bg'?'Потвърден билет':'Confirmed ticket'))]:r.status==='pending_payment'?['wait','… '+(lang==='bg'?'Чака плащане':'Awaiting payment')]:['wait','… '+(lang==='bg'?'Изчаква одобрение':'Pending approval')];
   const qr=r.ticket_code?qrDataUri('AC2T:'+r.ticket_code,'#FFFFFF','#000000'):'';
-  const maps=PUB&&PUB.general&&PUB.general.maps_link;
+  const maps=PUB&&PUB.general&&PUB.general.maps_link; const addr=pubContact().address;
   const title=ev?ev.title:(r.place||r.fmt||''); const d=r.date?euDate(r.date):'';
   return topbar(lang==='bg'?'Моят билет':'My ticket')+`<div class="page">
     <div class="ev tkv${off?' off':''}" style="text-align:center;padding:22px 18px;">
@@ -2782,14 +2782,14 @@ function ticketView(resId){
       <h3 style="font-size:20px;margin:10px 0 4px;">${esc(title)}</h3>
       <div style="color:${f?f.c:'var(--gold)'};font-weight:600;font-size:13px;">${f?f.t:''}${(ev&&ev.place)||r.place?' · '+esc((ev&&ev.place)||r.place):''}</div>
       <div class="m" style="margin-top:4px;">${d}${r.time?' · '+esc(r.time):''} · ${seatsTxt(r.party)}${r.paid&&ev&&ev.price>0?' · '+fmtPrice(ev.price*(r.party||1)):''}</div>
+      ${addr?`<a href="${maps?esc(maps):'#'}" ${maps?'target="_blank" rel="noopener"':'onclick="return false"'} style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;color:var(--gold);font-size:12.5px;text-decoration:none;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.3 7-12a7 7 0 1 0-14 0c0 5.7 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg><span style="${maps?'text-decoration:underline;text-underline-offset:3px;':''}">${esc(addr)}</span>${maps?'<span>↗</span>':''}</a>`:''}
       ${qr?`<div style="background:#fff;border-radius:14px;padding:12px;width:216px;margin:18px auto 10px;"><img src="${qr}" alt="QR" style="display:block;width:192px;height:192px;"/></div>`:''}
       <div style="font-size:21px;font-weight:800;letter-spacing:4px;">${fmtTicket(r.ticket_code)}</div>
       <div style="color:var(--muted);font-size:12px;margin-top:4px;">${esc(user.full_name||user.username||'')}${r.checked_in_at?' · '+(lang==='bg'?'влязъл ':'checked in ')+r.checked_in_at.slice(11,16):''}</div>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:18px;">
         ${ev&&!off?`<button class="btn" onclick="addToCalendar('${ev.id}')">${tr('addCal')}</button>`:''}
-        ${maps?`<a class="btn ghost" href="${esc(maps)}" target="_blank" rel="noopener" style="text-decoration:none;">${lang==='bg'?'Как да стигна · карта':'Directions · map'}</a>`:''}
       </div>
-      <div style="color:var(--muted);font-size:12px;margin-top:16px;line-height:1.5;">${lang==='bg'?'Покажи QR кода на входа — важи за цялата група.':'Show the QR code at the door — valid for the whole group.'}</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:16px;line-height:1.5;">${lang==='bg'?'QR кодът е за цялата резервация.':'One QR code for the whole reservation.'}</div>
     </div></div>`;
 }
 // ================= РЕЖИМ „ВХОД“ (скенер на вратата) =================
