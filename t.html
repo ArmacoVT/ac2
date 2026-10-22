@@ -80,7 +80,7 @@
     <div class="code">${fmt(t.code)}</div>
     <div class="who">${esc(t.name||'')}${t.guest?' · гост':''}${t.checked_in_at?' · влязъл '+t.checked_in_at.slice(11,16):''}</div>
     <div class="btns"><button class="btn p" id="ics">Добави в календара</button></div>
-    ${t.can_cancel?`<button class="cl" id="cl">Откажи резервацията</button><div id="clbox"></div>`:''}`;
+    ${t.can_cancel?`<button class="cl" id="cl">Откажи резервацията</button><div id="clbox"></div>`:(t.non_refundable&&!off?`<div class="who" style="margin-top:14px;">Билетът не подлежи на връщане.</div>`:'')}`;
   document.getElementById('ics').onclick=ics;
   // отказ от резервацията (в срок) — потвърждение на място
   const clb=document.getElementById('cl');
@@ -97,7 +97,7 @@
       try{
         const r=await fetch(CFG.SUPABASE_URL+'/functions/v1/ticket-cancel',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.SUPABASE_ANON_KEY,'Authorization':'Bearer '+CFG.SUPABASE_ANON_KEY},body:JSON.stringify({code})});
         const j=await r.json();
-        if(!r.ok||j.error){ box.innerHTML='<div class="done" style="color:var(--wine);">'+(j.error==='late'?'Срокът за отказ е изтекъл. За въпроси: welcome@ac2.bg · +359 876 156 006':j.error==='checked_in'?'Резервацията вече е използвана.':'Нещо се обърка. Опитайте пак или ни пишете на welcome@ac2.bg.')+'</div>'; return; }
+        if(!r.ok||j.error){ box.innerHTML='<div class="done" style="color:var(--wine);">'+(j.error==='non_refundable'?'Билетът не подлежи на връщане.':j.error==='late'?'Срокът за отказ е изтекъл. За въпроси: welcome@ac2.bg · +359 876 156 006':j.error==='checked_in'?'Резервацията вече е използвана.':'Нещо се обърка. Опитайте пак или ни пишете на welcome@ac2.bg.')+'</div>'; return; }
         card.classList.add('off'); card.querySelector('.badge').className='badge no'; card.querySelector('.badge').textContent='✕ Отменена';
         box.innerHTML='<div class="done">Резервацията е отменена.'+(j.refund_pending?' Сумата'+(sum?' '+sum:'')+' ще бъде върната по картата ви до 5–10 работни дни — ще получите имейл.':'')+'</div>';
         document.getElementById('ics').style.display='none';

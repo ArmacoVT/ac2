@@ -81,6 +81,7 @@
 <body>
 <div id="root" style="padding:40px;text-align:center;color:var(--muted);">Зареждане…</div>
 <script src="vendor/supabase.js"></script>
+<script src="vendor/qrcode.js"></script>
 <script src="config.js"></script>
 <script src="db.js"></script>
 <script>
@@ -885,7 +886,82 @@ function resIsOld(r){
   const cut=new Date(); cut.setDate(cut.getDate()-2);
   return d<cut.toISOString().slice(0,10);
 }
-const doorBtn=()=>`<a class="btn ghost sm" href="${(window.ACAC_CONFIG&&ACAC_CONFIG.APP_URL)||'app/'}#door" target="_blank" rel="noopener" style="float:right;margin-top:4px;">📷 Скенер за вход</a>`;
+const doorBtn=()=>`<div style="float:right;margin-top:4px;display:flex;gap:8px;"><button class="btn ok sm" onclick="walkinOpen()">+ Билет на място</button><a class="btn ghost sm" href="${(window.ACAC_CONFIG&&ACAC_CONFIG.APP_URL)||'app/'}#door" target="_blank" rel="noopener">📷 Скенер за вход</a></div>`;
+// ---------- БИЛЕТ НА МЯСТО (рецепция): гост или член, плащане в брой/ПОС/безплатно, печат ----------
+let WK=null;   // {step:'form'|'done', ...}
+function walkinOpen(){ WK={step:'form',who:'guest',pay:'cash',party:1,event_id:'',name:'',email:'',phone:'',user_id:'',send:true}; if(!PEOPLE){DB.listMembers().then(p=>{PEOPLE=p||[];walkinRender();});} walkinRender(); }
+function walkinClose(){ WK=null; const m=document.getElementById('wkModal'); if(m)m.remove(); }
+function walkinEvents(){ const td=new Date().toISOString().slice(0,10); return EVENTS.filter(e=>e.date&&e.date>=td).sort((a,b)=>a.date.localeCompare(b.date)); }
+function walkinRender(){
+  let m=document.getElementById('wkModal');
+  if(!m){ m=document.createElement('div'); m.id='wkModal'; m.style.cssText='position:fixed;inset:0;background:rgba(28,28,27,.55);z-index:9000;display:flex;align-items:flex-start;justify-content:center;padding:30px 12px;overflow:auto;'; m.onclick=e=>{if(e.target===m)walkinClose();}; document.body.appendChild(m); }
+  const ev=EVENTS.find(e=>e.id===WK.event_id);
+  const left=ev&&ev.capacity?(ev.capacity-seatsTaken(ev.id)-seatsPending(ev.id)):null;
+  const price=ev?(Number(ev.price)||0):0; const total=price*(WK.party||1);
+  const members=(PEOPLE||[]).filter(p=>(p.membership||'guest')!=='guest').sort((a,b)=>(a.full_name||a.username||'').localeCompare(b.full_name||b.username||'','bg'));
+  let inner='';
+  if(WK.step==='done'){
+    const r=WK.result;
+    inner=`<h3 style="margin:0 0 6px;">Билетът е издаден ✓</h3>
+      <div class="muted" style="margin-bottom:12px;">${esc(r.title)} · ${isoToBg(r.date)}${r.time?' '+esc(r.time):''} · ${r.party} ${r.party==1?'място':'места'} · ${esc(r.name)}${r.mailed?' · имейлът е изпратен':''}</div>
+      <div style="text-align:center;background:#fff;border-radius:12px;padding:14px;margin:0 auto 10px;max-width:260px;"><div id="wkqr"></div><div style="font-size:20px;font-weight:800;letter-spacing:3px;margin-top:6px;">AC2-${r.ticket_code.slice(0,4)}-${r.ticket_code.slice(4)}</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+        <button class="btn ok" onclick="walkinPrint()">🖨 Печат</button>
+        <a class="btn ghost" href="https://ac2.bg/t.html#${r.ticket_code}" target="_blank" rel="noopener">Отвори билета</a>
+        <button class="btn ghost" onclick="walkinOpen()">+ Още един</button>
+        <button class="btn ghost" onclick="walkinClose()">Затвори</button></div>`;
+  } else {
+    inner=`<h3 style="margin:0 0 4px;">Билет на място</h3><div class="muted" style="margin-bottom:12px;">Резервацията се потвърждава веднага, местата се заемат, билетът получава код и QR за печат.</div>
+      <label>Събитие</label><select id="wk_ev" onchange="WK.event_id=this.value;walkinRender()"><option value="">— избери —</option>${walkinEvents().map(e=>`<option value="${e.id}" ${WK.event_id===e.id?'selected':''}>${isoToBg(e.date)}${e.time?' '+esc(e.time):''} · ${esc(e.title)}${e.price>0?' · '+Number(e.price).toFixed(2)+' €':' · безплатно'}</option>`).join('')}</select>
+      ${ev?`<div style="margin:6px 0 10px;">${seatsInfo(ev)}${ev.place?' <span class="muted">'+esc(ev.place)+'</span>':''}</div>`:''}
+      <div class="row2"><div><label>Брой места</label><input id="wk_party" type="number" min="1" max="50" value="${WK.party}" oninput="WK.party=Math.max(1,parseInt(this.value,10)||1);document.getElementById('wk_total').textContent=walkinTotal()"/></div>
+        <div><label>Плащане</label><select id="wk_pay" onchange="WK.pay=this.value;document.getElementById('wk_total').textContent=walkinTotal()"><option value="cash" ${WK.pay==='cash'?'selected':''}>В брой</option><option value="pos" ${WK.pay==='pos'?'selected':''}>Карта на ПОС</option><option value="free" ${WK.pay==='free'?'selected':''}>Безплатно / покана</option></select></div></div>
+      <div style="margin:4px 0 10px;font-weight:700;">Общо: <span id="wk_total">${walkinTotal()}</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;"><button class="tab ${WK.who==='guest'?'on':''}" onclick="WK.who='guest';walkinRender()">Гост</button><button class="tab ${WK.who==='member'?'on':''}" onclick="WK.who='member';walkinRender()">Член</button></div>
+      ${WK.who==='member'?`<label>Член</label><input id="wk_msearch" placeholder="Търси по име / имейл…" oninput="walkinFilter(this.value)" value="${esc(WK.msearch||'')}"/><select id="wk_user" size="6" style="width:100%;margin-top:4px;" onchange="WK.user_id=this.value;const p=(PEOPLE||[]).find(x=>x.id===this.value);if(p){WK.name=p.full_name||p.username||'';WK.email=p.email||'';WK.phone=p.phone||'';}">${members.filter(p=>!WK.msearch||((p.full_name||'')+' '+(p.email||'')+' '+(p.username||'')).toLowerCase().includes(WK.msearch.toLowerCase())).map(p=>`<option value="${p.id}" ${WK.user_id===p.id?'selected':''}>${esc(p.full_name||p.username||p.email)}${p.email?' · '+esc(p.email):''}</option>`).join('')}</select>${!PEOPLE?'<div class="muted">зареждане…</div>':''}`
+      :`<label>Име *</label><input id="wk_name" value="${esc(WK.name)}" oninput="WK.name=this.value"/>
+        <div class="row2"><div><label>Имейл (за билета)</label><input id="wk_email" type="email" value="${esc(WK.email)}" oninput="WK.email=this.value"/></div><div><label>Телефон</label><input id="wk_phone" value="${esc(WK.phone)}" oninput="WK.phone=this.value"/></div></div>`}
+      <label style="margin-top:8px;">Бележка (по избор)</label><input id="wk_note" value="${esc(WK.note||'')}" oninput="WK.note=this.value"/>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;"><input type="checkbox" ${WK.send?'checked':''} onchange="WK.send=this.checked" style="width:16px;height:16px;margin:0;"/> Изпрати билета и по имейл (ако има)</label>
+      <div style="display:flex;gap:8px;margin-top:14px;"><button class="btn ok" id="wk_go" onclick="walkinSubmit()">Издай билет</button><button class="btn ghost" onclick="walkinClose()">Отказ</button></div>
+      <div class="muted" id="wk_msg" style="margin-top:8px;"></div>`;
+  }
+  m.innerHTML=`<div class="card" style="max-width:560px;width:100%;margin:0;">${inner}</div>`;
+  if(WK.step==='done'&&window.qrcode){ try{const q=qrcode(0,'M');q.addData('AC2T:'+WK.result.ticket_code);q.make();document.getElementById('wkqr').innerHTML=q.createSvgTag({cellSize:4,margin:2});}catch(e){} }
+}
+function walkinTotal(){ const ev=EVENTS.find(e=>e.id===WK.event_id); const price=ev?(Number(ev.price)||0):0; return (WK.pay==='free'||!price)?'0,00 € (безплатно)':(price*(WK.party||1)).toFixed(2).replace('.',',')+' €'; }
+function walkinFilter(v){ WK.msearch=v; const sel=document.getElementById('wk_user'); if(!sel)return; const members=(PEOPLE||[]).filter(p=>(p.membership||'guest')!=='guest'); sel.innerHTML=members.filter(p=>!v||((p.full_name||'')+' '+(p.email||'')+' '+(p.username||'')).toLowerCase().includes(v.toLowerCase())).map(p=>`<option value="${p.id}">${esc(p.full_name||p.username||p.email)}${p.email?' · '+esc(p.email):''}</option>`).join(''); }
+async function walkinSubmit(){
+  const msg=document.getElementById('wk_msg'), b=document.getElementById('wk_go');
+  if(!WK.event_id){msg.textContent='Избери събитие.';return;}
+  if(WK.who==='member'&&!WK.user_id){msg.textContent='Избери член.';return;}
+  if(WK.who==='guest'&&!(WK.name||'').trim()){msg.textContent='Въведи име.';return;}
+  b.disabled=true; b.textContent='Издаване…'; msg.textContent='';
+  const o={event_id:WK.event_id,party:WK.party||1,pay_method:WK.pay,note:WK.note||'',send_email:!!WK.send};
+  if(WK.who==='member')o.user_id=WK.user_id; else {o.name=WK.name.trim();o.email=(WK.email||'').trim();o.phone=(WK.phone||'').trim();}
+  const r=await DB.walkinTicket(o);
+  if(r&&r.error){ b.disabled=false; b.textContent='Издай билет'; msg.textContent='Грешка: '+r.error.message; return; }
+  WK.step='done'; WK.result=r.data; walkinRender();
+  try{RES=await DB.listReservations();}catch(e){} renderTabsOnly();
+  try{await DB.logAudit('walkin_ticket_issued',r.data.name||'',r.data.title||'');}catch(e){}
+}
+function walkinPrint(){
+  const r=WK&&WK.result; if(!r)return;
+  const w=window.open('','_blank','width=420,height=640'); if(!w){alert('Разреши изскачащи прозорци за печат.');return;}
+  let svg=''; try{const q=qrcode(0,'M');q.addData('AC2T:'+r.ticket_code);q.make();svg=q.createSvgTag({cellSize:5,margin:2});}catch(e){}
+  const d=isoToBg(r.date); const code='AC2-'+r.ticket_code.slice(0,4)+'-'+r.ticket_code.slice(4);
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Билет ${code}</title><style>
+    @page{size:80mm auto;margin:6mm} body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#000;width:68mm}
+    .t{text-align:center} .logo{font-size:28px;font-weight:700;font-style:italic;font-family:Georgia,serif;margin:0} .k{font-size:9px;letter-spacing:2px;text-transform:uppercase;margin:2px 0 10px}
+    h1{font-size:15px;margin:8px 0 4px;line-height:1.2} .m{font-size:11.5px;line-height:1.5} .qr{margin:10px auto 4px;width:170px} .qr svg{width:170px;height:170px;display:block}
+    .code{font-size:18px;font-weight:800;letter-spacing:3px;text-align:center;margin:4px 0} .f{font-size:10px;text-align:center;margin-top:8px;border-top:1px dashed #000;padding-top:6px}
+  </style></head><body><div class="t"><p class="logo">AC²</p><div class="k">American College Arcus Club</div></div>
+    <h1>${esc(r.title)}</h1><div class="m">${d}${r.time?' · '+esc(r.time):''}${r.place?'<br>'+esc(r.place):''}<br>${r.party} ${r.party==1?'място':'места'} · ${esc(r.name)}${r.price>0&&WK.pay!=='free'?'<br>Платено на място · '+(r.price*r.party).toFixed(2).replace('.',',')+' €':''}</div>
+    <div class="qr">${svg}</div><div class="code">${code}</div>
+    <div class="f">Покажете QR кода на входа — важи за цялата резервация.<br>ac2.bg · +359 876 156 006<br>${r.price>0&&WK.pay!=='free'?'Билетът не подлежи на връщане.':''}</div>
+    <script>setTimeout(function(){window.print();},300);<\/script></body></html>`);
+  w.document.close();
+}
 function resView(){
   if(!RES.length)return `${doorBtn()}<h2>Резервации</h2><p class="empty">Все още няма запитвания за резервация.</p>`;
   const OLD=RES.filter(resIsOld); const CUR=RES.filter(r=>!resIsOld(r));
@@ -930,7 +1006,7 @@ function resView(){
     const attCls=att?' att'+(att==='refund'||att==='cancel'?' amber':''):'';
     return `<div class="card${attCls}" id="rescard_${r.id}" onclick="markSeenRes('${r.id}')"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
       <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} ${r.party==1?'място':'места'}${tag}</h3>
-        <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${r.guest?'<span class="pill" style="border-color:#6b6b63;color:#6b6b63;">гост от сайта</span>':esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}${r.paid?' · <b style="color:#3d5634;">платено</b>':''}${r.refunded_at?' · <b style="color:#82303d;">възстановени '+(r.refund_cents/100).toFixed(2)+' €</b>':''}${r.checked_in_at?' · <b style="color:#507044;">✓ присъствал '+r.checked_in_at.slice(11,16)+'</b>':''}</div>
+        <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${r.guest?'<span class="pill" style="border-color:#6b6b63;color:#6b6b63;">гост от сайта</span>':esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}${r.paid?' · <b style="color:#3d5634;">платено'+(r.pay_method==='cash'?' в брой':r.pay_method==='pos'?' на ПОС':'')+'</b>':(r.pay_method==='free'?' · <b style="color:#5f6064;">на място · безплатно</b>':'')}${r.refunded_at?' · <b style="color:#82303d;">възстановени '+(r.refund_cents/100).toFixed(2)+' €</b>':''}${r.checked_in_at?' · <b style="color:#507044;">✓ присъствал '+r.checked_in_at.slice(11,16)+'</b>':''}</div>
         ${contact?`<div class="muted" style="margin-top:3px;">${contact}</div>`:''}
         ${r.ticket_code&&st==='confirmed'?`<div class="muted" style="margin-top:4px;">Билет: <b style="color:var(--text);letter-spacing:1px;">AC2-${r.ticket_code.slice(0,4)}-${r.ticket_code.slice(4)}</b> · <a href="https://ac2.bg/t.html#${r.ticket_code}" target="_blank" rel="noopener" style="color:#82303d;">отвори билета</a> · <a href="#" onclick="event.preventDefault();event.stopPropagation();navigator.clipboard&&navigator.clipboard.writeText('https://ac2.bg/t.html#${r.ticket_code}');toast('Линкът е копиран')" style="color:#82303d;">копирай линка</a></div>`:''}
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}

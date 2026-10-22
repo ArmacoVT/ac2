@@ -2452,8 +2452,13 @@ function resStartMs(r){
   if(p.length<3)return null;
   return new Date(p[0],p[1]-1,p[2],tt[0]||0,tt[1]||0,0).getTime();
 }
+function resPaid(r){const ev=r.event_id?EVENTS.find(x=>x.id===r.event_id):null;return !!(ev&&ev.price>0&&r.event_id&&(r.kind||'physical')==='physical'&&(r.paid||r.status==='pending_payment'));}
+// отказ: безплатни резервации — всички (в срок); ПЛАТЕН билет — само Founder / Founding Member (в срок). Останалите: билетът не подлежи на връщане.
+const REFUND_MEMBERSHIPS=['founder','founding'];
+function canRefundTier(){return !!user&&REFUND_MEMBERSHIPS.includes(user.membership)&&membershipActive();}
 function resCancellable(r){
   if(r.status==='declined'||r.status==='cancelled')return false;
+  if(resPaid(r)&&!canRefundTier())return false;
   const s=resStartMs(r); if(s==null)return false;
   return s-Date.now()>cancelCutoffH(r)*3600000;
 }
@@ -2484,7 +2489,7 @@ function resCard(r,dim){
   const newTag=isNew?` <span style="background:var(--gold);color:#f4f4e8;font-size:9px;font-weight:700;border-radius:8px;padding:2px 6px;vertical-align:middle;">${lang==='bg'?'НОВО':'NEW'}</span>`:'';
   const priceLine=(ev&&ev.price>0&&r.event_id)?`<div class="m" style="color:var(--gold);font-weight:600;">${lang==='bg'?'Общо: ':'Total: '}${fmtPrice(ev.price*(r.party||1))}</div>`:'';
   const canCancel=resCancellable(r);
-  const cancelBtn=canCancel?`<button onclick="event.stopPropagation();cancelRes('${r.id}')" style="margin-top:6px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;">${lang==='bg'?'Откажи резервацията':'Cancel reservation'}</button>`:'';
+  const cancelBtn=canCancel?`<button onclick="event.stopPropagation();cancelRes('${r.id}')" style="margin-top:6px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;">${lang==='bg'?'Откажи резервацията':'Cancel reservation'}</button>`:((!['cancelled','declined'].includes(r.status)&&!dim&&resPaid(r)&&r.paid&&!canRefundTier())?`<div class="m" style="margin-top:6px;color:var(--muted);font-size:12px;">${lang==='bg'?'Билетът не подлежи на връщане.':'This ticket is non-refundable.'}</div>`:'');
   const swipe=canCancel?` data-swipecancel="${r.id}"`:'';
   const fmtObj=ev?FORMATS.find(f=>f.id===ev.format):null;
   const col=fmtObj?fmtObj.c:'';

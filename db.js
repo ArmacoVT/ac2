@@ -514,7 +514,7 @@ window.PUB_DEFAULTS={
         kind: r.kind || '', paid: !!r.paid,
         name: r.res_name || r.guest_name || '', email: r.contact_email || r.guest_email || '', phone: r.contact_phone || r.guest_phone || '',
         guest: !r.user_id && !!r.guest_email, refunded_at: r.refunded_at || '', refund_cents: r.refund_cents || 0, checked_in_at: r.checked_in_at || '', ticket_code: r.ticket_code || '',
-        seen_at: r.seen_at || '', created_at: r.created_at || '' }));
+        seen_at: r.seen_at || '', created_at: r.created_at || '', pay_method: r.pay_method || '', sold_at: r.sold_at || '' }));
     },
     async addReservation(o) {
       if (!LIVE) { const r = jget(K.res, []); o.id = 'r' + Date.now(); o.status = 'requested'; r.unshift(o); jset(K.res, r); return { error: null }; }
@@ -760,6 +760,14 @@ window.PUB_DEFAULTS={
       if (!LIVE || !ids || !ids.length) return { error: null };
       const { error } = await sb.from(table === 'applications' ? 'applications' : 'reservations').update({ seen_at: new Date().toISOString() }).in('id', ids);
       return { error };
+    },
+    // билет на място (рецепция) → Edge Function walkin-ticket
+    async walkinTicket(o) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('walkin-ticket', { body: o });
+      if (error) return { error: { message: (data && data.error) || error.message } };
+      if (data && data.error) return { error: { message: data.error } };
+      return { data };
     },
     // връщане на сумата през Stripe (Edge Function refund-payment); cents празно = цялата сума
     async refundReservation(id, cents) {
