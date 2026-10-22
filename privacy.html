@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Политика за поверителност · AC² Arcus Club</title>
+<meta name="description" content="Privacy Policy of the AC² Arcus Club app and website (American College Arcus JSC)." />
+<link rel="icon" href="favicon.png?v=3" />
+<link rel="stylesheet" href="fonts/fonts.css" />
+<style>
+  :root{--beige:#EBEBD6;--card:#F4F4E8;--ink:#1c1c1b;--muted:#5f6064;--wine:#82303D;--line:#CFCFBB}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--beige);color:var(--ink);font-family:"Google Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto;padding:36px 20px 70px}
+  .logo{width:84px;margin:0 0 4px -8px;display:block}
+  .kick{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--wine);margin-bottom:22px}
+  h1{font-family:"Playfair Display",Georgia,serif;font-style:italic;font-weight:700;font-size:32px;line-height:1.15;margin:0 0 6px}
+  h2{font-family:"Playfair Display",Georgia,serif;font-style:italic;font-weight:700;font-size:21px;margin:34px 0 8px;color:#000}
+  h3{font-size:15px;margin:18px 0 4px;color:var(--wine)}
+  p,li{font-size:15.5px}
+  ul{padding-left:20px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:16px 0}
+  .lang{display:flex;gap:8px;margin:0 0 22px}
+  .lang button{font:inherit;font-size:13px;padding:6px 14px;border-radius:20px;border:1px solid var(--wine);background:transparent;color:var(--wine);cursor:pointer}
+  .lang button.on{background:var(--wine);color:var(--beige)}
+  .muted{color:var(--muted);font-size:13px}
+  a{color:var(--wine)}
+  [data-l="en"]{display:none}
+  html.en [data-l="bg"]{display:none} html.en [data-l="en"]{display:block}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <img class="logo" src="cards/logo-ac2-dark.png?v=3" alt="AC²" />
+  <div class="kick">AC² · American College Arcus Club</div>
+  <div class="lang"><button class="on" onclick="setL('bg')">Български</button><button onclick="setL('en')">English</button></div>
+
+  <div data-l="bg">
+    <h1>Политика за поверителност</h1>
+    <p class="muted">В сила от 22 октомври 2026 г. · Отнася се за мобилното приложение <b>AC² Arcus Club</b> (iOS и Android, идентификатор <code>bg.arcusclub.app</code>) и уебсайта <b>ac2.bg</b>.</p>
+
+    <div class="box">
+      <h3>Администратор на лични данни</h3>
+      <p><b>„Американски колеж Аркус“ АД</b> (American College Arcus JSC)<br>ЕИК/ДДС №: BG104693193<br>Седалище: гр. Велико Търново, ул. „Драгоман“ №16<br>Клуб AC²: гр. Велико Търново, ул. „Христо Ботев“ №3<br>Имейл за въпроси относно личните данни: <a href="mailto:welcome@ac2.bg">welcome@ac2.bg</a> · тел. +359 876 156 006</p>
+    </div>
+
+    <h2>1. Какво е AC² Arcus Club</h2>
+    <p>AC² е частен клуб за членове с покана. Приложението и сайтът дават достъп до програмата на клуба, покупка на билети за събития, резервации на маса в ресторанта на клуба, дигитална членска карта и известия. Регистрация в приложението няма — профилите се създават от клуба при приемане на член.</p>
+
+    <h2>2. Какви данни събираме</h2>
+    <ul>
+      <li><b>Данни за профила:</b> име, имейл, телефон, вид и срок на членството, потребителски идентификатор. Източник: вие (при кандидатстване или покана) и клубът.</li>
+      <li><b>Резервации и билети:</b> събитие, дата, брой места, статус, код на билета, присъствие (при сканиране на входа), бележки, които сте въвели (напр. алергени при резервация в ресторанта).</li>
+      <li><b>Плащания:</b> сума, дата, статус, идентификатор на плащането в Stripe и последните 4 цифри на картата. <b>Пълните данни на картата не достигат до нас</b> — обработват се изцяло от Stripe.</li>
+      <li><b>Известия:</b> токен на устройството за push известия (Apple/Google), ако сте ги разрешили.</li>
+      <li><b>Технически данни:</b> доклади за грешки (crash logs) чрез Sentry — модел на устройството, версия на системата, стъпките преди грешката; не съдържат вашето име.</li>
+      <li><b>Форми на сайта:</b> име, имейл, телефон и съобщение (контакт, запитване за резервация, кандидатура за членство, абонамент за бюлетин).</li>
+      <li><b>Бисквитки на сайта:</b> статистика (Google Analytics) и маркетинг (Meta Pixel) — <b>само след вашето съгласие</b> от банера за бисквитки. Приложението не ползва рекламни идентификатори.</li>
+    </ul>
+    <p>Не събираме местоположение, контакти, снимки или биометрични данни. Face ID / пръстов отпечатък работят изцяло на устройството ви и не се изпращат към нас. Достъпът до календар се използва само за да добавите събитие в собствения си календар; достъпът до камерата — само в режим „скенер“ за служители.</p>
+
+    <h2>3. Защо и на какво основание</h2>
+    <ul>
+      <li>Изпълнение на договора за членство и на услугите, които поискате (билети, резервации) — чл. 6, ал. 1, б. „б“ GDPR.</li>
+      <li>Законови задължения — счетоводство и данъчна отчетност за плащанията — чл. 6, ал. 1, б. „в“ GDPR.</li>
+      <li>Легитимен интерес — сигурност на профилите, предотвратяване на измами, отстраняване на грешки — чл. 6, ал. 1, б. „е“ GDPR.</li>
+      <li>Съгласие — push известия, бюлетин, бисквитки за статистика/маркетинг — чл. 6, ал. 1, б. „а“ GDPR; може да бъде оттеглено по всяко време.</li>
+    </ul>
+
+    <h2>4. Кой обработва данните от наше име</h2>
+    <ul>
+      <li><b>Supabase</b> (база данни, удостоверяване, сървърна логика) — сървъри в ЕС.</li>
+      <li><b>Stripe Payments Europe</b> — картови плащания, Apple Pay, Google Pay, възстановяване на суми.</li>
+      <li><b>Apple</b> (APNs) и <b>Google</b> (Firebase Cloud Messaging) — доставка на push известия.</li>
+      <li><b>Sentry</b> — доклади за грешки.</li>
+      <li><b>Mailchimp</b> (Intuit) — бюлетин по имейл, само за абонирани.</li>
+      <li><b>Cloudflare Turnstile</b> — защита на формите от спам.</li>
+      <li><b>GitHub Pages</b> — хостинг на сайта. <b>Calderra</b> — пощенски сървър за имейлите от клуба.</li>
+    </ul>
+    <p>Не продаваме и не предоставяме лични данни на трети страни за техни цели. Прехвърляне извън ЕС (напр. Apple, Google, Sentry, Mailchimp) става при стандартни договорни клаузи на ЕС или Рамката ЕС–САЩ за защита на данните.</p>
+
+    <h2>5. Колко дълго пазим данните</h2>
+    <ul>
+      <li>Профил и членство — докато сте член и до 12 месеца след прекратяване (за подновяване), освен ако поискате изтриване по-рано.</li>
+      <li>Резервации и билети — 3 години след събитието.</li>
+      <li>Платежни записи — 10 години (Закон за счетоводството).</li>
+      <li>Push токени — до излизане от профила или изтриване на приложението.</li>
+      <li>Доклади за грешки — 90 дни. Съобщения от формите — до 24 месеца.</li>
+    </ul>
+
+    <h2>6. Вашите права</h2>
+    <p>Имате право на достъп, коригиране, изтриване („право да бъдеш забравен“), ограничаване, преносимост и възражение, както и да оттеглите съгласие. Пишете на <a href="mailto:welcome@ac2.bg">welcome@ac2.bg</a> — отговаряме до 30 дни. Имате право на жалба до Комисията за защита на личните данни (КЗЛД), бул. „Проф. Цветан Лазаров“ №2, София, <a href="https://www.cpdp.bg" target="_blank" rel="noopener">www.cpdp.bg</a>.</p>
+
+    <h2 id="delete">7. Изтриване на профила</h2>
+    <div class="box">
+      <p><b>В приложението:</b> Профил → най-долу „Изтриване на профила“ → потвърждение. Профилът, резервациите и предпочитанията се изтриват веднага; излизате от всички устройства.</p>
+      <p><b>По имейл:</b> пишете на <a href="mailto:welcome@ac2.bg?subject=Изтриване%20на%20профил">welcome@ac2.bg</a> от имейла на профила си с тема „Изтриване на профил“. Изпълняваме до 7 дни.</p>
+      <p>Какво остава след изтриване: платежни записи (сума, дата, идентификатор на Stripe), които сме длъжни да пазим по закон за срок до 10 години, без връзка с профил в приложението. Всичко останало се изтрива.</p>
+      <p>Подробна страница: <a href="delete-account.html">ac2.bg/delete-account.html</a></p>
+    </div>
+
+    <h2>8. Сигурност</h2>
+    <p>Връзките са криптирани (HTTPS/TLS). Достъпът до данните е ограничен чрез правила на ниво база (row-level security) — всеки член вижда само своите данни; служителите — само това, за което имат права. Картови данни не се съхраняват при нас.</p>
+
+    <h2>9. Деца</h2>
+    <p>Приложението е предназначено за лица над 18 години. Не събираме съзнателно данни на деца.</p>
+
+    <h2>10. Промени</h2>
+    <p>При съществени промени ще ви уведомим в приложението или по имейл. Актуалната версия е винаги на <a href="https://ac2.bg/privacy.html">ac2.bg/privacy.html</a>.</p>
+  </div>
+
+  <div data-l="en">
+    <h1>Privacy Policy</h1>
+    <p class="muted">Effective 22 October 2026 · Applies to the <b>AC² Arcus Club</b> mobile app (iOS and Android, package <code>bg.arcusclub.app</code>) and the website <b>ac2.bg</b>.</p>
+
+    <div class="box">
+      <h3>Data controller</h3>
+      <p><b>American College Arcus JSC</b> („Американски колеж Аркус“ АД)<br>Company / VAT ID: BG104693193<br>Registered office: 16 Dragoman Str., Veliko Tarnovo, Bulgaria<br>AC² club premises: 3 Hristo Botev Str., Veliko Tarnovo<br>Privacy contact: <a href="mailto:welcome@ac2.bg">welcome@ac2.bg</a> · +359 876 156 006</p>
+    </div>
+
+    <h2>1. What AC² Arcus Club is</h2>
+    <p>AC² is a private, invitation-only members' club. The app and website give members access to the club programme, event tickets, table reservations at the club restaurant, a digital membership card and notifications. There is no self-registration — accounts are created by the club when a member is admitted.</p>
+
+    <h2>2. Data we collect</h2>
+    <ul>
+      <li><b>Account data:</b> name, e-mail, phone, membership type and validity, user ID. Source: you (application or invitation) and the club.</li>
+      <li><b>Reservations and tickets:</b> event, date, number of seats, status, ticket code, check-in at the door, notes you enter (e.g. allergens for restaurant bookings).</li>
+      <li><b>Payments:</b> amount, date, status, Stripe payment ID and the last 4 digits of the card. <b>Full card details never reach us</b> — they are processed entirely by Stripe.</li>
+      <li><b>Notifications:</b> a device push token (Apple/Google) if you allow notifications.</li>
+      <li><b>Technical data:</b> crash reports via Sentry — device model, OS version, steps before the crash; they do not contain your name.</li>
+      <li><b>Website forms:</b> name, e-mail, phone and message (contact, reservation enquiry, membership application, newsletter).</li>
+      <li><b>Website cookies:</b> analytics (Google Analytics) and marketing (Meta Pixel) — <b>only after your consent</b> in the cookie banner. The app uses no advertising identifiers.</li>
+    </ul>
+    <p>We do not collect location, contacts, photos or biometric data. Face ID / fingerprint work entirely on your device. Calendar access is used only to add an event to your own calendar; camera access only in the staff "scanner" mode.</p>
+
+    <h2>3. Purposes and legal bases</h2>
+    <ul>
+      <li>Performance of the membership agreement and services you request (tickets, reservations) — Art. 6(1)(b) GDPR.</li>
+      <li>Legal obligations — accounting and tax records for payments — Art. 6(1)(c) GDPR.</li>
+      <li>Legitimate interests — account security, fraud prevention, fixing errors — Art. 6(1)(f) GDPR.</li>
+      <li>Consent — push notifications, newsletter, analytics/marketing cookies — Art. 6(1)(a) GDPR; may be withdrawn at any time.</li>
+    </ul>
+
+    <h2>4. Processors</h2>
+    <ul>
+      <li><b>Supabase</b> (database, authentication, server logic) — EU servers.</li>
+      <li><b>Stripe Payments Europe</b> — card payments, Apple Pay, Google Pay, refunds.</li>
+      <li><b>Apple</b> (APNs) and <b>Google</b> (Firebase Cloud Messaging) — push delivery.</li>
+      <li><b>Sentry</b> — crash reports. <b>Mailchimp</b> (Intuit) — newsletter, subscribers only. <b>Cloudflare Turnstile</b> — anti-spam. <b>GitHub Pages</b> — website hosting. <b>Calderra</b> — club e-mail server.</li>
+    </ul>
+    <p>We do not sell or share personal data with third parties for their own purposes. Transfers outside the EU rely on EU Standard Contractual Clauses or the EU–US Data Privacy Framework.</p>
+
+    <h2>5. Retention</h2>
+    <ul>
+      <li>Account and membership — while you are a member and up to 12 months after termination, unless you request deletion earlier.</li>
+      <li>Reservations and tickets — 3 years after the event. Payment records — 10 years (Bulgarian Accountancy Act).</li>
+      <li>Push tokens — until sign-out or app removal. Crash reports — 90 days. Form messages — up to 24 months.</li>
+    </ul>
+
+    <h2>6. Your rights</h2>
+    <p>Access, rectification, erasure, restriction, portability, objection and withdrawal of consent. Write to <a href="mailto:welcome@ac2.bg">welcome@ac2.bg</a> — we answer within 30 days. You may lodge a complaint with the Bulgarian Commission for Personal Data Protection (<a href="https://www.cpdp.bg" target="_blank" rel="noopener">www.cpdp.bg</a>).</p>
+
+    <h2>7. Account deletion</h2>
+    <div class="box">
+      <p><b>In the app:</b> Profile → "Delete account" at the bottom → confirm. Your profile, reservations and preferences are deleted immediately and you are signed out everywhere.</p>
+      <p><b>By e-mail:</b> write to <a href="mailto:welcome@ac2.bg?subject=Delete%20account">welcome@ac2.bg</a> from your account e-mail with the subject "Delete account". Completed within 7 days.</p>
+      <p>What is kept after deletion: payment records (amount, date, Stripe ID) that we must retain by law for up to 10 years, no longer linked to an app account. Everything else is deleted.</p>
+      <p>Details: <a href="delete-account.html">ac2.bg/delete-account.html</a></p>
+    </div>
+
+    <h2>8. Security</h2>
+    <p>All connections are encrypted (HTTPS/TLS). Database access is restricted by row-level security — each member sees only their own data; staff only what their permissions allow. Card data is never stored by us.</p>
+
+    <h2>9. Children</h2>
+    <p>The app is intended for adults (18+). We do not knowingly collect children's data.</p>
+
+    <h2>10. Changes</h2>
+    <p>Material changes will be announced in the app or by e-mail. The current version is always at <a href="https://ac2.bg/privacy.html">ac2.bg/privacy.html</a>.</p>
+  </div>
+
+  <footer>© 2026 American College Arcus JSC · AC² – American College Arcus Club · <a href="https://ac2.bg">ac2.bg</a> · <a href="delete-account.html">Account deletion</a></footer>
+</div>
+<script>
+  function setL(l){document.documentElement.classList.toggle('en',l==='en');document.querySelectorAll('.lang button').forEach((b,i)=>b.classList.toggle('on',(i===1)===(l==='en')));document.documentElement.lang=l;try{localStorage.setItem('acac_lang',l);}catch(e){}}
+  try{var q=new URLSearchParams(location.search).get('lang')||localStorage.getItem('acac_lang');if(q==='en')setL('en');}catch(e){}
+</script>
+</body>
+</html>

@@ -1071,6 +1071,7 @@ function pageLegal(kind){
   const map={terms:['legal.terms',t('legal')],privacy:['legal.privacy',t('privacy')],cookies:['legal.cookies',t('cookies')]};
   const m=map[kind]||map.terms;
   let body=pT(m[0]);
+  if(kind==='privacy'&&!body){ location.replace('privacy.html'+(lang==='en'?'?lang=en':'')); return ''; }   // пълната политика е статична страница (за магазините)
   if(!body&&kind==='privacy')body=L('Политиката за поверителност се публикува тук от админ панела. Дотогава: събираме само данните, които ни изпращате чрез формите (име, имейл, телефон, съобщение), и ги ползваме единствено за отговор и за бюлетина, за който сте се абонирали. Можете да поискате изтриване на welcome@ac2.bg.','The privacy policy is published here from the admin panel. Until then: we only collect the data you send us through the forms (name, email, phone, message) and use it solely to reply and for the newsletter you subscribed to. You may request deletion at welcome@ac2.bg.');
   if(!body)body=L('Текстът се публикува скоро.','The text will be published soon.');
   return pageHead('',m[1],'')+`<div class="wrap legal" style="padding-bottom:80px;"><div class="body">${esc(body)}</div>
