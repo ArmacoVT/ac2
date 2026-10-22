@@ -887,6 +887,31 @@ function resIsOld(r){
   return d<cut.toISOString().slice(0,10);
 }
 const doorBtn=()=>`<div style="float:right;margin-top:4px;display:flex;gap:8px;"><button class="btn ok sm" onclick="walkinOpen()">+ Билет на място</button><a class="btn ghost sm" href="${(window.ACAC_CONFIG&&ACAC_CONFIG.APP_URL)||'app/'}#door" target="_blank" rel="noopener">📷 Скенер за вход</a></div>`;
+// ---------- QR на членската карта (за печат на физическа карта): AC2:<uuid> — постоянен, уникален за члена ----------
+function memberQr(id){
+  const p=(PEOPLE||[]).find(x=>x.id===id); if(!p)return;
+  const txt='AC2:'+id; const nm=p.full_name||p.username||p.email||'';
+  let svg='',big='';
+  try{ const q=qrcode(0,'M'); q.addData(txt); q.make(); svg=q.createSvgTag({cellSize:6,margin:2}); const n=q.getModuleCount();
+    // чист SVG за печат (черни модули, без фон) + PNG 1200px
+    let path=''; for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))path+=`M${c+4} ${r+4}h1v1h-1z`;
+    big=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n+8} ${n+8}" shape-rendering="crispEdges"><rect width="${n+8}" height="${n+8}" fill="#ffffff"/><path d="${path}" fill="#000000"/></svg>`;
+  }catch(e){ alert('QR библиотеката не е заредена'); return; }
+  const safe=nm.replace(/[^\wа-яА-Я]+/g,'_');
+  let m=document.getElementById('qrModal'); if(!m){ m=document.createElement('div'); m.id='qrModal'; m.style.cssText='position:fixed;inset:0;background:rgba(28,28,27,.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;'; m.onclick=e=>{if(e.target===m)m.remove();}; document.body.appendChild(m); }
+  m.innerHTML=`<div class="card" style="max-width:420px;width:100%;margin:0;text-align:center;">
+    <h3 style="margin:0 0 2px;">${esc(nm)}</h3><div class="muted" style="margin-bottom:10px;">${esc(memName(p.membership||'guest'))}${p.membership_until?' · до '+isoToBg(p.membership_until):''}</div>
+    <div style="background:#fff;border-radius:12px;padding:12px;display:inline-block;">${svg}</div>
+    <div class="muted" style="font-size:11px;margin:8px 0 12px;word-break:break-all;">${esc(txt)}</div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn ok sm" id="qrSvg">Свали SVG (за печат)</button>
+      <button class="btn ghost sm" id="qrPng">Свали PNG (1200 px)</button>
+      <button class="btn ghost sm" onclick="document.getElementById('qrModal').remove()">Затвори</button></div>
+    <div class="muted" style="font-size:12px;margin-top:10px;">Кодът е постоянен за този член — печата се върху физическата карта. Скенерът на входа го чете както QR от приложението.</div></div>`;
+  const dl=(href,name)=>{const a=document.createElement('a');a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove();};
+  document.getElementById('qrSvg').onclick=()=>dl('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(big),'AC2-card-'+safe+'.svg');
+  document.getElementById('qrPng').onclick=()=>{ const img=new Image(); img.onload=()=>{ const c=document.createElement('canvas'); c.width=1200;c.height=1200; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,1200,1200); x.imageSmoothingEnabled=false; x.drawImage(img,0,0,1200,1200); dl(c.toDataURL('image/png'),'AC2-card-'+safe+'.png'); }; img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(big); };
+}
 // ---------- БИЛЕТ НА МЯСТО (рецепция): гост или член, плащане в брой/ПОС/безплатно, печат ----------
 let WK=null;   // {step:'form'|'done', ...}
 function walkinOpen(){ WK={step:'form',who:'guest',pay:'cash',party:1,event_id:'',name:'',email:'',phone:'',user_id:'',send:true}; if(!PEOPLE){DB.listMembers().then(p=>{PEOPLE=p||[];walkinRender();});} walkinRender(); }
@@ -1777,6 +1802,7 @@ function peopleView(){
         <div><input id="${fid}" readonly placeholder="удължи от дата (по подразб. днес)" data-iso="" onclick="openCal('${fid}')" style="cursor:pointer;"/></div>
         <div><button class="btn sm" onclick="renewPerson('${p.id}','${fid}')">Поднови с 1 година</button></div>
       </div>
+      <div style="margin-top:8px;"><button class="btn ghost sm" onclick="memberQr('${p.id}')">▦ QR за членската карта</button></div>
       <div class="row2" style="margin-top:8px;align-items:center;">
         <div><label style="margin-bottom:4px;">Членство</label><select id="${mid}">${memOpts}</select></div>
         <div><button class="btn ghost sm" onclick="changeMembership('${p.id}')">Промени членството</button></div>
