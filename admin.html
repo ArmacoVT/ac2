@@ -1892,9 +1892,9 @@ function peopleView(){
           <div class="muted" style="margin-top:3px;color:${exp?'#82303d':'var(--mid)'};">${until}</div>
           <div class="muted" style="margin-top:3px;font-size:12px;">${p.terms_accepted_at?'Условия: приети '+new Date(p.terms_accepted_at).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})+' (v'+esc(p.terms_version||'?')+')'+(window.AC2_LEGAL&&p.terms_version!==AC2_LEGAL.version?' · <span style="color:#C98A2B;">стара версия</span>':''):'<span style="color:#82303d;">Условия: не са приети</span>'} · Снимки/видео: ${p.media_consent?'<b style="color:#507044;">да</b>':'не'}</div></div>
       </div>
-      <div class="row2" style="margin-top:10px;align-items:center;">
-        <div><input id="${fid}" readonly placeholder="удължи от дата (по подразб. днес)" data-iso="" onclick="openCal('${fid}')" style="cursor:pointer;"/></div>
-        <div><button class="btn sm" onclick="renewPerson('${p.id}','${fid}')">Поднови с 1 година</button></div>
+      <div class="row2" style="margin-top:10px;align-items:end;">
+        <div><label style="margin-bottom:4px;">Членство валидно до</label><input id="${fid}" readonly value="${p.membership_until?isoToBg(p.membership_until):''}" placeholder="избери дата" data-iso="${esc(p.membership_until||'')}" onclick="openCal('${fid}')" style="cursor:pointer;"/></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="btn ghost sm" onclick="untilPlus('${fid}',12)">+1 година</button><button class="btn ghost sm" onclick="untilPlus('${fid}',6)">+6 мес.</button><button class="btn sm" onclick="renewPerson('${p.id}','${fid}')">Запази датата</button></div>
       </div>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn ghost sm" onclick="memberQr('${p.id}')">▦ QR за членската карта</button>${role==='admin'?`<button class="btn ghost sm" onclick="mInviteOpen({user_id:'${p.id}',email:'${esc(p.email||'')}',full_name:'${esc(p.full_name||p.username||'')}',membership:'${esc(p.membership||'club')}',purpose:'renew'})">💳 Покана за плащане</button>`:''}</div>
       <div class="row2" style="margin-top:8px;align-items:center;">
@@ -1956,11 +1956,20 @@ function toggleCo(id,btn){
   d.style.display=open?'none':'block';
   if(btn)btn.textContent=btn.textContent.replace(open?'▴':'▾',open?'▾':'▴');
 }
+// „+1 година / +6 мес.“ местят датата в полето (от текущата дата в полето, ако е в бъдещето; иначе от днес); „Запази датата“ я записва
+function untilPlus(fieldId,months){
+  const f=document.getElementById(fieldId); if(!f)return;
+  const today=new Date().toISOString().slice(0,10); const base=(f.dataset.iso&&f.dataset.iso>today)?f.dataset.iso:today;
+  const d=new Date(base+'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth()+months); const iso=d.toISOString().slice(0,10);
+  f.dataset.iso=iso; f.value=isoToBg(iso);
+}
 async function renewPerson(id,fieldId){
   const email=byId(PEOPLE,id).email||'';
   const f=document.getElementById(fieldId);
-  const from=f?(f.dataset.iso||''):'';
-  const {error,until}=await DB.renewMembership(email,from);
+  const exact=f?(f.dataset.iso||''):'';
+  if(!exact){alert('Избери дата или натисни „+1 година“.');return;}
+  if(!confirm('Членството на '+email+' да е валидно до '+isoToBg(exact)+'?'))return;
+  const {error,until}=await DB.renewMembership(email,'',exact);
   if(error){alert('Грешка: '+error.message);return;}
   DB.logAudit('member_renewed',email,until?isoToBg(until):'');
   toast('Членството е подновено до '+(until?isoToBg(until):'—'));

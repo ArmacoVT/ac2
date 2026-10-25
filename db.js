@@ -940,10 +940,10 @@ window.PUB_DEFAULTS={
       return data || [];
     },
     // подновяване на членство (само админ) — удължава с 1 година от дадена дата
-    async renewMembership(email, validFrom) {
+    async renewMembership(email, validFrom, exactUntil) {
       if (!LIVE) return { error: { message: 'demo' } };
       const { data, error } = await invokeFn('invite-member',
-        { body: { action: 'renew', email: (email || '').trim(), valid_from: validFrom || null } });
+        { body: { action: 'renew', email: (email || '').trim(), valid_from: validFrom || null, exact_until: exactUntil || null } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
