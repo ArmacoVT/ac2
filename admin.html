@@ -619,6 +619,11 @@ function formView(){
       <div><label>Места на маса след събитието</label><input id="f_tcap" type="number" min="0" value="${e&&e.table_capacity?e.table_capacity:''}" placeholder="по желание"/></div></div>
     <div class="row2"><div><label>Отказ на ПЛАТЕН билет — най-късно (часове преди началото)</label><input id="f_cancel_h" type="number" min="0" step="1" value="${(e&&e.pub&&e.pub.cancel_hours!=null&&e.pub.cancel_hours!=='')?e.pub.cancel_hours:''}" placeholder="по подразбиране 72"/></div>
       <div class="muted" style="font-size:12px;padding-top:26px;">Празно = 72 ч. (3 дни). 0 = до самото начало. Безплатни резервации (безплатно събитие, маса, запитване) — винаги 24 ч.</div></div>
+    <div class="row2"><div><label>Вход</label><select id="f_pub_entry">
+        <option value="ticket" ${!(e&&e.pub&&e.pub.entry)||(e&&e.pub&&e.pub.entry==='ticket')?'selected':''}>Билет / резервация (платен или безплатен, с одобрение)</option>
+        <option value="rsvp" ${e&&e.pub&&e.pub.entry==='rsvp'?'selected':''}>Свободен вход · с регистрация („Ще дойда“ — потвърждава се веднага, брои места)</option>
+        <option value="free" ${e&&e.pub&&e.pub.entry==='free'?'selected':''}>Свободен вход — без резервация и без капацитет</option></select></div>
+      <div class="muted" style="font-size:12px;padding-top:26px;">При „свободен вход“ цената и капацитетът не се ползват. При „с регистрация“ членът/гостът получава билет с QR веднага, без одобрение.</div></div>
     <div class="row2"><div><label>Маса в ресторанта след събитието</label><select id="f_table_after">
         <option value="auto" ${!(e&&e.pub&&e.pub.table_after)||(e&&e.pub&&e.pub.table_after==='auto')?'selected':''}>Автоматично — ако свършва до часа от „Общи“</option>
         <option value="yes" ${e&&e.pub&&e.pub.table_after==='yes'?'selected':''}>Да — предлагай маса</option>
@@ -1758,7 +1763,7 @@ function grabPub(){
   const mo=document.getElementById('f_pub_members_only'), gf=document.getElementById('f_pub_gfrom');
   if(!mo)return null;
   const ch=g('f_cancel_h');
-  return {fit:(document.getElementById('f_pub_fit')&&document.getElementById('f_pub_fit').checked)?'cover':'',table_after:(g('f_table_after')||'auto'),members_only:mo.checked,guests:!!draftGuests,guest_from:(draftGuests&&gf)?(gf.dataset.iso||''):'',cancel_hours:(ch===''?null:Math.max(0,parseInt(ch,10)||0)),category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
+  return {entry:(g('f_pub_entry')||'ticket'),fit:(document.getElementById('f_pub_fit')&&document.getElementById('f_pub_fit').checked)?'cover':'',table_after:(g('f_table_after')||'auto'),members_only:mo.checked,guests:!!draftGuests,guest_from:(draftGuests&&gf)?(gf.dataset.iso||''):'',cancel_hours:(ch===''?null:Math.max(0,parseInt(ch,10)||0)),category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
     long:bi('f_pub_long'),participants:bi('f_pub_part'),curator:bi('f_pub_curator'),authors:bi('f_pub_authors'),visit:bi('f_pub_visit'),ticket_url:g('f_pub_ticket'),gallery:draftPubGal.slice()};
 }
 function putPub(p){
@@ -1766,7 +1771,7 @@ function putPub(p){
   const mo=document.getElementById('f_pub_members_only'); if(mo)mo.checked=!!p.members_only;
   const ft=document.getElementById('f_pub_fit'); if(ft)ft.checked=p.fit==='cover';
   const gf=document.getElementById('f_pub_gfrom'); if(gf){gf.dataset.iso=p.guest_from||'';gf.value=p.guest_from?isoToBg(p.guest_from):'';}
-  s('f_pub_cat',p.category);s('f_cancel_h',(p.cancel_hours==null?'':String(p.cancel_hours)));s('f_table_after',p.table_after||'auto');s('f_pub_title_en',p.title_en);s('f_pub_desc_en',p.desc_en);s('f_pub_ticket',p.ticket_url);
+  s('f_pub_cat',p.category);s('f_cancel_h',(p.cancel_hours==null?'':String(p.cancel_hours)));s('f_table_after',p.table_after||'auto');s('f_pub_entry',p.entry||'ticket');s('f_pub_title_en',p.title_en);s('f_pub_desc_en',p.desc_en);s('f_pub_ticket',p.ticket_url);
   ['part','curator','authors','visit','long'].forEach((k,i)=>{const v=p[['participants','curator','authors','visit','long'][i]]||{};s('f_pub_'+k+'_bg',v.bg);s('f_pub_'+k+'_en',v.en);});
 }
 async function pubGalAdd(input){

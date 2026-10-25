@@ -1054,7 +1054,8 @@ function eventCard(e,i){
     :booked?`<button class="chip on${popCls}" onclick="event.stopPropagation();(function(){const r=myBookingFor('${e.id}');if(r&&r.status==='confirmed')go('ticket/'+r.id);else toast(tr('alreadyBooked'));})()">✓ ${bookedLabel(e.id)}</button>`
     :locked?`<button class="chip locked" onclick="event.stopPropagation();toast(tr('bookFrom')+' '+'${lockEu}')">${lockSvg}${tr('bookFrom')} ${lockEu}</button>`
     :soldOut?`<button class="chip locked" onclick="event.stopPropagation();toast(lang==='bg'?'Изчерпано':'Sold out')">${lang==='bg'?'Изчерпано':'Sold out'}</button>`
-    :`<button class="chip" onclick="event.stopPropagation();openBook('${e.id}')">${e.price>0?(lang==='bg'?'Купи билет':'Buy ticket'):tr('ticket')}</button>`);
+    :evEntry(e)==='free'?`<span class="chip" style="background:var(--card);color:var(--muted);cursor:default;">${lang==='bg'?'Свободен вход':'Free entry'}</span>`
+    :`<button class="chip" onclick="event.stopPropagation();openBook('${e.id}')">${e.price>0?(lang==='bg'?'Купи билет':'Buy ticket'):(evEntry(e)==='rsvp'?(lang==='bg'?'Ще дойда':'I will attend'):tr('ticket'))}</button>`);
   const delay=`animation-delay:${((i||0)%8)*0.05}s;`;
   const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):1;
   const tableOpt=endsEarly(e)?`<div class="tableopt">
@@ -1066,8 +1067,8 @@ function eventCard(e,i){
   const media=e.image_url?posterHtml(e):'';
   const vid=e.video_url?`<video class="evvideo" src="${esc(e.video_url)}" controls preload="metadata" playsinline onclick="event.stopPropagation()"></video>`:'';
   const cal=(!past&&e.date)?`<button class="chip" onclick="event.stopPropagation();addToCalendar('${e.id}')">${tr('addCal')}</button>`:'';
-  const priceTag=e.price>0?`<div style="margin-top:6px;color:var(--gold);font-weight:600;font-size:13px;">${lang==='bg'?'Билет':'Ticket'}: ${fmtPrice(e.price)}</div>`:(e.price===0?`<div style="margin-top:6px;color:#507044;font-size:13px;">${lang==='bg'?'Безплатно':'Free'}</div>`:'');
-  const si=(!past)?seatInfoText(e):'';
+  const priceTag=e.price>0?`<div style="margin-top:6px;color:var(--gold);font-weight:600;font-size:13px;">${lang==='bg'?'Билет':'Ticket'}: ${fmtPrice(e.price)}</div>`:(evEntry(e)==='free'?`<div style="margin-top:6px;color:#507044;font-size:13px;">${lang==='bg'?'Свободен вход — без резервация':'Free entry — no reservation needed'}</div>`:(e.price===0?`<div style="margin-top:6px;color:#507044;font-size:13px;">${lang==='bg'?'Безплатно':'Free'}</div>`:''));
+  const si=(!past&&evEntry(e)!=='free')?seatInfoText(e):'';
   const siCol=soldOut?'#82303d':((left!==null&&left<=10)?'#6b6b63':'#507044');
   const seatTag=si?`<div style="margin-top:4px;color:${siCol};font-size:12px;">${si}</div>`:'';
   const longDesc=(e.description||'').length>140;
@@ -1313,7 +1314,7 @@ async function confirmBuy(id){
   // предишният опит всъщност е минал (webhook-ът е закъснял) — не плащаме втори път
   if(r&&r.already_paid){ fail(lang==='bg'?'Плащането вече е получено. Билетът е потвърден.':'Payment already received. Your ticket is confirmed.'); await finishBooking(id,bname,false); return; }
   if(r&&r.client_secret){ await mountPayment(id,r.client_secret); return; }
-  if(r&&r.free){ await finishBooking(id,bname,true); return; }
+  if(r&&r.free){ await finishBooking(id,bname,!r.rsvp); return; }
   fail(lang==='bg'?'Възникна грешка':'Something went wrong');if(btn)updateBuy(id);
 }
 // маса (ако е избрана) + затваряне + успех
@@ -1328,8 +1329,9 @@ async function finishBooking(id,bname,pending){
   try{RES=await DB.listReservations();}catch(err){}
   justBooked=id;setTimeout(()=>{justBooked=null;},800);
   hap('success');showStamp();
-  toast(pending?(lang==='bg'?'Заявката е изпратена — чака одобрение':'Request sent — awaiting approval'):(lang==='bg'?'Готово!':'Done!'));setTimeout(()=>route(),900);
+  toast(pending?(lang==='bg'?'Заявката е изпратена — чака одобрение':'Request sent — awaiting approval'):(lang==='bg'?'Записахме ви — билетът е в приложението':'You are registered — your ticket is in the app'));setTimeout(()=>route(),900);
 }
+const evEntry=e=>(e&&e.pub&&e.pub.entry)||'ticket';   // ticket | rsvp | free
 // ---- Нативен Stripe (в приложението): системният лист за плащане с Apple Pay / Google Pay + карта ----
 // Плъгин @capacitor-community/stripe. Ако го няма (стара версия на приложението/уеб) → уеб формата по-долу.
 function nativeStripe(){
