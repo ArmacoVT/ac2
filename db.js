@@ -227,7 +227,15 @@ window.PUB_DEFAULTS={
         membership_until: prof ? (prof.membership_until || '') : '',
         company_id: prof ? (prof.company_id || '') : '',
         membership: prof ? prof.membership : 'guest', role: prof ? prof.role : 'member',
-        perms: prof && Array.isArray(prof.perms) ? prof.perms : [] };
+        perms: prof && Array.isArray(prof.perms) ? prof.perms : [],
+        terms_version: prof ? (prof.terms_version || '') : '', terms_accepted_at: prof ? (prof.terms_accepted_at || '') : '',
+        media_consent: prof ? !!prof.media_consent : false };
+    },
+    // приемане на условията (версия от legal.js) + съгласие за снимки/видео
+    async acceptTerms(version, media) {
+      if (!LIVE) { const u = jget(K.user, null) || {}; u.terms_version = version; u.media_consent = !!media; jset(K.user, u); return { error: null }; }
+      const { error } = await sb.rpc('accept_terms', { p_version: version, p_media: !!media });
+      return { error };
     },
     async updateFavFormats(list) {
       if (!LIVE) { const u = jget(K.user, null) || {}; u.fav_formats = list; jset(K.user, u); return { error: null }; }
@@ -729,7 +737,7 @@ window.PUB_DEFAULTS={
       const { data, error } = await invokeFn('submit-application', {
         body: {
           captcha_token: o.captcha_token || '',
-          rules_accepted: !!o.rules_accepted,
+          rules_accepted: !!o.rules_accepted, terms_version: o.terms_version || null, media_consent: !!o.media_consent,
           nominate: !!o.nominate,
           membership: o.membership || null,
           name: o.name || null, email: (o.email || '').trim() || null, phone: o.phone || null,

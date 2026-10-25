@@ -360,6 +360,7 @@
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--dark);color:var(--ondark);padding:12px 18px;border-radius:12px;font-size:14px;z-index:160;opacity:0;pointer-events:none;transition:opacity .25s;}
   .toast.show{opacity:1;}
   .legal .body{max-width:820px;}
+  .legaldoc{white-space:normal;} .legaldoc h2{font-family:var(--serif);font-style:italic;font-size:22px;margin:26px 0 8px;} .legaldoc h3{font-size:15px;margin:16px 0 4px;color:var(--gold);} .legaldoc p{margin:0 0 10px;font-size:15px;line-height:1.65;}
 </style>
 </head>
 <body>
@@ -391,6 +392,7 @@ html.soon body{padding-top:0} html.soon .soonback{display:block}
 .soonback{display:none;padding:18px 0 0;text-align:center;font-family:var(--sans);font-size:14px} .soonback a{color:var(--text)}</style>
 <script src="brand.js"></script>
 <script src="db.js"></script>
+<script src="legal.js"></script>
 <script>
 // ============================================================
 //  ПУБЛИЧЕН САЙТ ac2.bg — една страница, хеш адреси (#/program, #/event/…).
@@ -824,7 +826,7 @@ function pageMembership(){
       <div class="kicker" style="margin-top:20px;">${t('levels')}</div>
       <div class="body">${esc(lT('memberships.intro'))}</div>
       <div class="mgrid">${mem}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:28px;"><a class="btn" href="${esc(APP_URL)}#apply" onclick="track('apply_click',{})">${t('apply')}</a>${pT('membership.terms_url')?`<a class="btn ghost" href="${esc(terms)}" target="_blank" rel="noopener">${t('readRules')} ↗</a>`:`<button class="btn ghost" type="button" onclick="openRules()">${t('readRules')}</button>`}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:28px;"><a class="btn" href="${esc(APP_URL)}#apply" onclick="track('apply_click',{})">${t('apply')}</a>${pT('membership.terms_url')?`<a class="btn ghost" href="${esc(terms)}" target="_blank" rel="noopener">${t('readRules')} ↗</a>`:`<a class="btn ghost" href="#/legal/terms">${L('Условия за гости и билети','Terms for guests and tickets')}</a>`}</div>
       <section class="sec tight"><div class="two">
         <div><div class="kicker">${t('how')}</div><h2 style="font-size:32px;margin-bottom:12px;">${esc(pT('membership.how_title'))}</h2><div class="body">${esc(pT('membership.how_body'))}</div></div>
         <div><div class="kicker">${t('faq')}</div><div class="faq">${faq.map(f=>`<details><summary>${esc(loc(f.q))}</summary><p>${esc(loc(f.a))}</p></details>`).join('')||`<div class="empty">—</div>`}</div></div>
@@ -1071,6 +1073,12 @@ function pageLegal(kind){
   const map={terms:['legal.terms',t('legal')],privacy:['legal.privacy',t('privacy')],cookies:['legal.cookies',t('cookies')]};
   const m=map[kind]||map.terms;
   let body=pT(m[0]);
+  if(kind==='terms'&&!body&&window.AC2_LEGAL){
+    // публични общи условия: правила за гости, събития, билети и AC² Table (важат за всеки, който резервира/купува от сайта)
+    const d=AC2_LEGAL.docs.find(x=>x.id==='guests');
+    if(d)return pageHead('',L('Общи условия за гости, събития и билети','Terms for guests, events and tickets'),L('Важат за резервации и билети, направени от сайта. Пълният Вътрешен правилник и Листът с такси се предоставят на кандидатите и членовете.','Apply to reservations and tickets made on the website. The full Internal Rules and Fee Sheet are provided to applicants and members.'))+`<div class="wrap legal" style="padding-bottom:80px;"><div class="body legaldoc">${d.html}</div>
+      <div class="hint" style="margin-top:20px;">${L('Версия','Version')} ${esc(AC2_LEGAL.version)} · ${esc(AC2_LEGAL.updated)} · „Американски колеж Аркус“ АД, ЕИК 104693193, Велико Търново, ул. „Драгоман“ №16 · <a href="privacy.html">${t('privacy')}</a></div></div>`;
+  }
   if(kind==='privacy'&&!body){ location.replace('privacy.html'+(lang==='en'?'?lang=en':'')); return ''; }   // пълната политика е статична страница (за магазините)
   if(!body&&kind==='privacy')body=L('Политиката за поверителност се публикува тук от админ панела. Дотогава: събираме само данните, които ни изпращате чрез формите (име, имейл, телефон, съобщение), и ги ползваме единствено за отговор и за бюлетина, за който сте се абонирали. Можете да поискате изтриване на welcome@ac2.bg.','The privacy policy is published here from the admin panel. Until then: we only collect the data you send us through the forms (name, email, phone, message) and use it solely to reply and for the newsletter you subscribed to. You may request deletion at welcome@ac2.bg.');
   if(!body)body=L('Текстът се публикува скоро.','The text will be published soon.');

@@ -82,6 +82,7 @@
 <div id="root" style="padding:40px;text-align:center;color:var(--muted);">Зареждане…</div>
 <script src="vendor/supabase.js"></script>
 <script src="vendor/qrcode.js"></script>
+<script src="legal.js"></script>
 <script src="config.js"></script>
 <script src="db.js"></script>
 <script>
@@ -1703,6 +1704,7 @@ function appsView(){
     if(a.profession)lines.push('Професия: '+esc(a.profession));
     if(a.interests)lines.push('Интереси: '+esc(a.interests));
     if(a.alumni_relation)lines.push('Връзка с колежа: '+esc(a.alumni_relation));
+    if(a.terms_version||a.rules_accepted_at)lines.push('Условия: приети'+(a.terms_version?' (v'+esc(a.terms_version)+')':'')+' · Снимки/видео: '+(a.media_consent?'да':'не'));
     if(isCorp){const c=[a.corp_bulstat&&('БУЛСТАТ '+a.corp_bulstat),a.corp_size&&(a.corp_size+' служители'),a.corp_activity].filter(Boolean).map(esc).join(' · ');if(c)lines.push(c);}
     if(a.type==='nomination'&&a.proposer_email)lines.push('Предложен от: '+esc(a.proposer_email));
     if(a.rules_accepted_at)lines.push('✓ Приел правилника: '+esc(new Date(a.rules_accepted_at).toLocaleString('bg-BG')));
@@ -1796,7 +1798,8 @@ function peopleView(){
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
         <div><b>${esc(nm)}</b>${p.role==='admin'?' <span class="pill" style="border-color:var(--gold);color:var(--gold);">админ</span>':''} ${companyTag}
           <div class="muted" style="margin-top:2px;">${esc(p.email)}${p.phone?' · '+esc(p.phone):' · <span style="color:#6b6b63;">без телефон</span>'}</div>
-          <div class="muted" style="margin-top:3px;color:${exp?'#82303d':'var(--mid)'};">${until}</div></div>
+          <div class="muted" style="margin-top:3px;color:${exp?'#82303d':'var(--mid)'};">${until}</div>
+          <div class="muted" style="margin-top:3px;font-size:12px;">${p.terms_accepted_at?'Условия: приети '+new Date(p.terms_accepted_at).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})+' (v'+esc(p.terms_version||'?')+')'+(window.AC2_LEGAL&&p.terms_version!==AC2_LEGAL.version?' · <span style="color:#C98A2B;">стара версия</span>':''):'<span style="color:#82303d;">Условия: не са приети</span>'} · Снимки/видео: ${p.media_consent?'<b style="color:#507044;">да</b>':'не'}</div></div>
       </div>
       <div class="row2" style="margin-top:10px;align-items:center;">
         <div><input id="${fid}" readonly placeholder="удължи от дата (по подразб. днес)" data-iso="" onclick="openCal('${fid}')" style="cursor:pointer;"/></div>

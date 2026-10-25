@@ -516,6 +516,10 @@
   .rulescard .rh h3{font-family:var(--serif);font-style:italic;font-size:22px;font-weight:500;margin:0;}
   .rulescard .rh .m{color:var(--muted);font-size:12px;margin-top:4px;}
   .rulescard .rb{overflow:auto;padding:6px 22px;flex:1 1 auto;min-height:0;-webkit-overflow-scrolling:touch;}
+  .rulescard .rb h2{font-family:var(--serif);font-style:italic;font-size:17px;margin:18px 0 6px;} .rulescard .rb h3{font-size:14px;margin:12px 0 4px;color:var(--gold);} .rulescard .rb p{font-size:13.5px;line-height:1.55;margin:0 0 8px;}
+  .rulescard .rb table{border-collapse:collapse;width:100%;font-size:12.5px;margin:8px 0;} .rulescard .rb th,.rulescard .rb td{border:1px solid var(--line-soft);padding:6px 8px;text-align:left;vertical-align:top;} .rulescard .rb th{background:var(--card);}
+  .ltabs{display:flex;gap:6px;overflow-x:auto;padding:8px 22px 0;flex:none;-webkit-overflow-scrolling:touch;} .ltabs button{flex:none;font:inherit;font-size:12px;padding:6px 11px;border-radius:14px;border:1px solid var(--line-soft);background:var(--card);color:var(--text);cursor:pointer;} .ltabs button.on{background:var(--gold);color:var(--cream);border-color:var(--gold);}
+  .rulescard .rf label.l2{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;line-height:1.45;margin-top:8px;} .rulescard .rf label.l2 input{width:18px;height:18px;margin:2px 0 0;flex:none;}
   .rulescard .rh,.rulescard .rf{flex:0 0 auto;}
   .rulescard .rf{padding:12px 22px 18px;border-top:1px solid var(--line-soft);}
   .rulescard .rf label{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45;cursor:pointer;margin-bottom:12px;}
@@ -557,6 +561,7 @@
 <script src="../config.js"></script>
 <script src="../brand.js"></script>
 <script src="../db.js"></script>
+<script src="../legal.js"></script>
 <script>
 const T={
   bg:{home:'Начало',events:'Събития',reserve:'Резервация',membership:'Членство',signin:'Вход',profile:'Профил',
@@ -1805,7 +1810,7 @@ async function submitApp(nominate){
   const r=await DB.submitApplication({nominate,membership:m,name,email,phone,about,
     profession:v('ap_prof'),interests:v('ap_interests'),alumni_relation:alumni,
     corp_bulstat:v('ap_bulstat'),corp_size:v('ap_size'),corp_activity:v('ap_activity'),
-    captcha_token:ctok, rules_accepted:rulesAccepted()});
+    captcha_token:ctok, rules_accepted:rulesAccepted(), terms_version:LEGAL().version, media_consent:_applyMedia});
   if(r&&r.error){
     resetCaptcha(); // токенът е за еднократна употреба
     if(r.error.cooldown){toast(lang==='bg'?'Скорошна кандидатура с този имейл/БУЛСТАТ беше отказана. Може да опитате отново след 30 дни.':'A recent application with this email/company ID was declined. You can re-apply after 30 days.');return;}
@@ -2011,47 +2016,72 @@ async function bioLogin(){
     if(!user){toast(lang==='bg'?'Влез наново':'Sign in again');return;}
     saved=await DB.listSaved();EVENTS=await DB.listEvents();
     toast(tr('loginToast'));location.hash='';route();
-    registerPush();
+    registerPush(); setTimeout(ensureTerms,400);
   }catch(e){/* отказан/неуспешен Face ID — нищо */}
 }
 let entered=false;
-// ---------- ПРАВИЛНИК ПРЕДИ КАНДИДАТСТВАНЕ ----------
-// Показва целия вътрешен правилник в прозорец. Продължаването е възможно само след
-// отметка „Прочетох и приемам". Съгласието важи за тази сесия на браузъра.
-let _rulesHtml=null;
-const rulesAccepted=()=>{try{return sessionStorage.getItem('acac_rules_ok')==='1';}catch(e){return false;}};
-async function startApply(){
-  if(rulesAccepted()){go('apply');return;}
-  const bg=lang==='bg';
+// ---------- УСЛОВИЯ (правилник, гости/билети, такси, поверителност, снимки) ----------
+// Общ екран: преди кандидатстване (сесия) и при първо влизане на член / нова версия (пази се в профила).
+// Текстовете са в ../legal.js (AC2_LEGAL). Задължителна една отметка; съгласието за снимки/видео е по избор.
+const LEGAL=()=>window.AC2_LEGAL||{version:'0',docs:[],accept:{bg:'',en:''},media:{bg:'',en:''}};
+const rulesAccepted=()=>{try{return sessionStorage.getItem('acac_rules_ok')===LEGAL().version;}catch(e){return false;}};
+const termsCurrent=()=>!!user&&user.terms_version===LEGAL().version;
+function termsGate(opts){
+  // opts: {mode:'apply'|'member', onOk(media), onCancel}
+  const bg=lang==='bg', L=LEGAL(), docs=L.docs;
   const ov=document.createElement('div');ov.className='rulesov';
+  const isMember=opts.mode==='member';
   ov.innerHTML=`<div class="rulescard" role="dialog" aria-modal="true">
-    <div class="rh"><h3>${bg?'Вътрешен правилник на клуба':'Club rules'}</h3>
-      <div class="m">${bg?'Моля, прочетете правилника. Кандидатстването е възможно само след като го приемете.':'Please read the rules. You can apply only after accepting them. The document is in Bulgarian.'}</div></div>
-    <div class="rb" id="rulesBody"><p style="color:var(--muted);padding:30px 0;text-align:center;">${bg?'Зареждане…':'Loading…'}</p></div>
+    <div class="rh"><h3>${isMember?(bg?'Условия на клуба':'Club terms'):(bg?'Преди да кандидатствате':'Before you apply')}</h3>
+      <div class="m">${bg?'Моля, прегледайте документите по-долу. Продължаването е възможно само след като ги приемете.':'Please review the documents below. You can continue only after accepting them.'}</div></div>
+    <div class="ltabs" id="ltabs">${docs.map((d,i)=>`<button class="${i===0?'on':''}" data-i="${i}">${esc(d.short)}</button>`).join('')}</div>
+    <div class="rb" id="rulesBody"></div>
     <div class="rf">
-      <label><input type="checkbox" id="rulesChk"/><span>${bg?'Прочетох и приемам Вътрешния правилник на American College Arcus Club.':'I have read and accept the Internal Rules of the American College Arcus Club.'}</span></label>
+      <label class="l2"><input type="checkbox" id="rulesChk"/><span>${esc(bg?L.accept.bg:L.accept.en)}</span></label>
+      <label class="l2" style="color:var(--muted);"><input type="checkbox" id="mediaChk" ${user&&user.media_consent?'checked':''}/><span>${esc(bg?L.media.bg:L.media.en)}</span></label>
       <div class="acts">
-        <button class="btn btn-ghost" id="rulesNo">${bg?'Откажи':'Cancel'}</button>
-        <button class="btn" id="rulesOk" disabled>${bg?'Продължи към кандидатстване':'Continue to application'}</button>
+        <button class="btn btn-ghost" id="rulesNo">${isMember?(bg?'Изход':'Sign out'):(bg?'Откажи':'Cancel')}</button>
+        <button class="btn" id="rulesOk" disabled>${isMember?(bg?'Приемам и продължавам':'Accept and continue'):(bg?'Приемам · към кандидатстването':'Accept · continue to application')}</button>
       </div>
     </div></div>`;
-  document.body.appendChild(ov);
-  document.body.style.overflow='hidden';
+  document.body.appendChild(ov); document.body.style.overflow='hidden';
+  const body=ov.querySelector('#rulesBody');
+  const show=i=>{ body.innerHTML=docs[i]?docs[i].html:''; body.scrollTop=0; ov.querySelectorAll('#ltabs button').forEach((b,k)=>b.classList.toggle('on',k===i)); };
+  ov.querySelectorAll('#ltabs button').forEach(b=>b.onclick=()=>show(+b.dataset.i)); show(0);
   const close=()=>{ov.remove();document.body.style.overflow='';};
-  ov.querySelector('#rulesNo').onclick=close;
+  ov.querySelector('#rulesNo').onclick=()=>{close(); if(opts.onCancel)opts.onCancel();};
   ov.querySelector('#rulesChk').onchange=e=>{ov.querySelector('#rulesOk').disabled=!e.target.checked;};
-  ov.querySelector('#rulesOk').onclick=()=>{
-    if(!ov.querySelector('#rulesChk').checked)return;
-    try{sessionStorage.setItem('acac_rules_ok','1');}catch(e){}
-    close(); go('apply');
-  };
-  // самият текст се зарежда от отделен файл, за да не тежи на приложението
-  try{
-    if(!_rulesHtml){ const r=await fetch('../rules.html',{cache:'no-cache'}); _rulesHtml=await r.text(); }
-    const b=ov.querySelector('#rulesBody'); if(b){b.innerHTML=_rulesHtml;b.scrollTop=0;}
-  }catch(e){
-    const b=ov.querySelector('#rulesBody'); if(b)b.innerHTML=`<p style="color:var(--muted);padding:30px 0;text-align:center;">${bg?'Правилникът не се зареди. Проверете връзката и опитайте пак.':'The rules could not be loaded. Check your connection and try again.'}</p>`;
-  }
+  ov.querySelector('#rulesOk').onclick=()=>{ if(!ov.querySelector('#rulesChk').checked)return; const media=ov.querySelector('#mediaChk').checked; close(); opts.onOk(media); };
+}
+let _applyMedia=false;
+function startApply(){
+  if(rulesAccepted()){go('apply');return;}
+  termsGate({mode:'apply',onOk:media=>{ _applyMedia=media; try{sessionStorage.setItem('acac_rules_ok',LEGAL().version);}catch(e){} go('apply'); }});
+}
+// член: при вход, ако няма приета текуща версия → екран; „Изход“ = излизане от профила
+let _termsShown=false;
+function ensureTerms(){
+  if(!user||termsCurrent()||_termsShown||isStaffView())return;
+  if(!window.AC2_LEGAL)return;
+  _termsShown=true;
+  termsGate({mode:'member',onOk:async media=>{ const r=await DB.acceptTerms(LEGAL().version,media); if(!(r&&r.error)){user.terms_version=LEGAL().version;user.media_consent=media;} else {toast(lang==='bg'?'Грешка при запис':'Save error');} _termsShown=false; },
+    onCancel:()=>{ _termsShown=false; signout(); }});
+}
+// от профила: преглед на условията (без отметки) + смяна на съгласието за снимки
+function viewTerms(){
+  const bg=lang==='bg', L=LEGAL(), docs=L.docs;
+  const ov=document.createElement('div');ov.className='rulesov';
+  ov.innerHTML=`<div class="rulescard"><div class="rh"><h3>${bg?'Условия на клуба':'Club terms'}</h3><div class="m">${bg?'Версия':'Version'} ${esc(L.version)} · ${user&&user.terms_accepted_at?(bg?'приети на ':'accepted on ')+new Date(user.terms_accepted_at).toLocaleDateString('bg-BG'):''}</div></div>
+    <div class="ltabs" id="ltabs">${docs.map((d,i)=>`<button class="${i===0?'on':''}" data-i="${i}">${esc(d.short)}</button>`).join('')}</div>
+    <div class="rb" id="rulesBody"></div>
+    <div class="rf"><label class="l2" style="color:var(--muted);"><input type="checkbox" id="mediaChk" ${user&&user.media_consent?'checked':''}/><span>${esc(bg?L.media.bg:L.media.en)}</span></label>
+      <div class="acts"><button class="btn" id="rulesOk">${bg?'Затвори':'Close'}</button></div></div></div>`;
+  document.body.appendChild(ov); document.body.style.overflow='hidden';
+  const body=ov.querySelector('#rulesBody');
+  const show=i=>{ body.innerHTML=docs[i]?docs[i].html:''; body.scrollTop=0; ov.querySelectorAll('#ltabs button').forEach((b,k)=>b.classList.toggle('on',k===i)); };
+  ov.querySelectorAll('#ltabs button').forEach(b=>b.onclick=()=>show(+b.dataset.i)); show(0);
+  ov.querySelector('#mediaChk').onchange=async e=>{ if(!user)return; const r=await DB.acceptTerms(user.terms_version||LEGAL().version,e.target.checked); if(!(r&&r.error)){user.media_consent=e.target.checked;toast(bg?'Записано':'Saved');} };
+  ov.querySelector('#rulesOk').onclick=()=>{ov.remove();document.body.style.overflow='';};
 }
 
 // ---------- ПУБЛИЧНА ВИТРИНА (само уеб, преди вход) ----------
@@ -2232,7 +2262,7 @@ async function doAuth(){
   saved=await DB.listSaved();EVENTS=await DB.listEvents();
   hap('success');
   toast(tr('loginToast'));location.hash='';route();
-  registerPush();
+  registerPush(); setTimeout(ensureTerms,400);
 }
 async function doForgot(){
   if(!DB.live){toast(tr('demoOnlyLive'));return;}
@@ -2368,6 +2398,7 @@ function accountView(){
     </div>
     <div class="sec-title" style="padding-top:28px;">${bg?'Сигурност':'Security'}</div>
     ${DB.live?`<button class="btn btn-ghost" onclick="changePass()">${tr('changePass')}</button>`:''}
+    <button class="btn btn-ghost" style="margin-top:12px;" onclick="viewTerms()">${bg?'Условия на клуба':'Club terms'}</button>
     <button class="btn btn-ghost" style="margin-top:12px;" onclick="signout()">${tr('signout')}</button>
     <div class="sec-title" style="padding-top:30px;color:#82303d;">${bg?'Опасна зона':'Danger zone'}</div>
     <div class="ev" style="border:1px solid rgba(130,48,61,.3);">
@@ -3174,6 +3205,7 @@ async function refreshProfile(){
     checkUnlocks();
     scheduleLocalNotifs();
     registerPush();
+    setTimeout(ensureTerms,600);
     subscribeLive(); // реалтайм за ръчно пускане/спиране
     startLiveTimer(); // часовников авто-старт
     const p0=location.hash.replace(/^#/,'').split('?')[0];
