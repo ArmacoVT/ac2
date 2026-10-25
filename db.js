@@ -65,7 +65,7 @@ window.PUB_DEFAULTS={
     hours:_b('Вторник – неделя: 10:00 – 23:00\nПонеделник: почивен ден','Tuesday – Sunday: 10:00 – 23:00\nMonday: closed'),
     table_cutoff:'22:30',            // маса след събитие се предлага, ако събитието свършва до този час (сменя се лятно/зимно)
     auto_refund:false,               // автоматично връщане на сумата при отказ от член (в срок) — през Stripe
-    nav:{restaurant:false,membership:false,about:false,college:false},   // кои менюта се показват (Админ → Общи); 'app' е премахнат — секцията „Инсталирай приложението“ е на началната
+    nav:{restaurant:false,membership:false,about:false,college:false,login:false},   // login = бутонът „Вход за членове“ (хедър, меню, футър)   // кои менюта се показват (Админ → Общи); 'app' е премахнат — секцията „Инсталирай приложението“ е на началната
     iban:'', bank:'',                // банков превод за членства (страницата /join показва опцията само ако има IBAN)
     parking:_b('','' ), access:_b('',''),
     maps_embed:'',                   // адрес от Google Maps → Share → Embed a map → само src="…"

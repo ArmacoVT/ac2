@@ -605,7 +605,7 @@ function header(cur){
       <div class="soc">${socials()}</div>
       <a class="btn gilt sm install" href="#/app">${t('install')}</a>
       <button class="lang" onclick="toggleLang()">${lang==='bg'?'EN':'BG'}</button>
-      <a class="login" href="${esc(APP_URL)}">${t('login')}</a>
+      ${on('general.nav.login')?`<a class="login" href="${esc(APP_URL)}">${t('login')}</a>`:''}
       <button class="burger" onclick="openMenu()" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     </div></div>`;
 }
@@ -614,7 +614,7 @@ function mobileNav(){
   return `<div class="top"><span class="lg" style="width:56px;color:var(--gilt)">${LOGO_SVG}</span><button class="close" onclick="closeMenu()" aria-label="Close">×</button></div>
     ${g}
     <div class="acts">
-      <a class="btn gilt" href="${esc(APP_URL)}">${t('login')}</a>
+      ${on('general.nav.login')?`<a class="btn gilt" href="${esc(APP_URL)}">${t('login')}</a>`:''}
       <a class="btn" href="#/app" onclick="closeMenu()">${t('install')}</a>
       <button class="lang" style="background:none;border:1px solid rgba(191,192,194,.35);color:var(--ondark);border-radius:20px;padding:10px;" onclick="toggleLang()">${lang==='bg'?'English':'Български'}</button>
       <div class="soc">${socials()}</div>
@@ -643,7 +643,7 @@ function footer(){
       <div><h4>${t('install')}</h4><div class="v" style="font-size:13px;">${esc(pT('home.app.body'))}</div>${storeButtons('gilt sm')}</div>
     </div>
     <div class="copy"><div>© ${new Date().getFullYear()} American College Arcus Club</div>
-      <div><a href="#/legal/terms">${t('legal')}</a><a href="#/legal/privacy">${t('privacy')}</a><a href="#/legal/cookies">${t('cookies')}</a><a href="${esc(APP_URL)}">${t('login')}</a></div></div>
+      <div><a href="#/legal/terms">${t('legal')}</a><a href="#/legal/privacy">${t('privacy')}</a><a href="#/legal/cookies">${t('cookies')}</a>${on('general.nav.login')?`<a href="${esc(APP_URL)}">${t('login')}</a>`:''}</div></div>
   </div>`;
 }
 </script>
@@ -813,7 +813,7 @@ function pageEvent(id,book){
         <div class="row"><span>${t('price')}</span><span>${esc(fmtPrice(e))}</span></div>
         ${(!past&&a.href!=='#/event/'+e.id)?(a.ext?`<a class="btn" href="${esc(a.href)}" target="_blank" rel="noopener" onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a>${!p.ticket_url?`<div class="hint" style="text-align:center;">${t('inApp')} · ${t('login')}</div>`:''}`
           :`<a class="btn" href="${esc(a.href)}" onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a>`):''}
-        ${guestOpen(e)&&!past?`<div class="hint" style="text-align:center;margin-top:8px;"><a class="tlink" href="${esc(APP_URL)}#event/${esc(e.id)}">${t('login')} →</a></div>`:''}
+        ${guestOpen(e)&&!past&&on('general.nav.login')?`<div class="hint" style="text-align:center;margin-top:8px;"><a class="tlink" href="${esc(APP_URL)}#event/${esc(e.id)}">${t('login')} →</a></div>`:''}
         <a class="btn ghost" style="width:100%;margin-top:10px;" href="#/program">${t('program')}</a>
       </div></aside>
     </div></div>`;
@@ -918,7 +918,7 @@ function pageApp(){
     <section class="sec tight"><div class="two">
       <div>${imgs.length?`<img src="${esc(imgs[0])}" alt="" loading="lazy"/>`:ph('ph')}</div>
       <div><div class="kicker">${t('features')}</div><ul style="padding-left:20px;line-height:2;font-size:17px;color:var(--text);">${feats.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
-        <div style="margin-top:22px;"><a class="btn ghost" href="${esc(APP_URL)}">${t('login')} →</a></div></div>
+        ${on('general.nav.login')?`<div style="margin-top:22px;"><a class="btn ghost" href="${esc(APP_URL)}">${t('login')} →</a></div>`:''}</div>
     </div></section>${galleryHtml(imgs.slice(1))}</div>`;
 }
 
