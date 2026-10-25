@@ -361,6 +361,8 @@
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--dark);color:var(--ondark);padding:12px 18px;border-radius:12px;font-size:14px;z-index:160;opacity:0;pointer-events:none;transition:opacity .25s;}
   .toast.show{opacity:1;}
   .legal .body{max-width:820px;}
+  .plans{display:flex;flex-direction:column;gap:8px;} .plan{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line-soft);border-radius:12px;background:var(--card);cursor:pointer;} .plan.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;} .plan input{margin-top:3px;} .lbl{display:block;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mid);margin:0 0 6px;}
+  .kv{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft);} .kv .k{width:120px;color:var(--mid);font-size:13px;flex:none;} .kv .v{font-size:15px;}
   .legaldoc{white-space:normal;} .legaldoc h2{font-family:var(--serif);font-style:italic;font-size:22px;margin:26px 0 8px;} .legaldoc h3{font-size:15px;margin:16px 0 4px;color:var(--gold);} .legaldoc p{margin:0 0 10px;font-size:15px;line-height:1.65;}
 </style>
 </head>
@@ -382,7 +384,7 @@
 <script>(function(){try{var c=window.ACAC_CONFIG||{};if(!c.COMING_SOON)return;
 if(/[?&]site=1/.test(location.search)){sessionStorage.setItem('ac2_site','1');return;}
 if(sessionStorage.getItem('ac2_site')==='1')return;
-var legal=function(){return /^#\/legal\//.test(location.hash);};
+var legal=function(){return /^#\/(legal\/|join)/.test(location.hash);};   // правни страници и плащане на членство (#/join) минават
 if(!legal()){location.replace('landing.html');return;}
 // правна страница по време на „очаквайте скоро“: без меню/футър и без излизане към останалия сайт
 document.documentElement.className+=' soon';
@@ -1069,6 +1071,91 @@ async function openRules(){
   try{const r=await fetch('rules.html',{cache:'no-store'});const html=await r.text();m.querySelector('.rb').innerHTML=html;}
   catch(e){m.querySelector('.rb').innerHTML=`<div class="empty">${L('Правилникът не се зареди.','Could not load the rules.')}</div>`;}
 }
+
+// ---------- ПЛАЩАНЕ НА ЧЛЕНСТВО С КОД (#/join?code=…) ----------
+// Членството се плаща само тук (не в приложението). Кодът идва по имейл от клуба (Админ → Покана за плащане).
+let JOIN={step:'code',code:'',info:null,plan:'',auto:false,method:'card',msg:''};
+function joinQS(){ const q=(location.hash.split('?')[1]||''); const o={}; q.split('&').forEach(kv=>{const [k,v]=kv.split('=');if(k)o[decodeURIComponent(k)]=decodeURIComponent(v||'');}); return o; }
+function pageJoin(){
+  const qs=joinQS(); if(qs.code&&!JOIN.code){JOIN.code=qs.code.toUpperCase();JOIN.stop=qs.stop==='1'; if(qs.paid==='1'){JOIN.step='paid';} else setTimeout(joinLookup,0);}
+  const eur=c=>(c/100).toFixed(2).replace('.',',')+' €';
+  let inner='';
+  if(JOIN.step==='code'){
+    inner=`<p style="margin-bottom:14px;">${L('Въведете кода, който получихте по имейл от клуба.','Enter the code you received by e-mail from the club.')}</p>
+      <form class="form" onsubmit="JOIN.code=this.code.value;joinLookup();return false;"><label>${L('Код','Code')}</label><input name="code" value="${esc(JOIN.code)}" placeholder="AC2-XXXX-XXXX" autocapitalize="characters" style="letter-spacing:3px;font-weight:700;font-size:18px;"/>
+      <div style="margin-top:12px;"><button class="btn" type="submit">${L('Продължи','Continue')}</button></div>${JOIN.msg?`<div class="msg" style="margin-top:10px;">${esc(JOIN.msg)}</div>`:''}</form>`;
+  } else if(JOIN.step==='stop'){
+    inner=`<div class="msg ok">${L('Автоматичното подновяване е спряно. Членството ви остава валидно до изтичането му; за подновяване ще получите код по имейл.','Automatic renewal has been stopped. Your membership remains valid until it expires; you will receive a code by e-mail to renew.')}</div>`;
+  } else if(JOIN.step==='plan'){
+    const i=JOIN.info; const plan=i.plans.find(p=>p.id===JOIN.plan)||i.plans[0];
+    const purposeTxt=i.purpose==='renew'?L('Подновяване на членство','Membership renewal'):i.purpose==='instalment'?L('Втора вноска','Second instalment'):L('Активиране на членство','Membership activation');
+    inner=`<div style="background:var(--card);border:1px solid var(--line-soft);border-radius:14px;padding:16px 18px;margin-bottom:18px;">
+        <div class="kicker">${purposeTxt}</div><h3 style="font-size:22px;margin:4px 0 2px;">${esc(i.title)}</h3><div class="hint">${esc(i.name||i.email)}${i.period_from&&i.purpose==='renew'?' · '+L('от','from')+' '+fmtD(i.period_from,true):''}${i.vat_pct?' · '+L('цените са с ДДС','prices incl. VAT'):''}</div></div>
+      ${i.purpose!=='instalment'?`<label class="lbl">${L('План на плащане','Payment plan')}</label>
+      <div class="plans">${i.plans.map(p=>`<label class="plan ${plan.id===p.id?'on':''}"><input type="radio" name="plan" value="${p.id}" ${plan.id===p.id?'checked':''} onchange="JOIN.plan='${p.id}';renderJoin()"/><div><b>${esc(p.label)}</b><div class="hint">${p.instalments>1?L('сега','now')+' '+eur(p.amount_cents)+' · '+L('общо','total')+' '+eur(p.total_cents):eur(p.total_cents)}</div></div></label>`).join('')}</div>`:`<div style="margin-bottom:12px;">${L('Дължима вноска','Instalment due')}: <b>${eur(i.plans[0].amount_cents)}</b></div>`}
+      <label class="lbl" style="margin-top:14px;">${L('Начин на плащане','Payment method')}</label>
+      <div class="plans"><label class="plan ${JOIN.method==='card'?'on':''}"><input type="radio" name="m" value="card" ${JOIN.method==='card'?'checked':''} onchange="JOIN.method='card';renderJoin()"/><div><b>${L('Карта · Apple Pay · Google Pay','Card · Apple Pay · Google Pay')}</b><div class="hint">${L('Плащането е през Stripe — картата не минава през нашия сървър.','Processed by Stripe — card data never touches our server.')}</div></div></label>
+        ${i.bank?`<label class="plan ${JOIN.method==='bank'?'on':''}"><input type="radio" name="m" value="bank" ${JOIN.method==='bank'?'checked':''} onchange="JOIN.method='bank';renderJoin()"/><div><b>${L('Банков превод','Bank transfer')}</b><div class="hint">${L('Членството се активира след получаване на превода (1–2 работни дни).','Activated after the transfer is received (1–2 working days).')}</div></div></label>`:''}</div>
+      ${JOIN.method==='card'&&i.purpose!=='instalment'?`<label class="chk" style="margin-top:12px;"><input type="checkbox" ${JOIN.auto?'checked':''} onchange="JOIN.auto=this.checked"/> <span>${L('Автоматично подновяване — картата се запазва и сумата се удържа автоматично на падежа. Ще ви уведомим 7 дни преди това; можете да го спрете по всяко време.','Automatic renewal — your card is saved and charged automatically on the due date. We notify you 7 days before; you can stop it at any time.')}</span></label>`:''}
+      <div style="display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap;"><button class="btn" type="button" id="joinGo" onclick="joinPay()">${JOIN.method==='bank'?L('Покажи данните за превод','Show transfer details'):L('Плати','Pay')+' '+eur(i.purpose==='instalment'?i.plans[0].amount_cents:plan.amount_cents)}</button><span class="hint">${L('С плащането приемате','By paying you accept')} <a href="#/legal/terms" target="_blank">${L('условията','the terms')}</a>.</span></div>
+      <div id="join_pay" style="display:none;margin-top:14px;"></div><div class="msg" id="join_msg">${JOIN.msg?esc(JOIN.msg):''}</div>`;
+  } else if(JOIN.step==='bank'){
+    const b=JOIN.bank;
+    inner=`<div class="msg ok" style="margin-bottom:14px;">${L('Регистрирахме заявката. Направете превода с данните по-долу — ВАЖНО: основанието трябва да е кодът.','Request registered. Make the transfer with the details below — IMPORTANT: the reference must be the code.')}</div>
+      <div class="kv"><div class="k">${L('Получател','Beneficiary')}</div><div class="v">${esc(b.holder)}</div></div>
+      <div class="kv"><div class="k">IBAN</div><div class="v" style="font-weight:700;letter-spacing:1px;">${esc(b.iban)}</div></div>
+      ${b.bank?`<div class="kv"><div class="k">${L('Банка','Bank')}</div><div class="v">${esc(b.bank)}</div></div>`:''}
+      <div class="kv"><div class="k">${L('Сума','Amount')}</div><div class="v" style="font-weight:700;">${eur(b.amount_cents)}</div></div>
+      <div class="kv"><div class="k">${L('Основание','Reference')}</div><div class="v" style="font-weight:700;letter-spacing:2px;">${esc(b.ref)}</div></div>
+      <p class="hint" style="margin-top:12px;">${L('След като преводът постъпи, клубът активира членството и ще получите имейл. Запазете този екран или кода.','Once the transfer arrives the club activates the membership and you will receive an e-mail. Keep this screen or the code.')}</p>`;
+  } else if(JOIN.step==='paid'){
+    inner=`<div class="msg ok" style="font-size:16px;">${L('Плащането е получено. Членството се активира — ще получите имейл с потвърждение','Payment received. Your membership is being activated — you will receive a confirmation e-mail')}${JOIN.info&&JOIN.info.purpose==='new'?L(' и отделно писмо за задаване на парола за приложението AC².',' and a separate e-mail to set your password for the AC² app.'):'.'}</div>
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;"><a class="btn ghost" href="${esc(APP_URL)}">${L('Към приложението','Open the app')}</a></div>`;
+  }
+  return pageHead('',L('Членство в AC²','AC² membership'),'')+`<div class="wrap" style="padding-bottom:80px;max-width:720px;">${inner}</div>`;
+}
+function renderJoin(){ if(parseRoute().p0==='join')render(); }
+async function joinLookup(){
+  const code=(JOIN.code||'').toUpperCase().replace(/[^A-Z0-9]/g,'').replace(/^AC2/,'');
+  if(code.length!==8){JOIN.msg=L('Кодът има 8 знака (напр. AC2-M7K4-P2QX).','The code has 8 characters (e.g. AC2-M7K4-P2QX).');renderJoin();return;}
+  JOIN.code=code; JOIN.msg=L('Проверка…','Checking…'); renderJoin();
+  const r=await DB.membershipPay({action:'info',code});
+  if(r.error){JOIN.msg=r.error.message==='not_found'?L('Кодът не е намерен. Проверете го или пишете на welcome@ac2.bg.','Code not found. Check it or write to welcome@ac2.bg.'):r.error.message;renderJoin();return;}
+  const i=r.data; JOIN.info=i; JOIN.msg='';
+  if(JOIN.stop){ const s=await DB.membershipPay({action:'cancel_renew',code}); JOIN.step=s.error?'code':'stop'; if(s.error)JOIN.msg=s.error.message; renderJoin(); return; }
+  if(i.used){JOIN.step='code';JOIN.msg=L('Този код вече е използван.','This code has already been used.');renderJoin();return;}
+  if(i.expired){JOIN.step='code';JOIN.msg=L('Кодът е изтекъл. Пишете на welcome@ac2.bg за нов.','The code has expired. Write to welcome@ac2.bg for a new one.');renderJoin();return;}
+  JOIN.plan=(i.plans[0]||{}).id||'year'; JOIN.step='plan'; renderJoin();
+}
+async function joinPay(){
+  const i=JOIN.info; const b=document.getElementById('joinGo'); const msg=document.getElementById('join_msg'); if(!i)return;
+  b.disabled=true; const old=b.textContent; b.textContent=L('Момент…','One moment…'); msg.textContent='';
+  if(JOIN.method==='bank'){
+    const r=await DB.membershipPay({action:'bank',code:JOIN.code,plan:JOIN.plan});
+    if(r.error){b.disabled=false;b.textContent=old;msg.textContent=r.error.message;return;}
+    JOIN.bank=r.data; JOIN.step='bank'; renderJoin(); track('membership_bank',{}); return;
+  }
+  const r=await DB.membershipPay({action:'pay',code:JOIN.code,plan:JOIN.plan,auto_renew:!!JOIN.auto});
+  if(r.error){b.disabled=false;b.textContent=old;msg.textContent=r.error.message;return;}
+  try{
+    const Stripe=await loadStripe(); if(!Stripe||!CFG.STRIPE_PK)throw new Error('stripe');
+    const stripe=Stripe(CFG.STRIPE_PK);
+    const elements=stripe.elements({clientSecret:r.data.client_secret,appearance:{theme:'flat',variables:{colorPrimary:'#82303d'}}});
+    const box=document.getElementById('join_pay'); box.style.display='block';
+    const pe=elements.create('payment',{fields:{billingDetails:{name:'never',email:'never'}}}); pe.mount('#join_pay');
+    pe.on('loaderror',ev=>{ msg.textContent=L('Платежната форма не се зареди: ','Payment form failed to load: ')+((ev&&ev.error&&ev.error.message)||''); });
+    b.disabled=false; b.textContent=L('Потвърди плащането','Confirm payment');
+    b.onclick=async()=>{
+      b.disabled=true; b.textContent=L('Плащане…','Paying…'); msg.textContent='';
+      try{
+        const {error}=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{return_url:location.origin+location.pathname+'#/join?code='+JOIN.code+'&paid=1',payment_method_data:{billing_details:{name:i.name||'',email:i.email}}}});
+        if(error){msg.textContent=error.message||t('payFail');b.disabled=false;b.textContent=L('Потвърди плащането','Confirm payment');return;}
+        JOIN.step='paid'; renderJoin(); track('membership_paid',{plan:JOIN.plan,auto:!!JOIN.auto});
+      }catch(err){ msg.textContent=(err&&err.message)||t('payFail'); b.disabled=false; b.textContent=L('Потвърди плащането','Confirm payment'); }
+    };
+  }catch(e){ msg.textContent=L('Плащането не се зареди: ','Payment could not load: ')+((e&&e.message)||''); b.disabled=false; b.textContent=old; }
+}
+
 // ---------- ПРАВНА ИНФОРМАЦИЯ ----------
 function pageLegal(kind){
   const map={terms:['legal.terms',t('legal')],privacy:['legal.privacy',t('privacy')],cookies:['legal.cookies',t('cookies')]};
@@ -1113,6 +1200,7 @@ function pageFor(r){
     case 'app': return {html:pageApp(),nav:'app',title:t('app')};
     case 'contacts': return {html:pageContacts(),nav:'contacts',title:t('contacts')};
     case 'legal': return {html:pageLegal(r.p1),nav:'',title:t('legal')};
+    case 'join': return {html:pageJoin(),nav:'membership',title:L('Членство','Membership')};
     default: return {html:pageHome(),nav:'',title:''};
   }
 }

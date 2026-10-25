@@ -48,3 +48,7 @@ Firebase → проект → Android app `bg.arcusclub.app` → свали `goo
    - **contact_messages**: Insert → notify-staff (същата заглавка).
    (Ако менюто иска URL вместо функция: `https://twcxfqgknhqicxqghcrx.supabase.co/functions/v1/notify-staff`, метод POST.)
 Известието отива на телефоните на админите и на служителите със съответното право (reservations / applications / messages), ако са влезли в приложението.
+
+## Напомняния за членства (cron) — 25.10.2026
+cron-job.org → нова задача, веднъж дневно (напр. 08:00): POST `https://twcxfqgknhqicxqghcrx.supabase.co/functions/v1/membership-remind`,
+заглавка `x-cron-secret` = стойността на secret `WEBHOOK_SECRET`. Праща кодове за втора вноска/изтичане 14 дни преди и предупреждение за авто-подновяване 7 дни преди.

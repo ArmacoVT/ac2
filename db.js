@@ -65,6 +65,7 @@ window.PUB_DEFAULTS={
     hours:_b('Вторник – неделя: 10:00 – 23:00\nПонеделник: почивен ден','Tuesday – Sunday: 10:00 – 23:00\nMonday: closed'),
     table_cutoff:'22:30',            // маса след събитие се предлага, ако събитието свършва до този час (сменя се лятно/зимно)
     auto_refund:false,               // автоматично връщане на сумата при отказ от член (в срок) — през Stripe
+    iban:'', bank:'',                // банков превод за членства (страницата /join показва опцията само ако има IBAN)
     parking:_b('','' ), access:_b('',''),
     maps_embed:'',                   // адрес от Google Maps → Share → Embed a map → само src="…"
     maps_link:''                     // линк „Отвори в Google Maps"
@@ -768,6 +769,21 @@ window.PUB_DEFAULTS={
       if (!LIVE || !ids || !ids.length) return { error: null };
       const { error } = await sb.from(table === 'applications' ? 'applications' : 'reservations').update({ seen_at: new Date().toISOString() }).in('id', ids);
       return { error };
+    },
+    // ---- Членства и плащания (админ) ----
+    async listMembershipPrices() { if (!LIVE) return []; const { data } = await sb.from('membership_prices').select('*').order('price_year', { ascending: false }); return data || []; },
+    async saveMembershipPrice(row) { if (!LIVE) return { error: { message: 'demo' } }; const { error } = await sb.from('membership_prices').upsert(Object.assign({ updated_at: new Date().toISOString() }, row), { onConflict: 'membership' }); return { error }; },
+    async membershipInvite(o) { if (!LIVE) return { error: { message: 'demo' } }; const { data, error } = await invokeFn('membership-invite', { body: o }); if (error) return { error: { message: (data && data.error) || error.message } }; if (data && data.error) return { error: { message: data.error } }; return { data }; },
+    async membershipActivate(paymentId) { if (!LIVE) return { error: { message: 'demo' } }; const { data, error } = await invokeFn('membership-activate', { body: { payment_id: paymentId } }); if (error) return { error: { message: (data && data.error) || error.message } }; if (data && data.error) return { error: { message: data.error } }; return { data }; },
+    async listMembershipPayments(limit) { if (!LIVE) return []; const { data } = await sb.from('membership_payments').select('*').order('created_at', { ascending: false }).limit(limit || 200); return data || []; },
+    async listMembershipCodes(limit) { if (!LIVE) return []; const { data } = await sb.from('membership_codes').select('*').order('created_at', { ascending: false }).limit(limit || 200); return data || []; },
+    async cancelMembershipPayment(id) { if (!LIVE) return { error: null }; const { error } = await sb.from('membership_payments').update({ status: 'cancelled' }).eq('id', id); return { error }; },
+    // публична страница /join (без вход) → Edge Function membership-pay (Verify JWT OFF)
+    async membershipPay(o) {
+      const r = await fetch(CFG.SUPABASE_URL + '/functions/v1/membership-pay', { method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': CFG.SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + CFG.SUPABASE_ANON_KEY }, body: JSON.stringify(o) });
+      let j = {}; try { j = await r.json(); } catch (e) {}
+      if (!r.ok || j.error) return { error: { message: j.error || ('HTTP ' + r.status) } };
+      return { data: j };
     },
     // билет на място (рецепция) → Edge Function walkin-ticket
     async walkinTicket(o) {

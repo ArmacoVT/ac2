@@ -127,7 +127,7 @@ const PERM_PRESETS=[
 const can=p=>role==='admin'||PERMS.includes(p);
 const isEditor=()=>role!=='admin';   // „служител“ (не админ) — показва бележка под табовете
 // кои табове с кое право
-const TAB_PERM={events:'events',archive:'events',members:'events',res:'reservations',people:'members_view',apps:'applications',ann:'news',public:'site',messages:'messages',stats:'stats',audit:'audit',team:'__admin'};
+const TAB_PERM={events:'events',archive:'events',members:'events',res:'reservations',people:'members_view',apps:'applications',ann:'news',public:'site',messages:'messages',stats:'stats',audit:'audit',team:'__admin',fees:'__admin'};
 const tabAllowed=t=>TAB_PERM[t]==='__admin'?role==='admin':(TAB_PERM[t]?can(TAB_PERM[t]):role==='admin');
 function firstTab(){ for(const t of ['events','res','people','apps','ann','public','messages','stats','audit','team']) if(tabAllowed(t)) return t; return 'events'; }
 let EVENTS=[], RES=[];
@@ -185,7 +185,9 @@ async function refresh(){
   try{ RES=await DB.listReservations(); }catch(e){ RES=[]; }
   try{ APPS=await DB.listApplications(); }catch(e){ APPS=APPS||[]; }
   if(can('messages')){ try{ MSGS=await DB.listContactMessages(); }catch(e){} }
+  if(role==='admin'){ try{ MPAY=await DB.listMembershipPayments(300); }catch(e){} }
 }
+let MPAY=null, MPRICES=null, MCODES=null;
 // ---------- „За действие“: какво чака човек ----------
 // резервация: нова заявка (requested) · непрегледана (seen_at празно) · отказ от член (cancelled) непрегледан · платена+отменена без върната сума
 function resNeedsRefund(r){ return r.paid && !r.refunded_at && (r.status==='cancelled'||r.status==='declined'); }
@@ -203,6 +205,7 @@ function attItems(){
   if(can('reservations'))RES.forEach(r=>{const a=resAttention(r);if(a)out.push({k:'res',a,r});});
   if(can('applications'))(APPS||[]).forEach(x=>{if((x.status||'new')==='new'||!x.seen_at)out.push({k:'app',a:'new',r:x});});
   if(can('messages'))(MSGS||[]).forEach(m=>{if(!m.is_read)out.push({k:'msg',a:'new',r:m});});
+  if(role==='admin')(MPAY||[]).forEach(x=>{if(x.status==='pending'&&x.method==='bank')out.push({k:'mpay',a:'bank',r:x});});
   return out;
 }
 function attCount(k){ return attItems().filter(i=>!k||i.k===k).length; }
@@ -265,6 +268,7 @@ function inboxView(){
       if(i.a==='cancel')return `<div class="row"><div class="t"><span class="tagn amber">ОТКАЗ ОТ ЧЛЕН</span> <b>${nm}</b> — ${what}</div><div class="a"><button class="btn ghost sm" onclick="markSeenRes('${r.id}')">Прегледано</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
       return `<div class="row"><div class="t"><span class="tagn">НОВО</span> <b>${nm}</b> — ${what} · ${resBadge(r.status)}</div><div class="a"><button class="btn ghost sm" onclick="markSeenRes('${r.id}')">Прегледано</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
     }
+    if(i.k==='mpay'){const x=i.r;return `<div class="row"><div class="t"><span class="tagn amber">БАНКОВ ПРЕВОД</span> <b>${esc(x.email||'')}</b> — ${esc(memName(x.membership))} · ${(x.amount_cents/100).toFixed(2)} € · основание ${esc(x.bank_ref||'')}<br><span class="muted" style="font-size:12px;">Потвърди, когато преводът е в банката — членството се активира и членът получава имейл.</span></div><div class="a"><button class="btn ok sm" onclick="mpayConfirm('${x.id}')">Потвърди превода</button><button class="btn ghost sm" onclick="mpayCancel('${x.id}')">Откажи</button></div></div>`;}
     if(i.k==='app'){const a=i.r;return `<div class="row"><div class="t"><span class="tagn">КАНДИДАТУРА</span> <b>${esc(a.name||a.full_name||a.email||'')}</b>${a.membership?' — '+esc(memName(a.membership)):''}</div><div class="a"><button class="btn ghost sm" onclick="setTab('apps')">Отвори</button></div></div>`;}
     const m=i.r;return `<div class="row"><div class="t"><span class="tagn grey">СЪОБЩЕНИЕ</span> <b>${esc(m.name||m.email||'')}</b>${m.subject?' — '+esc(m.subject):''}</div><div class="a"><button class="btn ghost sm" onclick="setTab('messages')">Отвори</button></div></div>`;
   }).join('');
@@ -294,6 +298,7 @@ function render(){
   else if(tab==='stats')h+=statsView();
   else if(tab==='audit')h+=auditView();
   else if(tab==='team')h+=teamView();
+  else if(tab==='fees')h+=feesView();
   else h+=membersView();
   h+=`</div>`;
   root.innerHTML=h;
@@ -314,6 +319,7 @@ function tabsHtml(){
       ${tabAllowed('stats')?`<button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>`:''}
       ${tabAllowed('audit')?`<button class="tab ${tab==='audit'?'on':''}" onclick="setTab('audit')">Журнал</button>`:''}
       ${tabAllowed('team')?`<button class="tab ${tab==='team'?'on':''}" onclick="setTab('team')">Екип</button>`:''}
+      ${tabAllowed('fees')?`<button class="tab ${tab==='fees'?'on':''}" onclick="setTab('fees')">Членства и цени${tabBadge(attCount('mpay'))}</button>`:''}
     </div>`;
 }
 function renderAfter(){
@@ -467,6 +473,7 @@ async function reloadPeople(){ window.__membersErr=''; PEOPLE=null; render(); PE
 async function setTab(t){tab=t;editId=null;await refresh();render();
   if(t==='people'){await reloadPeople();}
   if(t==='team'){if(!PEOPLE)PEOPLE=await DB.listMembers();render();}
+  if(t==='fees'){await loadFees();render();}
   if((t==='res'||t==='events')&&!PHONES){await loadPhones();render();}
   if(t==='ann'){ANN=await DB.listAnnouncements();if(!PEOPLE)PEOPLE=await DB.listMembers();render();if(!PUSHSTATS)DB.pushStats().then(s=>{PUSHSTATS=s;const el=document.getElementById('pushStat');if(el)el.textContent=`(регистрирани: ${s.ios||0} iOS · ${s.android||0} Android)`;}).catch(()=>{});}
   if(t==='site'){SITEC=await DB.getSiteContent();render();}
@@ -888,6 +895,81 @@ function resIsOld(r){
   return d<cut.toISOString().slice(0,10);
 }
 const doorBtn=()=>`<div style="float:right;margin-top:4px;display:flex;gap:8px;"><button class="btn ok sm" onclick="walkinOpen()">+ Билет на място</button><a class="btn ghost sm" href="${(window.ACAC_CONFIG&&ACAC_CONFIG.APP_URL)||'app/'}#door" target="_blank" rel="noopener">📷 Скенер за вход</a></div>`;
+// ---------- ЧЛЕНСТВА И ЦЕНИ (само админ) + ПОКАНА ЗА ПЛАЩАНЕ ----------
+const PLAN_LABEL={year:'12 месеца',half:'2 × 6 месеца',quarter:'4 × 3 месеца',month:'12 × 1 месец'};
+const PLAN_DIV={year:1,half:2,quarter:4,month:12};
+async function loadFees(){ try{MPRICES=await DB.listMembershipPrices();}catch(e){MPRICES=[];} try{MPAY=await DB.listMembershipPayments(300);}catch(e){MPAY=[];} try{MCODES=await DB.listMembershipCodes(200);}catch(e){MCODES=[];} }
+function feesView(){
+  if(!MPRICES)return `<h2>Членства и цени</h2><p class="empty">Зареждане…</p>`;
+  const order=['founder','founding','club','alumni','corporate'];
+  const rows=order.map(id=>{const p=(MPRICES||[]).find(x=>x.membership===id)||{membership:id,title:memName(id),price_year:0,vat_pct:0,plans:['year','half'],code_days:14,active:true};
+    const plans=p.plans||[];
+    return `<div class="card" id="fee_${id}"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;"><h3 style="margin:0;">${esc(memName(id))}</h3><label style="display:flex;gap:6px;align-items:center;font-size:13px;"><input type="checkbox" id="fa_${id}" ${p.active!==false?'checked':''} style="width:16px;height:16px;margin:0;"/> активно</label></div>
+      <div class="row2" style="margin-top:8px;"><div><label>Годишна такса (EUR)</label><input id="fy_${id}" type="number" step="0.01" min="0" value="${Number(p.price_year)||0}"/></div><div><label>ДДС % (0 = без)</label><input id="fv_${id}" type="number" step="1" min="0" value="${Number(p.vat_pct)||0}"/></div></div>
+      <div class="row2" style="margin-top:6px;"><div><label>Вноска при 2×6 м. (празно = ½)</label><input id="fh_${id}" type="number" step="0.01" min="0" value="${p.price_half!=null?p.price_half:''}" placeholder="${((Number(p.price_year)||0)/2).toFixed(2)}"/></div><div><label>Валидност на кода (дни)</label><input id="fd_${id}" type="number" min="1" value="${p.code_days||14}"/></div></div>
+      <div class="row2" style="margin-top:6px;"><div><label>Вноска при 4×3 м. (празно = ¼)</label><input id="fq_${id}" type="number" step="0.01" min="0" value="${p.price_quarter!=null?p.price_quarter:''}" placeholder="${((Number(p.price_year)||0)/4).toFixed(2)}"/></div><div><label>Вноска при 12×1 м. (празно = 1/12)</label><input id="fm_${id}" type="number" step="0.01" min="0" value="${p.price_month!=null?p.price_month:''}" placeholder="${((Number(p.price_year)||0)/12).toFixed(2)}"/></div></div>
+      <label style="margin-top:8px;">Разрешени планове за плащане</label><div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;">${Object.keys(PLAN_LABEL).map(k=>`<label style="display:flex;gap:6px;align-items:center;"><input type="checkbox" id="fp_${id}_${k}" ${plans.includes(k)?'checked':''} style="width:16px;height:16px;margin:0;"/> ${PLAN_LABEL[k]}</label>`).join('')}</div>
+      <div class="muted" style="font-size:12px;margin-top:6px;">Месечно/тримесечно изискват автоматично подновяване от члена (12 ръчни кода не са практични) и допълнение в Листа с такси.</div>
+      <button class="btn ok sm" style="margin-top:10px;" onclick="saveFee('${id}')">Запази</button></div>`;}).join('');
+  const pend=(MPAY||[]).filter(x=>x.status==='pending');
+  const paid=(MPAY||[]).filter(x=>x.status==='paid').slice(0,50);
+  const codes=(MCODES||[]).filter(c=>!c.used_at&&new Date(c.expires_at)>new Date()).slice(0,50);
+  const fmtP=x=>`<div class="card" style="padding:10px 14px;"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;"><div><b>${esc(x.email||'')}</b> · ${esc(memName(x.membership))} · ${PLAN_LABEL[x.plan]||x.plan} · <b>${(x.amount_cents/100).toFixed(2)} €</b> · ${x.method==='bank'?'банков превод':'карта'}${x.auto_renew?' · авто-подновяване':''}<div class="muted" style="font-size:12px;">${x.status==='paid'?'платено '+new Date(x.paid_at||x.created_at).toLocaleString('bg-BG'):'чака от '+new Date(x.created_at).toLocaleString('bg-BG')}${x.period_to?' · до '+isoToBg(x.period_to):''}${x.bank_ref?' · основание '+esc(x.bank_ref):''}</div></div>
+    ${x.status==='pending'&&x.method==='bank'?`<div style="display:flex;gap:6px;"><button class="btn ok sm" onclick="mpayConfirm('${x.id}')">Потвърди превода</button><button class="btn ghost sm" onclick="mpayCancel('${x.id}')">Откажи</button></div>`:x.status==='pending'?`<span class="pill">чака картово плащане</span>`:'<span class="pill audAll">платено</span>'}</div></div>`;
+  return `<h2>Членства и цени</h2><p class="muted" style="margin-top:-4px;">Цените важат за новите покани; вече издадените кодове пазят цената от момента на издаване. Членството се плаща само на сайта (ac2.bg/#/join) с код — не в приложението.</p>
+    <div style="margin:10px 0 16px;"><button class="btn ok" onclick="mInviteOpen({})">💳 Нова покана за плащане</button> <a class="btn ghost" href="#" onclick="event.preventDefault();setTab('public')">IBAN за банков превод → Публичен сайт → Общи</a></div>
+    ${rows}
+    <h2 style="margin-top:26px;">Чакащи плащания${pend.length?' ('+pend.length+')':''}</h2>${pend.length?pend.map(fmtP).join(''):'<p class="empty">Няма чакащи.</p>'}
+    <h2 style="margin-top:22px;">Активни кодове${codes.length?' ('+codes.length+')':''}</h2>${codes.length?codes.map(c=>`<div class="card" style="padding:10px 14px;"><b>AC2-${c.code.slice(0,4)}-${c.code.slice(4)}</b> · ${esc(c.email)}${c.full_name?' · '+esc(c.full_name):''} · ${esc(memName(c.membership))} · ${c.purpose==='new'?'нов член':c.purpose==='renew'?'подновяване':'2-ра вноска'} · важи до ${isoToBg(c.expires_at.slice(0,10))} <a href="https://ac2.bg/#/join?code=${c.code}" target="_blank" rel="noopener" style="color:#82303d;">линк</a></div>`).join(''):'<p class="empty">Няма активни кодове.</p>'}
+    <h2 style="margin-top:22px;">Последни плащания</h2>${paid.length?paid.map(fmtP).join(''):'<p class="empty">Още няма плащания.</p>'}`;
+}
+async function saveFee(id){
+  const g=k=>document.getElementById(k+'_'+id); const num=el=>el&&el.value!==''?Number(el.value):null;
+  const row={membership:id,title:memName(id),price_year:num(g('fy'))||0,vat_pct:num(g('fv'))||0,price_half:num(g('fh')),price_quarter:num(g('fq')),price_month:num(g('fm')),code_days:num(g('fd'))||14,active:g('fa').checked,plans:Object.keys(PLAN_LABEL).filter(k=>document.getElementById('fp_'+id+'_'+k).checked)};
+  if(!row.plans.length){alert('Избери поне един план.');return;}
+  const r=await DB.saveMembershipPrice(row); if(r&&r.error){alert('Не се запази: '+r.error.message);return;}
+  try{await DB.logAudit('membership_price_saved',id,row.price_year+' € · '+row.plans.join(','));}catch(e){}
+  toast('Запазено'); await loadFees(); render();
+}
+async function mpayConfirm(id){
+  const x=(MPAY||[]).find(p=>p.id===id); if(!x)return;
+  if(!confirm('Потвърждаваш, че преводът от '+(x.amount_cents/100).toFixed(2)+' € с основание '+(x.bank_ref||'')+' е получен? Членството се активира веднага и членът получава имейл.'))return;
+  const r=await DB.membershipActivate(id); if(r&&r.error){alert('Грешка: '+r.error.message);return;}
+  toast('Членството е активирано · до '+(r.data&&r.data.until?isoToBg(r.data.until):'')); await refresh(); if(tab==='fees')await loadFees(); render();
+}
+async function mpayCancel(id){ if(!confirm('Да откажа ли този чакащ превод?'))return; await DB.cancelMembershipPayment(id); await refresh(); if(tab==='fees')await loadFees(); render(); }
+// покана за плащане (нов член / подновяване / втора вноска)
+let MI=null;
+function mInviteOpen(o){ MI=Object.assign({email:'',full_name:'',membership:'club',purpose:'new',user_id:'',app_id:'',send:true},o||{}); if(!MPRICES)DB.listMembershipPrices().then(p=>{MPRICES=p;mInviteRender();}); mInviteRender(); }
+function mInviteRender(){
+  let m=document.getElementById('miModal'); if(!m){m=document.createElement('div');m.id='miModal';m.style.cssText='position:fixed;inset:0;background:rgba(28,28,27,.55);z-index:9000;display:flex;align-items:flex-start;justify-content:center;padding:30px 12px;overflow:auto;';m.onclick=e=>{if(e.target===m){m.remove();MI=null;}};document.body.appendChild(m);}
+  const pr=(MPRICES||[]).find(p=>p.membership===MI.membership); const plans=pr?(pr.plans||[]):['year','half'];
+  const price=pr?Number(pr.price_year):0, vat=pr?Number(pr.vat_pct):0, total=price*(1+vat/100);
+  if(MI.step==='done'){
+    m.innerHTML=`<div class="card" style="max-width:520px;width:100%;margin:0;"><h3 style="margin:0 0 6px;">Кодът е издаден ✓</h3><div class="muted">${MI.result.mailed?'Имейлът е изпратен на '+esc(MI.email):'Имейлът НЕ е изпратен — дай кода ръчно.'}</div>
+      <div style="text-align:center;background:#fff;border-radius:12px;padding:14px;margin:12px 0;font-size:24px;font-weight:800;letter-spacing:4px;">AC2-${MI.result.code.slice(0,4)}-${MI.result.code.slice(4)}</div>
+      <div class="muted" style="font-size:12px;word-break:break-all;">${esc(MI.result.link)} · важи до ${isoToBg(MI.result.expires_at.slice(0,10))}</div>
+      <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn ghost sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${MI.result.link}');toast('Линкът е копиран')">Копирай линка</button><button class="btn ghost sm" onclick="document.getElementById('miModal').remove();MI=null;">Затвори</button></div></div>`; return;
+  }
+  m.innerHTML=`<div class="card" style="max-width:520px;width:100%;margin:0;"><h3 style="margin:0 0 4px;">Покана за плащане на членство</h3><div class="muted" style="margin-bottom:10px;">Членът получава имейл с код и линк към ac2.bg/#/join. След плащане членството се активира/удължава автоматично.</div>
+    <div class="row2"><div><label>Имейл *</label><input id="mi_email" type="email" value="${esc(MI.email)}" oninput="MI.email=this.value"/></div><div><label>Име</label><input id="mi_name" value="${esc(MI.full_name)}" oninput="MI.full_name=this.value"/></div></div>
+    <div class="row2" style="margin-top:6px;"><div><label>Категория</label><select onchange="MI.membership=this.value;mInviteRender()">${['founder','founding','club','alumni','corporate'].map(id=>`<option value="${id}" ${MI.membership===id?'selected':''}>${memName(id)}</option>`).join('')}</select></div>
+      <div><label>Цел</label><select onchange="MI.purpose=this.value;mInviteRender()"><option value="new" ${MI.purpose==='new'?'selected':''}>Нов член (активиране)</option><option value="renew" ${MI.purpose==='renew'?'selected':''}>Подновяване</option><option value="instalment" ${MI.purpose==='instalment'?'selected':''}>Втора вноска</option></select></div></div>
+    <div style="margin:8px 0;font-size:13px;">${pr?`Годишна такса <b>${total.toFixed(2)} €</b>${vat?' (с '+vat+'% ДДС)':''} · планове: ${plans.map(k=>PLAN_LABEL[k]).join(', ')} · кодът важи ${pr.code_days||14} дни${pr.active===false?' · <span style="color:#82303d;">категорията е НЕактивна</span>':''}`:'<span style="color:#82303d;">Няма цена за тази категория — задай я в „Членства и цени“.</span>'}</div>
+    <label>Бележка (по избор, вътрешна)</label><input id="mi_note" value="${esc(MI.note||'')}" oninput="MI.note=this.value"/>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;"><input type="checkbox" ${MI.send?'checked':''} onchange="MI.send=this.checked" style="width:16px;height:16px;margin:0;"/> Изпрати имейл с кода</label>
+    <div style="display:flex;gap:8px;margin-top:14px;"><button class="btn ok" id="mi_go" onclick="mInviteSubmit()">Издай код</button><button class="btn ghost" onclick="document.getElementById('miModal').remove();MI=null;">Отказ</button></div><div class="muted" id="mi_msg" style="margin-top:8px;"></div></div>`;
+}
+async function mInviteSubmit(){
+  const msg=document.getElementById('mi_msg'), b=document.getElementById('mi_go');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(MI.email||'')){msg.textContent='Невалиден имейл.';return;}
+  b.disabled=true;b.textContent='Издаване…';
+  const o={email:MI.email.trim(),full_name:(MI.full_name||'').trim(),membership:MI.membership,purpose:MI.purpose,note:MI.note||'',send_email:!!MI.send}; if(MI.user_id)o.user_id=MI.user_id;
+  const r=await DB.membershipInvite(o);
+  if(r&&r.error){b.disabled=false;b.textContent='Издай код';msg.textContent='Грешка: '+r.error.message;return;}
+  if(MI.app_id){ try{await DB.setApplicationStatus(MI.app_id,'approved');}catch(e){} }
+  MI.step='done'; MI.result=r.data; mInviteRender(); await refresh(); if(tab==='fees')await loadFees(); renderTabsOnly();
+}
 // ---------- QR на членската карта (за печат на физическа карта): AC2:<uuid> — постоянен, уникален за члена ----------
 function memberQr(id){
   const p=(PEOPLE||[]).find(x=>x.id===id); if(!p)return;
@@ -1442,7 +1524,7 @@ const PUB_SCHEMA=[
   {id:'general',title:'Общи: контакти, социални мрежи, магазини, карта',fields:[
     F('general.tagline','bi','Кратко описание на сайта (за търсачки)'),
     F('general.email','txt','Имейл за контакт (получава формата от сайта)'),F('general.phone','txt','Телефон'),
-    F('general.address','bi','Адрес'),F('general.hours','bit','Работно време (един ред = един ред на сайта; показва се и в приложението)',{rows:3}),F('general.table_cutoff','txt','Маса след събитие — предлага се, ако събитието свършва до (ЧЧ:ММ, напр. 22:30)'),F('general.auto_refund','bool','Автоматично връщане на сумата (Stripe), когато член сам откаже платен билет в срок. Изключено = отива в „За действие“ за решение от екипа.'),
+    F('general.address','bi','Адрес'),F('general.hours','bit','Работно време (един ред = един ред на сайта; показва се и в приложението)',{rows:3}),F('general.table_cutoff','txt','Маса след събитие — предлага се, ако събитието свършва до (ЧЧ:ММ, напр. 22:30)'),F('general.iban','txt','IBAN за плащане на членство по банков път (празно = опцията не се показва)'),F('general.bank','txt','Банка (име, по избор)'),F('general.auto_refund','bool','Автоматично връщане на сумата (Stripe), когато член сам откаже платен билет в срок. Изключено = отива в „За действие“ за решение от екипа.'),
     F('general.parking','bit','Паркиране (по избор)',{rows:2}),F('general.access','bit','Достъп за хора с увреждания (по избор)',{rows:2}),
     F('general.facebook','url','Facebook (пълен адрес)'),F('general.instagram','url','Instagram (пълен адрес)'),
     F('general.appstore_url','url','App Store линк (празно = „очаквайте скоро")'),F('general.playstore_url','url','Google Play линк (празно = „очаквайте скоро")'),
@@ -1709,7 +1791,7 @@ function appsView(){
     if(a.type==='nomination'&&a.proposer_email)lines.push('Предложен от: '+esc(a.proposer_email));
     if(a.rules_accepted_at)lines.push('✓ Приел правилника: '+esc(new Date(a.rules_accepted_at).toLocaleString('bg-BG')));
     const acts=st==='new'
-      ? `<button class="btn ok sm" onclick="approveApp('${a.id}')">Одобри и покани</button>
+      ? `${role==='admin'&&a.type!=='nomination'?`<button class="btn ok sm" onclick="mInviteOpen({app_id:'${a.id}',email:'${esc(a.email||'')}',full_name:'${esc(a.name||'')}',membership:'${esc(a.membership||'club')}',purpose:'new'})">💳 Одобри → код за плащане</button>`:''}<button class="btn ${role==='admin'&&a.type!=='nomination'?'ghost':'ok'} sm" onclick="approveApp('${a.id}')">Одобри и покани${role==='admin'&&a.type!=='nomination'?' (без плащане)':''}</button>
          <button class="btn no sm" onclick="setApp('${a.id}','declined')">Откажи</button>
          <button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button>`
       : `<button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button>`;
@@ -1805,7 +1887,7 @@ function peopleView(){
         <div><input id="${fid}" readonly placeholder="удължи от дата (по подразб. днес)" data-iso="" onclick="openCal('${fid}')" style="cursor:pointer;"/></div>
         <div><button class="btn sm" onclick="renewPerson('${p.id}','${fid}')">Поднови с 1 година</button></div>
       </div>
-      <div style="margin-top:8px;"><button class="btn ghost sm" onclick="memberQr('${p.id}')">▦ QR за членската карта</button></div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn ghost sm" onclick="memberQr('${p.id}')">▦ QR за членската карта</button>${role==='admin'?`<button class="btn ghost sm" onclick="mInviteOpen({user_id:'${p.id}',email:'${esc(p.email||'')}',full_name:'${esc(p.full_name||p.username||'')}',membership:'${esc(p.membership||'club')}',purpose:'renew'})">💳 Покана за плащане</button>`:''}</div>
       <div class="row2" style="margin-top:8px;align-items:center;">
         <div><label style="margin-bottom:4px;">Членство</label><select id="${mid}">${memOpts}</select></div>
         <div><button class="btn ghost sm" onclick="changeMembership('${p.id}')">Промени членството</button></div>
