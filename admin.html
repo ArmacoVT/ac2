@@ -629,11 +629,11 @@ function formView(){
         <option value="yes" ${e&&e.pub&&e.pub.table_after==='yes'?'selected':''}>Да — предлагай маса</option>
         <option value="no" ${e&&e.pub&&e.pub.table_after==='no'?'selected':''}>Не — без маса</option></select></div>
       <div class="muted" style="font-size:12px;padding-top:26px;">Часът за „автоматично“ се сменя от Публичен сайт → Общи → „Маса след събитие до“ (лятно/зимно време).</div></div>
-    <label style="margin-top:6px;">Какво се предлага за това събитие (отметни нивото + сложи цена; 0 = безплатно)</label>
+    <label style="margin-top:6px;">Билети и цени (отметни какво се предлага; 0 = безплатно)</label>
     <div class="row2" style="margin-top:4px;">
-      <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_phys" ${(e?e.offer_physical:true)?'checked':''} style="width:auto;"/> Присъствие в клуба</label>
+      <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_phys" ${(e?e.offer_physical:true)?'checked':''} style="width:auto;"/> Цена при присъствие (€)</label>
         <input id="f_price" type="number" min="0" step="0.01" value="${e&&e.price?e.price:0}" placeholder="€ (0 = безплатно)"/></div>
-      <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_online" ${(e&&e.offer_online)?'checked':''} style="width:auto;"/> Онлайн гледане</label>
+      <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_online" ${(e&&e.offer_online)?'checked':''} style="width:auto;"/> Цена при онлайн гледане (€)</label>
         <input id="f_price_online" type="number" min="0" step="0.01" value="${e&&e.price_online?e.price_online:0}" placeholder="€"/></div>
     </div>
     <p class="muted" style="margin:2px 0 0;font-size:12px;">Присъствие включва и онлайн + архива; онлайн включва архива. Неотметнато ниво = не се предлага. 0 = безплатно. Цената за архива се задава в таб „Архив".</p>
