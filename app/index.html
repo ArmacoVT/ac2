@@ -2533,7 +2533,7 @@ function resCard(r,dim){
   const isNew=newResSet&&newResSet[r.id];
   const hl=isNew?`border:1px solid var(--gold);box-shadow:0 0 0 2px rgba(107,107,99,.18);`:'';
   const newTag=isNew?` <span style="background:var(--gold);color:#f4f4e8;font-size:9px;font-weight:700;border-radius:8px;padding:2px 6px;vertical-align:middle;">${lang==='bg'?'НОВО':'NEW'}</span>`:'';
-  const priceLine=(ev&&ev.price>0&&r.event_id)?`<div class="m" style="color:var(--gold);font-weight:600;">${lang==='bg'?'Общо: ':'Total: '}${fmtPrice(ev.price*(r.party||1))}</div>`:'';
+  const priceLine=(r.paid&&r.paid_cents)?`<div class="m" style="color:var(--gold);font-weight:600;">${lang==='bg'?'Платено: ':'Paid: '}${fmtPrice(r.paid_cents/100)}</div>`:((ev&&ev.price>0&&r.event_id)?`<div class="m" style="color:var(--gold);font-weight:600;">${lang==='bg'?'Общо: ':'Total: '}${fmtPrice(ev.price*(r.party||1))}</div>`:'');
   const canCancel=resCancellable(r);
   const cancelBtn=canCancel?`<button onclick="event.stopPropagation();cancelRes('${r.id}')" style="margin-top:6px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;">${lang==='bg'?'Откажи резервацията':'Cancel reservation'}</button>`:((!['cancelled','declined'].includes(r.status)&&!dim&&resPaid(r)&&r.paid&&!canRefundTier())?`<div class="m" style="margin-top:6px;color:var(--muted);font-size:12px;">${lang==='bg'?'Билетът не подлежи на връщане.':'This ticket is non-refundable.'}</div>`:'');
   const swipe=canCancel?` data-swipecancel="${r.id}"`:'';
@@ -2841,7 +2841,7 @@ function ticketView(resId){
       <div class="rbadge-inline ${st[0]}">${st[1]}</div>
       <h3 style="font-size:20px;margin:10px 0 4px;">${esc(title)}</h3>
       <div style="color:${f?f.c:'var(--gold)'};font-weight:600;font-size:13px;">${f?f.t:''}${(ev&&ev.place)||r.place?' · '+esc((ev&&ev.place)||r.place):''}</div>
-      <div class="m" style="margin-top:4px;">${d}${r.time?' · '+esc(r.time):''} · ${seatsTxt(r.party)}${r.paid&&ev&&ev.price>0?' · '+fmtPrice(ev.price*(r.party||1)):''}</div>
+      <div class="m" style="margin-top:4px;">${d}${r.time?' · '+esc(r.time):''} · ${seatsTxt(r.party)}${r.paid?' · '+fmtPrice(r.paid_cents?r.paid_cents/100:(ev&&ev.price>0?ev.price*(r.party||1):0)):''}</div>
       ${addr?`<a href="${maps?esc(maps):'#'}" ${maps?'target="_blank" rel="noopener"':'onclick="return false"'} style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;color:var(--gold);font-size:12.5px;text-decoration:none;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.3 7-12a7 7 0 1 0-14 0c0 5.7 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg><span style="${maps?'text-decoration:underline;text-underline-offset:3px;':''}">${esc(addr)}</span>${maps?'<span>↗</span>':''}</a>`:''}
       ${qr?`<div style="background:#fff;border-radius:14px;padding:12px;width:216px;margin:18px auto 10px;"><img src="${qr}" alt="QR" style="display:block;width:192px;height:192px;"/></div>`:''}
       <div style="font-size:21px;font-weight:800;letter-spacing:4px;">${fmtTicket(r.ticket_code)}</div>

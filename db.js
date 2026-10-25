@@ -532,7 +532,7 @@ window.PUB_DEFAULTS={
         kind: r.kind || '', paid: !!r.paid,
         name: r.res_name || r.guest_name || '', email: r.contact_email || r.guest_email || '', phone: r.contact_phone || r.guest_phone || '',
         guest: !r.user_id && !!r.guest_email, refunded_at: r.refunded_at || '', refund_cents: r.refund_cents || 0, checked_in_at: r.checked_in_at || '', ticket_code: r.ticket_code || '',
-        seen_at: r.seen_at || '', created_at: r.created_at || '', pay_method: r.pay_method || '', sold_at: r.sold_at || '' }));
+        seen_at: r.seen_at || '', created_at: r.created_at || '', pay_method: r.pay_method || '', sold_at: r.sold_at || '', paid_cents: r.paid_cents || 0 }));
     },
     async addReservation(o) {
       if (!LIVE) { const r = jget(K.res, []); o.id = 'r' + Date.now(); o.status = 'requested'; r.unshift(o); jset(K.res, r); return { error: null }; }

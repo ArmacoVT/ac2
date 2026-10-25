@@ -74,7 +74,7 @@
   card.innerHTML=`<span class="badge ${st[0]}">${st[1]}</span>
     <h1>${esc(t.title)}</h1>
     <div class="ctx">${esc(t.format?('AC² '+t.format.charAt(0).toUpperCase()+t.format.slice(1)):'')}${t.place?' · '+esc(t.place):''}</div>
-    <div class="meta">${wd?wd+', ':''}${d}${t.time?' · '+esc(t.time):''} · ${t.party} ${t.party==1?'място':'места'}</div>
+    <div class="meta">${wd?wd+', ':''}${d}${t.time?' · '+esc(t.time):''} · ${t.party} ${t.party==1?'място':'места'}${t.paid&&t.paid_cents?' · платено '+(t.paid_cents/100).toFixed(2).replace('.',',')+' €':''}</div>
     ${t.address?`<a href="${t.maps?esc(t.maps):'#'}" ${t.maps?'target="_blank" rel="noopener"':''} style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;color:var(--wine);font-size:13px;text-decoration:none;">📍 <span style="${t.maps?'text-decoration:underline;text-underline-offset:3px;':''}">${esc(t.address)}</span>${t.maps?' ↗':''}</a>`:''}
     <div class="qr">${qr?`<img src="${qr}" alt="QR"/>`:''}</div>
     <div class="code">${fmt(t.code)}</div>
