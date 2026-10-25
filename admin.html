@@ -1458,7 +1458,7 @@ function siteView(){
     ${sImg('Снимка (без снимка се показва логото на формата)','offer.items.'+id+'.image')}
   </div>`;
   return `<h2>Членства (нива, цени, ползи)</h2>
-  <p class="muted" style="margin-top:-6px;">Текстовете на трите членски категории — Club, Alumni, Corporate. Показват се на публичния сайт → Членство и в приложението (кандидатстване, членска карта). Founder и Founding Member не се показват публично.</p>
+  <p class="muted" style="margin-top:-6px;">Текстовете на членските категории. Club / Alumni / Corporate се показват на сайта → Членство и в приложението; Founder и Founding Member — само в приложението, за founder/founding членове.</p>
 
   <div class="card"><b>Членство</b>
     ${sBi('Заглавие','memberships.title')}
@@ -1569,7 +1569,7 @@ const PUB_SCHEMA=[
     F('restaurant.reserve_url','url','Външна система за резервации (линк). Празно = телефон / формата за запитване'),F('restaurant.reserve_phone','txt','Телефон за резервации (по избор)'),
     F('restaurant.order','txt','Ред на блоковете (през запетая): gallery = галерия, sections = секции, chef = шеф-готвач, dinners = тематични вечери, enquiry = запитване. Празно = gallery, sections, chef, dinners, enquiry')
   ]},
-  {id:'levels',title:'Нива на членство (Club / Alumni / Corporate)',help:'Заглавие, „за вас е, ако…", резюме, цена, описание и ползи за всяко ниво. Същите текстове вижда и приложението (кандидатстване, членска карта). Founder и Founding Member не се показват публично.',fields:[]},
+  {id:'levels',title:'Нива на членство',help:'Заглавие, „за вас е, ако…“, резюме, цена, описание и ползи за всяко ниво. Club / Alumni / Corporate се показват на сайта и в приложението; Founder и Founding Member — само в приложението, за founder/founding членове.',fields:[]},
   {id:'membership',title:'Членство — страница',help:'Текстовете около нивата: защо да стана член, как се кандидатства, въпроси и отговори.',fields:[
     F('membership.why_title','bi','„Защо да стана член?" — заглавие'),F('membership.why_body','bit','„Защо да стана член?" — текст',{rows:4}),
     F('membership.how_title','bi','Как се кандидатства — заглавие'),F('membership.how_body','bit','Как се кандидатства — стъпки',{rows:5}),
