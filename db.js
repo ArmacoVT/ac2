@@ -177,6 +177,14 @@ window.PUB_DEFAULTS={
   // Всяко повикване на Edge Function минава първо през подновяване на изтичащ токен.
   // Нищо тук не може да „виси" вечно: подновяването на токена има 6 сек., самата функция — 25 сек.
   const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error((what || 'Заявката') + ' не отговори навреме')), ms))]);
+  // Edge Function със смислена грешка (тялото на non-2xx отговора носи { error })
+  async function fnCall(name, body) {
+    if (!LIVE) return { error: { message: 'demo' } };
+    const { data, error } = await invokeFn(name, { body });
+    if (error) { let msg = error.message; try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {} return { error: { message: msg } }; }
+    if (data && data.error) return { error: { message: data.error } };
+    return { data };
+  }
   async function invokeFn(name, opts) {
     try { if (DB.freshSession) await withTimeout(DB.freshSession(), 6000, 'Сесията'); } catch (e) {}
     return withTimeout(sb.functions.invoke(name, opts), 25000, 'Сървърът');
@@ -642,7 +650,7 @@ window.PUB_DEFAULTS={
       if (!(LIVE && sb)) return null;
       try {
         let ch = sb.channel('admin-live');
-        ['reservations', 'applications', 'contact_messages', 'newsletter_subscribers', 'events'].forEach(t => {
+        ['reservations', 'applications', 'contact_messages', 'newsletter_subscribers', 'events', 'membership_payments', 'membership_codes', 'profiles'].forEach(t => {
           ch = ch.on('postgres_changes', { event: '*', schema: 'public', table: t },
             (payload) => { try { cb(t, payload.eventType, payload.new || payload.old || null); } catch (e) {} });
         });
@@ -773,8 +781,8 @@ window.PUB_DEFAULTS={
     // ---- Членства и плащания (админ) ----
     async listMembershipPrices() { if (!LIVE) return []; const { data } = await sb.from('membership_prices').select('*').order('price_year', { ascending: false }); return data || []; },
     async saveMembershipPrice(row) { if (!LIVE) return { error: { message: 'demo' } }; const { error } = await sb.from('membership_prices').upsert(Object.assign({ updated_at: new Date().toISOString() }, row), { onConflict: 'membership' }); return { error }; },
-    async membershipInvite(o) { if (!LIVE) return { error: { message: 'demo' } }; const { data, error } = await invokeFn('membership-invite', { body: o }); if (error) return { error: { message: (data && data.error) || error.message } }; if (data && data.error) return { error: { message: data.error } }; return { data }; },
-    async membershipActivate(paymentId) { if (!LIVE) return { error: { message: 'demo' } }; const { data, error } = await invokeFn('membership-activate', { body: { payment_id: paymentId } }); if (error) return { error: { message: (data && data.error) || error.message } }; if (data && data.error) return { error: { message: data.error } }; return { data }; },
+    async membershipInvite(o) { return fnCall('membership-invite', o); },
+    async membershipActivate(paymentId) { return fnCall('membership-activate', { payment_id: paymentId }); },
     async listMembershipPayments(limit) { if (!LIVE) return []; const { data } = await sb.from('membership_payments').select('*').order('created_at', { ascending: false }).limit(limit || 200); return data || []; },
     async listMembershipCodes(limit) { if (!LIVE) return []; const { data } = await sb.from('membership_codes').select('*').order('created_at', { ascending: false }).limit(limit || 200); return data || []; },
     async cancelMembershipPayment(id) { if (!LIVE) return { error: null }; const { error } = await sb.from('membership_payments').update({ status: 'cancelled' }).eq('id', id); return { error }; },
@@ -786,13 +794,7 @@ window.PUB_DEFAULTS={
       return { data: j };
     },
     // билет на място (рецепция) → Edge Function walkin-ticket
-    async walkinTicket(o) {
-      if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await invokeFn('walkin-ticket', { body: o });
-      if (error) return { error: { message: (data && data.error) || error.message } };
-      if (data && data.error) return { error: { message: data.error } };
-      return { data };
-    },
+    async walkinTicket(o) { return fnCall('walkin-ticket', o); },
     // връщане на сумата през Stripe (Edge Function refund-payment); cents празно = цялата сума
     async refundReservation(id, cents) {
       if (!LIVE) return { error: { message: 'demo' } };

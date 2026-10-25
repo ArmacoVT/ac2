@@ -167,7 +167,7 @@ function startAdminLive(){
   if(_liveSeen)return; _liveSeen=true;
   DB.onAdminChange((table,type,row)=>{
     if(type==='INSERT'){
-      const msg=table==='reservations'?'Нова резервация':table==='applications'?'Нова кандидатура':table==='contact_messages'?'Ново съобщение от сайта':table==='newsletter_subscribers'?'Нов абонат за нюзлетъра':'';
+      const msg=table==='reservations'?'Нова резервация':table==='applications'?'Нова кандидатура':table==='contact_messages'?'Ново съобщение от сайта':table==='newsletter_subscribers'?'Нов абонат за нюзлетъра':table==='membership_payments'?(row&&row.method==='bank'?'Заявен банков превод за членство':''):'';
       if(msg)toast('🔔 '+msg);
     } else if(table==='reservations'&&type==='UPDATE'&&row&&row.status==='cancelled'){ toast('Резервация е отменена от член'); }
     clearTimeout(_liveT);
@@ -175,6 +175,7 @@ function startAdminLive(){
       // не пипаме формата, докато админът пише в нея
       const editing=editId||document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
       await refresh();
+      if(table==='profiles'||table==='membership_payments'||table==='membership_codes'){ if(tab==='people'||tab==='team'){try{PEOPLE=await DB.listMembers();}catch(e){}} if(tab==='fees'){try{await loadFees();}catch(e){}} }
       if(tab==='messages'&&(table==='contact_messages'||table==='newsletter_subscribers')){MSGS=await DB.listContactMessages();SUBS=await DB.listSubscribers();}
       if(!editing)render();
     },800);
