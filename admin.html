@@ -1645,7 +1645,7 @@ function levelsFields(){
     ${sBi('Пълно описание','memberships.items.'+id+'.desc',3)}
     ${sBi('Ползи — по една на ред','memberships.items.'+id+'.benefits',5)}
   </div>`;
-  return sBi('Заглавие на секцията','memberships.title')+sBi('Увод','memberships.intro',3)+memBlock('club','Club Member')+memBlock('alumni','Alumni Member')+memBlock('corporate','Corporate Member');
+  return sBi('Заглавие на секцията','memberships.title')+sBi('Увод','memberships.intro',3)+memBlock('founder','Founder (вижда се само от founder/founding членове)')+memBlock('founding','Founding Member (вижда се само от founder/founding членове)')+memBlock('club','Club Member')+memBlock('alumni','Alumni Member')+memBlock('corporate','Corporate Member');
 }
 function publicView(){
   if(PUBC===null)return `<h2>Публичен сайт</h2><p class="empty">Зареждане…</p>`;

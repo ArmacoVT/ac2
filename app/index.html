@@ -1695,8 +1695,9 @@ async function toggleSave(id){
 }
 function membership(){
   const mine=(user&&user.membership)||'guest';
-  // Founder се вижда само от founder членове; твоята категория е първа и отбелязана
-  let ms=MEMBERS.filter(m=>m.id!=='founder'||mine==='founder');
+  // Founder и Founding Member се виждат само от founder/founding членове; твоята категория е първа и отбелязана
+  const top=['founder','founding'];
+  let ms=MEMBERS.filter(m=>!top.includes(m.id)||top.includes(mine)||m.id===mine);
   ms=ms.filter(m=>m.id===mine).concat(ms.filter(m=>m.id!==mine));
   let list=ms.map((m,i)=>`<div class="mcard" ${m.id===mine?'style="border-color:var(--gold-soft);"':''}>
     <div class="mhead" onclick="toggleMem(${i})">
