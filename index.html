@@ -208,7 +208,8 @@
   @media(max-width:960px){.grid3,.grid4{grid-template-columns:repeat(2,minmax(0,1fr));}}
   @media(max-width:600px){.grid3,.grid2,.grid4{grid-template-columns:1fr;}}
   .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:24px;}
-  .gal img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;}
+  .gal img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;cursor:zoom-in;}
+  .lb{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:300;display:flex;align-items:center;justify-content:center;} .lb img{max-width:94vw;max-height:88vh;object-fit:contain;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.6);} .lb .x,.lb .p,.lb .n{position:absolute;color:#EBEBD6;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;user-select:none;} .lb .x{top:16px;right:16px;} .lb .p{left:12px;top:50%;transform:translateY(-50%);} .lb .n{right:12px;top:50%;transform:translateY(-50%);} .lb .c{position:absolute;bottom:16px;left:0;right:0;text-align:center;color:#BFC0C2;font-size:12px;letter-spacing:1px;}
   .gal.big img{aspect-ratio:3/2;}
 
   /* събитие — карта */
@@ -234,8 +235,9 @@
   .empty{color:var(--muted);padding:30px 0;font-style:italic;}
 
   /* страница на събитие */
-  .evhero{position:relative;background:var(--dark);color:var(--ondark);min-height:52vh;display:flex;align-items:flex-end;overflow:hidden;}
-  .evhero .pic{position:absolute;inset:0;background:center/cover no-repeat;opacity:.55;}
+  .evhero{position:relative;background:var(--dark);color:var(--ondark);aspect-ratio:3/2;max-height:620px;display:flex;align-items:flex-end;overflow:hidden;}
+  @media(min-width:900px){.evhero{aspect-ratio:21/9;}}   /* десктоп: широка лента; телефон: 3:2 — и двете center/cover */
+  .evhero .pic{position:absolute;inset:0;background:center/cover no-repeat;opacity:.55;cursor:zoom-in;}
   .evhero .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.9));}
   .evhero .wrap{position:relative;padding-top:60px;padding-bottom:44px;}
   .evhero h1{color:#ebebd6;font-size:clamp(32px,4.6vw,58px);max-width:820px;}
@@ -633,7 +635,21 @@ function footer(){
 // ============================================================
 const ph=(cls)=>`<div class="${cls||'ph'}"><span class="lg">${LOGO_SVG}</span></div>`;
 const picOr=(url,cls,alt)=>url?`<img src="${esc(url)}" alt="${esc(alt||'')}" loading="lazy" class="${cls||''}"/>`:ph('ph');
-const galleryHtml=(imgs,big)=>imgs.length?`<div class="gal ${big?'big':''}">${imgs.map(u=>`<img src="${esc(u)}" alt="" loading="lazy"/>`).join('')}</div>`:'';
+const galleryHtml=(imgs,big)=>imgs.length?`<div class="gal ${big?'big':''}">${imgs.map((u,i)=>`<img src="${esc(u)}" alt="" loading="lazy" onclick="openLb(${JSON.stringify(imgs).replace(/"/g,'&quot;')},${i})"/>`).join('')}</div>`:'';
+// лайтбокс: клик върху снимка → на цял екран, ← → / плъзгане, Esc / ✕
+let LB=null;
+function openLb(list,i){
+  closeLb(); LB={list,i};
+  const el=document.createElement('div'); el.className='lb'; el.id='lb';
+  el.innerHTML=`<img id="lbimg" src="${esc(list[i])}" alt=""/>${list.length>1?`<div class="p" onclick="event.stopPropagation();lbGo(-1)">‹</div><div class="n" onclick="event.stopPropagation();lbGo(1)">›</div><div class="c" id="lbc">${i+1} / ${list.length}</div>`:''}<div class="x" onclick="closeLb()">✕</div>`;
+  el.onclick=e=>{ if(e.target===el||e.target.id==='lbimg'&&list.length===1)closeLb(); };
+  let x0=null; el.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;},{passive:true}); el.addEventListener('touchend',e=>{ if(x0==null)return; const dx=e.changedTouches[0].clientX-x0; if(Math.abs(dx)>50)lbGo(dx<0?1:-1); x0=null; },{passive:true});
+  document.body.appendChild(el); document.body.style.overflow='hidden';
+  document.addEventListener('keydown',lbKey);
+}
+function lbGo(d){ if(!LB)return; LB.i=(LB.i+d+LB.list.length)%LB.list.length; const im=document.getElementById('lbimg'); if(im)im.src=LB.list[LB.i]; const c=document.getElementById('lbc'); if(c)c.textContent=(LB.i+1)+' / '+LB.list.length; }
+function lbKey(e){ if(e.key==='Escape')closeLb(); else if(e.key==='ArrowRight')lbGo(1); else if(e.key==='ArrowLeft')lbGo(-1); }
+function closeLb(){ const el=document.getElementById('lb'); if(el)el.remove(); document.body.style.overflow=''; document.removeEventListener('keydown',lbKey); LB=null; }
 const pageHead=(kicker,title,lead,sub)=>`<div class="pagehead"><div class="wrap">${kicker?`<div class="kicker">${esc(kicker)}</div>`:''}<h1>${esc(title)}</h1>${lead?`<div class="lead">${esc(lead)}</div>`:''}${sub||''}</div></div>`;
 const subnav=(items,cur)=>`<div class="subnav">${items.map(i=>`<a href="#/${i[0]}" class="${cur===i[0]?'on':''}">${esc(i[1])}</a>`).join('')}</div>`;
 
@@ -750,7 +766,7 @@ function pageEvent(id,book){
   const g=Array.isArray(p.gallery)?p.gallery.filter(Boolean):[];
   const kv=(k,v)=>v?`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`:'';
   const dirLabel=fmtObj(evFmt(e)).t;
-  return `<div class="evhero">${e.image_url?`<div class="pic" style="background-image:url('${esc(e.image_url)}')"></div>`:''}<div class="shade"></div>
+  return `<div class="evhero">${e.image_url?`<div class="pic" style="background-image:url('${esc(e.image_url)}')" onclick="openLb(${JSON.stringify([e.image_url]).replace(/"/g,'&quot;')},0)"></div>`:''}<div class="shade" style="pointer-events:none;"></div>
       <div class="wrap"><span class="cat">${esc(dirLabel)}${(p.category)?' · '+esc(catName(evCat(e))):''}</span><h1>${esc(evTitle(e))}</h1>
         <div class="meta"><span>${(ex||e.end_date)?'':esc(fmtWD(e.date))+', '}${esc(evWhen(e,true))}${e.ends&&!ex?' – '+esc(fmtTime(e.ends)):''}</span>${e.place?`<span>${esc(e.place)}</span>`:''}<span>${esc(fmtPrice(e))}</span></div></div>
     </div>

@@ -70,7 +70,7 @@
   .memcard .mc-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#9a9a92;}
   .memcard .mc-val{font-size:15px;color:#ebebd6;letter-spacing:1px;}
   .memcard .mc-qr{width:92px;height:92px;border-radius:8px;background:#EBEBD6;padding:6px;}  /* черен QR на светло + бяло поле = четим от всеки скенер */
-  .evposter{width:100%;border-radius:12px;margin-bottom:12px;display:block;object-fit:cover;max-height:240px;}
+  .evposter{width:100%;aspect-ratio:3/2;border-radius:12px;margin-bottom:12px;display:block;object-fit:cover;object-position:center;}   /* 3:2 навсякъде (сайт + приложение) */
   .evvideo{width:100%;border-radius:12px;margin:10px 0 4px;display:block;background:#000;max-height:300px;}
   .sec-sub{color:var(--muted);font-size:13px;padding:0 20px 10px;}
   /* Предстоящи — програма (timeline) във вдълбано поле */
@@ -1085,7 +1085,7 @@ function eventView(id){
   // бутоните — същите като на картата (билет / календар / любими)
   const rowHtml=(()=>{const d=document.createElement('div');d.innerHTML=eventCard(e,0);const r=d.querySelector('.row');return r?r.innerHTML:'';})();
   return topbar(f?f.t:(lang==='bg'?'Събитие':'Event'))+`<div class="page">
-    ${e.image_url?`<img src="${esc(e.image_url)}" alt="" style="width:100%;border-radius:14px;display:block;max-height:320px;object-fit:cover;"/>`:''}
+    ${e.image_url?`<img src="${esc(e.image_url)}" alt="" style="width:100%;aspect-ratio:3/2;border-radius:14px;display:block;object-fit:cover;object-position:center;" onclick="openImg('${esc(e.image_url)}')"/>`:''}
     <div class="ev" style="margin-top:12px;">
       <div class="t">${f?f.t:e.format}${past?' · '+T('минало','past'):''}</div>
       <h3 style="font-size:22px;line-height:1.2;">${esc((lang==='en'&&p.title_en)?p.title_en:e.title)}</h3>

@@ -632,8 +632,8 @@ function formView(){
         <input id="f_price_online" type="number" min="0" step="0.01" value="${e&&e.price_online?e.price_online:0}" placeholder="€"/></div>
     </div>
     <p class="muted" style="margin:2px 0 0;font-size:12px;">Присъствие включва и онлайн + архива; онлайн включва архива. Неотметнато ниво = не се предлага. 0 = безплатно. Цената за архива се задава в таб „Архив".</p>
-    <label>Постер / снимка на събитието (по желание)</label>
-    ${e&&e.image_url?`<div style="margin-bottom:8px;"><img src="${esc(e.image_url)}" style="max-width:100%;border-radius:10px;"/><div><a href="#" onclick="clearMedia('img');return false;" style="color:#82303d;font-size:12px;">Премахни снимката</a></div></div>`:''}
+    <label>Постер / снимка на събитието (по желание)</label><div class="muted" style="font-size:12px;margin:-2px 0 4px;">Показва се еднакво навсякъде в <b>3:2</b> (препоръчително 1500×1000 px, важното в центъра). На страницата на събитието в сайта на десктоп е по-широка лента (21:9) — пак от центъра.</div>
+    ${e&&e.image_url?`<div style="margin-bottom:8px;"><img src="${esc(e.image_url)}" style="width:100%;max-width:360px;aspect-ratio:3/2;object-fit:cover;border-radius:10px;display:block;"/><div><a href="#" onclick="clearMedia('img');return false;" style="color:#82303d;font-size:12px;">Премахни снимката</a></div></div>`:''}
     <input id="f_img" type="file" accept="image/*"/>
     <label>Видео на събитието (по желание — качи файл)</label>
     ${e&&e.video_url?`<div style="margin-bottom:8px;"><video src="${esc(e.video_url)}" controls style="max-width:100%;border-radius:10px;"></video><div><a href="#" onclick="clearMedia('vid');return false;" style="color:#82303d;font-size:12px;">Премахни видеото</a></div></div>`:''}
