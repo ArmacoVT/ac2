@@ -65,6 +65,7 @@ window.PUB_DEFAULTS={
     hours:_b('Вторник – неделя: 10:00 – 23:00\nПонеделник: почивен ден','Tuesday – Sunday: 10:00 – 23:00\nMonday: closed'),
     table_cutoff:'22:30',            // маса след събитие се предлага, ако събитието свършва до този час (сменя се лятно/зимно)
     auto_refund:false,               // автоматично връщане на сумата при отказ от член (в срок) — през Stripe
+    nav:{restaurant:false,membership:false,about:false,college:false},   // кои менюта се показват (Админ → Общи); 'app' е премахнат — секцията „Инсталирай приложението“ е на началната
     iban:'', bank:'',                // банков превод за членства (страницата /join показва опцията само ако има IBAN)
     parking:_b('','' ), access:_b('',''),
     maps_embed:'',                   // адрес от Google Maps → Share → Embed a map → само src="…"
@@ -81,7 +82,7 @@ window.PUB_DEFAULTS={
     membership:{title:_b('Членство','Membership'),body:_b('Клубът е по покана. Членовете получават приоритет за резервации, покани за затворени формати и преференции в ресторанта.','The club is by invitation. Members get priority reservations, invitations to closed formats and restaurant benefits.')},
     college:{title:_b('Arcus College','Arcus College'),body:_b('Младите хора са активна част от AC². Учениците на Американски колеж Аркус участват в програмата — на сцената, в галерията и зад кулисите.','Young people are an active part of AC². Students of the American College Arcus take part in the programme — on stage, in the gallery and behind the scenes.'),images:[],url:''},
     newsletter:{title:_b('Нюзлетър','Newsletter'),body:_b('Програмата за месеца, тематичните вечери и новините — веднъж месечно, без спам.','The monthly programme, themed dinners and news — once a month, no spam.')},
-    show:{restaurant:true,app:true,membership:true,college:true,newsletter:true}
+    show:{restaurant:false,app:false,membership:false,college:false,newsletter:true}   // скрити до старта (Админ → Начало → „Показвай секция …“)
   },
   program:{intro:_b('Всички предстоящи събития на AC². Изберете формат, за да филтрирате.','All upcoming events at AC². Pick a format to filter.')},
   restaurant:{
