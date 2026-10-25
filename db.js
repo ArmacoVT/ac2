@@ -307,7 +307,7 @@ window.PUB_DEFAULTS={
         .select('id,title,format,place,date,end_date,time,ends,capacity,price,image_url,description,tags,pub,archive_only')
         .or('pub->>members_only.is.null,pub->>members_only.neq.true')
         .or('archive_only.is.null,archive_only.eq.false')
-        .order('date', { ascending: true });
+        .order('date', { ascending: true }).order('time', { ascending: true, nullsFirst: true });
       return (data || []).map(e => ({ id: e.id, title: e.title, format: fmtId(e.format), place: placeName(e.place) || '',
         date: e.date || '', end_date: e.end_date || '', time: e.time || '', ends: e.ends || '',
         capacity: e.capacity || 0, price: e.price || 0, image_url: e.image_url || '',
@@ -437,7 +437,7 @@ window.PUB_DEFAULTS={
     },
     async listEvents() {
       if (!LIVE) return seedDemo();
-      const { data, error } = await sb.from('events').select('*').order('date', { ascending: true });
+      const { data, error } = await sb.from('events').select('*').order('date', { ascending: true }).order('time', { ascending: true, nullsFirst: true });
       authErr(error);
       return (data || []).map(e => ({ id: e.id, title: e.title, format: fmtId(e.format), place: placeName(e.place),
         date: e.date, end_date: e.end_date || '', time: e.time, ends: e.ends || '', capacity: e.capacity,

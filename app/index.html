@@ -695,6 +695,7 @@ const euDate=iso=>iso?iso.split('-').reverse().join('.'):'';
 const canAccess=ev=>(isStaffView()&&viewAs==='all')||ev.aud==='all'||(Array.isArray(ev.aud)&&ev.aud.includes(curMembership()));
 function fmtDay(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{day:'numeric',month:'long'});}
 function fmtPrice(n){n=Number(n)||0;const s=(n%1===0)?String(n):n.toFixed(2);return (lang==='bg'?s.replace('.',',')+' €':s+' €');}
+const evKey=e=>(e.date||'9999')+'T'+((e.time||'00:00').slice(0,5));
 function evMeta(e){const ds=e.end_date&&e.end_date!==e.date?(fmtDay(e.date)+' – '+fmtDay(e.end_date)):fmtDay(e.date);const t=e.time?(e.time+(e.ends?('–'+e.ends):'')):'';return [ds,t,placeT(e.place)].filter(Boolean).join(' · ');}
 // събитие, което приключва до 22:30 → предлагаме маса в ресторанта (AC² Table)
 function tableCutoff(){const v=PUB&&PUB.general&&PUB.general.table_cutoff;return (v&&/^\d{1,2}:\d{2}$/.test(String(v).trim()))?String(v).trim().padStart(5,'0'):'22:30';}
@@ -946,9 +947,9 @@ function home(){
   }).join('');
   // „За теб" — предстоящи събития в любимите формати
   const favs=(user&&user.fav_formats)||[];
-  const forYou=favs.length?EVENTS.filter(e=>favs.includes(e.format)&&canAccess(e)&&!e.archive_only&&!isPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1)):[];
+  const forYou=favs.length?EVENTS.filter(e=>favs.includes(e.format)&&canAccess(e)&&!e.archive_only&&!isPast(e)).sort((a,b)=>(evKey(a)<evKey(b)?-1:1)):[];
   const forYouHtml=forYou.length?`<div class="sec-title">${tr('forYou')}</div><div class="sec-sub">${tr('forYouSub')}</div>${forYou.slice(0,4).map(eventCard).join('')}`:'';
-  const upcoming=EVENTS.filter(e=>canAccess(e)&&!e.archive_only&&!isPast(e)&&e.date).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1)).slice(0,5);
+  const upcoming=EVENTS.filter(e=>canAccess(e)&&!e.archive_only&&!isPast(e)&&e.date).sort((a,b)=>(evKey(a)<evKey(b)?-1:1)).slice(0,5);
   const upcomingHtml=upcoming.length?`<div class="sec-title">${lang==='bg'?'Предстоящи':'Upcoming'}</div><div class="upbox"><div class="uptl">${upcoming.map(upRow).join('')}</div></div>`:'';
   return topbar('')+`
     <div class="hero"><img class="ac2" src="${AC2}" alt="AC²"/>
@@ -1029,8 +1030,8 @@ function bookOpenISO(e){if(!user||!e.booking_windows)return '';return e.booking_
 function canBookNow(e){const d=bookOpenISO(e);return !d||d<=todayISO();}
 // разделяне на предстоящи/изминали + сгъваема секция за изминалите
 function eventsHtml(list,emptyMsg){
-  const up=list.filter(e=>!isPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1));
-  const past=list.filter(e=>isPast(e)&&pastVisible(e)).sort((a,b)=>(a.date<b.date?1:-1));
+  const up=list.filter(e=>!isPast(e)).sort((a,b)=>(evKey(a)<evKey(b)?-1:1));
+  const past=list.filter(e=>isPast(e)&&pastVisible(e)).sort((a,b)=>(evKey(a)<evKey(b)?1:-1));
   let h=up.length?up.map(eventCard).join(''):emptyState(EICON.cal,emptyMsg,lang==='bg'?'Очаквай скоро нови събития в програмата.':'New events will appear here soon.');
   if(past.length){
     h+=`<button class="btn btn-ghost" style="margin-top:10px;" onclick="togglePastEv(this)">${tr('pastEvents')} (${past.length}) ▾</button>
@@ -1497,7 +1498,7 @@ function recCard(e){
     ${inner}</div>`;
 }
 function archiveListHtml(){
-  const recs=EVENTS.filter(e=>canAccess(e)&&hasRecording(e)).sort((a,b)=>((a.date||'')<(b.date||'')?1:-1));
+  const recs=EVENTS.filter(e=>canAccess(e)&&hasRecording(e)).sort((a,b)=>(evKey(a)<evKey(b)?1:-1));
   return recs.map(recCard).join('');
 }
 function archiveView(){
