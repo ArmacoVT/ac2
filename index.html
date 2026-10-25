@@ -533,7 +533,7 @@ const evTitle=e=>(lang==='en'&&e.pub&&e.pub.title_en)?e.pub.title_en:e.title;
 const evDesc=e=>(lang==='en'&&e.pub&&e.pub.desc_en)?e.pub.desc_en:(e.description||'');
 // бутонът за билет/резервация: външна система → линк; гости разрешени → формата на сайта; иначе → приложението (членове)
 // залите са записани на български в базата → показваме превод на EN
-const PLACE_EN={'Ресторант':'Restaurant','Камерна зала':'Chamber hall','Галерия':'Gallery','Private room':'Private room','Онлайн':'Online','Изложбено фоайе':'Gallery','VIP зала':'Private room'};
+const PLACE_EN={'Ресторант':'Restaurant','Камерна зала':'Event Hall','Галерия':'Gallery','Private room':'Private room','Онлайн':'Online','Изложбено фоайе':'Gallery','VIP зала':'Private room'};
 const placeT=p=>{ if(!p)return ''; const s=String(p).trim(); return lang==='en'?(PLACE_EN[s]||s):s; };
 const evEntry=e=>(e.pub&&e.pub.entry)||'ticket';   // ticket | rsvp | free
 function evAction(e){
@@ -1009,7 +1009,7 @@ function dateSelects(){
 }
 function enquiryForm(){
   const sel=(n,opts)=>`<select name="${n}" class="sel">${opts}</select>`;
-  const plBg=['Ресторант','Камерна зала','Галерия','Private room'], plEn=['Restaurant','Chamber hall','Gallery','Private room'];
+  const plBg=['Ресторант','Камерна зала','Галерия','Private room'], plEn=['Restaurant','Event Hall','Gallery','Private room'];
   const places=lang==='bg'?plBg:plEn;
   return `<form class="form" onsubmit="submitEnquiry(this);return false;">
     <div class="r2"><div><label>${t('format')}</label>${sel('format',FORMATS.map(f=>`<option value="${f.id}" ${f.id==='table'?'selected':''}>${f.t}</option>`).join(''))}</div>
