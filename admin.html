@@ -633,7 +633,7 @@ function formView(){
     </div>
     <p class="muted" style="margin:2px 0 0;font-size:12px;">Присъствие включва и онлайн + архива; онлайн включва архива. Неотметнато ниво = не се предлага. 0 = безплатно. Цената за архива се задава в таб „Архив".</p>
     <label>Постер / снимка на събитието (по желание)</label><div class="muted" style="font-size:12px;margin:-2px 0 4px;">Показва се <b>цяла</b> в рамка 3:2 върху размазан фон — нищо не се реже, еднакво на всички устройства. За пейзажни снимки може да изберете изрязване.</div>
-    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:0 0 6px;"><input type="checkbox" id="f_pub_fit" ${(e&&e.pub&&e.pub.fit==='cover')?'checked':''} style="width:16px;height:16px;margin:0;"/> Изрежи снимката до 3:2 (запълва рамката; подходящо за пейзажни снимки)</label>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:0 0 6px;"><input type="checkbox" id="f_pub_fit" ${(e&&e.pub&&e.pub.fit==='cover')?'checked':''} style="width:16px;height:16px;margin:0;"/> Винаги изрязвай до 3:2 (авто: хоризонталните се изрязват, вертикалните се показват цели)</label>
     ${e&&e.image_url?`<div style="margin-bottom:8px;"><img src="${esc(e.image_url)}" style="width:100%;max-width:360px;aspect-ratio:3/2;object-fit:cover;border-radius:10px;display:block;"/><div><a href="#" onclick="clearMedia('img');return false;" style="color:#82303d;font-size:12px;">Премахни снимката</a></div></div>`:''}
     <input id="f_img" type="file" accept="image/*"/>
     <label>Видео на събитието (по желание — качи файл)</label>

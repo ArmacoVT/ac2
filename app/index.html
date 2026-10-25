@@ -1111,7 +1111,9 @@ function openImg(u){
   o.innerHTML=`<img src="${u}" style="max-width:100%;max-height:100%;border-radius:10px;object-fit:contain;"/>`;
 }
 // постер в рамка 3:2 (цял, с размазан фон) или изрязан (pub.fit==='cover')
-function posterHtml(e,extra){ const u=esc(e.image_url); const cover=e.pub&&e.pub.fit==='cover'; return `<div class="pframe${cover?' fit-cover':''}" ${extra||''}><div class="bg" style="background-image:url('${u}')"></div><img src="${u}" alt="" loading="lazy"/></div>`; }
+const _imgAR={}; try{Object.assign(_imgAR,JSON.parse(localStorage.getItem('ac2_imgar')||'{}'));}catch(e){}
+function imgMeasured(img){ try{ if(img.naturalWidth&&img.naturalHeight&&_imgAR[img.src]===undefined){ _imgAR[img.src]=img.naturalWidth/img.naturalHeight; localStorage.setItem('ac2_imgar',JSON.stringify(_imgAR)); const f=img.closest('.pframe'); if(f&&_imgAR[img.src]>=1.2)f.classList.add('fit-cover'); } }catch(e){} }
+function posterHtml(e,extra){ const u=esc(e.image_url); const ar=_imgAR[e.image_url]; const cover=(e.pub&&e.pub.fit==='cover')||(ar!==undefined&&ar>=1.2); return `<div class="pframe${cover?' fit-cover':''}" ${extra||''}><div class="bg" style="background-image:url('${u}')"></div><img src="${u}" alt="" loading="lazy" onload="imgMeasured(this)"/></div>`; }
 function toggleDesc(id,btn){
   const d=document.getElementById('ed_'+id); if(!d)return;
   const open=d.style.maxHeight==='none'||d.style.maxHeight==='';

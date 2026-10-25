@@ -217,6 +217,13 @@
   .ev:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(0,0,0,.12);}
   .ev .pic{aspect-ratio:3/2;background:var(--dark2) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--gilt);}
   .ev .pic.fit{position:relative;overflow:hidden;background:#1c1c1b;} .ev .pic.fit .bg{position:absolute;inset:-6%;background:center/cover no-repeat;filter:blur(18px) brightness(.75);transform:scale(1.1);} .ev .pic.fit img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;}
+  /* снимка на събитието: от край до край, ЦЯЛА (contain) върху размазано копие; текстът е под нея */
+  .evhero.full{aspect-ratio:auto;max-height:none;display:block;height:min(70vh,640px);min-height:320px;}
+  @media(max-width:640px){.evhero.full{height:auto;aspect-ratio:3/2;min-height:0;}}
+  .evhero.full .pbg{position:absolute;inset:-6%;background:center/cover no-repeat;filter:blur(24px) brightness(.55);transform:scale(1.1);}
+  .evhero.full .pimg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;cursor:zoom-in;}
+  .evhead{background:var(--dark);color:var(--ondark);} .evhead .wrap{padding:26px 0 30px;} .evhead h1{color:#ebebd6;font-size:clamp(28px,4vw,50px);max-width:900px;margin:0;}
+  .evhead .meta{display:flex;gap:18px;flex-wrap:wrap;color:var(--ondark-mid);font-size:14px;margin-top:12px;letter-spacing:.3px;} .evhead .cat{display:inline-block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gilt);border:1px solid rgba(191,192,194,.5);border-radius:4px;padding:4px 8px;margin-bottom:12px;}
   .evhero.fit .pic{background:none;} .evhero.fit .pbg{position:absolute;inset:-6%;background:center/cover no-repeat;filter:blur(22px) brightness(.6);transform:scale(1.1);} .evhero.fit .pimg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;cursor:zoom-in;}
   .ev .pic .lg{width:30%;opacity:.9;}
   .ev .bd{padding:16px 18px 18px;display:flex;flex-direction:column;gap:6px;flex:1;}
@@ -537,7 +544,7 @@ function evAction(e){
 }
 function evCard(e,dark){
   const a=evAction(e);
-  const pic=e.image_url?((e.pub&&e.pub.fit==='cover')?`<div class="pic" style="background-image:url('${esc(e.image_url)}')"></div>`:`<div class="pic fit"><div class="bg" style="background-image:url('${esc(e.image_url)}')"></div><img src="${esc(e.image_url)}" alt="" loading="lazy"/></div>`):`<div class="pic"><span class="lg">${LOGO_SVG}</span></div>`;
+  const pic=e.image_url?(imgFit(e)==='cover'?`<div class="pic" style="background-image:url('${esc(e.image_url)}')"></div>`:`<div class="pic fit"><div class="bg" style="background-image:url('${esc(e.image_url)}')"></div><img src="${esc(e.image_url)}" alt="" loading="lazy" onload="imgMeasured(this,'${esc(e.id)}')"/></div>`):`<div class="pic"><span class="lg">${LOGO_SVG}</span></div>`;
   return `<div class="ev">
     <a href="#/event/${esc(e.id)}" style="text-decoration:none;color:inherit;">${pic}</a>
     <div class="bd">
@@ -637,6 +644,12 @@ function footer(){
 // ============================================================
 const ph=(cls)=>`<div class="${cls||'ph'}"><span class="lg">${LOGO_SVG}</span></div>`;
 const picOr=(url,cls,alt)=>url?`<img src="${esc(url)}" alt="${esc(alt||'')}" loading="lazy" class="${cls||''}"/>`:ph('ph');
+
+// Снимка на събитие: 'cover' (изрязва до 3:2) за хоризонтални/широки, 'poster' (цяла) за вертикални. pub.fit='cover' принуждава изрязване.
+// Пропорцията се научава при първото зареждане (кеш в localStorage по URL); дотогава се показва цяла.
+const _imgAR={}; try{Object.assign(_imgAR,JSON.parse(localStorage.getItem('ac2_imgar')||'{}'));}catch(e){}
+function imgMeasured(img,id){ try{ if(img.naturalWidth&&img.naturalHeight&&_imgAR[img.src]===undefined){ _imgAR[img.src]=img.naturalWidth/img.naturalHeight; localStorage.setItem('ac2_imgar',JSON.stringify(_imgAR)); if(_imgAR[img.src]>=1.2){ const c=img.closest('.pic.fit'); if(c){c.classList.remove('fit');c.style.backgroundImage="url('"+img.src+"')";c.innerHTML='';} } } }catch(e){} }
+function imgFit(e){ if(!e.image_url)return 'none'; if(e.pub&&e.pub.fit==='cover')return 'cover'; const ar=_imgAR[e.image_url]; if(ar===undefined)return 'poster'; return ar>=1.2?'cover':'poster'; }
 const galleryHtml=(imgs,big)=>imgs.length?`<div class="gal ${big?'big':''}">${imgs.map((u,i)=>`<img src="${esc(u)}" alt="" loading="lazy" onclick="openLb(${JSON.stringify(imgs).replace(/"/g,'&quot;')},${i})"/>`).join('')}</div>`:'';
 // лайтбокс: клик върху снимка → на цял екран, ← → / плъзгане, Esc / ✕
 let LB=null;
@@ -768,11 +781,11 @@ function pageEvent(id,book){
   const g=Array.isArray(p.gallery)?p.gallery.filter(Boolean):[];
   const kv=(k,v)=>v?`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`:'';
   const dirLabel=fmtObj(evFmt(e)).t;
-  const coverFit=p.fit==='cover';
-  return `<div class="evhero${e.image_url&&!coverFit?' fit':''}">${e.image_url?(coverFit?`<div class="pic" style="background-image:url('${esc(e.image_url)}')" onclick="openLb(${JSON.stringify([e.image_url]).replace(/"/g,'&quot;')},0)"></div>`:`<div class="pbg" style="background-image:url('${esc(e.image_url)}')"></div><img class="pimg" src="${esc(e.image_url)}" alt="" onclick="openLb(${JSON.stringify([e.image_url]).replace(/"/g,'&quot;')},0)"/>`):''}<div class="shade" style="pointer-events:none;"></div>
-      <div class="wrap"><span class="cat">${esc(dirLabel)}${(p.category)?' · '+esc(catName(evCat(e))):''}</span><h1>${esc(evTitle(e))}</h1>
-        <div class="meta"><span>${(ex||e.end_date)?'':esc(fmtWD(e.date))+', '}${esc(evWhen(e,true))}${e.ends&&!ex?' – '+esc(fmtTime(e.ends)):''}</span>${e.place?`<span>${esc(e.place)}</span>`:''}<span>${esc(fmtPrice(e))}</span></div></div>
-    </div>
+  const fit=imgFit(e); const lb=JSON.stringify([e.image_url||'']).replace(/"/g,'&quot;');
+  const headTxt=`<span class="cat">${esc(dirLabel)}${(p.category)?' · '+esc(catName(evCat(e))):''}</span><h1>${esc(evTitle(e))}</h1>
+        <div class="meta"><span>${(ex||e.end_date)?'':esc(fmtWD(e.date))+', '}${esc(evWhen(e,true))}${e.ends&&!ex?' – '+esc(fmtTime(e.ends)):''}</span>${e.place?`<span>${esc(e.place)}</span>`:''}<span>${esc(fmtPrice(e))}</span></div>`;
+  return (e.image_url?`<div class="evhero full"><div class="pbg" style="background-image:url('${esc(e.image_url)}')"></div><img class="pimg" src="${esc(e.image_url)}" alt="" onclick="openLb(${lb},0)" onload="imgMeasured(this,'${esc(e.id)}')"/></div><div class="evhead"><div class="wrap">${headTxt}</div></div>`
+    :`<div class="evhero"><div class="shade" style="pointer-events:none;"></div><div class="wrap">${headTxt}</div></div>`)+`
     <div class="wrap"><div class="evbody">
       <div>
         ${past?`<div class="archive-note">${t('archive')}</div>`:''}
