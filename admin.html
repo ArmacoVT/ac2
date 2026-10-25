@@ -2089,6 +2089,13 @@ async function doRenew(){
 
 // ================= ЕКИП И ПРАВА (само админ) =================
 let teamPick='', teamQ='', teamDraft={};
+// търсене без пречертаване на целия екран (иначе курсорът скача в началото)
+function teamFoundHtml(){
+  const q=teamQ.trim().toLowerCase(); const nm=p=>esc(p.full_name||p.username||p.email||'');
+  const found=q?(PEOPLE||[]).filter(p=>!(p.role==='admin'||(p.perms&&p.perms.length))&&((p.full_name||'')+' '+(p.username||'')+' '+(p.email||'')).toLowerCase().includes(q)).slice(0,8):[];
+  return found.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);"><span>${nm(p)} <span class="muted">${esc(p.email||'')}</span></span><button class="btn ghost sm" onclick="teamAdd('${p.id}')">Добави</button></div>`).join('')+(q&&!found.length?'<div class="muted" style="margin-top:6px;">Няма съвпадение.</div>':'');
+}
+function teamFilter(){ const el=document.getElementById('teamFound'); if(el)el.innerHTML=teamFoundHtml(); }
 function teamView(){
   if(role!=='admin')return '<p class="empty">Само администратор.</p>';
   if(PEOPLE===null)return `<h2>Екип</h2><p class="empty">Зареждане…</p>`;
@@ -2120,9 +2127,8 @@ function teamView(){
     ${staff.map(card).join('')}
     <div class="card" style="margin-top:16px;">
       <b>Добави член на клуба към екипа</b>
-      <input placeholder="Търси по име / имейл…" value="${esc(teamQ)}" oninput="teamQ=this.value;render();document.querySelector('#root input[placeholder^=Търси]').focus()" style="margin-top:8px;"/>
-      ${found.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);"><span>${nm(p)} <span class="muted">${esc(p.email||'')}</span></span><button class="btn ghost sm" onclick="teamAdd('${p.id}')">Добави</button></div>`).join('')}
-      ${q&&!found.length?'<div class="muted" style="margin-top:6px;">Няма съвпадение.</div>':''}
+      <input placeholder="Търси по име / имейл…" value="${esc(teamQ)}" oninput="teamQ=this.value;teamFilter()" style="margin-top:8px;"/>
+      <div id="teamFound">${teamFoundHtml()}</div>
     </div>
     <div class="card" style="margin-top:12px;">
       <b>Покани служител по имейл</b> <span class="muted" style="font-size:12px;">(без членство — акаунт само за админ панела)</span>

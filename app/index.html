@@ -672,6 +672,8 @@ const VENUES=[
  {id:'vip',t:{bg:'Private room',en:'Private room'}}
 ];
 const venueLabel=id=>{const v=VENUES.find(x=>x.id===id);return v?tx(v.t):id;};
+// превод на зала, записана на BG в събитието (данни), при EN интерфейс
+const placeT=p=>{ if(!p)return ''; const s=String(p).trim(); if(lang!=='en')return s; const v=VENUES.find(x=>x.t.bg===s); return v?v.t.en:({'Изложбено фоайе':'Gallery','VIP зала':'Private room'}[s]||s); };
 let previewAs=null; // за преглед „как изглежда за дадено членство"
 // ---- Служебен акаунт (екип без членство): само преглед, без резервации; вижда всичко или „като“ дадено ниво ----
 const isStaffView=()=>!!user&&(user.role==='admin'||(Array.isArray(user.perms)&&user.perms.length>0))&&(user.membership||'guest')==='guest';
@@ -693,7 +695,7 @@ const euDate=iso=>iso?iso.split('-').reverse().join('.'):'';
 const canAccess=ev=>(isStaffView()&&viewAs==='all')||ev.aud==='all'||(Array.isArray(ev.aud)&&ev.aud.includes(curMembership()));
 function fmtDay(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{day:'numeric',month:'long'});}
 function fmtPrice(n){n=Number(n)||0;const s=(n%1===0)?String(n):n.toFixed(2);return (lang==='bg'?s.replace('.',',')+' €':s+' €');}
-function evMeta(e){const ds=e.end_date&&e.end_date!==e.date?(fmtDay(e.date)+' – '+fmtDay(e.end_date)):fmtDay(e.date);const t=e.time?(e.time+(e.ends?('–'+e.ends):'')):'';return [ds,t,e.place].filter(Boolean).join(' · ');}
+function evMeta(e){const ds=e.end_date&&e.end_date!==e.date?(fmtDay(e.date)+' – '+fmtDay(e.end_date)):fmtDay(e.date);const t=e.time?(e.time+(e.ends?('–'+e.ends):'')):'';return [ds,t,placeT(e.place)].filter(Boolean).join(' · ');}
 // събитие, което приключва до 22:30 → предлагаме маса в ресторанта (AC² Table)
 function tableCutoff(){const v=PUB&&PUB.general&&PUB.general.table_cutoff;return (v&&/^\d{1,2}:\d{2}$/.test(String(v).trim()))?String(v).trim().padStart(5,'0'):'22:30';}
 function endsEarly(e){
@@ -861,7 +863,7 @@ function upRow(e){
   const MON_BG=['яну','фев','мар','апр','май','юни','юли','авг','сеп','окт','ное','дек'], MON_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const WD_BG=['нд','пн','вт','ср','чт','пт','сб'], WD_EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const dn=dt?dt.getDate():''; const dm=dt?(lang==='bg'?MON_BG:MON_EN)[dt.getMonth()]:''; const wd=dt?(lang==='bg'?WD_BG:WD_EN)[dt.getDay()]:'';
-  const meta=[wd,e.time,e.place,fl].filter(Boolean).join(' · ');
+  const meta=[wd,e.time,placeT(e.place),fl].filter(Boolean).join(' · ');
   return `<div class="uprow" onclick="go('format/${e.format}')">
     <div class="udt"><div class="d">${dn}</div><div class="mo">${esc(dm)}</div></div>
     <span class="upt" style="background:${col}"></span>
