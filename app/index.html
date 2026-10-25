@@ -2967,7 +2967,7 @@ function tabbar(active){
   const an=annUnseenCount();
   const hb=an?`<span class="nb">${an}</span>`:'';
   const live=EVENTS.some(e=>canAccess(e)&&isLiveNow(e))?`<span class="livetab"></span>`:'';
-  const items=[['','home',tr('home'),hb],['events','events',tr('events'),''],['live','live',tr('live'),live],['reserve','reserve',tr('reserve'),''],[user?'profile':'login','profile',user?tr('profile'):tr('signin'),nb]];
+  const items=[['','home',tr('home'),hb],['events','events',tr('events'),''],['reserve','reserve',tr('reserve'),''],['live','live',tr('live'),live],[user?'profile':'login','profile',user?tr('profile'):tr('signin'),nb]];
   document.getElementById('tabbar').innerHTML=items.map(i=>`<a onclick="hap('select');go('${i[0]}')" class="${active===(i[0]||'home')?'active':''}"><span class="ti">${ICN[i[1]]}${i[3]||''}</span>${i[2]}</a>`).join('');
 }
 function renderPath(path,q,parts){
