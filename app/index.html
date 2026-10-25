@@ -126,7 +126,8 @@
   #splash{position:fixed;inset:0;z-index:5000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;
     transition:opacity .5s ease;}
   #splash.gone{opacity:0;pointer-events:none;}
-  #splash video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;background:transparent;clip-path:inset(2px);}
+  #splash video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;background:#EBEBD6;clip-path:inset(2px);}
+  @media (min-aspect-ratio:3/4){#splash video{object-fit:contain;}}
   #splash .sp-ring{width:128px;height:128px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     box-shadow:9px 9px 22px #cfcfbb,-9px -9px 22px #f7f7ee;
     animation:spRing .9s cubic-bezier(.2,.8,.2,1) both;}
@@ -543,7 +544,7 @@
 </head>
 <body>
 <div id="splash">
-  <video id="splashv" autoplay muted playsinline preload="auto" poster="../media/poster.webp"><source src="../media/intro.webm" type="video/webm"/><source src="../media/intro.mp4" type="video/mp4"/></video>
+  <video id="splashv" autoplay muted playsinline preload="auto" poster="../media/poster.webp?v=2"><source src="../media/intro.webm?v=2" type="video/webm"/><source src="../media/intro.mp4?v=2" type="video/mp4"/></video>
 </div>
 <div id="app"></div>
 <div class="toast" id="toast"></div>

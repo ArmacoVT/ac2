@@ -75,7 +75,8 @@
   .intro.out{opacity:0;pointer-events:none;}
   .intro .logoarea{position:relative;flex:1;min-height:0;padding:0;}
   /* видеото е абсолютно в областта — иначе на широк екран „width:100%" го разпъва до естествената му височина и излиза извън екрана */
-  .intro video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;background:transparent;clip-path:inset(2px);}
+  .intro video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;background:#EBEBD6;clip-path:inset(2px);}
+  @media (max-aspect-ratio:3/4){.intro video{object-fit:cover;}}   /* телефон: запълва; десктоп: вписва (фонът е същото бежово) */
   .intro .biglogo{width:min(44vw,460px);filter:drop-shadow(0 10px 40px rgba(0,0,0,.5));animation:introIn 1.1s cubic-bezier(.2,.7,.2,1) both;}
   @keyframes introIn{from{opacity:0;transform:scale(.85) translateY(10px)}to{opacity:1;transform:none}}
   .intro .skip{position:absolute;top:22px;right:26px;background:none;border:1px solid rgba(0,0,0,.35);color:var(--text);border-radius:20px;padding:7px 14px;font-size:12px;letter-spacing:1px;}
@@ -1141,7 +1142,7 @@ function showIntro(){
   if(seen||reduce||!on('general.show_intro')||location.hash.length>2){el.remove();return;}
   el.className='intro';
   // Анимация от дизайнера (скок → плясък → лого), ~5 s; край на видеото или „Пропусни“ → сайтът
-  el.innerHTML=`<button class="skip" onclick="endIntro()">${t('skip')}</button><div class="logoarea"><video id="introv" autoplay muted playsinline preload="auto" poster="media/poster.webp"><source src="media/intro.webm" type="video/webm"/><source src="media/intro.mp4" type="video/mp4"/></video></div>`;
+  el.innerHTML=`<button class="skip" onclick="endIntro()">${t('skip')}</button><div class="logoarea"><video id="introv" autoplay muted playsinline preload="auto" poster="media/poster.webp?v=2"><source src="media/intro.webm?v=2" type="video/webm"/><source src="media/intro.mp4?v=2" type="video/mp4"/></video></div>`;
   try{sessionStorage.setItem('ac2_intro','1');}catch(e){}
   const v=document.getElementById('introv');
   v.addEventListener('ended',()=>setTimeout(endIntro,350));
