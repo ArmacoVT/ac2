@@ -696,6 +696,9 @@ const canAccess=ev=>(isStaffView()&&viewAs==='all')||ev.aud==='all'||(Array.isAr
 function fmtDay(iso){if(!iso)return'';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString(lang==='bg'?'bg-BG':'en-GB',{day:'numeric',month:'long'});}
 function fmtPrice(n){n=Number(n)||0;const s=(n%1===0)?String(n):n.toFixed(2);return (lang==='bg'?s.replace('.',',')+' €':s+' €');}
 const evKey=e=>(e.date||'9999')+'T'+((e.time||'00:00').slice(0,5));
+// всички формати на събитието: основният + допълнителните (pub.formats)
+const evFmts=e=>[e.format].concat(e.pub&&Array.isArray(e.pub.formats)?e.pub.formats:[]).filter((f,i,a)=>f&&a.indexOf(f)===i);
+const evFmtLabel=e=>evFmts(e).map(id=>{const f=FORMATS.find(x=>x.id===id);return f?f.t:id;}).join(' · ');
 function evMeta(e){const ds=e.end_date&&e.end_date!==e.date?(fmtDay(e.date)+' – '+fmtDay(e.end_date)):fmtDay(e.date);const t=e.time?(e.time+(e.ends?('–'+e.ends):'')):'';return [ds,t,placeT(e.place)].filter(Boolean).join(' · ');}
 // събитие, което приключва до 22:30 → предлагаме маса в ресторанта (AC² Table)
 function tableCutoff(){const v=PUB&&PUB.general&&PUB.general.table_cutoff;return (v&&/^\d{1,2}:\d{2}$/.test(String(v).trim()))?String(v).trim().padStart(5,'0'):'22:30';}
@@ -935,7 +938,7 @@ function home(){
     theater:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 24 c14 -4 22 2 22 16 c0 14 -8 22 -16 22 c-9 0 -14 -10 -14 -24 c0 -8 2 -12 8 -14 Z"/><path d="M24 38 q3 -3 6 0 M30 50 q-4 4 -9 1"/><path d="M62 24 c-14 -4 -22 2 -22 16 c0 14 8 22 16 22 c9 0 14 -10 14 -24 c0 -8 -2 -12 -8 -14 Z"/><path d="M56 38 q-3 -3 -6 0 M50 52 q4 4 9 1"/></g></svg>`,
     online:`<svg viewBox="0 0 80 80"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="22" y="24" width="36" height="26" rx="4"/><path d="M34 58 h12 M40 50 v8"/></g><path d="M35 31 v12 l10 -6 Z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" opacity=".7"><path d="M16 30 q-6 8 0 16"/><path d="M64 30 q6 8 0 16"/></g></svg>`
   };
-  const fmtN=FORMATS.map(f=>({f,n:EVENTS.filter(e=>e.format===f.id&&canAccess(e)&&!e.archive_only&&!isPast(e)).length}));
+  const fmtN=FORMATS.map(f=>({f,n:EVENTS.filter(e=>evFmts(e).includes(f.id)&&canAccess(e)&&!e.archive_only&&!isPast(e)).length}));
   fmtN.sort((a,b)=>((b.n>0)-(a.n>0))); // активните формати горе (стабилно, пази реда вътре)
   let cards=fmtN.map(({f,n})=>{
     const badge=n?`<div class="evbadge"><span class="evdot" style="background:${f.c}"></span>${n} ${n===1?(lang==='bg'?'събитие':'event'):(lang==='bg'?'събития':'events')}</div>`:'';
@@ -947,7 +950,7 @@ function home(){
   }).join('');
   // „За теб" — предстоящи събития в любимите формати
   const favs=(user&&user.fav_formats)||[];
-  const forYou=favs.length?EVENTS.filter(e=>favs.includes(e.format)&&canAccess(e)&&!e.archive_only&&!isPast(e)).sort((a,b)=>(evKey(a)<evKey(b)?-1:1)):[];
+  const forYou=favs.length?EVENTS.filter(e=>evFmts(e).some(f=>favs.includes(f))&&canAccess(e)&&!e.archive_only&&!isPast(e)).sort((a,b)=>(evKey(a)<evKey(b)?-1:1)):[];
   const forYouHtml=forYou.length?`<div class="sec-title">${tr('forYou')}</div><div class="sec-sub">${tr('forYouSub')}</div>${forYou.slice(0,4).map(eventCard).join('')}`:'';
   const upcoming=EVENTS.filter(e=>canAccess(e)&&!e.archive_only&&!isPast(e)&&e.date).sort((a,b)=>(evKey(a)<evKey(b)?-1:1)).slice(0,5);
   const upcomingHtml=upcoming.length?`<div class="sec-title">${lang==='bg'?'Предстоящи':'Upcoming'}</div><div class="upbox"><div class="uptl">${upcoming.map(upRow).join('')}</div></div>`:'';
@@ -968,7 +971,7 @@ function home(){
 function formatPage(id){
   const f=FORMATS.find(x=>x.id===id); if(!f)return home();
   let bul=tx(f.b).map(b=>`<div class="bul"><span class="d">◆</span><span class="x">${b}</span></div>`).join('');
-  const fevents=EVENTS.filter(e=>e.format===f.id&&canAccess(e)&&!e.archive_only);
+  const fevents=EVENTS.filter(e=>evFmts(e).includes(f.id)&&canAccess(e)&&!e.archive_only);
   const prog=(!dataReady&&!EVENTS.length)?skel(3):eventsHtml(fevents,lang==='bg'?'Все още няма обявени събития.':'No events announced yet.');
   return topbar(f.t)+`<div class="page">
     <div class="fbanner" style="border-color:${f.c}33"><img src="../illustrations/fmt-${f.id}.svg?v=7" alt=""/><h2 style="color:${f.c}">${f.t}</h2></div>
@@ -1077,7 +1080,7 @@ function eventCard(e,i){
   const longDesc=(e.description||'').length>140;
   const desc=e.description?`<div id="ed_${e.id}" style="margin-top:7px;color:var(--text);font-size:13px;line-height:1.5;${longDesc?'max-height:62px;overflow:hidden;':''}">${esc(e.description)}</div>`:'';
   const more=`<div style="margin-top:6px;color:var(--gold);font-size:12px;font-weight:600;">${lang==='bg'?'Виж събитието ›':'View event ›'}</div>`;
-  return `<div class="ev evtap" style="${delay}" onclick="go('event/${e.id}')">${media}<div class="t">${e.format}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>${desc}${more}${tagPills(e.tags)}${priceTag}${seatTag}${vid}
+  return `<div class="ev evtap" style="${delay}" onclick="go('event/${e.id}')">${media}<div class="t">${esc(evFmtLabel(e))}</div><h3>${esc(e.title)}</h3><div class="m">${evMeta(e)}</div>${desc}${more}${tagPills(e.tags)}${priceTag}${seatTag}${vid}
     <div class="row" onclick="event.stopPropagation()">${fav}${book}${cal}</div>${form}</div>`;
 }
 // ---------- ЕКРАН НА СЪБИТИЕТО (детайли: снимка, пълно описание, участници, галерия) ----------
@@ -1096,7 +1099,7 @@ function eventView(id){
   return topbar(f?f.t:(lang==='bg'?'Събитие':'Event'))+`<div class="page">
     ${e.image_url?posterHtml(e,`onclick="openImg('${esc(e.image_url)}')" style="border-radius:14px;cursor:zoom-in;"`):''}
     <div class="ev" style="margin-top:12px;">
-      <div class="t">${f?f.t:e.format}${past?' · '+T('минало','past'):''}</div>
+      <div class="t">${esc(evFmtLabel(e))}${past?' · '+T('минало','past'):''}</div>
       <h3 style="font-size:22px;line-height:1.2;">${esc((lang==='en'&&p.title_en)?p.title_en:e.title)}</h3>
       <div class="m">${evMeta(e)}</div>
       ${e.price>0?`<div style="margin-top:6px;color:var(--gold);font-weight:600;font-size:13px;">${T('Билет','Ticket')}: ${fmtPrice(e.price)}</div>`:(e.price===0?`<div style="margin-top:6px;color:#507044;font-size:13px;">${T('Безплатно','Free')}</div>`:'')}

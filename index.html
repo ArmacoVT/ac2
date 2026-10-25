@@ -521,6 +521,9 @@ const FORMATS=[
   {id:'community',t:'AC² Arcus Community',c:'#5f6064'},{id:'online',t:'AC² Online',c:'#652430'}];
 const FMT_ALIAS={cinema:'culture',music:'culture',theater:'culture'};
 const evFmt=e=>FMT_ALIAS[e.format]||e.format||'culture';
+// всички формати на събитието: основният + допълнителните (pub.formats)
+const evFmts=e=>[evFmt(e)].concat((e.pub&&Array.isArray(e.pub.formats)?e.pub.formats:[]).map(f=>FMT_ALIAS[f]||f)).filter((f,i,a)=>a.indexOf(f)===i);
+
 const fmtObj=id=>FORMATS.find(f=>f.id===id)||FORMATS[0];
 const FMT_CAT={table:'dinner',conversation:'discussion'};
 const evCat=e=>(e.pub&&e.pub.category)||FMT_CAT[evFmt(e)]||'other';
@@ -553,7 +556,7 @@ function evCard(e,dark){
   return `<div class="ev">
     <a href="#/event/${esc(e.id)}" style="text-decoration:none;color:inherit;">${pic}</a>
     <div class="bd">
-      <span class="cat" style="color:${fmtObj(evFmt(e)).c};border-color:${fmtObj(evFmt(e)).c}66">${esc(fmtObj(evFmt(e)).t)}${(e.pub&&e.pub.category)?' · '+esc(catName(evCat(e))):''}</span>
+      <span class="cat" style="color:${fmtObj(evFmt(e)).c};border-color:${fmtObj(evFmt(e)).c}66">${esc(evFmts(e).map(f=>fmtObj(f).t).join(' · '))}${(e.pub&&e.pub.category)?' · '+esc(catName(evCat(e))):''}</span>
       <div class="when">${esc(evWhen(e,true))}${e.place?' · '+esc(placeT(e.place)):''}</div>
       <h3><a href="#/event/${esc(e.id)}" style="text-decoration:none;color:inherit;">${esc(evTitle(e))}</a></h3>
       ${evDesc(e)?`<div class="desc">${esc(evDesc(e))}</div>`:''}
@@ -564,7 +567,7 @@ function evCard(e,dark){
 // „текущата изложба остава видима през целия период": изложба = упcoming докато end_date не мине
 const evKey=e=>(e.date||'9999')+'T'+((e.time||'00:00').slice(0,5));
 function upcomingEvents(fmt){
-  return (EVENTS||[]).filter(e=>isUpcoming(e)&&(!fmt||evFmt(e)===fmt))
+  return (EVENTS||[]).filter(e=>isUpcoming(e)&&(!fmt||evFmts(e).includes(fmt)))
     .sort((a,b)=>{ // текущи изложби първи; после по дата
       const ax=evCat(a)==='exhibition'&&a.date<=todayIso(), bx=evCat(b)==='exhibition'&&b.date<=todayIso();
       if(ax!==bx)return ax?-1:1; return evKey(a)<evKey(b)?-1:1; });
@@ -786,7 +789,7 @@ function pageEvent(id,book){
   const p=e.pub||{}; const a=evAction(e); const past=isPast(e); const ex=evCat(e)==='exhibition';
   const g=Array.isArray(p.gallery)?p.gallery.filter(Boolean):[];
   const kv=(k,v)=>v?`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`:'';
-  const dirLabel=fmtObj(evFmt(e)).t;
+  const dirLabel=evFmts(e).map(f=>fmtObj(f).t).join(' · ');
   const fit=imgFit(e); const lb=JSON.stringify([e.image_url||'']).replace(/"/g,'&quot;');
   const headTxt=`<span class="cat">${esc(dirLabel)}${(p.category)?' · '+esc(catName(evCat(e))):''}</span><h1>${esc(evTitle(e))}</h1>
         <div class="meta"><span>${(ex||e.end_date)?'':esc(fmtWD(e.date))+', '}${esc(evWhen(e,true))}${e.ends&&!ex?' – '+esc(fmtTime(e.ends)):''}</span>${e.place?`<span>${esc(placeT(e.place))}</span>`:''}<span>${esc(fmtPrice(e))}</span></div>`;

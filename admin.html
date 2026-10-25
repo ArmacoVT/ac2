@@ -609,8 +609,10 @@ function formView(){
         <div style="display:flex;flex-wrap:wrap;gap:10px;">${EVTAGS.filter(t=>t.g===g).map(t=>`<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" id="f_tag_${t.id}" data-tag="${t.id}" ${(e&&Array.isArray(e.tags)&&e.tags.includes(t.id))?'checked':''} style="width:auto;"/> ${t.t}</label>`).join('')}</div>
       </div>`).join('')}
     </div>
-    <div class="row2" style="margin-top:10px;"><div><label>Формат</label><select id="f_format">${fmtOpts}</select></div>
+    <div class="row2" style="margin-top:10px;"><div><label>Формат (основен)</label><select id="f_format">${fmtOpts}</select></div>
       <div><label>Място / зала</label><select id="f_place">${venOpts}</select></div></div>
+    <label style="margin-top:8px;">Допълнителни формати (събитието се показва и в тях)</label>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;" id="f_formats">${FORMATS.map(f=>`<label style="display:flex;gap:6px;align-items:center;"><input type="checkbox" data-fmt="${f}" ${(e&&e.pub&&Array.isArray(e.pub.formats)&&e.pub.formats.includes(f))?'checked':''} style="width:16px;height:16px;margin:0;"/> ${FMT_LABEL[f]||f}</label>`).join('')}</div>
     <div class="row2"><div><label>Начална дата</label><input id="f_date" readonly placeholder="дд.мм.гггг" value="${e&&e.date?isoToBg(e.date):''}" data-iso="${esc(e?(e.date||''):'')}" onclick="openCal('f_date')" style="cursor:pointer;"/></div>
       <div><label>Крайна дата (по желание)</label><input id="f_end_date" readonly placeholder="дд.мм.гггг" value="${e&&e.end_date?isoToBg(e.end_date):''}" data-iso="${esc(e?(e.end_date||''):'')}" onclick="openCal('f_end_date')" style="cursor:pointer;"/></div></div>
     <div class="row2"><div><label>Начало (час)</label>${timePickerHTML('f_time',e?e.time:'')}</div>
@@ -1763,13 +1765,14 @@ function grabPub(){
   const mo=document.getElementById('f_pub_members_only'), gf=document.getElementById('f_pub_gfrom');
   if(!mo)return null;
   const ch=g('f_cancel_h');
-  return {entry:(g('f_pub_entry')||'ticket'),fit:(document.getElementById('f_pub_fit')&&document.getElementById('f_pub_fit').checked)?'cover':'',table_after:(g('f_table_after')||'auto'),members_only:mo.checked,guests:!!draftGuests,guest_from:(draftGuests&&gf)?(gf.dataset.iso||''):'',cancel_hours:(ch===''?null:Math.max(0,parseInt(ch,10)||0)),category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
+  return {formats:[...document.querySelectorAll('#f_formats input[data-fmt]:checked')].map(c=>c.dataset.fmt).filter(f=>f!==g('f_format')),entry:(g('f_pub_entry')||'ticket'),fit:(document.getElementById('f_pub_fit')&&document.getElementById('f_pub_fit').checked)?'cover':'',table_after:(g('f_table_after')||'auto'),members_only:mo.checked,guests:!!draftGuests,guest_from:(draftGuests&&gf)?(gf.dataset.iso||''):'',cancel_hours:(ch===''?null:Math.max(0,parseInt(ch,10)||0)),category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
     long:bi('f_pub_long'),participants:bi('f_pub_part'),curator:bi('f_pub_curator'),authors:bi('f_pub_authors'),visit:bi('f_pub_visit'),ticket_url:g('f_pub_ticket'),gallery:draftPubGal.slice()};
 }
 function putPub(p){
   if(!p)return; const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   const mo=document.getElementById('f_pub_members_only'); if(mo)mo.checked=!!p.members_only;
   const ft=document.getElementById('f_pub_fit'); if(ft)ft.checked=p.fit==='cover';
+  document.querySelectorAll('#f_formats input[data-fmt]').forEach(c=>{c.checked=Array.isArray(p.formats)&&p.formats.includes(c.dataset.fmt);});
   const gf=document.getElementById('f_pub_gfrom'); if(gf){gf.dataset.iso=p.guest_from||'';gf.value=p.guest_from?isoToBg(p.guest_from):'';}
   s('f_pub_cat',p.category);s('f_cancel_h',(p.cancel_hours==null?'':String(p.cancel_hours)));s('f_table_after',p.table_after||'auto');s('f_pub_entry',p.entry||'ticket');s('f_pub_title_en',p.title_en);s('f_pub_desc_en',p.desc_en);s('f_pub_ticket',p.ticket_url);
   ['part','curator','authors','visit','long'].forEach((k,i)=>{const v=p[['participants','curator','authors','visit','long'][i]]||{};s('f_pub_'+k+'_bg',v.bg);s('f_pub_'+k+'_en',v.en);});
