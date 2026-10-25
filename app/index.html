@@ -607,7 +607,7 @@ const T={
 };
 const FORMATS=[
  {id:'culture',t:'AC² Culture',c:'#82303d',img:'../cards/logo-culture.webp',b:{bg:['музика','изложби','литература','кино и прожекции','камерен театър','концерти','срещи с артисти и лектори'],en:['music','exhibitions','literature','film screenings','chamber theatre','concerts','meetings with artists and lecturers']}},
- {id:'table',t:'AC² Food',c:'#507044',img:'../cards/logo-table.webp',b:{bg:['тематични вечери','гост-готвачи','гастрономически събития','брънч','частни резервации'],en:['themed dinners','guest chefs','gastronomic events','brunch','private reservations']}},
+ {id:'table',t:'AC² Table',c:'#507044',img:'../cards/logo-table.webp',b:{bg:['тематични вечери','гост-готвачи','гастрономически събития','брънч','частни резервации'],en:['themed dinners','guest chefs','gastronomic events','brunch','private reservations']}},
  {id:'conversation',t:'AC² Conversation',c:'#000000',img:'../cards/logo-conversation.webp',b:{bg:['разговори с гости','дискусии','образователни теми','професионални срещи','малки формати с подбрана публика'],en:['conversations with guests','discussions','educational topics','professional meetings','small formats with a select audience']}},
  {id:'community',t:'AC² Arcus Community',c:'#5f6064',img:'../cards/logo-community.webp',b:{bg:['семейни поводи','alumni събития','училищно-свързани формати','учениците на колежа','дискретни срещи в по-лична среда'],en:['family occasions','alumni gatherings','school-related formats','college students','discreet meetings in a more personal setting']}},
  {id:'online',t:'AC² Online',c:'#652430',img:'../cards/logo-ac2.webp?v=2',b:{bg:['онлайн излъчвания','разговори на живо','лекции и прожекции','записи за гледане после'],en:['online broadcasts','live talks','lectures and screenings','recordings to watch later']}}
@@ -2461,7 +2461,7 @@ function memberCard(){
     <div class="mc-lvl">${esc(lvl)}</div>
     <div class="mc-foot">
       <div class="mc-info">${until?`<div class="mc-lbl">${lang==='bg'?'Валидна до':'Valid until'}</div><div class="mc-val">${until}</div>`:''}
-        ${disc?`<div class="mc-lbl" style="margin-top:8px;">AC² Food</div><div class="mc-val">−${disc}%</div>`:''}</div>
+        ${disc?`<div class="mc-lbl" style="margin-top:8px;">AC² Table</div><div class="mc-val">−${disc}%</div>`:''}</div>
       <img class="mc-qr" src="${qr}" alt="QR" loading="lazy"/>
     </div></div>`;
 }

@@ -40,4 +40,4 @@ where id = (select id from auth.users where email = 'адрес@пример.bg'
 1. SQL Editor → пусни `supabase/sql/public_site_2.sql` (мести старите формати към Culture, прави user_id в reservations незадължителен, добавя guest_* колони).
 2. Edge Functions → **обнови** `public-forms` (v2: + запитване за резервация + билет за гост през Stripe), `stripe-webhook` (v2: + имейл до госта), `reservation-status` (v4: + гости). Копирай новите файлове от `supabase/functions/*/index.ts`. Провери за маркерите `kind === "ticket"`, `mailGuest`, `guest_email`.
 3. Push. Админ → Събития → за събитие: „Гости могат да резервират/купуват от сайта" + дата „Записване за гости от".
-4. Логата на форматите: за **AC² Food** и **AC² Arcus Community** трябват нови картинки от дизайнера (`cards/logo-food.webp`, `cards/logo-community.webp` с новото име) — засега Food е с лого „table".
+4. Логата на форматите: за **AC² Table** и **AC² Arcus Community** трябват нови картинки от дизайнера (`cards/logo-food.webp`, `cards/logo-community.webp` с новото име) — засега Food е с лого „table".

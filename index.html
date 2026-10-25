@@ -515,9 +515,9 @@ function fmtPrice(e){ if(e.pub&&e.pub.entry==='free')return L('Свободен 
 
 // ---------- Категории / направления ----------
 const CATS={exhibition:['Изложба','Exhibition'],theatre:['Театър','Theatre'],concert:['Концерт','Concert'],dance:['Танц','Dance'],performance:['Пърформанс','Performance'],discussion:['Дискусия','Discussion'],film:['Кино','Film'],dinner:['Тематична вечеря','Themed dinner'],other:['Събитие','Event']};
-// Петте формата на клуба (същите като в приложението). 'table' = AC² Food.
+// Петте формата на клуба (същите като в приложението). 'table' = AC² Table.
 const FORMATS=[
-  {id:'culture',t:'AC² Culture',c:'#82303d'},{id:'table',t:'AC² Food',c:'#507044'},{id:'conversation',t:'AC² Conversation',c:'#000000'},
+  {id:'culture',t:'AC² Culture',c:'#82303d'},{id:'table',t:'AC² Table',c:'#507044'},{id:'conversation',t:'AC² Conversation',c:'#000000'},
   {id:'community',t:'AC² Arcus Community',c:'#5f6064'},{id:'online',t:'AC² Online',c:'#652430'}];
 const FMT_ALIAS={cinema:'culture',music:'culture',theater:'culture'};
 const evFmt=e=>FMT_ALIAS[e.format]||e.format||'culture';
@@ -554,11 +554,11 @@ function evCard(e,dark){
     <a href="#/event/${esc(e.id)}" style="text-decoration:none;color:inherit;">${pic}</a>
     <div class="bd">
       <span class="cat" style="color:${fmtObj(evFmt(e)).c};border-color:${fmtObj(evFmt(e)).c}66">${esc(fmtObj(evFmt(e)).t)}${(e.pub&&e.pub.category)?' · '+esc(catName(evCat(e))):''}</span>
-      <div class="when">${esc(evWhen(e))}${e.place?' · '+esc(placeT(e.place)):''}</div>
+      <div class="when">${esc(evWhen(e,true))}${e.place?' · '+esc(placeT(e.place)):''}</div>
       <h3><a href="#/event/${esc(e.id)}" style="text-decoration:none;color:inherit;">${esc(evTitle(e))}</a></h3>
       ${evDesc(e)?`<div class="desc">${esc(evDesc(e))}</div>`:''}
       <div class="ft"><span class="price">${(isDinner(e)&&!(e.price>0))?'':esc(fmtPrice(e))}</span>
-        <a class="btn sm ${dark?'gilt':'ghost'}" href="${esc(a.href)}" ${a.ext?'target="_blank" rel="noopener"':''} onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a></div>
+        <a class="btn sm ${dark?'gilt':''}" href="${esc(a.href)}" ${a.ext?'target="_blank" rel="noopener"':''} onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a></div>
     </div></div>`;
 }
 // „текущата изложба остава видима през целия период": изложба = упcoming докато end_date не мине

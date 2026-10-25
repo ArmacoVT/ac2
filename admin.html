@@ -98,7 +98,7 @@ const EVTAGS=[
   {id:'set_parking',g:'Обстановка',t:'Паркинг на място'},
   {id:'cat_dinner',g:'Кетъринг',t:'Вечеря включена'},{id:'cat_drinks',g:'Кетъринг',t:'Коктейл / напитки'},{id:'cat_veg',g:'Кетъринг',t:'Веге / веган опции'}
 ];
-const FMT_LABEL={culture:'AC² Culture',table:'AC² Food',conversation:'AC² Conversation',community:'AC² Arcus Community',online:'AC² Online',cinema:'AC² Culture (старо: Cinema)',music:'AC² Culture (старо: Music)',theater:'AC² Culture (старо: Theater)'};
+const FMT_LABEL={culture:'AC² Culture',table:'AC² Table',conversation:'AC² Conversation',community:'AC² Arcus Community',online:'AC² Online',cinema:'AC² Culture (старо: Cinema)',music:'AC² Culture (старо: Music)',theater:'AC² Culture (старо: Theater)'};
 const VENUES=['Ресторант','Камерна зала','Онлайн','Галерия','Private room'];
 const memName=id=>(MEMBERS.find(m=>m.id===id)||{t:id}).t;
 const esc=s=>(''+(s??'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -1450,7 +1450,7 @@ function siteView(){
     ${sBi('Пълно описание — вижда се при „Виж всичко"','memberships.items.'+id+'.desc',3)}
     ${sBi('Ползи — по една на ред, при „Виж всичко"','memberships.items.'+id+'.benefits',5)}
   </div>`;
-  const FMT_IDS=[['culture','AC² Culture'],['table','AC² Food'],['conversation','AC² Conversation'],['community','AC² Arcus Community'],['online','AC² Online']];
+  const FMT_IDS=[['culture','AC² Culture'],['table','AC² Table'],['conversation','AC² Conversation'],['community','AC² Arcus Community'],['online','AC² Online']];
   const fmtBlock=([id,label])=>`<div class="card" style="margin-top:10px;"><b>${label}</b>
     ${sBi('Абзац','offer.items.'+id+'.body',3)}
     ${sImg('Снимка (без снимка се показва логото на формата)','offer.items.'+id+'.image')}
