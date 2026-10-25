@@ -70,7 +70,12 @@
   .memcard .mc-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#9a9a92;}
   .memcard .mc-val{font-size:15px;color:#ebebd6;letter-spacing:1px;}
   .memcard .mc-qr{width:92px;height:92px;border-radius:8px;background:#EBEBD6;padding:6px;}  /* черен QR на светло + бяло поле = четим от всеки скенер */
-  .evposter{width:100%;aspect-ratio:3/2;border-radius:12px;margin-bottom:12px;display:block;object-fit:cover;object-position:center;}   /* 3:2 навсякъде (сайт + приложение) */
+  .evposter{width:100%;aspect-ratio:3/2;border-radius:12px;margin-bottom:12px;display:block;object-fit:cover;object-position:center;}
+  /* постер: рамка 3:2; снимката се показва ЦЯЛА (contain) върху размазано копие — нищо не се реже, еднакво навсякъде. .fit-cover = изрязване до 3:2 */
+  .pframe{position:relative;width:100%;aspect-ratio:3/2;border-radius:12px;overflow:hidden;margin-bottom:12px;background:#1c1c1b;}
+  .pframe .bg{position:absolute;inset:-6%;background:center/cover no-repeat;filter:blur(18px) brightness(.75);transform:scale(1.1);}
+  .pframe img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;}
+  .pframe.fit-cover img{object-fit:cover;} .pframe.fit-cover .bg{display:none;}
   .evvideo{width:100%;border-radius:12px;margin:10px 0 4px;display:block;background:#000;max-height:300px;}
   .sec-sub{color:var(--muted);font-size:13px;padding:0 20px 10px;}
   /* Предстоящи — програма (timeline) във вдълбано поле */
@@ -1058,7 +1063,7 @@ function eventCard(e,i){
       <div class="tablebox" id="tbx_${e.id}"><label>${tr('tableParty')}</label>
         <input id="tbp_${e.id}" type="number" min="1" value="2"/></div></div>`:'';
   const form='';
-  const media=e.image_url?`<img class="evposter" src="${esc(e.image_url)}" alt="" loading="lazy" onload="this.classList.add('imgloaded')" onerror="this.classList.add('imgloaded')"/>`:'';
+  const media=e.image_url?posterHtml(e):'';
   const vid=e.video_url?`<video class="evvideo" src="${esc(e.video_url)}" controls preload="metadata" playsinline onclick="event.stopPropagation()"></video>`:'';
   const cal=(!past&&e.date)?`<button class="chip" onclick="event.stopPropagation();addToCalendar('${e.id}')">${tr('addCal')}</button>`:'';
   const priceTag=e.price>0?`<div style="margin-top:6px;color:var(--gold);font-weight:600;font-size:13px;">${lang==='bg'?'Билет':'Ticket'}: ${fmtPrice(e.price)}</div>`:(e.price===0?`<div style="margin-top:6px;color:#507044;font-size:13px;">${lang==='bg'?'Безплатно':'Free'}</div>`:'');
@@ -1085,7 +1090,7 @@ function eventView(id){
   // бутоните — същите като на картата (билет / календар / любими)
   const rowHtml=(()=>{const d=document.createElement('div');d.innerHTML=eventCard(e,0);const r=d.querySelector('.row');return r?r.innerHTML:'';})();
   return topbar(f?f.t:(lang==='bg'?'Събитие':'Event'))+`<div class="page">
-    ${e.image_url?`<img src="${esc(e.image_url)}" alt="" style="width:100%;aspect-ratio:3/2;border-radius:14px;display:block;object-fit:cover;object-position:center;" onclick="openImg('${esc(e.image_url)}')"/>`:''}
+    ${e.image_url?posterHtml(e,`onclick="openImg('${esc(e.image_url)}')" style="border-radius:14px;cursor:zoom-in;"`):''}
     <div class="ev" style="margin-top:12px;">
       <div class="t">${f?f.t:e.format}${past?' · '+T('минало','past'):''}</div>
       <h3 style="font-size:22px;line-height:1.2;">${esc((lang==='en'&&p.title_en)?p.title_en:e.title)}</h3>
@@ -1105,6 +1110,8 @@ function openImg(u){
   let o=document.getElementById('imgov'); if(!o){o=document.createElement('div');o.id='imgov';o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;';o.onclick=()=>o.remove();document.body.appendChild(o);}
   o.innerHTML=`<img src="${u}" style="max-width:100%;max-height:100%;border-radius:10px;object-fit:contain;"/>`;
 }
+// постер в рамка 3:2 (цял, с размазан фон) или изрязан (pub.fit==='cover')
+function posterHtml(e,extra){ const u=esc(e.image_url); const cover=e.pub&&e.pub.fit==='cover'; return `<div class="pframe${cover?' fit-cover':''}" ${extra||''}><div class="bg" style="background-image:url('${u}')"></div><img src="${u}" alt="" loading="lazy"/></div>`; }
 function toggleDesc(id,btn){
   const d=document.getElementById('ed_'+id); if(!d)return;
   const open=d.style.maxHeight==='none'||d.style.maxHeight==='';

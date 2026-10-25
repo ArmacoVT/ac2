@@ -216,6 +216,8 @@
   .ev{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line-soft);border-radius:18px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .2s,box-shadow .2s;}
   .ev:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(0,0,0,.12);}
   .ev .pic{aspect-ratio:3/2;background:var(--dark2) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--gilt);}
+  .ev .pic.fit{position:relative;overflow:hidden;background:#1c1c1b;} .ev .pic.fit .bg{position:absolute;inset:-6%;background:center/cover no-repeat;filter:blur(18px) brightness(.75);transform:scale(1.1);} .ev .pic.fit img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;}
+  .evhero.fit .pic{background:none;} .evhero.fit .pbg{position:absolute;inset:-6%;background:center/cover no-repeat;filter:blur(22px) brightness(.6);transform:scale(1.1);} .evhero.fit .pimg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;cursor:zoom-in;}
   .ev .pic .lg{width:30%;opacity:.9;}
   .ev .bd{padding:16px 18px 18px;display:flex;flex-direction:column;gap:6px;flex:1;}
   .ev .cat{align-self:flex-start;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);border:1px solid rgba(130,48,61,.45);border-radius:4px;padding:3px 7px;}
@@ -535,7 +537,7 @@ function evAction(e){
 }
 function evCard(e,dark){
   const a=evAction(e);
-  const pic=e.image_url?`<div class="pic" style="background-image:url('${esc(e.image_url)}')"></div>`:`<div class="pic"><span class="lg">${LOGO_SVG}</span></div>`;
+  const pic=e.image_url?((e.pub&&e.pub.fit==='cover')?`<div class="pic" style="background-image:url('${esc(e.image_url)}')"></div>`:`<div class="pic fit"><div class="bg" style="background-image:url('${esc(e.image_url)}')"></div><img src="${esc(e.image_url)}" alt="" loading="lazy"/></div>`):`<div class="pic"><span class="lg">${LOGO_SVG}</span></div>`;
   return `<div class="ev">
     <a href="#/event/${esc(e.id)}" style="text-decoration:none;color:inherit;">${pic}</a>
     <div class="bd">
@@ -766,7 +768,8 @@ function pageEvent(id,book){
   const g=Array.isArray(p.gallery)?p.gallery.filter(Boolean):[];
   const kv=(k,v)=>v?`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`:'';
   const dirLabel=fmtObj(evFmt(e)).t;
-  return `<div class="evhero">${e.image_url?`<div class="pic" style="background-image:url('${esc(e.image_url)}')" onclick="openLb(${JSON.stringify([e.image_url]).replace(/"/g,'&quot;')},0)"></div>`:''}<div class="shade" style="pointer-events:none;"></div>
+  const coverFit=p.fit==='cover';
+  return `<div class="evhero${e.image_url&&!coverFit?' fit':''}">${e.image_url?(coverFit?`<div class="pic" style="background-image:url('${esc(e.image_url)}')" onclick="openLb(${JSON.stringify([e.image_url]).replace(/"/g,'&quot;')},0)"></div>`:`<div class="pbg" style="background-image:url('${esc(e.image_url)}')"></div><img class="pimg" src="${esc(e.image_url)}" alt="" onclick="openLb(${JSON.stringify([e.image_url]).replace(/"/g,'&quot;')},0)"/>`):''}<div class="shade" style="pointer-events:none;"></div>
       <div class="wrap"><span class="cat">${esc(dirLabel)}${(p.category)?' · '+esc(catName(evCat(e))):''}</span><h1>${esc(evTitle(e))}</h1>
         <div class="meta"><span>${(ex||e.end_date)?'':esc(fmtWD(e.date))+', '}${esc(evWhen(e,true))}${e.ends&&!ex?' – '+esc(fmtTime(e.ends)):''}</span>${e.place?`<span>${esc(e.place)}</span>`:''}<span>${esc(fmtPrice(e))}</span></div></div>
     </div>
