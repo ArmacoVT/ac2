@@ -756,9 +756,26 @@ function newsletterSection(){
     </form>
   </div></section>`;
 }
+// Снимките на слайдера: при слаба връзка Safari спира по средата (горе ивица, долу черно) и не опитва пак.
+// Зареждаме ги отделно и при грешка / застой над 12 s презареждаме с нов адрес (до 3 опита).
+function heroImgRetry(pic){
+  const m=/url\(["']?(.+?)["']?\)/.exec(pic.style.backgroundImage||''); if(!m)return;
+  const base=m[1]; let tries=0;
+  const load=()=>{
+    const url=tries?base+(base.indexOf('?')<0?'?':'&')+'r='+tries:base;
+    const im=new Image(); let done=false;
+    const guard=setTimeout(()=>{ if(!done){ done=true; im.src=''; retry(); } },12000);
+    im.onload=()=>{ if(done)return; done=true; clearTimeout(guard); pic.style.backgroundImage=`url('${url}')`; };
+    im.onerror=()=>{ if(done)return; done=true; clearTimeout(guard); retry(); };
+    im.src=url;
+  };
+  const retry=()=>{ if(++tries<=3)setTimeout(load,800*tries); };
+  load();
+}
 function startSlider(){
   stopSlider(); slideIdx=0;
   const s=document.getElementById('slider'); if(!s)return;
+  s.querySelectorAll('.slide .pic').forEach(heroImgRetry);
   const n=s.querySelectorAll('.slide').length; if(n<2)return;
   slideTimer=setInterval(()=>goSlide((slideIdx+1)%n),6500);
 }

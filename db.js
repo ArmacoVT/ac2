@@ -142,6 +142,33 @@ window.PUB_DEFAULTS={
   const CFG = window.ACAC_CONFIG || {};
   const LIVE = !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY &&
     !/PASTE/.test(CFG.SUPABASE_URL) && !/PASTE/.test(CFG.SUPABASE_ANON_KEY));
+  // Снимките се смаляват преди качване: макс. 1800 px по дългата страна, JPEG ~82 %.
+  // 2400 px / 300 KB от телефона на слаба мрежа спираше по средата; 1800 px е достатъчно и за десктоп (hero е до 760 px високо).
+  // GIF (анимация), SVG и видео — без промяна. При грешка (напр. HEIC без поддръжка) — качва се оригиналът.
+  async function shrinkImage(file, maxPx) {
+    maxPx = maxPx || 1800;
+    try {
+      if (!file || !/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type)) return file;
+      const bmp = await createImageBitmap(file);
+      const w = bmp.width, h = bmp.height;
+      const k = Math.min(1, maxPx / Math.max(w, h));
+      if (k === 1 && file.size < 400 * 1024) { bmp.close && bmp.close(); return file; }   // вече е малка
+      const cw = Math.round(w * k), ch = Math.round(h * k);
+      const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      const x = c.getContext('2d'); x.drawImage(bmp, 0, 0, cw, ch); bmp.close && bmp.close();
+      // PNG с прозрачност остава PNG (лога); всичко друго → JPEG
+      const keepPng = file.type === 'image/png' && hasAlpha(x, cw, ch);
+      const type = keepPng ? 'image/png' : 'image/jpeg';
+      const blob = await new Promise(r => c.toBlob(r, type, 0.82));
+      if (!blob || blob.size >= file.size) return file;
+      const name = file.name.replace(/\.[^.]+$/, '') + (keepPng ? '.png' : '.jpg');
+      return new File([blob], name, { type });
+    } catch (e) { return file; }
+  }
+  function hasAlpha(x, w, h) {
+    try { const d = x.getImageData(0, 0, w, h).data; for (let i = 3; i < d.length; i += 4 * 97) if (d[i] < 250) return true; } catch (e) {}
+    return false;
+  }
   let sb = null;
   if (LIVE && window.supabase) {
     sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY,
@@ -275,6 +302,7 @@ window.PUB_DEFAULTS={
     // качване на снимка/видео за събитие в Supabase Storage (bucket: event-media)
     async uploadMedia(file, folder) {
       if (!LIVE) return { error: { message: 'demo' } };
+      file = await shrinkImage(file);
       const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
       const path = (folder ? folder.replace(/\/+$/, '') + '/' : '') + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
       const up = await sb.storage.from('event-media').upload(path, file, { upsert: true, contentType: file.type });
