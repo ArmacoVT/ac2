@@ -1,6 +1,6 @@
 // Service worker — прави приложението инсталируемо и достъпно офлайн (обвивката).
 // Обслужва и публичния сайт (/) и членското приложение (/app/).
-const CACHE = 'acac-v366';
+const CACHE = 'acac-v367';
 const ASSETS = [
   './', './index.html', './landing.html', './t.html', './privacy.html', './delete-account.html', './cards/contour-tall.svg', './cards/contour-wide.svg', './app/index.html', './admin.html', './config.js', './db.js', './legal.js', './brand.js', './rules.html',
   './vendor/supabase.js', './vendor/qrcode.js', './vendor/jsqr.js',
@@ -9,7 +9,6 @@ const ASSETS = [
   './cards/logo-community.webp', './cards/logo-theater.webp',
   './fonts/fonts.css', './fonts/GoogleSans-Regular.woff2', './fonts/GoogleSans-Medium.woff2', './fonts/GoogleSans-Bold.woff2',
   './fonts/PlayfairDisplay-Regular.woff2', './fonts/PlayfairDisplay-Bold.woff2', './fonts/PlayfairDisplay-Italic.woff2', './fonts/PlayfairDisplay-BoldItalic.woff2',
-  './media/intro.mp4?v=2', './media/poster.webp?v=2',
   './manifest.json', './favicon.png', './icon-192.png', './icon-512.png'
 ];
 self.addEventListener('install', e => {
@@ -23,6 +22,8 @@ self.addEventListener('fetch', e => {
   // Данните (Supabase) винаги по мрежата; обвивката — от кеша.
   if (url.hostname.endsWith('supabase.co') || url.hostname.includes('supabase')) return;
   if (url.origin !== location.origin) return;   // външни скриптове (аналитика, карти) — без намеса
+  // Видео/аудио (интрото): Safari тегли на части (Range) — кешът връща целия файл и видеото не тръгва → винаги по мрежата
+  if (url.pathname.indexOf('/media/') !== -1 || e.request.headers.has('range')) return;
   const fallback = () => caches.match(url.pathname.indexOf('/app') === 0 ? './app/index.html' : './index.html');
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request).then(resp => {

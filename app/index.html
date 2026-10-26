@@ -556,7 +556,7 @@
 </head>
 <body>
 <div id="splash">
-  <video id="splashv" autoplay muted playsinline preload="auto" poster="../media/poster.webp?v=2"><source src="../media/intro.webm?v=2" type="video/webm"/><source src="../media/intro.mp4?v=2" type="video/mp4"/></video>
+  <video id="splashv" autoplay muted playsinline preload="auto" style="opacity:0;transition:opacity .25s"><source src="../media/intro.mp4?v=3" type="video/mp4"/></video>
 </div>
 <div id="app"></div>
 <div class="toast" id="toast"></div>
@@ -3248,15 +3248,21 @@ async function refreshProfile(){
 // Скриване на splash след кратка анимация
 (function(){
   function hide(){var s=document.getElementById('splash');if(!s)return;s.classList.add('gone');setTimeout(function(){if(s&&s.parentNode)s.parentNode.removeChild(s);},600);}
-  // Анимацията от дизайнера (~5 s): край на видеото → приложението; докосване → пропускане; ако не тръгне — 1.9 s както преди
+  // Анимацията от дизайнера (~7 s): край на видеото → приложението; докосване → пропускане.
+  // Без постер; видеото се показва чак когато реално тръгне; ако не тръгне до 2.5 s — приложението (без статично лого).
+  // При презареждане от service worker-а (controllerchange) не се пуска втори път.
   var v=document.getElementById('splashv');
-  if(v){
+  var again=false; try{again=sessionStorage.getItem('ac2_splash')==='1';sessionStorage.setItem('ac2_splash','1');}catch(e){}
+  if(v&&!again){
+    var started=false, guard=setTimeout(function(){ if(!started) hide(); },2500);
+    v.addEventListener('playing',function(){ if(started)return; started=true; clearTimeout(guard); v.style.opacity='1';
+      var dur=(isFinite(v.duration)&&v.duration>0)?v.duration:7; setTimeout(hide,Math.min(dur*1000+800,10000)); });
     v.addEventListener('ended',function(){setTimeout(hide,300);});
-    v.addEventListener('error',function(){setTimeout(hide,1900);});
-    var p=v.play&&v.play(); if(p&&p.catch)p.catch(function(){setTimeout(hide,1900);});
+    v.addEventListener('error',hide);
+    v.addEventListener('stalled',function(){ if(!started) hide(); });
+    var p=v.play&&v.play(); if(p&&p.catch)p.catch(hide);
     document.getElementById('splash').addEventListener('click',hide);
-    setTimeout(hide,6500);
-  } else setTimeout(hide,1900);
+  } else hide();
 })();
 // Pull-to-refresh (издърпване отгоре → опресняване)
 (function(){

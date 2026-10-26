@@ -1269,17 +1269,24 @@ function showIntro(){
   const reduce=(()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}})();
   const el=document.getElementById('intro');
   if(seen||reduce||!on('general.show_intro')||location.hash.length>2){el.remove();return;}
+  if(window._introShown){el.remove();return;} window._introShown=true;
   el.className='intro';
-  // Анимация от дизайнера (скок → плясък → лого), ~5 s; край на видеото или „Пропусни“ → сайтът
-  el.innerHTML=`<button class="skip" onclick="endIntro()">${t('skip')}</button><div class="logoarea"><video id="introv" autoplay muted playsinline preload="auto" poster="media/poster.webp?v=2"><source src="media/intro.webm?v=2" type="video/webm"/><source src="media/intro.mp4?v=2" type="video/mp4"/></video></div>`;
+  // Анимация от дизайнера (скок → плясък → лого), ~7 s; край на видеото или „Пропусни“ → сайтът.
+  // Без постер (постерът е логото → изглеждаше като „два пъти“); видеото се показва чак когато реално тръгне,
+  // а ако не тръгне до 2.5 s (бавна връзка, блокиран autoplay) — направо сайтът, без статично лого.
+  el.innerHTML=`<button class="skip" onclick="endIntro()">${t('skip')}</button><div class="logoarea"><video id="introv" autoplay muted playsinline preload="auto" style="opacity:0;transition:opacity .25s"><source src="media/intro.mp4?v=3" type="video/mp4"/></video></div>`;
   try{sessionStorage.setItem('ac2_intro','1');}catch(e){}
   const v=document.getElementById('introv');
+  let started=false, guard=setTimeout(()=>{ if(!started) endIntro(); },2500);
+  v.addEventListener('playing',()=>{ if(started)return; started=true; clearTimeout(guard); v.style.opacity='1';
+    const dur=(isFinite(v.duration)&&v.duration>0)?v.duration:7; setTimeout(endIntro,Math.min(dur*1000+800,10000)); });
   v.addEventListener('ended',()=>setTimeout(endIntro,350));
   v.addEventListener('error',endIntro);
+  v.addEventListener('stalled',()=>{ if(!started) endIntro(); });
   const p=v.play&&v.play(); if(p&&p.catch)p.catch(endIntro);   // ако autoplay е блокиран — направо сайтът
-  setTimeout(endIntro,6500);
+  el.addEventListener('click',endIntro);   // докосване където и да е = пропускане (както в приложението)
 }
-function endIntro(){const el=document.getElementById('intro');if(!el)return;el.classList.add('out');setTimeout(()=>el.remove(),750);}
+function endIntro(){const el=document.getElementById('intro');if(!el||el.classList.contains('out'))return;el.classList.add('out');setTimeout(()=>el.remove(),750);}
 
 // ---------- Captcha (Cloudflare Turnstile) — по един widget на форма ----------
 const _ts={};
