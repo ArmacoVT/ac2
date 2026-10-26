@@ -1282,7 +1282,7 @@ function showIntro(){
     const dur=(isFinite(v.duration)&&v.duration>0)?v.duration:7; setTimeout(endIntro,Math.min(dur*1000+800,10000)); });
   v.addEventListener('ended',()=>setTimeout(endIntro,350));
   v.addEventListener('error',endIntro);
-  v.addEventListener('stalled',()=>{ if(!started) endIntro(); });
+  // (без 'stalled' — Chrome го пуска и при нормално теглене → интрото се затваряше веднага)
   const p=v.play&&v.play(); if(p&&p.catch)p.catch(endIntro);   // ако autoplay е блокиран — направо сайтът
   el.addEventListener('click',endIntro);   // докосване където и да е = пропускане (както в приложението)
 }
