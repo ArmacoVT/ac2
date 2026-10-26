@@ -1384,6 +1384,16 @@ function toast(m){const el=document.getElementById('toast');el.textContent=m;el.
   document.addEventListener('visibilitychange',async()=>{ if(document.visibilityState==='visible'){ try{ EVENTS=await DB.listPublicEvents(); }catch(e){} if(parseRoute().p0===''||parseRoute().p0==='program')render(); } });
 })();
 </script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+<script>if('serviceWorker' in navigator){
+  // регистрация + проверка за нова версия при връщане в таба; при нова версия — еднократно автоматично презареждане
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').then(reg=>{document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')reg.update().catch(()=>{});});}).catch(()=>{}));
+  const _had=!!navigator.serviceWorker.controller; let _swr=false, _swPending=false;   // при първо посещение (без стар worker) не презареждаме
+  // „зает“ = попълва се форма или е отворена страница с плащане/резервация → презареждането чака до следващата страница
+  const _busy=()=>{ if(/^#\/(join|book|event\/)/.test(location.hash))return true;
+    for(const f of document.querySelectorAll('input:not([type=hidden]),textarea')){ if(f.value&&f.value.trim()&&f.type!=='checkbox')return true; } return false; };
+  const _tryReload=()=>{ if(_swr)return; if(_busy()){_swPending=true;return;} _swr=true;location.reload(); };
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(_had)_tryReload();});
+  window.addEventListener('hashchange',()=>{ if(_swPending)setTimeout(_tryReload,50); });
+}</script>
 </body>
 </html>
