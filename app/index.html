@@ -731,7 +731,7 @@ const MEMBERS=[
   bn:{bg:['Достъп до избрани клубни събития','Покани за училищно-свързани събития','Участие в AC² Cinema и AC² Culture','Покани за общностни вечери','Персонализирана Alumni карта'],en:['Access to selected club events','Invitations to school-related events','Participation in AC² Cinema and Culture','Invitations to community evenings','A personalised Alumni card']}},
  {id:'corporate',t:'Corporate Member',seats:4,disc:8,tag:{bg:'Присъствие на партньори',en:'Presence for partners'},
   d:{bg:'Категория за компании и организации, които споделят ценностите на клуба — култура, образование, качество и смислено общуване.',en:'A category for companies and organisations that share the club values.'},
-  bn:{bg:['Членство за компании и организации','Достъп за до 5 представители','Покани за професионални формати','8% членска преференция в AC² Table','Дискретни срещи в уединена зона','Персонализирана Corporate карта'],en:['Membership for companies and organisations','Access for up to 5 representatives','Invitations to professional formats','8% member preference at AC² Table','Discreet meetings in a secluded area','A personalised Corporate card']}}
+  bn:{bg:['Членство за компании и организации','Достъп за до 6 представители','Покани за професионални формати','8% членска преференция в AC² Table','Дискретни срещи в уединена зона','Персонализирана Corporate карта'],en:['Membership for companies and organisations','Access for up to 6 representatives','Invitations to professional formats','8% member preference at AC² Table','Discreet meetings in a secluded area','A personalised Corporate card']}}
 ];
 const AC2='../cards/logo-ac2.webp?v=2';
 // Логото и анимираната лента са в brand.js (общи с публичния сайт).
@@ -1854,15 +1854,15 @@ function companyView(){
   const bg=lang==='bg';
   const t=bg?'Фирмени профили':'Company profiles';
   if(COMPANY===null)return topbar(t)+`<div class="page"><p style="color:var(--muted);">${bg?'Зареждане…':'Loading…'}</p></div>`;
-  const members=COMPANY.members||[],max=COMPANY.max||5;
+  const members=COMPANY.members||[],max=COMPANY.max||6;
   const rows=members.map(m=>`<div class="ev" style="margin-bottom:8px;"><h3 style="font-size:15px;">${esc(m.name||m.email)}${m.owner?` <span style="color:var(--gold);font-size:11px;">(${bg?'основен':'main'})</span>`:''}</h3><div class="m">${esc(m.email)}</div></div>`).join('');
   const canAdd=members.length<max;
   const addBox=canAdd?`<label>${bg?'Имейл на новия профил':'New profile email'}</label><input id="co_email" type="email" autocapitalize="none"/>
       <label>${bg?'Име (по желание)':'Name (optional)'}</label><input id="co_name"/>
       <button class="btn" style="margin-top:12px;" onclick="addCompanyMember()">${bg?'Покани профил':'Invite profile'}</button>`
-    :`<p style="color:var(--muted);font-style:italic;">${bg?'Достигнат е лимитът от 5 профила.':'Reached the limit of 5 profiles.'}</p>`;
+    :`<p style="color:var(--muted);font-style:italic;">${bg?'Достигнат е лимитът от 6 профила.':'Reached the limit of 6 profiles.'}</p>`;
   return topbar(t)+`<div class="page">
-    <p style="color:var(--mid);font-size:14px;margin-bottom:12px;">${bg?'До 5 профила към фирменото членство':'Up to 5 profiles per company membership'} (${members.length}/${max}).</p>
+    <p style="color:var(--mid);font-size:14px;margin-bottom:12px;">${bg?'До 6 профила към фирменото членство':'Up to 6 profiles per company membership'} (${members.length}/${max}).</p>
     ${rows}
     <div class="sec-title" style="padding:18px 0 8px;">${bg?'Добави профил':'Add profile'}</div>
     ${addBox}<div style="height:30px;"></div></div>`;
@@ -2396,7 +2396,7 @@ function profile(){
       <div><h3 style="font-size:15px;">${lang==='bg'?'Предложи член':'Propose a member'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Препоръчай човек или фирма':'Recommend a person or company'}</div></div>
       <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
     ${(active&&user.membership==='corporate')?`<div class="ev" onclick="go('company')" style="margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-      <div><h3 style="font-size:15px;">${lang==='bg'?'Фирмени профили':'Company profiles'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'До 5 профила към членството':'Up to 5 profiles'}</div></div>
+      <div><h3 style="font-size:15px;">${lang==='bg'?'Фирмени профили':'Company profiles'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'До 6 профила към членството':'Up to 6 profiles'}</div></div>
       <span style="color:var(--muted);font-size:20px;">›</span></div>`:''}
     ${DB.live?`<div class="ev" onclick="go('account')" style="margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
       <div><h3 style="font-size:15px;">${lang==='bg'?'Управление на акаунта':'Account settings'}</h3><div class="m" style="margin-top:2px;">${lang==='bg'?'Парола · изтриване на акаунт':'Password · delete account'}</div></div>
@@ -3101,7 +3101,7 @@ async function route(){
   if(!(path==='live'&&isWatchingLive())){renderPath(path,q,parts);window.scrollTo(0,0);}
   // фирмени профили — зареждаме във фон
   if(path==='company'&&user&&user.membership==='corporate'){
-    try{COMPANY=await DB.companyMembers();}catch(e){COMPANY={members:[],max:5};}
+    try{COMPANY=await DB.companyMembers();}catch(e){COMPANY={members:[],max:6};}
     if((location.hash.replace(/^#/,'').split('?')[0])==='company')renderPath(path,q,parts);
   }
   // 2) Във фон опресняваме (паралелно) и пре-рисуваме само ако нещо се е променило
