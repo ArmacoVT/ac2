@@ -1266,18 +1266,19 @@ window.addEventListener('hashchange',()=>{closeMenu();render();});
 // ---------- Интро: кратка анимация с логото преди сайта (веднъж на посещение) ----------
 function showIntro(){
   let seen=false; try{seen=sessionStorage.getItem('ac2_intro')==='1';}catch(e){}
-  const reduce=(()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}})();
+  // Без проверка за prefers-reduced-motion: Windows „Ефекти на анимация“ изкл. я включва и интрото изчезваше за всички с тази настройка.
+  // Видеото е 7 s с „Пропусни“ и докосване = пропускане — достатъчно.
   const el=document.getElementById('intro');
-  if(seen||reduce||!on('general.show_intro')||location.hash.length>2){el.remove();return;}
+  if(seen||!on('general.show_intro')||location.hash.length>2){el.remove();return;}
   if(window._introShown){el.remove();return;} window._introShown=true;
   el.className='intro';
   // Анимация от дизайнера (скок → плясък → лого), ~7 s; край на видеото или „Пропусни“ → сайтът.
   // Без постер (постерът е логото → изглеждаше като „два пъти“); видеото се показва чак когато реално тръгне,
-  // а ако не тръгне до 2.5 s (бавна връзка, блокиран autoplay) — направо сайтът, без статично лого.
+  // а ако не тръгне до 5 s (бавна връзка, блокиран autoplay) — направо сайтът, без статично лого.
   el.innerHTML=`<button class="skip" onclick="endIntro()">${t('skip')}</button><div class="logoarea"><video id="introv" autoplay muted playsinline preload="auto" style="opacity:0;transition:opacity .25s"><source src="media/intro.mp4?v=3" type="video/mp4"/></video></div>`;
   try{sessionStorage.setItem('ac2_intro','1');}catch(e){}
   const v=document.getElementById('introv');
-  let started=false, guard=setTimeout(()=>{ if(!started) endIntro(); },2500);
+  let started=false, guard=setTimeout(()=>{ if(!started) endIntro(); },5000);   // 5 s — при бавна връзка 2.5 s не стигаха
   v.addEventListener('playing',()=>{ if(started)return; started=true; clearTimeout(guard); v.style.opacity='1';
     const dur=(isFinite(v.duration)&&v.duration>0)?v.duration:7; setTimeout(endIntro,Math.min(dur*1000+800,10000)); });
   v.addEventListener('ended',()=>setTimeout(endIntro,350));

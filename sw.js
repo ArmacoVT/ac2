@@ -1,6 +1,6 @@
 // Service worker — прави приложението инсталируемо и достъпно офлайн (обвивката).
 // Обслужва и публичния сайт (/) и членското приложение (/app/).
-const CACHE = 'acac-v369';
+const CACHE = 'acac-v371';
 const ASSETS = [
   './', './index.html', './landing.html', './t.html', './privacy.html', './delete-account.html', './cards/contour-tall.svg', './cards/contour-wide.svg', './app/index.html', './admin.html', './config.js', './db.js', './legal.js', './brand.js', './rules.html',
   './vendor/supabase.js', './vendor/qrcode.js', './vendor/jsqr.js',
@@ -26,6 +26,14 @@ self.addEventListener('fetch', e => {
   // Видео/аудио (интрото): Safari тегли на части (Range) — кешът връща целия файл и видеото не тръгва → винаги по мрежата
   if (url.pathname.indexOf('/media/') !== -1 || e.request.headers.has('range')) return;
   const fallback = () => caches.match(url.pathname.indexOf('/app') === 0 ? './app/index.html' : './index.html');
+  // HTML страниците — първо мрежата (иначе след деплой браузърът показва старата страница до следващото зареждане), кешът само офлайн
+  if (e.request.mode === 'navigate') {
+    e.respondWith(fetch(e.request).then(resp => {
+      if (resp.ok) { const cp = resp.clone(); caches.open(CACHE).then(c => c.put(e.request, cp)); }
+      return resp;
+    }).catch(() => caches.match(e.request).then(r => r || fallback())));
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request).then(resp => {
       if (e.request.method === 'GET' && resp.ok) {
