@@ -1420,7 +1420,18 @@ function toast(m){const el=document.getElementById('toast');el.textContent=m;el.
   try{ await loadAll(); }catch(e){}
   render();
   // при връщане в таба — освежаваме програмата (нови събития се появяват без презареждане)
-  document.addEventListener('visibilitychange',async()=>{ if(document.visibilityState==='visible'){ try{ EVENTS=await DB.listPublicEvents(); }catch(e){} if(parseRoute().p0===''||parseRoute().p0==='program')render(); } });
+  // Съдържанието от админа (текстове, отметки, събития) се тегли наново при връщане в таба и при смяна на страница
+  // (не по-често от веднъж на 20 s), за да се виждат промените без презареждане.
+  let _lastSync=Date.now();
+  async function resync(force){
+    if(!force&&Date.now()-_lastSync<20000)return; _lastSync=Date.now();
+    try{ const before=JSON.stringify([PUB,EVENTS]); await loadAll();
+      // не пречертаваме, ако човек попълва форма или е отворена платежна форма — ще се види на следващата страница
+      const typing=[...document.querySelectorAll('input:not([type=hidden]),textarea')].some(f=>f.value&&f.value.trim()&&f.type!=='checkbox')||!!document.querySelector('#bk_pay iframe');
+      if(JSON.stringify([PUB,EVENTS])!==before&&!typing)render(); }catch(e){}
+  }
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible')resync(true); });
+  window.addEventListener('hashchange',()=>resync(false));
 })();
 </script>
 <script>if('serviceWorker' in navigator){
