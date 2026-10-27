@@ -853,7 +853,7 @@ function pageRestaurant(){
     sections:()=>secs.length?`<div class="wrap">${secs.map((x,k)=>`<section class="sec tight"><div class="two${k%2?' rev':''}">${x.image?`<div><img src="${esc(x.image)}" alt="" loading="lazy"/></div>`:'<div></div>'}<div>${loc(x.title)?`<h2 style="font-size:clamp(26px,3vw,36px);margin-bottom:12px;">${esc(loc(x.title))}</h2>`:''}<div class="body" style="white-space:pre-line;">${esc(loc(x.body))}</div></div></div></section>`).join('')}</div>`:'',
     chef:()=>(chef.name||loc(chef.body)||chef.image)?`<div class="wrap"><section class="sec tight"><div class="two">${picOr(chef.image,'',chef.name)}<div><div class="kicker">${t('chef')}</div><h2 style="font-size:32px;margin-bottom:12px;">${esc(chef.name||'')}</h2><div class="body" style="white-space:pre-line;">${esc(loc(chef.body))}</div></div></div></section></div>`:'',
     dinners:()=>dn.length?`<section class="sec dark"><div class="wrap"><div class="sechead"><div><div class="kicker">${t('restaurant')}</div><h2>${t('dinners')}</h2><div class="lead" style="margin-top:8px;">${esc(pT('restaurant.dinners_intro'))}</div></div><a class="tlink" href="#/restaurant/dinners">${t('all')} →</a></div><div class="grid3">${dn.map(e=>evCard(e,true)).join('')}</div></div></section>`:'',
-    enquiry:()=>`<section class="sec"><div class="wrap"><div id="enquiry" style="background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:26px;"><div class="kicker">${t('restaurant')}</div><h2 style="font-size:30px;margin-bottom:8px;">${t('enquiryTitle')}</h2><p class="hint" style="margin:0 0 18px;">${t('enquiryIntro')}</p>${enquiryForm()}</div></div></section>`
+    enquiry:()=>`<section class="sec"><div class="wrap"><div id="enquiry" style="background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:26px;"><div class="kicker">${t('restaurant')}</div><h2 style="font-size:30px;margin-bottom:18px;">${t('enquiryTitle')}</h2>${enquiryForm()}</div></div></section>`
   };
   const def=['gallery','sections','chef','dinners','enquiry'];
   let order=(pT('restaurant.order')||'').split(',').map(x=>x.trim().toLowerCase()).filter(x=>blocks[x]);
@@ -964,7 +964,7 @@ function bookingBox(e){
       ${unit>0?`<div class="hint">${t('cardHint')}</div>`:''}
     </form>`;
   return `<div class="kv" id="booking" style="background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:22px;margin-top:30px;">
-    <div class="k">${t('bookTitle')}</div><p class="hint" style="margin:0 0 14px;">${t('bookIntro')}</p>${inner}</div>`;
+    <div class="k" style="margin-bottom:14px;">${t('bookTitle')}</div>${inner}</div>`;
 }
 function bkTotal(f){
   const unit=Number(f.dataset.unit)||0, n=parseInt(f.party.value,10)||1; const el=document.getElementById('bk_total');
@@ -1050,7 +1050,7 @@ function enquiryForm(){
     <label class="chk" id="rq_stream" style="display:none;"><input type="checkbox" name="stream"/> <span>${L('Желая и <b>онлайн излъчване</b> на събитието — за публика извън залата; условията се уточняват с екипа.','I would also like the event <b>streamed online</b> — for an audience outside the hall; details agreed with the team.')}</span></label>
     <div class="r2"><div><label>${t('dateLbl')} *</label>${dateSelects()}</div><div><label>${t('timeLbl')}</label>
       <div style="display:flex;gap:6px;align-items:center;">${sel('hh','<option value="">--</option>'+Array.from({length:24},(_,h)=>`<option value="${String(h).padStart(2,'0')}">${String(h).padStart(2,'0')}</option>`).join(''))}<b style="opacity:.5">:</b>${sel('mm',['00','15','30','45'].map(m=>`<option value="${m}">${m}</option>`).join(''))}</div></div></div>
-    <div class="r2"><div><label>${t('people')} *</label><input name="party" type="number" inputmode="numeric" min="1" max="50" value="1"/><div class="hint" style="margin-top:4px;">${L('До 50 души. За по-голямо събитие напишете броя в описанието.','Up to 50 people. For a larger event write the number in the description.')}</div></div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
+    <div class="r2"><div><label>${t('people')} *</label><input name="party" type="number" inputmode="numeric" min="1" max="50" value="1"/></div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
     <div class="r2"><div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div></div>
     <div id="rq_alg"><label>${L('Алергени / хранителни ограничения','Allergens / dietary')} *</label>
       <div class="selrow" id="rq_algsel">${(lang==='bg'?['Нямам алергии','Глутен','Мляко/лактоза','Яйца','Ядки','Фъстъци','Риба','Ракообразни','Соя','Сусам','Целина','Синап','Сулфити']:['No allergies','Gluten','Milk/lactose','Eggs','Tree nuts','Peanuts','Fish','Crustaceans','Soy','Sesame','Celery','Mustard','Sulphites']).map((a,i)=>`<button type="button" class="achip" data-alg="${esc(a)}"${i===0?' data-none="1"':''} onclick="toggleAlgPub(this)">${a}</button>`).join('')}</div></div>

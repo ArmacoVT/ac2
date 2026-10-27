@@ -1903,7 +1903,7 @@ function reserve(q){
     <label>${tr('placeChoose')} *</label><div class="selrow" id="vensel">${vsel}</div>
     <label>${tr('date')} *</label><input id="r_date" readonly placeholder="дд.мм.гггг" data-iso="" onclick="openResCal()" style="cursor:pointer;"/>
     <label>${tr('time')} *</label>${timePicker('r_time','')}
-    <label>${tr('party')} *</label><input id="r_party" type="number" inputmode="numeric" min="1" max="50" value="1"/><div style="color:var(--muted);font-size:12px;margin-top:4px;">${lang==='bg'?'До 50 души. За по-голямо събитие напишете броя в бележката — ще се свържем с вас.':'Up to 50 people. For a larger event write the number in the note — we will contact you.'}</div>
+    <label>${tr('party')} *</label><input id="r_party" type="number" inputmode="numeric" min="1" max="50" value="1"/>
     <label>${tr('contactEmail')} *</label><input id="r_email" type="email" autocapitalize="none" value="${user?esc(user.email||''):''}"/>
     <label>${tr('contactPhone')} *</label><input id="r_phone" type="tel" value="${user?esc(user.phone||''):''}" placeholder="${lang==='bg'?'Въведете телефонен номер':'Enter phone number'}"/>
     <div id="streamwrap" style="display:${preV==='chamber'?'':'none'};margin:8px 0 4px;">
@@ -1987,7 +1987,7 @@ async function sendRes(seats){
   if(!rdate){toast(lang==='bg'?'Изберете дата':'Choose a date');return;}
   if(!rtime){toast(lang==='bg'?'Въведете час':'Enter a time');return;}
   if(!(n>=1)){toast(lang==='bg'?'Въведете брой хора':'Enter the number of people');return;}
-  if(n>50){toast(lang==='bg'?'До 50 души през формата — за по-голямо събитие напишете броя в бележката':'Up to 50 via the form — for a larger event write the number in the note');return;}
+  if(n>50){toast(lang==='bg'?'Моля, въведете до 50 души':'Please enter up to 50 people');return;}
   if(!note){toast(lang==='bg'?'Опишете повода в бележката':'Describe the occasion in the note');return;}
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast(tr('reqEmail'));return;}
   if(!phone){toast(tr('reqPhone'));return;}
