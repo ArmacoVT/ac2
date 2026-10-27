@@ -313,6 +313,8 @@
   .form .achip.on{background:var(--wine);color:var(--beige);border-color:var(--wine);}
   .form input,.form textarea,.nl input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:12px 14px;font:inherit;font-size:15px;color:var(--text);}
   .form input:focus,.form textarea:focus,.nl input:focus{outline:none;border-color:var(--gold);}
+  /* iPhone увеличава страницата при докосване на поле с шрифт под 16px (и остава увеличена) → на телефон 16px */
+  @media(max-width:640px){.form input,.form textarea,.form .sel,.nl input{font-size:16px;}}
   .form .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   @media(max-width:560px){.form .r2{grid-template-columns:1fr;}}
   .form .msg{font-size:14px;min-height:20px;}
@@ -376,6 +378,11 @@
   .legal .body{max-width:820px;}
   .plans{display:flex;flex-direction:column;gap:8px;} .plan{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line-soft);border-radius:12px;background:var(--card);cursor:pointer;} .plan.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;} .plan input{margin-top:3px;} .lbl{display:block;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mid);margin:0 0 6px;}
   .kv{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft);} .kv .k{width:120px;color:var(--mid);font-size:13px;flex:none;} .kv .v{font-size:15px;}
+  /* формата за билети (беше .kv → на телефон се свиваше в дясна колона) */
+  .bookbox{display:block;background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:22px;margin-top:30px;}
+  .bookbox .k{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
+  @media(max-width:640px){.bookbox{padding:18px 16px;} .bookbox #bk_btn{width:100%;}}
+  #bk_pay{scroll-margin-top:96px;}   /* да не се скрие под залепената горна лента при скрол до полето */
   .legaldoc{white-space:normal;} .legaldoc h2{font-family:var(--serif);font-style:italic;font-size:22px;margin:26px 0 8px;} .legaldoc h3{font-size:15px;margin:16px 0 4px;color:var(--gold);} .legaldoc p{margin:0 0 10px;font-size:15px;line-height:1.65;}
 </style>
 </head>
@@ -963,8 +970,8 @@ function bookingBox(e){
       <div><button class="btn" type="button" id="bk_btn" onclick="submitTicket(this.form,'${esc(e.id)}')">${unit>0?t('pay'):(evEntry(e)==='rsvp'?L('Ще дойда','I will attend'):t('reserve'))}</button></div>
       ${unit>0?`<div class="hint">${t('cardHint')}</div>`:''}
     </form>`;
-  return `<div class="kv" id="booking" style="background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:22px;margin-top:30px;">
-    <div class="k" style="margin-bottom:14px;">${t('bookTitle')}</div>${inner}</div>`;
+  return `<div class="bookbox" id="booking">
+    <div class="k">${t('bookTitle')}</div>${inner}</div>`;
 }
 function bkTotal(f){
   const unit=Number(f.dataset.unit)||0, n=parseInt(f.party.value,10)||1; const el=document.getElementById('bk_total');
@@ -1018,6 +1025,8 @@ async function submitTicket(f,eventId){
     // имейлът/името/телефонът са от нашата форма — Stripe не пита пак (и не подменя с запомнен Link имейл)
     const pe=elements.create('payment',{fields:{billingDetails:{name:'never',email:'never',phone:'never'}}}); pe.mount('#bk_pay');
     pe.on('loaderror',ev=>{ setMsg('bk_msg',L('Платежната форма не се зареди','Payment form failed to load')+': '+((ev&&ev.error&&ev.error.message)||'')); });
+    // щом полето за карта е готово — екранът отива до него (иначе остава над него и човек трябва да скролва)
+    pe.on('ready',()=>{ try{ box.scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){} });
     try{sessionStorage.setItem('ac2_pay_event',eventId);}catch(e){}
     const total=(r.data.amount/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv');
     [...f.querySelectorAll('input,select')].forEach(i=>{ if(i.name!=='consent'){i.readOnly=true; if(i.tagName==='SELECT')i.disabled=true;} });
