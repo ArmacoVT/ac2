@@ -1363,7 +1363,9 @@ async function nativePay(id,clientSecret){
       paymentIntentClientSecret:clientSecret,
       merchantDisplayName:'AC² Arcus Club',
       countryCode:cfg.MERCHANT_COUNTRY||'BG', currencyCode:'EUR',
-      enableGooglePay:true, GooglePayIsTesting:/^pk_test_/.test(pk),
+      // GooglePayIsTesting: тестова среда на Google (бутонът се показва и без production access, с тестови карти на Google).
+      // GPAY_TEST_ADMIN в config.js: само за админи, временно — за екранните снимки към заявката за production access. После махни флага.
+      enableGooglePay:true, GooglePayIsTesting:/^pk_test_/.test(pk)||(!!cfg.GPAY_TEST_ADMIN&&!!user&&user.role==='admin'),
       enableApplePay:!!cfg.APPLE_MERCHANT_ID, applePayMerchantId:cfg.APPLE_MERCHANT_ID||'',
       defaultBillingDetails:{name:bname,email:user.email||'',phone:user.phone||''},
       billingDetailsCollectionConfiguration:{email:'never',name:'never',phone:'never',address:'never'},

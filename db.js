@@ -347,11 +347,12 @@ window.PUB_DEFAULTS={
       if (!LIVE) return { error: { message: 'demo' } };
       const { data, error } = await invokeFn('public-forms', { body: Object.assign({ kind }, o || {}) });
       if (error) {
-        let reason = '';
-        try { reason = (await error.context.json()).error || ''; } catch (e) {}
+        let reason = '', extra = {};
+        try { extra = await error.context.json(); reason = extra.error || ''; } catch (e) {}
         if (reason === 'captcha') return { error: { captcha: true } };
         if (reason === 'cooldown') return { error: { cooldown: true } };
-        return { error: { message: reason || error.message } };
+        // допълнителни полета от сървъра (напр. have / left_for_email при лимита по имейл) — минават към формата
+        return { error: Object.assign({}, extra, { message: reason || error.message }) };
       }
       if (data && data.error) return { error: { message: data.error } };
       return { error: null, data };

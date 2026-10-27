@@ -28,5 +28,8 @@ window.ACAC_CONFIG = {
   // Apple Pay в iOS приложението: Merchant ID от developer.apple.com (Identifiers → Merchant IDs).
   APPLE_MERCHANT_ID: "merchant.bg.arcusclub.app",
   // Държава на търговеца за Apple Pay / Google Pay
-  MERCHANT_COUNTRY: "BG"
+  MERCHANT_COUNTRY: "BG",
+  // ВРЕМЕННО: Google Pay в тестова среда на Google само за админи (за екранните снимки към заявката за production access).
+  // Не довършвай плащане в този режим. След одобрението → false.
+  GPAY_TEST_ADMIN: true
 };

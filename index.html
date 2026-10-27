@@ -997,7 +997,17 @@ async function submitTicket(f,eventId){
   const tok=captchaToken('bk_captcha'); if(CFG.TURNSTILE_SITE_KEY&&!tok){setMsg('bk_msg',t('errCaptcha'));return false;}
   const b=document.getElementById('bk_btn'); b.disabled=true; const old=b.textContent; b.textContent=t('sending'); setMsg('bk_msg','');
   const r=await DB.publicForm('ticket',{event_id:eventId,name,email,phone,party,lang,captcha_token:tok});
-  if(r.error){ b.disabled=false;b.textContent=old; resetCaptcha('bk_captcha'); setMsg('bk_msg',r.error.captcha?t('errCaptcha'):(r.error.message||t('errGeneric'))); return false; }
+  if(r.error){
+    b.disabled=false;b.textContent=old; resetCaptcha('bk_captcha');
+    // лимит по имейл (до 4 места общо за събитие, може на части): свиваме избора до оставащите и казваме колко
+    if(typeof r.error.left_for_email==='number'){
+      const left=r.error.left_for_email, have=r.error.have||0;
+      if(left>0){ [...f.party.options].forEach(o=>{o.disabled=parseInt(o.value,10)>left;}); f.party.value=String(Math.min(party,left)); bkTotal(f); }
+      setMsg('bk_msg',lang==='bg'?r.error.message:(left>0?`This e-mail already has ${have} seat${have===1?'':'s'} for this event. You can add up to ${left} more.`:`This e-mail already has ${have} seats for this event — the maximum (4).`));
+      return false;
+    }
+    setMsg('bk_msg',r.error.captcha?t('errCaptcha'):(r.error.message||t('errGeneric'))); return false;
+  }
   if(r.data&&r.data.free){ const ev0=(EVENTS||[]).find(x=>x.id===eventId); const rs=ev0&&evEntry(ev0)==='rsvp'; const tc=r.data.ticket_code||''; f.innerHTML=`<div class="msg ok" style="font-size:16px;">${rs?L('Записахме ви. Билетът с QR код е изпратен на имейла ви.','You are registered. Your QR ticket has been e-mailed to you.'):t('bookFree')}</div>${rs&&tc?`<div style="margin-top:12px;"><a class="btn" href="${(CFG.SITE_URL||'https://ac2.bg/')}t.html#${tc}" target="_blank" rel="noopener">${L('Моят билет (QR код)','My ticket (QR code)')}</a></div>`:''}`; track('reservation_request',{event_id:eventId}); return false; }
   try{
     const Stripe=await loadStripe();
