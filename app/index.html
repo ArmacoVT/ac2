@@ -1371,7 +1371,8 @@ async function nativePay(id,clientSecret){
       billingDetailsCollectionConfiguration:{email:'never',name:'never',phone:'never',address:'never'},
       paymentMethodLayout:'vertical', style:'alwaysLight'
     });
-    const r=await NS.presentPaymentSheet();
+    window._paying=true;   // нативният лист е отворен → без автоматично презареждане при нова версия
+    let r; try{ r=await NS.presentPaymentSheet(); } finally { window._paying=false; }
     const res=r&&r.paymentResult;
     if(res==='paymentSheetCompleted'){ await finishBooking(id,bname); return true; }
     if(res==='paymentSheetCanceled'){ toast(lang==='bg'?'Плащането е отказано':'Payment cancelled'); updateBuy(id); return true; }
@@ -3245,7 +3246,30 @@ async function refreshProfile(){
   }catch(e){}}
 })();
 </script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('../sw.js').catch(()=>{}));let _swr=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(_swr)return;_swr=true;if(navigator.serviceWorker.controller)location.reload();});}</script>
+<script>if('serviceWorker' in navigator){
+  // Регистрация + проверка за нова версия при всяко връщане в приложението (и на 30 мин.).
+  // При нова версия: автоматично презареждане, но САМО когато е безопасно — не по средата на плащане,
+  // попълнена форма (резервация, кандидатура, профил) или отворен скенер на вратата. Иначе изчаква следващия екран.
+  const _had=!!navigator.serviceWorker.controller; let _swr=false,_swPending=false;
+  const _busy=()=>{
+    if(window._paying)return true;                                             // нативен Apple/Google Pay лист
+    if(/^#(door|apply|login)/.test(location.hash))return true;
+    if(document.querySelector('[id^="paybox_"] iframe'))return true;            // отворена платежна форма (Stripe)
+    if(document.querySelector('#bookForm,#res-cal,.rules'))return true;        // резервация / правилник
+    for(const f of document.querySelectorAll('input:not([type=hidden]),textarea')){ if(f.value&&f.value.trim()&&f.type!=='checkbox'&&!f.readOnly)return true; }
+    return false;
+  };
+  const _tryReload=()=>{ if(_swr)return; if(_busy()){_swPending=true;return;} _swr=true;location.reload(); };
+  // Проверка за нова версия САМО когато не е заето — така нова версия не се тегли и не се активира по средата на работа.
+  window.addEventListener('load',()=>navigator.serviceWorker.register('../sw.js').then(reg=>{
+    const chk=()=>{ if(!_busy())reg.update().catch(()=>{}); };
+    document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible')chk(); });
+    setInterval(chk,30*60*1000);
+  }).catch(()=>{}));
+  // Нова версия → презареждане САМО при следващата смяна на екран (естествен момент, нищо не е по средата). Нищо друго.
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_had)_swPending=true; });
+  window.addEventListener('hashchange',()=>{ if(_swPending)setTimeout(_tryReload,300); });
+}</script>
 <script>
 // Скриване на splash след кратка анимация
 (function(){

@@ -2214,6 +2214,19 @@ async function logout(){
 }
 boot();
 </script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));let _swr=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(_swr)return;_swr=true;if(navigator.serviceWorker.controller)location.reload();});}</script>
+<script>if('serviceWorker' in navigator){
+  // Админът НИКОГА не се презарежда сам (незаписани промени!). При нова версия — лента с бутон „Обнови“; ти избираш кога.
+  const _had=!!navigator.serviceWorker.controller;   // при първо отваряне (без стар worker) няма лента
+  const _bar=()=>{ if(document.getElementById('swbar'))return; const b=document.createElement('div'); b.id='swbar';
+    b.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;background:#1b1b1b;color:#ebebd6;border:1px solid #c9a86a;border-radius:24px;padding:10px 16px;font-size:13px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 28px rgba(0,0,0,.35);';
+    b.innerHTML='Налична е нова версия на админа <button onclick="location.reload()" style="background:#c9a86a;color:#1b1b1b;border:0;border-radius:16px;padding:6px 12px;font-weight:600;cursor:pointer;">Обнови</button>';
+    document.body.appendChild(b); };
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').then(reg=>{
+    const chk=()=>reg.update().catch(()=>{});
+    document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible')chk(); });
+    setInterval(chk,30*60*1000);
+  }).catch(()=>{}));
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_had)_bar(); });
+}</script>
 </body>
 </html>
