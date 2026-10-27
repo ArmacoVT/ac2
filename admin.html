@@ -1547,8 +1547,8 @@ const PUB_SCHEMA=[
       F('image','img','Снимка (хоризонтална, 1920×1080)'),F('video','vid','Видео (по избор; върху снимката)'),
       F('title','bi','Заглавие'),F('sub','bit','Изречение под заглавието',{rows:2}),F('cta','bi','Текст на бутона (празно = без бутон)'),F('link','txt','Линк на бутона (напр. #/program или https://…)')
     ]}),
-    F('home.manifesto.title','bi','Какво е AC² — надпис'),F('home.manifesto.body','bit','Манифест — няколко изречения',{rows:4}),
-    F('home.season.title','bi','Тема на сезона — заглавие (напр. „Сезон есен–зима: ИНТЕРТЕКСТ")'),F('home.season.body','bit','Тема на сезона — кратко описание',{rows:3}),
+    F('home.show.manifesto','bool','Показвай секция „Какво е AC²" (манифест)'),F('home.manifesto.title','bi','Какво е AC² — надпис'),F('home.manifesto.body','bit','Манифест — няколко изречения',{rows:4}),
+    F('home.show.season','bool','Показвай секция „Тема на сезона / Програма"'),F('home.season.title','bi','Тема на сезона — заглавие (напр. „Сезон есен–зима: ИНТЕРТЕКСТ")'),F('home.season.body','bit','Тема на сезона — кратко описание',{rows:3}),
     F('home.show.restaurant','bool','Показвай секция „Ресторант"'),F('home.restaurant.title','bi','Ресторант — заглавие'),F('home.restaurant.body','bit','Ресторант — кратко представяне',{rows:3}),F('home.restaurant.image','img','Ресторант — снимка'),
     F('home.show.app','bool','Показвай секция „Инсталирай приложението"'),F('home.app.title','bi','Приложение — заглавие'),F('home.app.body','bit','Приложение — текст',{rows:2}),F('home.app.image','img','Приложение — снимка/екран'),
     F('home.show.membership','bool','Показвай секция „Членство"'),F('home.membership.title','bi','Членство — заглавие'),F('home.membership.body','bit','Членство — кратко обяснение',{rows:3}),

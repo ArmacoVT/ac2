@@ -705,17 +705,17 @@ function pageHome(){
       ${sl.length>1?`<div class="dots">${sl.map((s,i)=>`<button class="${i===0?'on':''}" onclick="goSlide(${i})" aria-label="${i+1}"></button>`).join('')}</div>`:''}
     </div>
 
-    <section class="sec manifesto"><div class="wrap">
+    ${on('home.show.manifesto')?`<section class="sec manifesto"><div class="wrap">
       <div class="kicker">${esc(pT('home.manifesto.title'))}</div>
       <p>${esc(pT('home.manifesto.body'))}</p>
       <a class="btn ghost" href="#/about">${t('about')} →</a>
-    </div></section>
+    </div></section>`:''}
 
-    <section class="sec dark"><div class="wrap">
+    ${on('home.show.season')?`<section class="sec dark"><div class="wrap">
       <div class="sechead"><div><div class="kicker">${t('program')}</div><h2>${esc(pT('home.season.title'))}</h2><div class="lead" style="margin-top:8px;">${esc(pT('home.season.body'))}</div></div>
         <a class="tlink" style="color:var(--gilt)" href="#/program">${t('whole')} →</a></div>
       ${up.length?`<div class="grid3">${up.map(e=>evCard(e,true)).join('')}</div>`:`<div class="empty" style="color:var(--ondark-mid)">${t('noEvents')}</div>`}
-    </div></section>
+    </div></section>`:''}
 
     ${on('home.show.restaurant')?`<section class="sec"><div class="wrap">
       <div class="two">

@@ -82,7 +82,7 @@ window.PUB_DEFAULTS={
     membership:{title:_b('Членство','Membership'),body:_b('Клубът е по покана. Членовете получават приоритет за резервации, покани за затворени формати и преференции в ресторанта.','The club is by invitation. Members get priority reservations, invitations to closed formats and restaurant benefits.')},
     college:{title:_b('Arcus College','Arcus College'),body:_b('Младите хора са активна част от AC². Учениците на Американски колеж Аркус участват в програмата — на сцената, в галерията и зад кулисите.','Young people are an active part of AC². Students of the American College Arcus take part in the programme — on stage, in the gallery and behind the scenes.'),images:[],url:''},
     newsletter:{title:_b('Нюзлетър','Newsletter'),body:_b('Програмата за месеца, тематичните вечери и новините — веднъж месечно, без спам.','The monthly programme, themed dinners and news — once a month, no spam.')},
-    show:{restaurant:false,app:false,membership:false,college:false,newsletter:true}   // скрити до старта (Админ → Начало → „Показвай секция …“)
+    show:{manifesto:true,season:true,restaurant:false,app:false,membership:false,college:false,newsletter:true}   // скрити до старта (Админ → Начало → „Показвай секция …“)
   },
   program:{intro:_b('Всички предстоящи събития на AC². Изберете формат, за да филтрирате.','All upcoming events at AC². Pick a format to filter.')},
   restaurant:{
