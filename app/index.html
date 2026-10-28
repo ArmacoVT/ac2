@@ -1004,6 +1004,8 @@ let TAKEN={}; // заети места по събитие (само число)
 // свободни места: null = без лимит; иначе оставащи
 function seatsLeft(e){if(!e.capacity)return null;return Math.max(0,e.capacity-(TAKEN[e.id]||0));}
 const evSlots=e=>(e&&e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(s=>s&&s.time):[];   // слотове (часове) с капацитет по слот
+// макс. места на една резервация: pub.max_party → иначе ресторант (table): платено 50 / безплатно 8 (+9+); други — по нивото на членство
+function bookMax(e){ const seats=(user&&MEMBERS.find(m=>m.id===user.membership)?.seats)||1; const mp=parseInt(e.pub&&e.pub.max_party,10); if(mp>0)return Math.min(50,mp); if(e.format==='table')return tierPrice(e,'physical')<=0?8:50; return seats; }
 const pickedSlot=id=>{const c=document.querySelector('#slotsel_'+id+' .chip.on');return c?c.dataset.slot:'';};
 function seatInfoText(e){
   // Който вече има билет, няма нужда да чете „Изчерпано" — мястото му е запазено.
