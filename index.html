@@ -950,6 +950,7 @@ function pageApp(){
 
 // ---------- РЕЗЕРВАЦИЯ ОТ ГОСТ (нечлен) — на страницата на събитието ----------
 const evSlots=e=>(e&&e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(s=>s&&s.time):[];   // слотове (часове) с капацитет по слот
+const maxParty=e=>{const v=parseInt(e&&e.pub&&e.pub.max_party,10);return v>0?Math.min(50,v):4;};   // макс. места на резервация (админ; по подразбиране 4)
 function bookingBox(e){
   const td=todayIso(); const from=guestFrom(e);
   const paidBack=PAY_RESULT&&PAY_RESULT.event===e.id;
@@ -961,8 +962,9 @@ function bookingBox(e){
   else inner=`<form class="form" id="bookForm" onsubmit="return false;" data-unit="${unit}">
       ${paidBack&&!PAY_RESULT.ok?`<div class="msg err">${t('payFail')}</div>`:''}
       ${evSlots(e).length?`<div><label>${L('Час','Time')} *</label><div class="selrow" id="bk_slots">${evSlots(e).map((s,i)=>`<button type="button" class="achip ${i===0?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on')">${esc(s.time)}</button>`).join('')}</div></div>`:''}
-      <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;"><select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form)"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+      <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;"><select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form);const b=document.getElementById('bk_big');if(b)b.style.display=this.value==='9+'?'block':'none'">${Array.from({length:maxParty(e)},(_,i)=>`<option>${i+1}</option>`).join('')}${unit<=0?`<option value="9+">9+</option>`:''}</select>
         ${unit>0?`<span style="font-family:var(--serif);font-size:22px;color:var(--cream);">= <b id="bk_total">${esc(fmtPrice(e))}</b></span>`:`<span class="hint" style="margin:0">${t('free')}</span>`}</div></div>
+      ${unit<=0?`<div id="bk_big" class="msg ok" style="display:none;">${L('За групи над 8 души екипът ще се свърже с вас по телефона, за да уточните детайлите.','For groups of more than 8 the team will call you to arrange the details.')}</div>`:''}
       <div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div>
       <div class="r2"><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
       <label class="chk"><input type="checkbox" name="consent"/> <span>${t('consentContact')}</span></label>
@@ -998,7 +1000,8 @@ function loadStripe(){
 }
 // Същият поток като в приложението: данни → PaymentIntent от сървъра → Stripe Payment Element на място → confirmPayment без напускане на страницата
 async function submitTicket(f,eventId){
-  const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), party=parseInt(f.party.value,10)||1;
+  const big=f.party.value==='9+';   // група над 8 (само безплатни събития) → заявка за обаждане
+  const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), party=big?9:(parseInt(f.party.value,10)||1);
   if(!name||!email||!phone){setMsg('bk_msg',t('errFields'));return false;}
   if(!validEmail(email)){setMsg('bk_msg',t('errEmail'));return false;}
   if(!validPhone(phone)){setMsg('bk_msg',t('errPhone'));return false;}
@@ -1006,14 +1009,14 @@ async function submitTicket(f,eventId){
   const tok=captchaToken('bk_captcha'); if(CFG.TURNSTILE_SITE_KEY&&!tok){setMsg('bk_msg',t('errCaptcha'));return false;}
   const b=document.getElementById('bk_btn'); b.disabled=true; const old=b.textContent; b.textContent=t('sending'); setMsg('bk_msg','');
   const slotEl=document.querySelector('#bk_slots .achip.on'); const slot=slotEl?slotEl.dataset.slot:'';
-  const r=await DB.publicForm('ticket',{event_id:eventId,name,email,phone,party,slot,lang,captcha_token:tok});
+  const r=await DB.publicForm('ticket',{event_id:eventId,name,email,phone,party,big,slot,lang,captcha_token:tok});
   if(r.error){
     b.disabled=false;b.textContent=old; resetCaptcha('bk_captcha');
     // лимит по имейл (до 4 места общо за събитие, може на части): свиваме избора до оставащите и казваме колко
     if(typeof r.error.left_for_email==='number'){
       const left=r.error.left_for_email, have=r.error.have||0;
-      if(left>0){ [...f.party.options].forEach(o=>{o.disabled=parseInt(o.value,10)>left;}); f.party.value=String(Math.min(party,left)); bkTotal(f); }
-      setMsg('bk_msg',lang==='bg'?r.error.message:(left>0?`This e-mail already has ${have} seat${have===1?'':'s'} for this event. You can add up to ${left} more.`:`This e-mail already has ${have} seats for this event — the maximum (4).`));
+      if(left>0){ [...f.party.options].forEach(o=>{o.disabled=o.value!=='9+'&&parseInt(o.value,10)>left;}); f.party.value=String(Math.min(party,left)); bkTotal(f); }
+      setMsg('bk_msg',lang==='bg'?r.error.message:(left>0?`This e-mail already has ${have} seat${have===1?'':'s'} for this event. You can add up to ${left} more.`:`This e-mail already has ${have} seats for this event — the maximum (${r.error.max||4}).`));
       return false;
     }
     setMsg('bk_msg',r.error.captcha?t('errCaptcha'):(r.error.message||t('errGeneric'))); return false;
