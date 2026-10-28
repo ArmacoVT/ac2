@@ -265,7 +265,7 @@ function inboxView(){
   const MAX=window._inboxAll?items.length:8; const show=items.slice(0,MAX);
   const rows=show.map(i=>{
     if(i.k==='res'){
-      const r=i.r, nm=esc(r.name||r.who||'член'), what=esc(r.place||r.fmt||'Резервация')+' · '+isoToBg(r.date||'')+(r.time?' '+esc(r.time):'')+' · '+(r.party||1)+' '+(r.party==1?'място':'места');
+      const r=i.r, nm=esc(r.name||r.who||'член'), bigG=isBigGroup(r), what=esc(r.place||r.fmt||'Резервация')+' · '+isoToBg(r.date||'')+(r.time?' '+esc(r.time):'')+' · '+(bigG?'<b>9+ души</b> <span class="tagn amber">☎ ЗА ОБАЖДАНЕ</span>'+(r.phone?' '+esc(r.phone):''):(r.party||1)+' '+(r.party==1?'място':'места'));
       const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null; const sum=ev&&ev.price?' · '+(ev.price*(r.party||1)).toFixed(2)+' €':'';
       if(i.a==='new'&&(r.status||'requested')==='requested')return `<div class="row"><div class="t"><span class="tagn">НОВА ЗАЯВКА</span> <b>${nm}</b> — ${what}</div><div class="a"><button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Потвърди</button><button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
       if(i.a==='refund')return `<div class="row"><div class="t"><span class="tagn amber">ЗА ВРЪЩАНЕ НА СУМА</span> <b>${nm}</b> — ${what}${sum}<br><span class="muted" style="font-size:12px;">„Върни сумата“ връща парите по картата през Stripe (5–10 работни дни). „Върната в брой/по банка“ = само отбелязване, без движение на пари.</span></div><div class="a"><button class="btn ok sm" onclick="refundRes('${r.id}')">↩ Върни сумата</button><button class="btn ghost sm" onclick="markRefundedRes('${r.id}')">Върната в брой/по банка</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
@@ -495,7 +495,14 @@ function audLabel(aud){
 // заети места за събитие: потвърдените резервации (и отделно чакащите)
 function seatsTaken(evId){return RES.filter(r=>r.event_id===evId&&r.status==='confirmed').reduce((s,r)=>s+(r.party||1),0);}
 function seatsPending(evId){return RES.filter(r=>r.event_id===evId&&(!r.status||r.status==='requested')).reduce((s,r)=>s+(r.party||1),0);}
+const evSlots=e=>(e&&e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(s=>s&&s.time):[];
 function seatsInfo(e){
+  const slots=evSlots(e);
+  if(slots.length){   // по слот: 18:00 · 12/20 · 20:00 · няма места
+    return slots.map(s=>{ const tk=RES.filter(r=>r.event_id===e.id&&r.status==='confirmed'&&(r.time||'')===s.time).reduce((a,r)=>a+(r.party||1),0); const cap=Number(s.cap)||0; const left=cap-tk;
+      const col=cap&&left<=0?'#82303d':(cap&&left<=Math.ceil(cap*0.2)?'#6b6b63':'#507044');
+      return `<span class="pill" style="border-color:${col};color:${col};">${esc(s.time)} · ${cap?(left<=0?'няма места':'остават '+left+' от '+cap):tk+' записани'}</span>`; }).join(' ')+(seatsPending(e.id)?` <span class="pill">${seatsPending(e.id)} чакащи</span>`:'');
+  }
   if(!e.capacity)return '';
   const taken=seatsTaken(e.id), left=e.capacity-taken, pend=seatsPending(e.id);
   const col=left<=0?'#82303d':(left<=Math.ceil(e.capacity*0.2)?'#6b6b63':'#507044');
@@ -621,8 +628,9 @@ function formView(){
       <div><label>Крайна дата (по желание)</label><input id="f_end_date" readonly placeholder="дд.мм.гггг" value="${e&&e.end_date?isoToBg(e.end_date):''}" data-iso="${esc(e?(e.end_date||''):'')}" onclick="openCal('f_end_date')" style="cursor:pointer;"/></div></div>
     <div class="row2"><div><label>Начало (час)</label>${timePickerHTML('f_time',e?e.time:'')}</div>
       <div><label>Край (час)</label>${timePickerHTML('f_ends',e?e.ends:'')}</div></div>
-    <div class="row2"><div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}"/></div>
+    <div class="row2"><div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}" ${draftSlots.length?'disabled title="При слотове капацитетът е сборът от слотовете"':''}/></div>
       <div><label>Места на маса след събитието</label><input id="f_tcap" type="number" min="0" value="${e&&e.table_capacity?e.table_capacity:''}" placeholder="по желание"/></div></div>
+    ${slotsSection()}
     <div class="row2"><div><label>Отказ на ПЛАТЕН билет — най-късно (часове преди началото)</label><input id="f_cancel_h" type="number" min="0" step="1" value="${(e&&e.pub&&e.pub.cancel_hours!=null&&e.pub.cancel_hours!=='')?e.pub.cancel_hours:''}" placeholder="по подразбиране 72"/></div>
       <div class="muted" style="font-size:12px;padding-top:26px;">Празно = 72 ч. (3 дни). 0 = до самото начало. Безплатни резервации (безплатно събитие, маса, запитване) — винаги 24 ч.</div></div>
     <div class="row2"><div><label>Вход</label><select id="f_pub_entry">
@@ -668,6 +676,24 @@ function formView(){
       <button class="btn" onclick="saveEvent()">${e?'Запази промените':'Добави събитие'}</button>
       ${e?`<button class="btn ghost" onclick="cancelEdit()">Откажи</button>`:''}
     </div></div>`;
+}
+// Слотове (часове) за резервация — за събития в ресторанта: всеки слот със свой капацитет.
+// Пази се в pub.slots = [{time:'18:00',cap:20},…]. Със слотове общият капацитет = сборът им.
+function slotsSection(){
+  const rows=draftSlots.map((s,i)=>`<div class="row2" style="align-items:center;margin-top:6px;">
+      <div style="display:flex;gap:8px;align-items:center;"><input value="${esc(s.time)}" placeholder="18:00" maxlength="5" style="width:90px;text-align:center;" oninput="draftSlots[${i}].time=this.value.trim()"/><span class="muted">час</span></div>
+      <div style="display:flex;gap:8px;align-items:center;"><input type="number" min="0" value="${s.cap||''}" placeholder="места" style="width:100px;" oninput="draftSlots[${i}].cap=parseInt(this.value,10)||0"/><span class="muted">места</span><button class="btn ghost sm" type="button" onclick="slotDel(${i})">✕</button></div></div>`).join('');
+  const total=draftSlots.reduce((a,s)=>a+(Number(s.cap)||0),0);
+  return `<label style="margin-top:10px;">Слотове за резервация (по желание — за вечери в ресторанта: напр. 18:00 и 20:00, всеки със свои места)</label>
+    <p class="muted" style="margin:2px 0 4px;font-size:12px;">Със слотове хората избират час при резервация, а местата се броят за всеки час поотделно. Без слотове важи общият капацитет.</p>
+    ${rows}
+    <div style="margin-top:6px;display:flex;gap:10px;align-items:center;"><button class="btn ghost sm" type="button" onclick="slotAdd()">+ Добави слот</button>${draftSlots.length?`<span class="muted" style="font-size:12px;">Общо ${total} места в ${draftSlots.length} ${draftSlots.length===1?'слот':'слота'}</span>`:''}</div>`;
+}
+function slotAdd(){ const v=grabForm(); draftSlots.push({time:'',cap:0}); render(); putForm(v); }
+function slotDel(i){ const v=grabForm(); draftSlots.splice(i,1); render(); putForm(v); }
+function cleanSlots(){
+  const out=[]; for(const s of draftSlots){ const t=(s.time||'').trim(); if(!/^\d{1,2}:\d{2}$/.test(t))continue; const hh=t.split(':'); const norm=hh[0].padStart(2,'0')+':'+hh[1]; if(out.some(x=>x.time===norm))continue; out.push({time:norm,cap:Math.max(0,parseInt(s.cap,10)||0)}); }
+  return out.sort((a,b)=>a.time<b.time?-1:1);
 }
 // приоритетно записване: „от дата" за всяко избрано ниво (празно = веднага)
 function bwSection(e){
@@ -819,8 +845,8 @@ function pickDate(iso){
   if(inp){inp.dataset.iso=iso;inp.value=iso?isoToBg(iso):'';}
   closeCal();
 }
-function editEvent(id){editId=id;tab='events';const e=EVENTS.find(x=>x.id===id);draftAud=e.aud==='all'?['all']:e.aud.slice();draftPubGal=(e.pub&&Array.isArray(e.pub.gallery))?e.pub.gallery.slice():[];draftGuests=!!(e.pub&&e.pub.guests);render();window.scrollTo(0,0);}
-function cancelEdit(){editId=null;draftAud=['all'];draftPubGal=[];draftGuests=false;render();}
+function editEvent(id){editId=id;tab='events';const e=EVENTS.find(x=>x.id===id);draftAud=e.aud==='all'?['all']:e.aud.slice();draftPubGal=(e.pub&&Array.isArray(e.pub.gallery))?e.pub.gallery.slice():[];draftSlots=(e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.map(x=>({time:x.time||'',cap:Number(x.cap)||0})):[];draftGuests=!!(e.pub&&e.pub.guests);render();window.scrollTo(0,0);}
+function cancelEdit(){editId=null;draftAud=['all'];draftPubGal=[];draftSlots=[];draftGuests=false;render();}
 async function delEvent(id){if(!confirm('Да изтрия ли събитието?'))return;const ev=EVENTS.find(x=>x.id===id);await DB.deleteEvent(id);DB.logAudit('event_deleted',(ev&&ev.title)||'','');await refresh();render();}
 async function toggleLive(id,on){await DB.setLive(id,on);await refresh();render();}
 function clearMedia(which){
@@ -852,7 +878,7 @@ async function saveEvent(){
     tags:[...document.querySelectorAll('#f_tags input[data-tag]:checked')].map(c=>c.dataset.tag),
     format:document.getElementById('f_format').value,place:document.getElementById('f_place').value.trim(),
     date:dIso,end_date:edIso,time:document.getElementById('f_time').value.trim(),ends:document.getElementById('f_ends').value.trim(),
-    capacity:parseInt(document.getElementById('f_cap').value||'0',10),
+    capacity:(()=>{const sl=cleanSlots(); return sl.length?sl.reduce((a,x)=>a+x.cap,0):parseInt(document.getElementById('f_cap').value||'0',10);})(),   // със слотове = сборът им
     table_capacity:parseInt(document.getElementById('f_tcap').value||'0',10),
     price:parseFloat(document.getElementById('f_price').value||'0')||0,
     price_online:parseFloat((document.getElementById('f_price_online')||{}).value||'0')||0,
@@ -870,7 +896,7 @@ async function saveEvent(){
     pub:grabPub()||{}};
   const r=eid?await DB.updateEvent(eid,obj):await DB.addEvent(obj);
   if(r&&r.error){alert('Събитието не се записа: '+r.error.message);return;}
-  editId=null;draftAud=['all'];draftPubGal=[];draftGuests=false;await refresh();render();window.scrollTo(0,0);
+  editId=null;draftAud=['all'];draftPubGal=[];draftSlots=[];draftGuests=false;await refresh();render();window.scrollTo(0,0);
   } finally { _savingEvent=false; }
 }
 
@@ -891,6 +917,8 @@ function resActs(id,st){
   if(st==='pending_payment')return del;        // чака плащане — не пипаме
   return del;
 }
+// група над 8 души (резервация за маса с „9+“) — екипът се обажда преди потвърждение
+function isBigGroup(r){ return !r.event_id&&/\[(ГРУПА 9\+|GROUP 9\+)/.test(r.note||''); }
 function resBadge(st){
   if(st==='confirmed')return '<span class="pill audAll">потвърдена</span>';
   if(st==='declined')return '<span class="pill" style="border-color:var(--warn);color:#9a3a49;">отказана</span>';
@@ -1129,8 +1157,9 @@ function resView(){
     const att=resAttention(r);
     const tag=att==='refund'?'<span class="tagn amber">ЗА ВРЪЩАНЕ НА СУМА</span>':att==='cancel'?'<span class="tagn amber">ОТКАЗ ОТ ЧЛЕН</span>':att==='new'?(st==='requested'?'<span class="tagn">НОВА ЗАЯВКА</span>':'<span class="tagn">НОВО</span>'):'';
     const attCls=att?' att'+(att==='refund'||att==='cancel'?' amber':''):'';
+    const big=isBigGroup(r);
     return `<div class="card${attCls}" id="rescard_${r.id}" onclick="markSeenRes('${r.id}')"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-      <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${r.party||1} ${r.party==1?'място':'места'}${tag}</h3>
+      <div><h3>${esc(r.place||r.fmt||'Резервация')} · ${big?'9+ души':(r.party||1)+' '+(r.party==1?'място':'места')}${big?' <span class="tagn amber" title="Група над 8 души — обадете се за уточняване на детайлите преди потвърждение">☎ ГРУПА 9+ · ЗА ОБАЖДАНЕ</span>':''}${tag}</h3>
         <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${r.guest?'<span class="pill" style="border-color:#6b6b63;color:#6b6b63;">гост от сайта</span>':esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}${r.paid?' · <b style="color:#3d5634;">платено'+(r.paid_cents?' '+(r.paid_cents/100).toFixed(2)+' €':'')+(r.pay_method==='cash'?' в брой':r.pay_method==='pos'?' на ПОС':'')+'</b>':(r.pay_method==='free'?' · <b style="color:#5f6064;">на място · безплатно</b>':'')}${r.refunded_at?' · <b style="color:#82303d;">възстановени '+(r.refund_cents/100).toFixed(2)+' €</b>':''}${r.checked_in_at?' · <b style="color:#507044;">✓ присъствал '+r.checked_in_at.slice(11,16)+'</b>':''}</div>
         ${contact?`<div class="muted" style="margin-top:3px;">${contact}</div>`:''}
         ${r.ticket_code&&st==='confirmed'?`<div class="muted" style="margin-top:4px;">Билет: <b style="color:var(--text);letter-spacing:1px;">AC2-${r.ticket_code.slice(0,4)}-${r.ticket_code.slice(4)}</b> · <a href="https://ac2.bg/t.html#${r.ticket_code}" target="_blank" rel="noopener" style="color:#82303d;">отвори билета</a> · <a href="#" onclick="event.preventDefault();event.stopPropagation();navigator.clipboard&&navigator.clipboard.writeText('https://ac2.bg/t.html#${r.ticket_code}');toast('Линкът е копиран')" style="color:#82303d;">копирай линка</a></div>`:''}
@@ -1745,7 +1774,7 @@ function subsCsv(){
 
 // ================= ПУБЛИЧНИ ДАННИ НА СЪБИТИЕ (блок във формата за събитие) =================
 const PUB_CATS=[['','— по формата —'],['exhibition','Изложба'],['theatre','Театър'],['concert','Концерт'],['dance','Танц'],['performance','Пърформанс'],['discussion','Дискусия'],['film','Кино'],['dinner','Тематична вечеря'],['other','Друго']];
-let draftPubGal=[], draftGuests=false;
+let draftPubGal=[], draftGuests=false, draftSlots=[];
 function pubEventBlock(e){
   const p=(e&&e.pub)||{}; const b=(v)=>(v&&typeof v==='object')?v:{bg:v||'',en:''};
   const bi=(id,label,val,rows)=>{const v=b(val); const inp=l=>rows?`<textarea id="${id}_${l}" rows="${rows}" placeholder="${l.toUpperCase()}">${esc(v[l]||'')}</textarea>`:`<input id="${id}_${l}" placeholder="${l.toUpperCase()}" value="${esc(v[l]||'')}"/>`; return `<label style="margin-top:8px;">${label}</label><div class="row2">${inp('bg')}${inp('en')}</div>`;};
@@ -1773,7 +1802,7 @@ function grabPub(){
   const mo=document.getElementById('f_pub_members_only'), gf=document.getElementById('f_pub_gfrom');
   if(!mo)return null;
   const ch=g('f_cancel_h');
-  return {formats:[...document.querySelectorAll('#f_formats input[data-fmt]:checked')].map(c=>c.dataset.fmt).filter(f=>f!==g('f_format')),entry:(g('f_pub_entry')||'ticket'),fit:(document.getElementById('f_pub_fit')&&document.getElementById('f_pub_fit').checked)?'cover':'',table_after:(g('f_table_after')||'auto'),members_only:mo.checked,guests:!!draftGuests,guest_from:(draftGuests&&gf)?(gf.dataset.iso||''):'',cancel_hours:(ch===''?null:Math.max(0,parseInt(ch,10)||0)),category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
+  return {formats:[...document.querySelectorAll('#f_formats input[data-fmt]:checked')].map(c=>c.dataset.fmt).filter(f=>f!==g('f_format')),entry:(g('f_pub_entry')||'ticket'),fit:(document.getElementById('f_pub_fit')&&document.getElementById('f_pub_fit').checked)?'cover':'',table_after:(g('f_table_after')||'auto'),members_only:mo.checked,guests:!!draftGuests,guest_from:(draftGuests&&gf)?(gf.dataset.iso||''):'',cancel_hours:(ch===''?null:Math.max(0,parseInt(ch,10)||0)),slots:cleanSlots(),category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
     long:bi('f_pub_long'),participants:bi('f_pub_part'),curator:bi('f_pub_curator'),authors:bi('f_pub_authors'),visit:bi('f_pub_visit'),ticket_url:g('f_pub_ticket'),gallery:draftPubGal.slice()};
 }
 function putPub(p){

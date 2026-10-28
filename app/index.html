@@ -1003,6 +1003,8 @@ let justBooked=null; // за bounce ефекта на бутона след за
 let TAKEN={}; // заети места по събитие (само число)
 // свободни места: null = без лимит; иначе оставащи
 function seatsLeft(e){if(!e.capacity)return null;return Math.max(0,e.capacity-(TAKEN[e.id]||0));}
+const evSlots=e=>(e&&e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(s=>s&&s.time):[];   // слотове (часове) с капацитет по слот
+const pickedSlot=id=>{const c=document.querySelector('#slotsel_'+id+' .chip.on');return c?c.dataset.slot:'';};
 function seatInfoText(e){
   // Който вече има билет, няма нужда да чете „Изчерпано" — мястото му е запазено.
   if(user&&hasBooking(e.id))return '';
@@ -1232,7 +1234,10 @@ function openBook(id,onlyKind){
   const maxN=left!==null?Math.max(1,Math.min(seats,left)):seats;
   const tierChips=tiers.length>1?`<div style="display:flex;gap:8px;margin-top:8px;">${tiers.map(t=>`<div class="tieropt" data-kind="${t.kind}" onclick="selectTier('${e.id}','${t.kind}')" style="flex:1;text-align:center;padding:12px 6px;border:1px solid var(--line);border-radius:12px;cursor:pointer;"><div style="color:var(--gold);display:flex;justify-content:center;">${TIERICON[t.kind]||''}</div><div style="font-size:12px;margin-top:5px;color:var(--text);">${t.short}</div><b style="color:var(--gold);font-size:13px;">${t.price>0?fmtPrice(t.price):(lang==='bg'?'Безпл.':'Free')}</b></div>`).join('')}</div>`:'';
   const tableOpt=endsEarly(e)?`<div class="tableopt"><label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" id="tb_${e.id}" onchange="toggleTableOpt('${e.id}')"/><span>${tr('addTable')} <small>· ${tr('afterEvent')} · ${esc(e.ends||'')}</small></span></label><div class="tablebox" id="tbx_${e.id}"><div class="qrow" style="border-bottom:none;padding:8px 0 0;"><span>${tr('tableParty')}</span><div class="qstep"><button onclick="tblQty('${e.id}',-1)">−</button><b id="tbp_lbl_${e.id}">1</b><button onclick="tblQty('${e.id}',1)">+</button></div></div><input id="tbp_${e.id}" type="hidden" value="1"/></div></div>`:'';
-  const partyInner=`<div class="qrow"><span>${tr('party')}</span><div class="qstep"><button onclick="bookQty('${e.id}',-1,${maxN})">−</button><b id="bp_lbl_${e.id}">1</b><button onclick="bookQty('${e.id}',1,${maxN})">+</button></div></div>${tableOpt}`;
+  // слотове (часове) с капацитет по слот — човекът избира час; местата се броят за всеки час отделно
+  const slots=evSlots(e);
+  const slotRow=slots.length?`<div class="qrow" style="flex-direction:column;align-items:flex-start;gap:8px;"><span>${lang==='bg'?'Час':'Time'}</span><div class="selrow" id="slotsel_${e.id}" style="margin:0;">${slots.map((s,i)=>`<button type="button" class="chip ${i===0?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on');try{hap('select')}catch(e){}">${esc(s.time)}</button>`).join('')}</div></div>`:'';
+  const partyInner=`${slotRow}<div class="qrow"><span>${tr('party')}</span><div class="qstep"><button onclick="bookQty('${e.id}',-1,${maxN})">−</button><b id="bp_lbl_${e.id}">1</b><button onclick="bookQty('${e.id}',1,${maxN})">+</button></div></div>${tableOpt}`;
   const bd=document.createElement('div'); bd.className='sheetbd'; bd.id='sheetbd'; bd.onclick=closeBook;
   const sh=document.createElement('div'); sh.className='sheet'; sh.id='booksheet';
   sh.innerHTML=`<div class="handle"></div>
@@ -1316,13 +1321,15 @@ async function confirmBuy(id){
     ?{id,tp:parseInt(document.getElementById('tbp_'+id)?.value||'2',10),bname}:null;
   const btn=document.getElementById('buybtn_'+id); if(btn){btn.disabled=true;btn.textContent=lang==='bg'?'Момент…':'One moment…';}
   // безплатно ниво → заявка за одобрение от админ (стария поток)
+  const slot=kind==='physical'?pickedSlot(id):'';   // слот (час), ако събитието има слотове
+  if(evSlots(e).length&&kind==='physical'&&!slot){fail(lang==='bg'?'Изберете час':'Choose a time');if(btn)updateBuy(id);return;}
   if(tierPrice(e,kind)<=0){
-    const rr=await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:e.time,party,note:'Билет / ticket',res_name:bname,email:user.email,phone:user.phone||'',kind});
+    const rr=await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:slot||e.time,party,note:'Билет / ticket',res_name:bname,email:user.email,phone:user.phone||'',kind});
     if(rr&&rr.error){fail(/duplicate|unique/i.test(rr.error.message)?tr('alreadyBooked'):rr.error.message);if(btn)updateBuy(id);return;}
     await finishBooking(id,bname,true); return;
   }
   // платено → Stripe
-  const r=await DB.createPayment(e.id,kind,party);
+  const r=await DB.createPayment(e.id,kind,party,slot);
   if(r&&r.error){fail(r.error.message);if(btn)updateBuy(id);return;}
   // предишният опит всъщност е минал (webhook-ът е закъснял) — не плащаме втори път
   if(r&&r.already_paid){ fail(lang==='bg'?'Плащането вече е получено. Билетът е потвърден.':'Payment already received. Your ticket is confirmed.'); await finishBooking(id,bname,false); return; }
@@ -1904,7 +1911,10 @@ function reserve(q){
     <label>${tr('placeChoose')} *</label><div class="selrow" id="vensel">${vsel}</div>
     <label>${tr('date')} *</label><input id="r_date" readonly placeholder="дд.мм.гггг" data-iso="" onclick="openResCal()" style="cursor:pointer;"/>
     <label>${tr('time')} *</label>${timePicker('r_time','')}
-    <label>${tr('party')} *</label><input id="r_party" type="number" inputmode="numeric" min="1" max="50" value="1"/>
+    <label>${tr('party')} *</label>
+    <div class="selrow" id="partysel">${Array.from({length:8},(_,i)=>`<button type="button" class="chip ${i===0?'on':''}" data-n="${i+1}" onclick="pickParty(this)">${i+1}</button>`).join('')}<button type="button" class="chip" data-n="9+" onclick="pickParty(this)">9+</button></div>
+    <input id="r_party" type="hidden" value="1"/>
+    <div id="r_big" style="display:none;margin:-6px 0 14px;padding:10px 12px;border-radius:12px;background:rgba(201,168,106,.14);color:var(--cream);font-size:13px;">${lang==='bg'?'За групи над 8 души екипът на ресторанта ще се свърже с вас по телефона, за да уточните детайлите.':'For groups of more than 8 the restaurant team will call you to arrange the details.'}</div>
     <label>${tr('contactEmail')} *</label><input id="r_email" type="email" autocapitalize="none" value="${user?esc(user.email||''):''}"/>
     <label>${tr('contactPhone')} *</label><input id="r_phone" type="tel" value="${user?esc(user.phone||''):''}" placeholder="${lang==='bg'?'Въведете телефонен номер':'Enter phone number'}"/>
     <div id="streamwrap" style="display:${preV==='chamber'?'':'none'};margin:8px 0 4px;">
@@ -1971,6 +1981,7 @@ function drawResCal(){
 }
 function resCalOutside(ev){const p=document.getElementById('res-cal');if(p&&!p.contains(ev.target)&&ev.target.id!=='r_date')closeResCal();}
 function closeResCal(){const p=document.getElementById('res-cal');if(p){p.remove();document.removeEventListener('mousedown',resCalOutside);}}
+function pickParty(b){ document.querySelectorAll('#partysel .chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); const v=b.dataset.n; document.getElementById('r_party').value=v; const big=document.getElementById('r_big'); if(big)big.style.display=v==='9+'?'block':'none'; }
 function pickResDate(iso){const inp=document.getElementById('r_date');if(inp){inp.dataset.iso=iso;inp.value=iso?isoToEu(iso):'';}closeResCal();}
 async function sendRes(seats){
   if(!user){needLogin();return;}
@@ -1980,15 +1991,15 @@ async function sendRes(seats){
   const email=(document.getElementById('r_email').value||'').trim();
   const phone=(document.getElementById('r_phone').value||'').trim();
   const note=(document.getElementById('r_note').value||'').trim();
-  const n=parseInt(document.getElementById('r_party').value||'0',10);
+  const pv=document.getElementById('r_party').value||'1'; const big=pv==='9+';   // група над 8 → екипът се обажда
+  const n=big?9:parseInt(pv,10);
   const rdate=(document.getElementById('r_date').dataset.iso||'').trim();
   const rtime=(document.getElementById('r_time').value||'').trim();
   if(!name){toast(tr('reqName'));return;}
   if(!venue){toast(tr('reqVenue'));return;}
   if(!rdate){toast(lang==='bg'?'Изберете дата':'Choose a date');return;}
   if(!rtime){toast(lang==='bg'?'Въведете час':'Enter a time');return;}
-  if(!(n>=1)){toast(lang==='bg'?'Въведете брой хора':'Enter the number of people');return;}
-  if(n>50){toast(lang==='bg'?'Моля, въведете до 50 души':'Please enter up to 50 people');return;}
+  if(!(n>=1)){toast(lang==='bg'?'Изберете брой хора':'Choose the number of people');return;}
   if(!note){toast(lang==='bg'?'Опишете повода в бележката':'Describe the occasion in the note');return;}
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast(tr('reqEmail'));return;}
   if(!phone){toast(tr('reqPhone'));return;}
@@ -2002,9 +2013,10 @@ async function sendRes(seats){
     fullNote=algLine+(note?' · '+note:'');
   }
   if(venue==='chamber'&&document.getElementById('r_stream')?.checked){fullNote=(lang==='bg'?'[+ онлайн излъчване] ':'[+ online stream] ')+fullNote;}
+  if(big)fullNote=(lang==='bg'?'[ГРУПА 9+ — за обаждане] ':'[GROUP 9+ — call to arrange] ')+fullNote;
   await DB.addReservation({fmt:venue,place:venueLabel(venue),date:rdate,time:rtime,party:n,note:fullNote,res_name:name,email,phone});
   hap('success');
-  toast(tr('resToast'));setTimeout(()=>go('profile'),700);
+  toast(big?(lang==='bg'?'Заявката е изпратена — екипът ще ви се обади за детайлите':'Request sent — the team will call you to arrange the details'):tr('resToast'));setTimeout(()=>go('profile'),700);
 }
 // ---------- Биометрия (Face ID / отпечатък) през Capacitor native plugin ----------
 const BIO_SERVER='arcusclub';

@@ -834,7 +834,7 @@ function pageEvent(id,book){
       </div>
       <aside><div class="box">
         <div class="row"><span>${t('date')}</span><span>${esc((e.end_date&&e.end_date!==e.date)?evWhen(e,true):fmtD(e.date,true))}</span></div>
-        ${e.time&&!ex?`<div class="row"><span>${t('time')}</span><span>${esc(fmtTime(e.time))}${e.ends?' – '+esc(fmtTime(e.ends)):''}</span></div>`:''}
+        ${evSlots(e).length&&!ex?`<div class="row"><span>${t('time')}</span><span>${evSlots(e).map(s=>esc(fmtTime(s.time))).join(' / ')}</span></div>`:(e.time&&!ex?`<div class="row"><span>${t('time')}</span><span>${esc(fmtTime(e.time))}${e.ends?' – '+esc(fmtTime(e.ends)):''}</span></div>`:'')}
         ${e.place?`<div class="row"><span>${t('place')}</span><span>${esc(placeT(e.place))}</span></div>`:''}
         <div class="row"><span>${t('price')}</span><span>${esc(fmtPrice(e))}</span></div>
         ${(!past&&a.href!=='#/event/'+e.id)?(a.ext?`<a class="btn" href="${esc(a.href)}" target="_blank" rel="noopener" onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a>${!p.ticket_url?`<div class="hint" style="text-align:center;">${t('inApp')} · ${t('login')}</div>`:''}`
@@ -949,6 +949,7 @@ function pageApp(){
 }
 
 // ---------- РЕЗЕРВАЦИЯ ОТ ГОСТ (нечлен) — на страницата на събитието ----------
+const evSlots=e=>(e&&e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(s=>s&&s.time):[];   // слотове (часове) с капацитет по слот
 function bookingBox(e){
   const td=todayIso(); const from=guestFrom(e);
   const paidBack=PAY_RESULT&&PAY_RESULT.event===e.id;
@@ -959,6 +960,7 @@ function bookingBox(e){
   else if(paidBack&&PAY_RESULT.ok)inner=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`;
   else inner=`<form class="form" id="bookForm" onsubmit="return false;" data-unit="${unit}">
       ${paidBack&&!PAY_RESULT.ok?`<div class="msg err">${t('payFail')}</div>`:''}
+      ${evSlots(e).length?`<div><label>${L('Час','Time')} *</label><div class="selrow" id="bk_slots">${evSlots(e).map((s,i)=>`<button type="button" class="achip ${i===0?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on')">${esc(s.time)}</button>`).join('')}</div></div>`:''}
       <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;"><select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form)"><option>1</option><option>2</option><option>3</option><option>4</option></select>
         ${unit>0?`<span style="font-family:var(--serif);font-size:22px;color:var(--cream);">= <b id="bk_total">${esc(fmtPrice(e))}</b></span>`:`<span class="hint" style="margin:0">${t('free')}</span>`}</div></div>
       <div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div>
@@ -1003,7 +1005,8 @@ async function submitTicket(f,eventId){
   if(!f.consent.checked){setMsg('bk_msg',t('errConsent'));return false;}
   const tok=captchaToken('bk_captcha'); if(CFG.TURNSTILE_SITE_KEY&&!tok){setMsg('bk_msg',t('errCaptcha'));return false;}
   const b=document.getElementById('bk_btn'); b.disabled=true; const old=b.textContent; b.textContent=t('sending'); setMsg('bk_msg','');
-  const r=await DB.publicForm('ticket',{event_id:eventId,name,email,phone,party,lang,captcha_token:tok});
+  const slotEl=document.querySelector('#bk_slots .achip.on'); const slot=slotEl?slotEl.dataset.slot:'';
+  const r=await DB.publicForm('ticket',{event_id:eventId,name,email,phone,party,slot,lang,captcha_token:tok});
   if(r.error){
     b.disabled=false;b.textContent=old; resetCaptcha('bk_captcha');
     // лимит по имейл (до 4 места общо за събитие, може на части): свиваме избора до оставащите и казваме колко
@@ -1059,7 +1062,8 @@ function enquiryForm(){
     <label class="chk" id="rq_stream" style="display:none;"><input type="checkbox" name="stream"/> <span>${L('Желая и <b>онлайн излъчване</b> на събитието — за публика извън залата; условията се уточняват с екипа.','I would also like the event <b>streamed online</b> — for an audience outside the hall; details agreed with the team.')}</span></label>
     <div class="r2"><div><label>${t('dateLbl')} *</label>${dateSelects()}</div><div><label>${t('timeLbl')}</label>
       <div style="display:flex;gap:6px;align-items:center;">${sel('hh','<option value="">--</option>'+Array.from({length:24},(_,h)=>`<option value="${String(h).padStart(2,'0')}">${String(h).padStart(2,'0')}</option>`).join(''))}<b style="opacity:.5">:</b>${sel('mm',['00','15','30','45'].map(m=>`<option value="${m}">${m}</option>`).join(''))}</div></div></div>
-    <div class="r2"><div><label>${t('people')} *</label><input name="party" type="number" inputmode="numeric" min="1" max="50" value="1"/></div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
+    <div class="r2"><div><label>${t('people')} *</label>${sel('party',Array.from({length:8},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')+`<option value="9+">9+</option>`).replace('<select','<select onchange="document.getElementById(\'rq_big\').style.display=this.value===\'9+\'?\'block\':\'none\'"')}</div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
+    <div id="rq_big" class="msg ok" style="display:none;">${L('За групи над 8 души екипът на ресторанта ще се свърже с вас по телефона, за да уточните детайлите.','For groups of more than 8 the restaurant team will call you to arrange the details.')}</div>
     <div class="r2"><div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div></div>
     <div id="rq_alg"><label>${L('Алергени / хранителни ограничения','Allergens / dietary')} *</label>
       <div class="selrow" id="rq_algsel">${(lang==='bg'?['Нямам алергии','Глутен','Мляко/лактоза','Яйца','Ядки','Фъстъци','Риба','Ракообразни','Соя','Сусам','Целина','Синап','Сулфити']:['No allergies','Gluten','Milk/lactose','Eggs','Tree nuts','Peanuts','Fish','Crustaceans','Soy','Sesame','Celery','Mustard','Sulphites']).map((a,i)=>`<button type="button" class="achip" data-alg="${esc(a)}"${i===0?' data-none="1"':''} onclick="toggleAlgPub(this)">${a}</button>`).join('')}</div></div>
@@ -1076,10 +1080,10 @@ function toggleAlgPub(btn){
   btn.classList.toggle('on');
 }
 async function submitEnquiry(f){
-  const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), party=parseInt(f.party.value,10)||1, note=f.note.value.trim();
+  const big=f.party.value==='9+';   // група над 8 → екипът се обажда
+  const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), party=big?9:(parseInt(f.party.value,10)||1), note=f.note.value.trim();
   const date=f.date.value; const time=f.hh.value?(f.hh.value+':'+(f.mm.value||'00')):'';
   if(!name||!email||!phone||!note){setMsg('rq_msg',t('errFields'));return false;}
-  if(!(party>=1&&party<=50)){setMsg('rq_msg',L('Брой хора: от 1 до 50. За повече — напишете го в описанието.','Number of people: 1 to 50. For more, write it in the description.'));return false;}
   if(!date||isNaN(new Date(date+'T00:00:00').getTime())){setMsg('rq_msg',L('Изберете дата.','Choose a date.'));return false;}
   if(date<todayIso()){setMsg('rq_msg',L('Датата е минала.','The date has passed.'));return false;}
   if(!validEmail(email)){setMsg('rq_msg',t('errEmail'));return false;}
@@ -1094,7 +1098,8 @@ async function submitEnquiry(f){
     const none=algOn.some(c=>c.dataset.none);
     noteFull=(none?L('Без алергии','No allergies'):L('Алергени: ','Allergens: ')+algOn.map(c=>c.dataset.alg).join(', '))+' · '+noteFull;
   }
-  const r=await DB.publicForm('reservation',{name,email,phone,date,time,party,note:noteFull,format:f.format.value,place:f.place.value,lang,captcha_token:tok});
+  if(big)noteFull=L('[ГРУПА 9+ — за обаждане] ','[GROUP 9+ — call to arrange] ')+noteFull;
+  const r=await DB.publicForm('reservation',{name,email,phone,date,time,party,big,note:noteFull,format:f.format.value,place:f.place.value,lang,captcha_token:tok});
   b.disabled=false; b.textContent=old;
   if(r.error){ resetCaptcha('rq_captcha'); setMsg('rq_msg',r.error.captcha?t('errCaptcha'):(r.error.cooldown?L('Твърде много заявки. Опитайте по-късно.','Too many requests. Try later.'):(r.error.message||t('errGeneric')))); return false; }
   f.reset(); resetCaptcha('rq_captcha'); setMsg('rq_msg',t('enquiryOk'),true); track('reservation_request',{where:'enquiry'}); return false;
