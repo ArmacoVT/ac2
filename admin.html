@@ -159,7 +159,24 @@ async function boot(){
     window.addEventListener('acac-session-lost',sessionLost);
     setInterval(checkSession,60000);                 // на всяка минута
     document.addEventListener('visibilitychange',()=>{ if(!document.hidden)checkSession(); });
+    // Резервен вариант, ако Realtime не работи: на всяка минута (и при връщане в таба) питаме „има ли нещо ново?“
+    // Ново → ако не се пише в поле: обновяваме сами; иначе светва „● Нови заявки — обнови“.
+    checkNew(true); setInterval(()=>checkNew(false),60000);
+    document.addEventListener('visibilitychange',()=>{ if(!document.hidden)checkNew(false); });
   }
+}
+let _stamps=null;
+async function checkNew(baseline){
+  let st; try{ st=await DB.latestStamps(); }catch(e){ return; }
+  if(!st)return;
+  if(baseline||!_stamps){ _stamps=st; return; }
+  const changed=['reservations','applications','messages'].filter(k=>(st[k]||'')>(_stamps[k]||''));
+  if(!changed.length)return;
+  _stamps=st;
+  const editing=editId||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))||document.querySelector('#miModal,#qrModal,#wkModal');
+  const what=changed.map(k=>k==='reservations'?'резервация':k==='applications'?'кандидатура':'съобщение').join(', ');
+  if(editing){ window._newData=true; const b=document.getElementById('newdataBtn'); if(b)b.style.display='inline-block'; toast('🔔 Нова '+what+' — натисни „Нови заявки — обнови“'); return; }
+  await refresh(); if(tab==='messages'){try{MSGS=await DB.listContactMessages();}catch(e){}} render(); toast('🔔 Нова '+what);
 }
 // Реалтайм: при промяна в базата опресняваме данните и таба (със забавяне, за да не мигат бързи серии).
 let _liveT=null, _liveSeen=false;
@@ -290,7 +307,7 @@ function render(){
   const badge=DB.live?`<span class="badge live">Свързан Supabase</span>`:`<span class="badge">Демо режим</span>`;
   let h=`<div class="wrap">
     <div class="top"><div class="b">AC² · Админ панел<br><small>American College Arcus Club</small></div>
-      <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn ghost sm" id="refreshBtn" onclick="adminRefresh()" title="Презарежда данните (резервации, членове…)">↻ Опресни</button><button class="btn sm" id="newverBtn" onclick="location.reload()" style="display:${window._newVer?'inline-block':'none'};background:#c9a86a;color:#1b1b1b;border-color:#c9a86a;" title="Има нова версия на админа — зарежда я">⬆ Нова версия — обнови</button><button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
+      <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn sm" id="newdataBtn" onclick="adminRefresh()" style="display:${window._newData?'inline-block':'none'};background:#82303d;color:#f7f7ee;border-color:#82303d;" title="Има нови заявки / кандидатури / съобщения">● Нови заявки — обнови</button><button class="btn ghost sm" id="refreshBtn" onclick="adminRefresh()" title="Презарежда данните (резервации, членове…)">↻ Опресни</button><button class="btn sm" id="newverBtn" onclick="location.reload()" style="display:${window._newVer?'inline-block':'none'};background:#c9a86a;color:#1b1b1b;border-color:#c9a86a;" title="Има нова версия на админа — зарежда я">⬆ Нова версия — обнови</button><button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
     ${tabsHtml()}
     ${isEditor()?`<p class="muted" style="margin:6px 0 10px;font-size:12px;">Влезли сте като служител — виждате само разделите, за които имате права.</p>`:''}
     <div id="inboxBox">${inboxView()}</div>`;
@@ -1196,6 +1213,8 @@ function toast(msg,bad){
 async function adminRefresh(){
   const b=document.getElementById('refreshBtn'); if(b){b.disabled=true;b.textContent='↻ …';}
   try{await refresh();}catch(e){}
+  if(tab==='messages'){try{MSGS=await DB.listContactMessages();}catch(e){}}
+  window._newData=false; try{_stamps=await DB.latestStamps();}catch(e){}
   render();
   toast('Обновено');
 }

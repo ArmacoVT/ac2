@@ -826,6 +826,13 @@ window.PUB_DEFAULTS={
     // билет на място (рецепция) → Edge Function walkin-ticket
     async walkinTicket(o) { return fnCall('walkin-ticket', o); },
     // връщане на сумата през Stripe (Edge Function refund-payment); cents празно = цялата сума
+    // „има ли нещо ново?“ за админа — най-новите created_at на заявки/кандидатури/съобщения (3 леки заявки)
+    async latestStamps() {
+      if (!LIVE) return {};
+      const one = async (t) => { try { const { data } = await sb.from(t).select('created_at').order('created_at', { ascending: false }).limit(1); return (data && data[0] && data[0].created_at) || ''; } catch (e) { return ''; } };
+      const [r, a, m] = await Promise.all([one('reservations'), one('applications'), one('contact_messages')]);
+      return { reservations: r, applications: a, messages: m };
+    },
     async refundReservation(id, cents) {
       if (!LIVE) return { error: { message: 'demo' } };
       const { data, error } = await invokeFn('refund-payment', { body: { reservation_id: id, amount_cents: cents || undefined } });
