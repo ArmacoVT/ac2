@@ -8,7 +8,7 @@
 //   Supabase, видео/аудио, външни скриптове → без намеса (винаги по мрежата).
 // При нов CACHE: старите кешове се трият, новият worker поема веднага (skipWaiting + claim),
 // а страниците се презареждат сами, когато е безопасно (вж. края на index.html / app/index.html / admin.html).
-const CACHE = 'acac-v389';
+const CACHE = 'acac-v390';
 const ASSETS = [
   './', './index.html', './landing.html', './t.html', './privacy.html', './delete-account.html', './cards/contour-tall.svg', './cards/contour-wide.svg', './app/index.html', './admin.html', './config.js', './db.js', './legal.js', './brand.js', './rules.html',
   './vendor/supabase.js', './vendor/qrcode.js', './vendor/jsqr.js',

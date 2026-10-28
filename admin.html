@@ -287,7 +287,7 @@ function render(){
   const badge=DB.live?`<span class="badge live">Свързан Supabase</span>`:`<span class="badge">Демо режим</span>`;
   let h=`<div class="wrap">
     <div class="top"><div class="b">AC² · Админ панел<br><small>American College Arcus Club</small></div>
-      <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn ghost sm" id="refreshBtn" onclick="adminRefresh()" title="Презарежда данните (резервации, членове…)">↻ Опресни</button><button class="btn ghost sm" onclick="location.reload()" title="Зарежда най-новата версия на админа от сървъра">⬆ Обнови версията</button><button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
+      <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn ghost sm" id="refreshBtn" onclick="adminRefresh()" title="Презарежда данните (резервации, членове…)">↻ Опресни</button><button class="btn sm" id="newverBtn" onclick="location.reload()" style="display:${window._newVer?'inline-block':'none'};background:#c9a86a;color:#1b1b1b;border-color:#c9a86a;" title="Има нова версия на админа — зарежда я">⬆ Нова версия — обнови</button><button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
     ${tabsHtml()}
     ${isEditor()?`<p class="muted" style="margin:6px 0 10px;font-size:12px;">Влезли сте като служител — виждате само разделите, за които имате права.</p>`:''}
     <div id="inboxBox">${inboxView()}</div>`;
@@ -2225,14 +2225,24 @@ boot();
 <script>if('serviceWorker' in navigator){
   // Админът НИКОГА не се презарежда сам (незаписани промени!). При нова версия — лента с бутон „Обнови“; ти избираш кога.
   const _had=!!navigator.serviceWorker.controller;   // при първо отваряне (без стар worker) няма лента
-  const _bar=()=>{ if(document.getElementById('swbar'))return; const b=document.createElement('div'); b.id='swbar';
+  // Нова версия → бутон „⬆ Нова версия — обнови“ в горната лента (и лента долу). Показва се само тогава.
+  const _bar=()=>{
+    window._newVer=true;
+    const nb=document.getElementById('newverBtn'); if(nb)nb.style.display='inline-block';
+    if(document.getElementById('swbar'))return; const b=document.createElement('div'); b.id='swbar';
     b.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;background:#1b1b1b;color:#ebebd6;border:1px solid #c9a86a;border-radius:24px;padding:10px 16px;font-size:13px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 28px rgba(0,0,0,.35);';
     b.innerHTML='Налична е нова версия на админа <button onclick="location.reload()" style="background:#c9a86a;color:#1b1b1b;border:0;border-radius:16px;padding:6px 12px;font-weight:600;cursor:pointer;">Обнови</button>';
     document.body.appendChild(b); };
+  // Проверка за нова версия: при отваряне, при връщане в таба, при всяка смяна на раздел (клик) и на 2 минути.
+  // Засичане: нов worker (updatefound → installed/activated) ИЛИ смяна на контролиращия worker.
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').then(reg=>{
     const chk=()=>reg.update().catch(()=>{});
+    const watch=w=>{ if(!w)return; w.addEventListener('statechange',()=>{ if((w.state==='installed'||w.state==='activated')&&_had)_bar(); }); };
+    reg.addEventListener('updatefound',()=>watch(reg.installing));
+    if(reg.waiting&&_had)_bar();
     document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible')chk(); });
-    setInterval(chk,30*60*1000);
+    let lastChk=Date.now(); document.addEventListener('click',()=>{ if(Date.now()-lastChk>15000){lastChk=Date.now();chk();} },true);
+    setInterval(chk,2*60*1000);
   }).catch(()=>{}));
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_had)_bar(); });
 }</script>
