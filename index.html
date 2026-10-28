@@ -950,7 +950,7 @@ function pageApp(){
 
 // ---------- РЕЗЕРВАЦИЯ ОТ ГОСТ (нечлен) — на страницата на събитието ----------
 const evSlots=e=>(e&&e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(s=>s&&s.time):[];   // слотове (часове) с капацитет по слот
-const maxParty=e=>{const v=parseInt(e&&e.pub&&e.pub.max_party,10);return v>0?Math.min(50,v):4;};   // макс. места на резервация (админ; по подразбиране 4)
+const maxParty=e=>{const v=parseInt(e&&e.pub&&e.pub.max_party,10);return v>0?Math.min(50,v):8;};   // макс. места на резервация/билет (админ); без настройка 8; безплатни имат и „9+“
 function bookingBox(e){
   const td=todayIso(); const from=guestFrom(e);
   const paidBack=PAY_RESULT&&PAY_RESULT.event===e.id;
@@ -1016,7 +1016,7 @@ async function submitTicket(f,eventId){
     if(typeof r.error.left_for_email==='number'){
       const left=r.error.left_for_email, have=r.error.have||0;
       if(left>0){ [...f.party.options].forEach(o=>{o.disabled=o.value!=='9+'&&parseInt(o.value,10)>left;}); f.party.value=String(Math.min(party,left)); bkTotal(f); }
-      setMsg('bk_msg',lang==='bg'?r.error.message:(left>0?`This e-mail already has ${have} seat${have===1?'':'s'} for this event. You can add up to ${left} more.`:`This e-mail already has ${have} seats for this event — the maximum (${r.error.max||4}).`));
+      setMsg('bk_msg',lang==='bg'?r.error.message:(left>0?`This e-mail already has ${have} seat${have===1?'':'s'} for this event. You can add up to ${left} more.`:`This e-mail already has ${have} seats for this event — the maximum (${r.error.max||8}).`));
       return false;
     }
     setMsg('bk_msg',r.error.captcha?t('errCaptcha'):(r.error.message||t('errGeneric'))); return false;

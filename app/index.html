@@ -1230,7 +1230,7 @@ function openBook(id,onlyKind){
   if(!tiers.length){toast(lang==='bg'?'Няма налична опция за това събитие':'No option for this event');return;}
   bookTier=tiers[0].kind;
   const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
-  const mp=parseInt(e.pub&&e.pub.max_party,10); const seatsMax=mp>0?Math.min(50,mp):seats;   // макс. места на резервация — от събитието (админ), иначе от нивото на членство
+  const mp=parseInt(e.pub&&e.pub.max_party,10); const seatsMax=mp>0?Math.min(50,mp):Math.max(seats,8);   // без настройка: до 8 (безплатните имат и „9+“)   // макс. места на резервация — от събитието (админ), иначе от нивото на членство
   const left=seatsLeft(e);
   const maxN=left!==null?Math.max(1,Math.min(seatsMax,left)):seatsMax;
   const tierChips=tiers.length>1?`<div style="display:flex;gap:8px;margin-top:8px;">${tiers.map(t=>`<div class="tieropt" data-kind="${t.kind}" onclick="selectTier('${e.id}','${t.kind}')" style="flex:1;text-align:center;padding:12px 6px;border:1px solid var(--line);border-radius:12px;cursor:pointer;"><div style="color:var(--gold);display:flex;justify-content:center;">${TIERICON[t.kind]||''}</div><div style="font-size:12px;margin-top:5px;color:var(--text);">${t.short}</div><b style="color:var(--gold);font-size:13px;">${t.price>0?fmtPrice(t.price):(lang==='bg'?'Безпл.':'Free')}</b></div>`).join('')}</div>`:'';
