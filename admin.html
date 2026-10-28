@@ -259,7 +259,10 @@ function refreshInbox(){ const box=document.getElementById('inboxBox'); if(!box)
 // кутията „За действие“ — горе на всеки раздел, само ако има нещо
 function inboxView(){
   const items=attItems(); if(!items.length)return '';
-  const MAX=8; const show=items.slice(0,MAX);
+  // свита/разпъната (помни се); „… и още N“ → „Покажи всички“
+  let collapsed=false; try{collapsed=localStorage.getItem('acac_inbox_collapsed')==='1';}catch(e){}
+  if(collapsed)return `<div class="inbox" style="padding:10px 16px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer;" onclick="inboxToggle()"><h3 style="margin:0;">За действие <span class="tagn">${items.length}</span></h3><button class="btn ghost sm" type="button">Разпъни ▾</button></div></div>`;
+  const MAX=window._inboxAll?items.length:8; const show=items.slice(0,MAX);
   const rows=show.map(i=>{
     if(i.k==='res'){
       const r=i.r, nm=esc(r.name||r.who||'член'), what=esc(r.place||r.fmt||'Резервация')+' · '+isoToBg(r.date||'')+(r.time?' '+esc(r.time):'')+' · '+(r.party||1)+' '+(r.party==1?'място':'места');
@@ -273,8 +276,9 @@ function inboxView(){
     if(i.k==='app'){const a=i.r;return `<div class="row"><div class="t"><span class="tagn">КАНДИДАТУРА</span> <b>${esc(a.name||a.full_name||a.email||'')}</b>${a.membership?' — '+esc(memName(a.membership)):''}</div><div class="a"><button class="btn ghost sm" onclick="setTab('apps')">Отвори</button></div></div>`;}
     const m=i.r;return `<div class="row"><div class="t"><span class="tagn grey">СЪОБЩЕНИЕ</span> <b>${esc(m.name||m.email||'')}</b>${m.subject?' — '+esc(m.subject):''}</div><div class="a"><button class="btn ghost sm" onclick="setTab('messages')">Отвори</button></div></div>`;
   }).join('');
-  return `<div class="inbox"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;"><h3>За действие <span class="tagn">${items.length}</span></h3><button class="btn ghost sm" onclick="markAllSeen()">Всичко е прегледано</button></div>${rows}${items.length>MAX?`<div class="muted" style="font-size:12px;margin-top:6px;">… и още ${items.length-MAX}</div>`:''}</div>`;
+  return `<div class="inbox"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;"><h3 style="cursor:pointer;" onclick="inboxToggle()">За действие <span class="tagn">${items.length}</span></h3><div style="display:flex;gap:6px;"><button class="btn ghost sm" onclick="markAllSeen()">Всичко е прегледано</button><button class="btn ghost sm" onclick="inboxToggle()">Свий ▴</button></div></div>${rows}${items.length>MAX?`<div style="margin-top:8px;"><button class="btn ghost sm" onclick="window._inboxAll=true;render()">Покажи всички (${items.length})</button></div>`:(window._inboxAll&&items.length>8?`<div style="margin-top:8px;"><button class="btn ghost sm" onclick="window._inboxAll=false;render()">Покажи само първите 8</button></div>`:'')}</div>`;
 }
+function inboxToggle(){ let c=false; try{c=localStorage.getItem('acac_inbox_collapsed')==='1'; localStorage.setItem('acac_inbox_collapsed',c?'0':'1');}catch(e){} render(); }
 async function goRes(id){ const r=RES.find(x=>x.id===id); resArchive=false; resFilter=r&&r.event_id&&EVENTS.some(e=>e.id===r.event_id)?r.event_id:'all'; if(tab!=='res'){await setTab('res');} else render(); const c=document.getElementById('rescard_'+id); if(c){c.scrollIntoView({behavior:'smooth',block:'center'});c.style.outline='2px solid #82303D';setTimeout(()=>{c.style.outline='';},2500);} }
 
 function tabBadge(n){return n?` <span style="background:#82303d;color:#f7f7ee;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${n}</span>`:'';}
@@ -1089,13 +1093,17 @@ function resView(){
   SRC.forEach(r=>{const k=r.event_id||'other';(groups[k]=groups[k]||[]).push(r);});
   const pend=list=>list.filter(r=>!r.status||r.status==='requested').length;
   const cnt=n=>n?` <span style="display:inline-block;background:#82303d;color:#f7f7ee;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${n}</span>`:'';
-  let chips=`<button class="tab ${resFilter==='all'?'on':''}" onclick="setResFilter('all')">Всички${cnt(pend(SRC))}</button>`;
+  // сиво номерче = всички активни резервации (без отказани/отменени); червено = чакащи одобрение
+  const active=list=>list.filter(r=>r.status!=='declined'&&r.status!=='cancelled');
+  const seats=list=>active(list).reduce((s,r)=>s+(Number(r.party)||1),0);
+  const tot=list=>{const a=active(list).length; return a?` <span title="${a} резервации · ${seats(list)} места" style="display:inline-block;background:rgba(28,28,27,.12);color:inherit;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${a}</span>`:'';};
+  let chips=`<button class="tab ${resFilter==='all'?'on':''}" onclick="setResFilter('all')">Всички${tot(SRC)}${cnt(pend(SRC))}</button>`;
   EVENTS.forEach(e=>{
     if(!groups[e.id])return;
     const t=e.title.length>22?e.title.slice(0,22)+'…':e.title;
-    chips+=`<button class="tab ${resFilter===e.id?'on':''}" onclick="setResFilter('${e.id}')">${esc(t)}${cnt(pend(groups[e.id]))}</button>`;
+    chips+=`<button class="tab ${resFilter===e.id?'on':''}" onclick="setResFilter('${e.id}')">${esc(t)}${tot(groups[e.id])}${cnt(pend(groups[e.id]))}</button>`;
   });
-  if(groups.other)chips+=`<button class="tab ${resFilter==='other'?'on':''}" onclick="setResFilter('other')">Общи запитвания${cnt(pend(groups.other))}</button>`;
+  if(groups.other)chips+=`<button class="tab ${resFilter==='other'?'on':''}" onclick="setResFilter('other')">Общи запитвания${tot(groups.other)}${cnt(pend(groups.other))}</button>`;
   // ако избраният таб вече няма заявки — връщаме се на „Всички"
   if(resFilter!=='all'&&!groups[resFilter])resFilter='all';
   const shown=resFilter==='all'?SRC:groups[resFilter]||[];
