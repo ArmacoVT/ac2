@@ -950,7 +950,9 @@ function pageApp(){
 
 // ---------- РЕЗЕРВАЦИЯ ОТ ГОСТ (нечлен) — на страницата на събитието ----------
 const evSlots=e=>(e&&e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(s=>s&&s.time):[];   // слотове (часове) с капацитет по слот
-const maxParty=e=>{const v=parseInt(e&&e.pub&&e.pub.max_party,10);return v>0?Math.min(50,v):8;};   // макс. места на резервация/билет (админ); без настройка 8; безплатни имат и „9+“
+// макс. места на резервация/билет: ресторант (AC² Table) 8, останалите 4; „Макс. места“ в събитието има предимство
+const maxParty=e=>{const v=parseInt(e&&e.pub&&e.pub.max_party,10);return v>0?Math.min(50,v):(isDinner(e)?50:4);};   // ресторант: без практически лимит (до 50); другите 4
+const bigAllowed=e=>isDinner(e)&&!(Number(e&&e.price)>0);   // „9+“: само безплатни събития в ресторанта
 function bookingBox(e){
   const td=todayIso(); const from=guestFrom(e);
   const paidBack=PAY_RESULT&&PAY_RESULT.event===e.id;
@@ -962,9 +964,9 @@ function bookingBox(e){
   else inner=`<form class="form" id="bookForm" onsubmit="return false;" data-unit="${unit}">
       ${paidBack&&!PAY_RESULT.ok?`<div class="msg err">${t('payFail')}</div>`:''}
       ${evSlots(e).length?`<div><label>${L('Час','Time')} *</label><div class="selrow" id="bk_slots">${evSlots(e).map((s,i)=>`<button type="button" class="achip ${i===0?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on')">${esc(s.time)}</button>`).join('')}</div></div>`:''}
-      <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;"><select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form);const b=document.getElementById('bk_big');if(b)b.style.display=this.value==='9+'?'block':'none'">${Array.from({length:maxParty(e)},(_,i)=>`<option>${i+1}</option>`).join('')}${unit<=0?`<option value="9+">9+</option>`:''}</select>
+      <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;">${(isDinner(e)&&unit>0)?`<input name="party" type="number" inputmode="numeric" min="1" max="${maxParty(e)}" value="1" style="width:110px;" oninput="bkTotal(this.form)"/>`:`<select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form);const b=document.getElementById('bk_big');if(b)b.style.display=this.value==='9+'?'block':'none'">${Array.from({length:bigAllowed(e)?8:maxParty(e)},(_,i)=>`<option>${i+1}</option>`).join('')}${bigAllowed(e)?`<option value="9+">9+</option>`:''}</select>`}
         ${unit>0?`<span style="font-family:var(--serif);font-size:22px;color:var(--cream);">= <b id="bk_total">${esc(fmtPrice(e))}</b></span>`:`<span class="hint" style="margin:0">${t('free')}</span>`}</div></div>
-      ${unit<=0?`<div id="bk_big" class="msg ok" style="display:none;">${L('За групи над 8 души екипът ще се свърже с вас по телефона, за да уточните детайлите.','For groups of more than 8 the team will call you to arrange the details.')}</div>`:''}
+      ${bigAllowed(e)?`<div id="bk_big" class="msg ok" style="display:none;">${L('За групи над 8 души екипът ще се свърже с вас по телефона, за да уточните детайлите.','For groups of more than 8 the team will call you to arrange the details.')}</div>`:''}
       <div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div>
       <div class="r2"><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
       <label class="chk"><input type="checkbox" name="consent"/> <span>${t('consentContact')}</span></label>
@@ -1015,7 +1017,7 @@ async function submitTicket(f,eventId){
     // лимит по имейл (до 4 места общо за събитие, може на части): свиваме избора до оставащите и казваме колко
     if(typeof r.error.left_for_email==='number'){
       const left=r.error.left_for_email, have=r.error.have||0;
-      if(left>0){ [...f.party.options].forEach(o=>{o.disabled=o.value!=='9+'&&parseInt(o.value,10)>left;}); f.party.value=String(Math.min(party,left)); bkTotal(f); }
+      if(left>0){ if(f.party.options)[...f.party.options].forEach(o=>{o.disabled=o.value!=='9+'&&parseInt(o.value,10)>left;}); f.party.value=String(Math.min(party,left)); bkTotal(f); }
       setMsg('bk_msg',lang==='bg'?r.error.message:(left>0?`This e-mail already has ${have} seat${have===1?'':'s'} for this event. You can add up to ${left} more.`:`This e-mail already has ${have} seats for this event — the maximum (${r.error.max||8}).`));
       return false;
     }

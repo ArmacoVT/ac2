@@ -631,8 +631,8 @@ function formView(){
     <div class="row2"><div><label>Капацитет</label><input id="f_cap" type="number" min="0" value="${e?e.capacity:0}" ${draftSlots.length?'disabled title="При слотове капацитетът е сборът от слотовете"':''}/></div>
       <div><label>Места на маса след събитието</label><input id="f_tcap" type="number" min="0" value="${e&&e.table_capacity?e.table_capacity:''}" placeholder="по желание"/></div></div>
     ${slotsSection()}
-    <div class="row2"><div><label>Макс. места на една резервация / билет</label><input id="f_max_party" type="number" min="1" max="50" value="${(e&&e.pub&&e.pub.max_party)?e.pub.max_party:''}" placeholder="по подразбиране 8"/></div>
-      <div class="muted" style="font-size:12px;padding-top:26px;">Важи и за общия лимит на имейл при гости. При безплатни събития има и опция „9+“ — заявката влиза за обаждане.</div></div>
+    <div class="row2"><div><label>Макс. места на една резервация / билет</label><input id="f_max_party" type="number" min="1" max="50" value="${(e&&e.pub&&e.pub.max_party)?e.pub.max_party:''}" placeholder="ресторант без лимит, останалите 4"/></div>
+      <div class="muted" style="font-size:12px;padding-top:26px;">Празно = AC² Table без лимит (платено — свободна бройка; безплатно — 1–8 и „9+“ за обаждане), другите формати 4 (и 4 общо на имейл при гости).</div></div>
     <div class="row2"><div><label>Отказ на ПЛАТЕН билет — най-късно (часове преди началото)</label><input id="f_cancel_h" type="number" min="0" step="1" value="${(e&&e.pub&&e.pub.cancel_hours!=null&&e.pub.cancel_hours!=='')?e.pub.cancel_hours:''}" placeholder="по подразбиране 72"/></div>
       <div class="muted" style="font-size:12px;padding-top:26px;">Празно = 72 ч. (3 дни). 0 = до самото начало. Безплатни резервации (безплатно събитие, маса, запитване) — винаги 24 ч.</div></div>
     <div class="row2"><div><label>Вход</label><select id="f_pub_entry">
