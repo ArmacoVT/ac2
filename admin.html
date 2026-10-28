@@ -287,7 +287,7 @@ function render(){
   const badge=DB.live?`<span class="badge live">Свързан Supabase</span>`:`<span class="badge">Демо режим</span>`;
   let h=`<div class="wrap">
     <div class="top"><div class="b">AC² · Админ панел<br><small>American College Arcus Club</small></div>
-      <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn ghost sm" id="refreshBtn" onclick="adminRefresh()">↻ Опресни</button><button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
+      <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn ghost sm" id="refreshBtn" onclick="adminRefresh()" title="Презарежда данните (резервации, членове…)">↻ Опресни</button><button class="btn ghost sm" onclick="location.reload()" title="Зарежда най-новата версия на админа от сървъра">⬆ Обнови версията</button><button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
     ${tabsHtml()}
     ${isEditor()?`<p class="muted" style="margin:6px 0 10px;font-size:12px;">Влезли сте като служител — виждате само разделите, за които имате права.</p>`:''}
     <div id="inboxBox">${inboxView()}</div>`;
