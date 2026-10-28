@@ -305,7 +305,8 @@ window.PUB_DEFAULTS={
       file = await shrinkImage(file);
       const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
       const path = (folder ? folder.replace(/\/+$/, '') + '/' : '') + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
-      const up = await sb.storage.from('event-media').upload(path, file, { upsert: true, contentType: file.type });
+      // cacheControl 1 година: файлът има уникално име, така че браузърът/CDN го пазят дълго (по подразбиране 1 час → трафикът от Supabase растеше)
+      const up = await sb.storage.from('event-media').upload(path, file, { upsert: true, contentType: file.type, cacheControl: '31536000' });
       if (up.error) return { error: up.error };
       const { data } = sb.storage.from('event-media').getPublicUrl(path);
       return { url: data.publicUrl };

@@ -8,7 +8,8 @@
 //   Supabase, видео/аудио, външни скриптове → без намеса (винаги по мрежата).
 // При нов CACHE: старите кешове се трият, новият worker поема веднага (skipWaiting + claim),
 // а страниците се презареждат сами, когато е безопасно (вж. края на index.html / app/index.html / admin.html).
-const CACHE = 'acac-v401';
+const CACHE = 'acac-v402';
+const MEDIA = 'acac-media';   // снимки от Supabase Storage — отделен кеш, който НЕ се трие при нова версия
 const ASSETS = [
   './', './index.html', './landing.html', './t.html', './privacy.html', './delete-account.html', './cards/contour-tall.svg', './cards/contour-wide.svg', './app/index.html', './admin.html', './config.js', './db.js', './legal.js', './brand.js', './rules.html',
   './vendor/supabase.js', './vendor/qrcode.js', './vendor/jsqr.js',
@@ -24,30 +25,37 @@ self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(a => new Request(a, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k !== MEDIA).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener('message', e => { if (e.data === 'skipWaiting') self.skipWaiting(); });
 
 // кои файлове са „наши, променливи“ → мрежа първо
 const FRESH = /\/(config|db|brand|legal)\.js$/;
 
-function putCache(req, resp) {
-  if (req.method === 'GET' && resp && resp.ok) { const cp = resp.clone(); caches.open(CACHE).then(c => c.put(req, cp)); }
+function putCache(req, resp, name) {
+  if (req.method === 'GET' && resp && resp.ok) { const cp = resp.clone(); caches.open(name || CACHE).then(c => c.put(req, cp)); }
 }
 // мрежа първо: no-cache = питай сървъра (ETag), не вярвай на HTTP кеша на браузъра
 function networkFirst(req, fallback) {
   return fetch(new Request(req, { cache: 'no-cache' })).then(resp => { putCache(req, resp); return resp; })
     .catch(() => caches.match(req).then(r => r || (fallback ? fallback() : Response.error())));
 }
-function cacheFirst(req) {
-  return caches.match(req).then(r => r || fetch(req).then(resp => { putCache(req, resp); return resp; }));
+function cacheFirst(req, name) {
+  return caches.match(req).then(r => r || fetch(req).then(resp => { putCache(req, resp, name); return resp; }));
 }
 
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.hostname.endsWith('supabase.co') || url.hostname.includes('supabase')) return;   // данни — винаги мрежа
+  if (url.hostname.endsWith('supabase.co') || url.hostname.includes('supabase')) {
+    // Данните — винаги мрежа. Но СНИМКИТЕ от Storage (публични файлове с уникални имена) — кеш първо:
+    // иначе всяка се тегли наново при всяко отваряне и трафикът от Supabase излиза над лимита. Видео (Range) — не.
+    if (url.pathname.indexOf('/storage/v1/object/public/') !== -1 && !req.headers.has('range') && req.destination !== 'video' && req.destination !== 'audio') {
+      e.respondWith(cacheFirst(req, MEDIA));
+    }
+    return;
+  }
   if (url.origin !== location.origin) return;   // външни скриптове (Stripe, Turnstile, Sentry, карти) — без намеса
   // Видео/аудио (интрото): Safari тегли на части (Range) — кешът връща целия файл и видеото не тръгва → винаги по мрежата
   if (url.pathname.indexOf('/media/') !== -1 || req.headers.has('range')) return;
