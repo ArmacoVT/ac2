@@ -2292,17 +2292,16 @@ boot();
     b.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;background:#1b1b1b;color:#ebebd6;border:1px solid #c9a86a;border-radius:24px;padding:10px 16px;font-size:13px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 28px rgba(0,0,0,.35);';
     b.innerHTML='Налична е нова версия на админа <button onclick="location.reload()" style="background:#c9a86a;color:#1b1b1b;border:0;border-radius:16px;padding:6px 12px;font-weight:600;cursor:pointer;">Обнови</button>';
     document.body.appendChild(b); };
-  // Проверка за нова версия: при отваряне, при връщане в таба, при всяка смяна на раздел (клик) и на 2 минути.
-  // Засичане: нов worker (updatefound → installed/activated) ИЛИ смяна на контролиращия worker.
-  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').then(reg=>{
-    const chk=()=>reg.update().catch(()=>{});
-    const watch=w=>{ if(!w)return; w.addEventListener('statechange',()=>{ if((w.state==='installed'||w.state==='activated')&&_had)_bar(); }); };
-    reg.addEventListener('updatefound',()=>watch(reg.installing));
-    if(reg.waiting&&_had)_bar();
-    document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible')chk(); });
-    let lastChk=Date.now(); document.addEventListener('click',()=>{ if(Date.now()-lastChk>15000){lastChk=Date.now();chk();} },true);
-    setInterval(chk,2*60*1000);
-  }).catch(()=>{}));
+  // Проверка за нова версия — НЕ зависи от service worker-а (при Ctrl+F5 страницата е без worker и старата логика мълчеше):
+  // на всеки 2 мин., при връщане в таба и при клик (≥15 s) теглим sw.js от сървъра и сравняваме номера на версията
+  // с този при зареждането. Различен → бутон „⬆ Нова версия — обнови“. Service worker-ът се регистрира отделно.
+  let _ver=null;
+  const readVer=async()=>{ try{ const t=await (await fetch('sw.js?'+Date.now(),{cache:'no-store'})).text(); const m=t.match(/acac-v(\d+)/); return m?parseInt(m[1],10):null; }catch(e){ return null; } };
+  const chk=async()=>{ const v=await readVer(); if(v==null)return; if(_ver==null){_ver=v;return;} if(v>_ver)_bar(); };
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); chk(); });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible')chk(); });
+  let lastChk=Date.now(); document.addEventListener('click',()=>{ if(Date.now()-lastChk>15000){lastChk=Date.now();chk();} },true);
+  setInterval(chk,2*60*1000);
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_had)_bar(); });
 }</script>
 </body>
