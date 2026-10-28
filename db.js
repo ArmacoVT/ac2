@@ -264,7 +264,7 @@ window.PUB_DEFAULTS={
         membership_until: prof ? (prof.membership_until || '') : '',
         company_id: prof ? (prof.company_id || '') : '',
         membership: prof ? prof.membership : 'guest', role: prof ? prof.role : 'member',
-        perms: prof && Array.isArray(prof.perms) ? prof.perms : [],
+        perms: prof && Array.isArray(prof.perms) ? prof.perms : [], perms_until: prof ? (prof.perms_until || '') : '', is_owner: !!(prof && prof.is_owner),
         terms_version: prof ? (prof.terms_version || '') : '', terms_accepted_at: prof ? (prof.terms_accepted_at || '') : '',
         media_consent: prof ? !!prof.media_consent : false };
     },
@@ -884,9 +884,9 @@ window.PUB_DEFAULTS={
       return null;
     },
     // ---- Екип и права (само админ) ----
-    async setPerms(id, perms) {
+    async setPerms(id, perms, until) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await invokeFn('invite-member', { body: { action: 'set_perms', id, perms } });
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'set_perms', id, perms, perms_until: until || null } });
       if (error) { let m = error.message; try { const b = await error.context.json(); if (b && b.error) m = b.error; } catch (e) {} return { error: { message: m } }; }
       if (data && data.error) return { error: { message: data.error } };
       return { error: null, data };
@@ -898,9 +898,9 @@ window.PUB_DEFAULTS={
       if (data && data.error) return { error: { message: data.error } };
       return { error: null, data };
     },
-    async inviteStaff(email, fullName, perms) {
+    async inviteStaff(email, fullName, perms, until) {
       if (!LIVE) return { error: { message: 'demo' } };
-      const { data, error } = await invokeFn('invite-member', { body: { action: 'invite_staff', email, full_name: fullName, perms } });
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'invite_staff', email, full_name: fullName, perms, perms_until: until || null } });
       if (error) { let m = error.message; try { const b = await error.context.json(); if (b && b.error) m = b.error; } catch (e) {} return { error: { message: m } }; }
       if (data && data.error) return { error: { message: data.error } };
       return { error: null, data };

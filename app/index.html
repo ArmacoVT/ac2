@@ -1070,7 +1070,7 @@ function eventCard(e,i){
     :locked?`<button class="chip locked" onclick="event.stopPropagation();toast(tr('bookFrom')+' '+'${lockEu}')">${lockSvg}${tr('bookFrom')} ${lockEu}</button>`
     :soldOut?`<button class="chip locked" onclick="event.stopPropagation();toast(lang==='bg'?'Изчерпано':'Sold out')">${lang==='bg'?'Изчерпано':'Sold out'}</button>`
     :evEntry(e)==='free'?`<span class="chip" style="background:var(--card);color:var(--muted);cursor:default;">${lang==='bg'?'Свободен вход':'Free entry'}</span>`
-    :`<button class="chip" onclick="event.stopPropagation();openBook('${e.id}')">${e.price>0?(lang==='bg'?'Купи билет':'Buy ticket'):(evEntry(e)==='rsvp'?(lang==='bg'?'Ще дойда':'I will attend'):tr('ticket'))}</button>`);
+    :`<button class="chip" onclick="event.stopPropagation();openBook('${e.id}')">${e.price>0?(lang==='bg'?'Купи билет':'Buy ticket'):(evEntry(e)==='rsvp'?(lang==='bg'?'Запази място':'Reserve a seat'):tr('ticket'))}</button>`);
   const delay=`animation-delay:${((i||0)%8)*0.05}s;`;
   const seats=user?(MEMBERS.find(m=>m.id===user.membership)?.seats||1):1;
   const tableOpt=endsEarly(e)?`<div class="tableopt">
@@ -1207,7 +1207,7 @@ let bookTier='physical';
 // нивата (стълбица), които се предлагат за събитието
 function eventTiers(e){
   const t=[];
-  if(e.offer_physical!==false&&e.format!=='online') t.push({kind:'physical',label:(lang==='bg'?'Присъствие в клуба':'In-club'),short:(lang==='bg'?'Присъствие':'In-club'),price:e.price||0});
+  if((e.offer_physical!==false||!(Number(e.price)>0))&&e.format!=='online') t.push({kind:'physical',label:(lang==='bg'?'Присъствие в клуба':'In-club'),short:(lang==='bg'?'Присъствие':'In-club'),price:e.price||0});
   if(e.offer_online) t.push({kind:'online',label:(lang==='bg'?'Онлайн гледане':'Online'),short:(lang==='bg'?'Онлайн':'Online'),price:e.price_online||0});
   return t; // архивът вече не е билет — купува се на място във „Видео архив"
 }

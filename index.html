@@ -552,7 +552,7 @@ function evAction(e){
   const ext=e.pub&&e.pub.ticket_url;
   const dinner=isDinner(e);
   if(evEntry(e)==='free'&&!ext)return {href:'#/event/'+e.id,label:t('details'),ext:false,kind:'details_click'};
-  const label=dinner?t('table'):(e.price>0?t('tickets'):(evEntry(e)==='rsvp'?L('Ще дойда','I will attend'):(e.capacity>0?t('reserve'):t('details'))));
+  const label=dinner?t('table'):(e.price>0?t('tickets'):(evEntry(e)==='rsvp'?L('Запази място','Reserve a seat'):(e.capacity>0?t('reserve'):t('details'))));
   const kind=dinner?'reservation_click':'ticket_click';
   if(ext)return {href:ext,label,ext:true,kind};
   if(guestOpen(e))return {href:'#/event/'+e.id+'/book',label,ext:false,kind};
@@ -973,7 +973,7 @@ function bookingBox(e){
       <div id="bk_captcha" class="cap"></div>
       <div id="bk_pay" style="display:none;margin:6px 0;"></div>
       <div class="msg" id="bk_msg"></div>
-      <div><button class="btn" type="button" id="bk_btn" onclick="submitTicket(this.form,'${esc(e.id)}')">${unit>0?t('pay'):(evEntry(e)==='rsvp'?L('Ще дойда','I will attend'):t('reserve'))}</button></div>
+      <div><button class="btn" type="button" id="bk_btn" onclick="submitTicket(this.form,'${esc(e.id)}')">${unit>0?t('pay'):(evEntry(e)==='rsvp'?L('Запази място','Reserve a seat'):t('reserve'))}</button></div>
       ${unit>0?`<div class="hint">${t('cardHint')}</div>`:''}
     </form>`;
   return `<div class="bookbox" id="booking">

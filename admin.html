@@ -119,16 +119,26 @@ const PERM_DEFS=[
   {id:'site',t:'Публичен сайт',d:'текстове, снимки, меню, нива на членство на ac2.bg'},
   {id:'messages',t:'Съобщения',d:'контактна форма и нюзлетър'},
   {id:'stats',t:'Статистика',d:'справки и графики'},
-  {id:'audit',t:'Журнал',d:'кой какво е променил'}];
+  {id:'audit',t:'Журнал',d:'кой какво е променил'},
+  // „опасни“ права — отделни отметки (важат и в базата)
+  {id:'res_delete',t:'⚠ Изтриване на резервации',d:'необратимо изтриване (не само отказ)',danger:true},
+  {id:'refunds',t:'⚠ Връщане на пари',d:'refund по картата през Stripe',danger:true},
+  {id:'walkin',t:'⚠ Билет на място',d:'продажба в брой / на ПОС от рецепцията',danger:true},
+  {id:'events_delete',t:'⚠ Изтриване на събития',d:'заедно с резервациите към тях',danger:true},
+  {id:'fees',t:'⚠ Членства и цени',d:'цени на членствата, покани за плащане, банкови преводи',danger:true},
+  {id:'team',t:'⚠ Екип и права',d:'добавя/маха служители и права (дава се само от собственика)',danger:true,ownerOnly:true}];
 const PERM_PRESETS=[
-  {id:'manager',t:'Мениджър',p:['events','reservations','members_view','members_edit','applications','news','site','messages','stats','audit']},
+  {id:'deputy',t:'Заместник-админ',p:['events','reservations','members_view','members_edit','applications','news','site','messages','stats','audit','res_delete','refunds','walkin','events_delete']},
+  {id:'manager',t:'Мениджър',p:['events','reservations','members_view','members_edit','applications','news','site','messages','stats','audit','walkin']},
   {id:'editor',t:'Редактор',p:['events','news','site']},
-  {id:'reception',t:'Рецепция',p:['reservations','members_view','messages']}];
-const can=p=>role==='admin'||PERMS.includes(p);
+  {id:'reception',t:'Рецепция',p:['reservations','members_view','messages','walkin']}];
+let PERMS_UNTIL='', IS_OWNER=false;
+const permsLive=()=>!PERMS_UNTIL||PERMS_UNTIL>=new Date().toISOString().slice(0,10);
+const can=p=>role==='admin'||(permsLive()&&PERMS.includes(p));
 const isEditor=()=>role!=='admin';   // „служител“ (не админ) — показва бележка под табовете
 // кои табове с кое право
-const TAB_PERM={events:'events',archive:'events',members:'events',res:'reservations',people:'members_view',apps:'applications',ann:'news',public:'site',messages:'messages',stats:'stats',audit:'audit',team:'__admin',fees:'__admin'};
-const tabAllowed=t=>TAB_PERM[t]==='__admin'?role==='admin':(TAB_PERM[t]?can(TAB_PERM[t]):role==='admin');
+const TAB_PERM={events:'events',archive:'events',members:'events',res:'reservations',people:'members_view',apps:'applications',ann:'news',public:'site',messages:'messages',stats:'stats',audit:'audit',team:'team',fees:'fees'};
+const tabAllowed=t=>TAB_PERM[t]?can(TAB_PERM[t]):role==='admin';
 function firstTab(){ for(const t of ['events','res','people','apps','ann','public','messages','stats','audit','team']) if(tabAllowed(t)) return t; return 'events'; }
 let EVENTS=[], RES=[];
 const root=document.getElementById('root');
@@ -149,7 +159,7 @@ function sessionLost(){
 async function checkSession(){ if(!_sessionLost && !(await DB.sessionAlive())) sessionLost(); }
 
 async function boot(){
-  if(DB.live){ const u=await DB.getUser(); role=u?u.role:''; MY_ID=u?u.id:''; PERMS=(u&&u.perms)||[]; if(role==='editor'&&!PERMS.length)PERMS=['events','news','site','messages']; admin=!!(u&&(u.role==='admin'||PERMS.length)); if(admin&&!tabAllowed(tab))tab=firstTab(); }
+  if(DB.live){ const u=await DB.getUser(); role=u?u.role:''; MY_ID=u?u.id:''; PERMS=(u&&u.perms)||[]; PERMS_UNTIL=(u&&u.perms_until)||''; IS_OWNER=!!(u&&u.is_owner); if(role==='editor'&&!PERMS.length)PERMS=['events','news','site','messages']; admin=!!(u&&(u.role==='admin'||(PERMS.length&&permsLive()))); if(admin&&!tabAllowed(tab))tab=firstTab(); }
   else { admin=localStorage.getItem('acac_admin')==='1'; role='admin'; }
   if(admin) await refresh();
   render();
@@ -288,6 +298,7 @@ function inboxView(){
       const r=i.r, nm=esc(r.name||r.who||'член'), bigG=isBigGroup(r), what=esc(r.place||r.fmt||'Резервация')+' · '+isoToBg(r.date||'')+(r.time?' '+esc(r.time):'')+' · '+(bigG?'<b>9+ души</b> <span class="tagn amber">☎ ЗА ОБАЖДАНЕ</span>'+(r.phone?' '+esc(r.phone):''):(r.party||1)+' '+(r.party==1?'място':'места'));
       const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null; const sum=ev&&ev.price?' · '+(ev.price*(r.party||1)).toFixed(2)+' €':'';
       if(i.a==='new'&&(r.status||'requested')==='requested')return `<div class="row"><div class="t"><span class="tagn">НОВА ЗАЯВКА</span> <b>${nm}</b> — ${what}</div><div class="a"><button class="btn ok sm" onclick="setRes('${r.id}','confirmed')">Потвърди</button><button class="btn no sm" onclick="setRes('${r.id}','declined')">Откажи</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
+      if(i.a==='refund'&&!can('refunds'))return `<div class="row"><div class="t"><span class="tagn amber">ЗА ВРЪЩАНЕ НА СУМА</span> <b>${nm}</b> — ${what}${sum}<br><span class="muted" style="font-size:12px;">Нужно е право „Връщане на пари“.</span></div><div class="a"><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
       if(i.a==='refund')return `<div class="row"><div class="t"><span class="tagn amber">ЗА ВРЪЩАНЕ НА СУМА</span> <b>${nm}</b> — ${what}${sum}<br><span class="muted" style="font-size:12px;">„Върни сумата“ връща парите по картата през Stripe (5–10 работни дни). „Върната в брой/по банка“ = само отбелязване, без движение на пари.</span></div><div class="a"><button class="btn ok sm" onclick="refundRes('${r.id}')">↩ Върни сумата</button><button class="btn ghost sm" onclick="markRefundedRes('${r.id}')">Върната в брой/по банка</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
       if(i.a==='cancel')return `<div class="row"><div class="t"><span class="tagn amber">ОТКАЗ ОТ ЧЛЕН</span> <b>${nm}</b> — ${what}</div><div class="a"><button class="btn ghost sm" onclick="markSeenRes('${r.id}')">Прегледано</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
       return `<div class="row"><div class="t"><span class="tagn">НОВО</span> <b>${nm}</b> — ${what} · ${resBadge(r.status)}</div><div class="a"><button class="btn ghost sm" onclick="markSeenRes('${r.id}')">Прегледано</button><button class="btn ghost sm" onclick="goRes('${r.id}')">Виж</button></div></div>`;
@@ -608,7 +619,7 @@ function eventsView(){
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${liveBtn}
         <button class="btn ghost sm" onclick="editEvent('${e.id}')">Редактирай</button>
-        <button class="btn no sm" onclick="delEvent('${e.id}')">Изтрий</button></div>
+        ${can('events_delete')?`<button class="btn no sm" onclick="delEvent('${e.id}')">Изтрий</button>`:''}</div>
     </div>${eventResList(e)}</div>`;};
   const up=EVENTS.filter(e=>!admIsPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1));
   const past=EVENTS.filter(e=>admIsPast(e)).sort((a,b)=>(a.date<b.date?1:-1));
@@ -657,7 +668,7 @@ function formView(){
       <div class="muted" style="font-size:12px;padding-top:26px;">Празно = 72 ч. (3 дни). 0 = до самото начало. Безплатни резервации (безплатно събитие, маса, запитване) — винаги 24 ч.</div></div>
     <div class="row2"><div><label>Вход</label><select id="f_pub_entry">
         <option value="ticket" ${!(e&&e.pub&&e.pub.entry)||(e&&e.pub&&e.pub.entry==='ticket')?'selected':''}>Билет / резервация (платен или безплатен, с одобрение)</option>
-        <option value="rsvp" ${e&&e.pub&&e.pub.entry==='rsvp'?'selected':''}>Свободен вход · с регистрация („Ще дойда“ — потвърждава се веднага, брои места)</option>
+        <option value="rsvp" ${e&&e.pub&&e.pub.entry==='rsvp'?'selected':''}>Свободен вход · с регистрация („Запази място“ — потвърждава се веднага, брои места)</option>
         <option value="free" ${e&&e.pub&&e.pub.entry==='free'?'selected':''}>Свободен вход — без резервация и без капацитет</option></select></div>
       <div class="muted" style="font-size:12px;padding-top:26px;">При „свободен вход“ цената и капацитетът не се ползват. При „с регистрация“ членът/гостът получава билет с QR веднага, без одобрение.</div></div>
     <div class="row2"><div><label>Маса в ресторанта след събитието</label><select id="f_table_after">
@@ -667,9 +678,10 @@ function formView(){
       <div class="muted" style="font-size:12px;padding-top:26px;">Часът за „автоматично“ се сменя от Публичен сайт → Общи → „Маса след събитие до“ (лятно/зимно време).</div></div>
     <label style="margin-top:6px;">Билети и цени (отметни какво се предлага; 0 = безплатно)</label>
     <div class="row2" style="margin-top:4px;">
-      <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_phys" ${(e?e.offer_physical:true)?'checked':''} style="width:auto;"/> Цена при присъствие (€)</label>
-        <input id="f_price" type="number" min="0" step="0.01" value="${e&&e.price?e.price:0}" placeholder="€ (0 = безплатно)"/></div>
-      <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_online" ${(e&&e.offer_online)?'checked':''} style="width:auto;"/> Цена при онлайн гледане (€)</label>
+      <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_phys" ${(e?e.offer_physical!==false:true)?'checked':''} style="width:auto;"/> Присъствие в клуба — цена (€), 0 = безплатно</label>
+        <input id="f_price" type="number" min="0" step="0.01" value="${e&&e.price?e.price:0}" placeholder="€ (0 = безплатно)"/>
+        <div class="muted" style="font-size:11px;margin-top:2px;">Махни отметката САМО за чисто онлайн събитие (без публика в залата). Безплатно = оставяш отметката и 0.</div></div>
+      <div><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="f_offer_online" ${(e&&e.offer_online)?'checked':''} style="width:auto;"/> Онлайн гледане — цена (€)</label>
         <input id="f_price_online" type="number" min="0" step="0.01" value="${e&&e.price_online?e.price_online:0}" placeholder="€"/></div>
     </div>
     <p class="muted" style="margin:2px 0 0;font-size:12px;">Присъствие включва и онлайн + архива; онлайн включва архива. Неотметнато ниво = не се предлага. 0 = безплатно. Цената за архива се задава в таб „Архив".</p>
@@ -931,13 +943,13 @@ function setResFilter(id){resFilter=id;render();}
 // бутоните ръчно и оставяше само „Изтрий" — затова отказана по погрешка
 // резервация не можеше да се одобри обратно, макар правилото да съществуваше.
 function resActs(id,st){
-  const del=`<button class="btn ghost sm" onclick="delRes('${id}')">Изтрий</button>`;
+  const del=can('res_delete')?`<button class="btn ghost sm" onclick="delRes('${id}')">Изтрий</button>`:'';
   const mail=s=>`<button class="btn ghost sm" onclick="resendMail('${id}','${s}')">✉ Изпрати отново</button>`;
   if(st==='requested')return `<button class="btn ok sm" onclick="setRes('${id}','confirmed')">Потвърди</button>
     <button class="btn no sm" onclick="setRes('${id}','declined')">Откажи</button>${del}`;
   // връщане на сума (цяла или остатък след частично) — за платени онлайн, докато има какво да се връща
   const r0=RES.find(x=>x.id===id); const canRefund=r0&&r0.stripe_pi&&(r0.paid||r0.refund_cents)&&((r0.paid_cents||0)-(r0.refund_cents||0)>0||(!r0.paid_cents&&!r0.refunded_at));
-  const refund=canRefund?`<button class="btn ghost sm" onclick="refundRes('${id}')">↩ Върни сума</button>`:'';
+  const refund=(canRefund&&can('refunds'))?`<button class="btn ghost sm" onclick="refundRes('${id}')">↩ Върни сума</button>`:'';
   if(st==='declined')return `<button class="btn ok sm" onclick="setRes('${id}','confirmed')">Одобри</button>${refund}${mail('declined')}${del}`;
   if(st==='confirmed')return `<button class="btn no sm" onclick="setRes('${id}','declined')">Откажи</button>${refund}${mail('confirmed')}${del}`;
   if(st==='cancelled')return refund+del;       // членът сам е отказал
@@ -962,7 +974,7 @@ function resIsOld(r){
   const cut=new Date(); cut.setDate(cut.getDate()-2);
   return d<cut.toISOString().slice(0,10);
 }
-const doorBtn=()=>`<div style="float:right;margin-top:4px;display:flex;gap:8px;"><button class="btn ok sm" onclick="walkinOpen()">+ Билет на място</button><a class="btn ghost sm" href="${(window.ACAC_CONFIG&&ACAC_CONFIG.APP_URL)||'app/'}#door" target="_blank" rel="noopener">📷 Скенер за вход</a></div>`;
+const doorBtn=()=>`<div style="float:right;margin-top:4px;display:flex;gap:8px;">${can('walkin')?`<button class="btn ok sm" onclick="walkinOpen()">+ Билет на място</button>`:''}<a class="btn ghost sm" href="${(window.ACAC_CONFIG&&ACAC_CONFIG.APP_URL)||'app/'}#door" target="_blank" rel="noopener">📷 Скенер за вход</a></div>`;
 // ---------- ЧЛЕНСТВА И ЦЕНИ (само админ) + ПОКАНА ЗА ПЛАЩАНЕ ----------
 const PLAN_LABEL={year:'12 месеца',half:'2 × 6 месеца',quarter:'4 × 3 месеца',month:'12 × 1 месец'};
 const PLAN_DIV={year:1,half:2,quarter:4,month:12};
@@ -1193,7 +1205,7 @@ function resView(){
         ${r.ticket_code&&st==='confirmed'?`<div class="muted" style="margin-top:4px;">Билет: <b style="color:var(--text);letter-spacing:1px;">AC2-${r.ticket_code.slice(0,4)}-${r.ticket_code.slice(4)}</b> · <a href="https://ac2.bg/t.html#${r.ticket_code}" target="_blank" rel="noopener" style="color:#82303d;">отвори билета</a> · <a href="#" onclick="event.preventDefault();event.stopPropagation();navigator.clipboard&&navigator.clipboard.writeText('https://ac2.bg/t.html#${r.ticket_code}');toast('Линкът е копиран')" style="color:#82303d;">копирай линка</a></div>`:''}
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
         <div style="margin-top:7px;" id="resbadge_${r.id}">${badge}${cap}</div></div>
-      <div style="display:flex;flex-direction:column;gap:6px;" id="resact_${r.id}">${acts}${att==='refund'?`<button class="btn ok sm" onclick="refundRes('${r.id}')">↩ Върни сумата</button><button class="btn ghost sm" onclick="markRefundedRes('${r.id}')">Върната в брой/по банка</button>`:''}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;" id="resact_${r.id}">${acts}${att==='refund'&&can('refunds')?`<button class="btn ok sm" onclick="refundRes('${r.id}')">↩ Върни сумата</button><button class="btn ghost sm" onclick="markRefundedRes('${r.id}')">Върната в брой/по банка</button>`:(att==='refund'?'<span class="muted" style="font-size:12px;">за връщане на сума — само с право „Връщане на пари“</span>':'')}</div>
     </div></div>`;}).join('');
   if(!rows)rows=`<p class="empty">Няма заявки в този раздел.</p>`;
   return `${doorBtn()}<h2>Резервации${resArchive?' — архив':''}</h2>
@@ -1250,7 +1262,8 @@ async function setRes(id,st){
   const ce=document.getElementById('rescard_'+id);if(ce){ce.classList.remove('att','amber');const t=ce.querySelector('.tagn');if(t)t.remove();}
   renderTabsOnly();
   // отказ на ПЛАТЕН билет от клуба → връщаме сумата автоматично
-  if(st==='declined'&&rr&&rr.paid&&!rr.refunded_at){
+  if(st==='declined'&&rr&&rr.paid&&!rr.refunded_at&&!can('refunds')){ toast('Отказана. Връщането на сумата изисква право „Връщане на пари“ — остава в „За действие“ за админ.',true); }
+  else if(st==='declined'&&rr&&rr.paid&&!rr.refunded_at){
     toast('Връщане на сумата през Stripe…');
     const x=await DB.refundReservation(id);
     if(x&&x.error)toast('Отказана, но връщането НЕ мина: '+x.error.message+' — виж „За действие“.',true);
@@ -2176,33 +2189,42 @@ function teamFoundHtml(){
 }
 function teamFilter(){ const el=document.getElementById('teamFound'); if(el)el.innerHTML=teamFoundHtml(); }
 function teamView(){
-  if(role!=='admin')return '<p class="empty">Само администратор.</p>';
+  if(!can('team'))return '<p class="empty">Нямате право за екипа.</p>';
   if(PEOPLE===null)return `<h2>Екип</h2><p class="empty">Зареждане…</p>`;
-  const staff=(PEOPLE||[]).filter(p=>p.role==='admin'||(p.perms&&p.perms.length));
+  const todayI=new Date().toISOString().slice(0,10);
+  const staff=(PEOPLE||[]).filter(p=>p.role==='admin'||(p.perms&&p.perms.length)).sort((a,b)=>(b.is_owner?2:b.role==='admin'?1:0)-(a.is_owner?2:a.role==='admin'?1:0));
   const nm=p=>esc(p.full_name||p.username||p.email||'');
   const chk=(p,id)=>{const cur=teamDraft[p.id]||p.perms||[];return cur.includes(id);};
+  const roleLabel=p=>{ if(p.is_owner)return 'собственик'; if(p.role==='admin')return 'администратор'; const cur=p.perms||[]; const ps=PERM_PRESETS.find(x=>x.p.length===cur.length&&x.p.every(v=>cur.includes(v))); return ps?ps.t:(cur.length+' '+(cur.length===1?'право':'права')); };
+  const expired=p=>p.perms_until&&p.perms_until<todayI;
   const card=p=>{
-    const isA=p.role==='admin';
-    return `<div class="card" style="margin-top:10px;">
-      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;">
-        <div><b>${nm(p)}</b> <span class="muted">${esc(p.email||'')}</span>${isA?' <span class="pill" style="border-color:var(--gold);color:var(--gold);">администратор</span>':''}${(p.membership||'guest')==='guest'?' <span class="muted" style="font-size:12px;">· без членство</span>':''}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          ${isA?(p.id===ME_ID()?'':`<button class="btn ghost sm" onclick="teamSetRole('${p.id}','member')">Махни админ</button>`):`<button class="btn ghost sm" onclick="teamSetRole('${p.id}','admin')">Направи админ</button>`}
-          ${isA?'':`<button class="btn no sm" onclick="teamRemove('${p.id}')">Премахни от екипа</button>`}
+    const isA=p.role==='admin', me=p.id===ME_ID(), open=teamOpen===p.id;
+    const head=`<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;cursor:pointer;" onclick="teamToggleOpen('${p.id}')">
+        <div><b>${nm(p)}</b> <span class="muted">${esc(p.email||'')}</span>
+          <span class="pill" style="${p.is_owner||isA?'border-color:var(--gold);color:var(--gold);':''}margin-left:6px;">${roleLabel(p)}</span>
+          ${p.perms_until&&!isA?` <span class="pill" style="${expired(p)?'border-color:#82303d;color:#82303d;':''}">${expired(p)?'изтекли на ':'до '}${isoToBg(p.perms_until)}</span>`:''}
+          ${(p.membership||'guest')==='guest'?' <span class="muted" style="font-size:12px;">· без членство</span>':''}</div>
+        <span class="muted" style="font-size:12px;">${open?'Свий ▴':'Промени ▾'}</span></div>`;
+    if(!open)return `<div class="card" style="margin-top:8px;padding:12px 16px;">${head}</div>`;
+    const canTouch=!p.is_owner||me;   // собственикът се пипа само от себе си
+    const body=!canTouch?'<div class="muted" style="margin-top:8px;font-size:12px;">Собственикът на клуба — правата му не могат да бъдат променяни от друг.</div>'
+      :isA?`<div class="muted" style="margin-top:8px;font-size:12px;">Има всички права.</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${me?'':`<button class="btn ghost sm" onclick="event.stopPropagation();teamSetRole('${p.id}','member')">Махни админ</button>`}</div>`
+      :`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 6px;">${PERM_PRESETS.map(ps=>`<button class="btn ghost sm" onclick="teamPreset('${p.id}','${ps.id}')">${ps.t}</button>`).join('')}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 14px;">
+          ${PERM_DEFS.map(d=>`<label class="chk" style="display:flex;gap:8px;align-items:flex-start;font-size:13px;${d.ownerOnly&&!IS_OWNER?'opacity:.5;':''}"><input type="checkbox" ${chk(p,d.id)?'checked':''} ${d.ownerOnly&&!IS_OWNER?'disabled':''} onchange="teamToggle('${p.id}','${d.id}',this.checked)"/><span><b style="${d.danger?'color:#82303d;':''}">${d.t}</b><br><span class="muted" style="font-size:11px;">${d.d}</span></span></label>`).join('')}
         </div>
-      </div>
-      ${isA?'<div class="muted" style="margin-top:6px;font-size:12px;">Има всички права.</div>':`
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 6px;">${PERM_PRESETS.map(ps=>`<button class="btn ghost sm" onclick="teamPreset('${p.id}','${ps.id}')">${ps.t}</button>`).join('')}</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 14px;">
-        ${PERM_DEFS.map(d=>`<label class="chk" style="display:flex;gap:8px;align-items:flex-start;font-size:13px;"><input type="checkbox" ${chk(p,d.id)?'checked':''} onchange="teamToggle('${p.id}','${d.id}',this.checked)"/><span><b>${d.t}</b><br><span class="muted" style="font-size:11px;">${d.d}</span></span></label>`).join('')}
-      </div>
-      <div style="margin-top:10px;"><button class="btn sm" onclick="teamSave('${p.id}')">Запази правата</button></div>`}
-    </div>`;
+        <div class="row2" style="margin-top:10px;align-items:center;">
+          <div><label>Правата важат до (празно = безсрочно)</label><input id="tu_${p.id}" readonly placeholder="безсрочно" value="${p.perms_until?isoToBg(p.perms_until):''}" data-iso="${esc(p.perms_until||'')}" onclick="openCal('tu_${p.id}')" style="cursor:pointer;"/></div>
+          <div style="padding-top:22px;"><button class="btn ghost sm" onclick="const i=document.getElementById('tu_${p.id}');i.value='';i.dataset.iso='';">Без срок</button></div></div>
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;"><button class="btn sm" onclick="teamSave('${p.id}')">Запази правата</button>
+          ${role==='admin'?`<button class="btn ghost sm" onclick="teamSetRole('${p.id}','admin')">Направи админ</button>`:''}
+          <button class="btn no sm" onclick="teamRemove('${p.id}')">Премахни от екипа</button></div>`;
+    return `<div class="card" style="margin-top:8px;">${head}${body}</div>`;
   };
   const q=teamQ.trim().toLowerCase();
-  const found=q?(PEOPLE||[]).filter(p=>!(p.role==='admin'||(p.perms&&p.perms.length))&&((p.full_name||'')+' '+(p.username||'')+' '+(p.email||'')).toLowerCase().includes(q)).slice(0,8):[];
   return `<h2>Екип и права</h2>
-    <p class="muted" style="margin-top:-6px;">Администраторът има всичко. За останалите отметни правата (или приложи готов набор). Правата важат и в базата, не само в екрана.</p>
+    <p class="muted" style="margin-top:-6px;">Администраторът има всичко. За останалите отметни правата (или приложи готов набор). Правата важат и в базата, не само в екрана. Правата в червено са „опасни“ — дават се поотделно. „Заместник-админ“ = всичко без „Екип и права“ и „Членства и цени“.</p>
     ${staff.map(card).join('')}
     <div class="card" style="margin-top:16px;">
       <b>Добави член на клуба към екипа</b>
@@ -2215,18 +2237,22 @@ function teamView(){
         <div><label>Имейл</label><input id="ts_email" type="email" placeholder="ime@domain.bg"/></div>
         <div><label>Име</label><input id="ts_name" placeholder="Име и фамилия"/></div>
       </div>
-      <div style="margin-top:8px;"><label>Права при поканата</label>
+      <div class="row2" style="margin-top:8px;"><div><label>Права при поканата</label>
         <select id="ts_preset">${PERM_PRESETS.map(ps=>`<option value="${ps.id}">${ps.t}</option>`).join('')}</select></div>
+        <div><label>Важат до (празно = безсрочно)</label><input id="ts_until" readonly placeholder="безсрочно" data-iso="" onclick="openCal('ts_until')" style="cursor:pointer;"/></div></div>
       <div style="margin-top:10px;"><button class="btn sm" onclick="teamInvite()">Изпрати покана</button></div>
     </div>`;
 }
+let teamOpen=null;
+function teamToggleOpen(id){ teamOpen=teamOpen===id?null:id; render(); }
 let MY_ID='';
 function ME_ID(){ return MY_ID; }
 function teamToggle(id,perm,on){ const p=byId(PEOPLE,id); const cur=(teamDraft[id]||p.perms||[]).slice(); const i=cur.indexOf(perm); if(on&&i<0)cur.push(perm); if(!on&&i>=0)cur.splice(i,1); teamDraft[id]=cur; }
 function teamPreset(id,ps){ const pr=PERM_PRESETS.find(x=>x.id===ps); if(!pr)return; teamDraft[id]=pr.p.slice(); render(); }
 async function teamSave(id){
   const perms=teamDraft[id]||(byId(PEOPLE,id).perms||[]);
-  const r=await DB.setPerms(id,perms); if(r.error){alert('Грешка: '+r.error.message);return;}
+  const ui=document.getElementById('tu_'+id); const until=ui?(ui.dataset.iso||''):'';
+  const r=await DB.setPerms(id,perms,until); if(r.error){alert('Грешка: '+r.error.message);return;}
   delete teamDraft[id]; toast('Правата са записани'); PEOPLE=await DB.listMembers(); render();
 }
 async function teamRemove(id){
@@ -2234,7 +2260,7 @@ async function teamRemove(id){
   const r=await DB.setPerms(id,[]); if(r.error){alert('Грешка: '+r.error.message);return;}
   delete teamDraft[id]; toast('Премахнат от екипа'); PEOPLE=await DB.listMembers(); render();
 }
-async function teamAdd(id){ teamDraft[id]=PERM_PRESETS[2].p.slice(); teamQ=''; const r=await DB.setPerms(id,teamDraft[id]); if(r.error){alert('Грешка: '+r.error.message);return;} delete teamDraft[id]; PEOPLE=await DB.listMembers(); render(); toast('Добавен към екипа (Рецепция) — коригирай правата, ако трябва'); }
+async function teamAdd(id){ teamDraft[id]=PERM_PRESETS.find(x=>x.id==='reception').p.slice(); teamQ=''; const r=await DB.setPerms(id,teamDraft[id]); if(r.error){alert('Грешка: '+r.error.message);return;} delete teamDraft[id]; PEOPLE=await DB.listMembers(); render(); toast('Добавен към екипа (Рецепция) — коригирай правата, ако трябва'); }
 async function teamSetRole(id,roleNew){
   if(!confirm(roleNew==='admin'?'Да направя този човек администратор (всички права, вкл. екипа)?':'Да махна админ правата?'))return;
   const r=await DB.setRole(id,roleNew); if(r.error){alert('Грешка: '+r.error.message);return;}
@@ -2242,9 +2268,10 @@ async function teamSetRole(id,roleNew){
 }
 async function teamInvite(){
   const email=(document.getElementById('ts_email').value||'').trim(), name=(document.getElementById('ts_name').value||'').trim();
-  const ps=PERM_PRESETS.find(x=>x.id===document.getElementById('ts_preset').value)||PERM_PRESETS[2];
+  const ps=PERM_PRESETS.find(x=>x.id===document.getElementById('ts_preset').value)||PERM_PRESETS.find(x=>x.id==='reception');
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('Невалиден имейл');return;}
-  const r=await DB.inviteStaff(email,name,ps.p); if(r.error){alert('Грешка: '+r.error.message);return;}
+  const uu=document.getElementById('ts_until'); const until=uu?(uu.dataset.iso||''):'';
+  const r=await DB.inviteStaff(email,name,ps.p,until); if(r.error){alert('Грешка: '+r.error.message);return;}
   toast(r.data&&r.data.existed?'Акаунтът вече съществуваше — правата са зададени':'Поканата е изпратена'); PEOPLE=await DB.listMembers(); render();
 }
 function gate(){
