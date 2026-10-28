@@ -1230,7 +1230,7 @@ function openBook(id,onlyKind){
   if(!tiers.length){toast(lang==='bg'?'Няма налична опция за това събитие':'No option for this event');return;}
   bookTier=tiers[0].kind;
   const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
-  const isDin=(e.format==='table'); const mp=parseInt(e.pub&&e.pub.max_party,10); const seatsMax=mp>0?Math.min(50,mp):(isDin?(tierPrice(e,'physical')<=0?8:50):seats);   // ресторант: платено — свободна бройка (до 50), безплатно — до 8 и „9+“; другите — по нивото на членство (до 4)   // макс. места на резервация — от събитието (админ), иначе от нивото на членство
+  const isDin=(e.format==='table'); const seatsMax=bookMax(e);   // лимит на места — един и същ тук и при потвърждение
   const left=seatsLeft(e);
   const maxN=left!==null?Math.max(1,Math.min(seatsMax,left)):seatsMax;
   const tierChips=tiers.length>1?`<div style="display:flex;gap:8px;margin-top:8px;">${tiers.map(t=>`<div class="tieropt" data-kind="${t.kind}" onclick="selectTier('${e.id}','${t.kind}')" style="flex:1;text-align:center;padding:12px 6px;border:1px solid var(--line);border-radius:12px;cursor:pointer;"><div style="color:var(--gold);display:flex;justify-content:center;">${TIERICON[t.kind]||''}</div><div style="font-size:12px;margin-top:5px;color:var(--text);">${t.short}</div><b style="color:var(--gold);font-size:13px;">${t.price>0?fmtPrice(t.price):(lang==='bg'?'Безпл.':'Free')}</b></div>`).join('')}</div>`:'';
@@ -1313,8 +1313,8 @@ async function confirmBuy(id){
   const party=(kind==='physical')?(big?9:(parseInt(document.getElementById('bp_'+id)?.value||'1',10)||1)):1;
   const bname=(document.getElementById('bn_'+id)?.value||'').trim()||user.full_name||user.username||user.email;
   if(kind==='physical'){
-    const seats=MEMBERS.find(m=>m.id===user.membership)?.seats||1;
-    if(party>seats){fail((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
+    const seats=bookMax(e);   // същият лимит като в прозореца за билет (ресторант/настройка на събитието)
+    if(!big&&party>seats){fail((lang==='bg'?'Максимум ':'Max ')+seats+' '+tr('seats'));return;}
     const left=seatsLeft(e);
     if(left!==null&&party>left){fail(left<=0?(lang==='bg'?'Изчерпано':'Sold out'):(lang==='bg'?('Остават само '+left+' места'):('Only '+left+' seats left')));return;}
   }
@@ -1327,13 +1327,14 @@ async function confirmBuy(id){
   // безплатно ниво → заявка за одобрение от админ (стария поток)
   const slot=kind==='physical'?pickedSlot(id):'';   // слот (час), ако събитието има слотове
   if(evSlots(e).length&&kind==='physical'&&!slot){fail(lang==='bg'?'Изберете час':'Choose a time');if(btn)updateBuy(id);return;}
-  if(tierPrice(e,kind)<=0){
+  // безплатно ниво в демо режим (без Supabase) → локален запис; иначе ВСИЧКО минава през сървъра (create-payment):
+  // той знае правилата (свободен вход / с регистрация → билет веднага / заявка за одобрение, 9+, слотове, капацитет, лимити)
+  if(tierPrice(e,kind)<=0&&!DB.live){
     const rr=await DB.addReservation({event_id:e.id,fmt:e.format,place:e.title,date:e.date,time:slot||e.time,party,note:(big?'[ГРУПА 9+ — за обаждане] ':'')+'Билет / ticket',res_name:bname,email:user.email,phone:user.phone||'',kind});
     if(rr&&rr.error){fail(/duplicate|unique/i.test(rr.error.message)?tr('alreadyBooked'):rr.error.message);if(btn)updateBuy(id);return;}
     await finishBooking(id,bname,true); return;
   }
-  // платено → Stripe
-  const r=await DB.createPayment(e.id,kind,party,slot);
+  const r=await DB.createPayment(e.id,kind,party,slot,big);
   if(r&&r.error){fail(r.error.message);if(btn)updateBuy(id);return;}
   // предишният опит всъщност е минал (webhook-ът е закъснял) — не плащаме втори път
   if(r&&r.already_paid){ fail(lang==='bg'?'Плащането вече е получено. Билетът е потвърден.':'Payment already received. Your ticket is confirmed.'); await finishBooking(id,bname,false); return; }
@@ -1345,8 +1346,9 @@ async function confirmBuy(id){
 async function finishBooking(id,bname,pending){
   const e=EVENTS.find(x=>x.id===id);
   if(_tblPending&&_tblPending.id===id&&e){
-    try{await DB.addReservation({fmt:'restaurant',place:venueLabel('restaurant'),date:e.date,time:e.ends||e.time,party:_tblPending.tp>0?_tblPending.tp:2,
-      table_event_id:e.id,note:(lang==='bg'?'Маса след събитие: ':'Table after event: ')+e.title,res_name:_tblPending.bname||bname,email:user.email,phone:user.phone||''});}catch(_){}
+    try{const tr0=await DB.addReservation({fmt:'restaurant',place:venueLabel('restaurant'),date:e.date,time:e.ends||e.time,party:_tblPending.tp>0?_tblPending.tp:2,
+      table_event_id:e.id,note:(lang==='bg'?'Маса след събитие: ':'Table after event: ')+e.title,res_name:_tblPending.bname||bname,email:user.email,phone:user.phone||''});
+      if(tr0&&tr0.error)setTimeout(()=>toast((lang==='bg'?'Масата след събитието не се записа: ':'Table after the event was not booked: ')+(tr0.error.message||'')),1200);}catch(_){}
   }
   _tblPending=null;
   closeBook();
@@ -1387,7 +1389,7 @@ async function nativePay(id,clientSecret){
     const res=r&&r.paymentResult;
     if(res==='paymentSheetCompleted'){ await finishBooking(id,bname); return true; }
     if(res==='paymentSheetCanceled'){ toast(lang==='bg'?'Плащането е отказано':'Payment cancelled'); updateBuy(id); return true; }
-    toast(lang==='bg'?'Грешка при плащане':'Payment error'); updateBuy(id); return true;
+    toast(lang==='bg'?'Плащането не мина. Ако сте ползвали Google Pay / Apple Pay, опитайте с въвеждане на картата директно или с друга карта.':'Payment failed. If you used Google Pay / Apple Pay, try entering the card directly or use another card.'); updateBuy(id); return true;
   }catch(err){
     // плъгинът не е вграден (или не е наличен на устройството) → уеб формата
     if(/not implemented|not available|UNIMPLEMENTED/i.test(String(err&&err.message||err)))return false;
@@ -1414,7 +1416,11 @@ async function mountPayment(id,clientSecret){
         const r=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{payment_method_data:{billing_details:{name:bname,email:user.email||'',phone:user.phone||''}}}});
         error=r&&r.error;
       }catch(ex){ error={message:(ex&&ex.message)||String(ex)}; }
-      if(error){toast(error.message||(lang==='bg'?'Грешка при плащане':'Payment error'));btn.disabled=false;btn.textContent=lang==='bg'?'Плати':'Pay';return;}
+      if(error){
+        const bank=error.type==='card_error'||/declin|not allowed|do not honor|отказ/i.test(error.message||'');
+        const hint=bank?(lang==='bg'?' Ако плащате през Google Pay / Apple Pay, опитайте с „Card“ — въведете картата директно, или с друга карта.':' If paying with Google Pay / Apple Pay, try "Card" — enter the card directly, or use another card.'):'';
+        const pe=document.getElementById('payerr_'+id); if(pe)pe.textContent=(error.message||(lang==='bg'?'Грешка при плащане':'Payment error'))+hint; else toast((error.message||'')+hint);
+        btn.disabled=false;btn.textContent=lang==='bg'?'Плати':'Pay';return;}
       await finishBooking(id,bname); // webhook потвърждава в базата; ние просто опресняваме
     };
   }
@@ -2018,7 +2024,8 @@ async function sendRes(seats){
   }
   if(venue==='chamber'&&document.getElementById('r_stream')?.checked){fullNote=(lang==='bg'?'[+ онлайн излъчване] ':'[+ online stream] ')+fullNote;}
   if(big)fullNote=(lang==='bg'?'[ГРУПА 9+ — за обаждане] ':'[GROUP 9+ — call to arrange] ')+fullNote;
-  await DB.addReservation({fmt:venue,place:venueLabel(venue),date:rdate,time:rtime,party:n,note:fullNote,res_name:name,email,phone});
+  const rr=await DB.addReservation({fmt:venue,place:venueLabel(venue),date:rdate,time:rtime,party:n,note:fullNote,res_name:name,email,phone});
+  if(rr&&rr.error){toast(rr.error.message||(lang==='bg'?'Заявката не се записа':'Request failed'));return;}   // преди грешката се губеше тихо
   hap('success');
   toast(big?(lang==='bg'?'Заявката е изпратена — екипът ще ви се обади за детайлите':'Request sent — the team will call you to arrange the details'):tr('resToast'));setTimeout(()=>go('profile'),700);
 }

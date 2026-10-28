@@ -964,7 +964,7 @@ function bookingBox(e){
   else inner=`<form class="form" id="bookForm" onsubmit="return false;" data-unit="${unit}">
       ${paidBack&&!PAY_RESULT.ok?`<div class="msg err">${t('payFail')}</div>`:''}
       ${evSlots(e).length?`<div><label>${L('Час','Time')} *</label><div class="selrow" id="bk_slots">${evSlots(e).map((s,i)=>`<button type="button" class="achip ${i===0?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on')">${esc(s.time)}</button>`).join('')}</div></div>`:''}
-      <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;">${(isDinner(e)&&unit>0)?`<input name="party" type="number" inputmode="numeric" min="1" max="${maxParty(e)}" value="1" style="width:110px;" oninput="bkTotal(this.form)"/>`:`<select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form);const b=document.getElementById('bk_big');if(b)b.style.display=this.value==='9+'?'block':'none'">${Array.from({length:bigAllowed(e)?8:maxParty(e)},(_,i)=>`<option>${i+1}</option>`).join('')}${bigAllowed(e)?`<option value="9+">9+</option>`:''}</select>`}
+      <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;">${(isDinner(e)&&unit>0)?`<input name="party" type="number" inputmode="numeric" min="1" max="${maxParty(e)}" value="1" style="width:110px;" oninput="bkTotal(this.form)"/>`:`<select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form);const b=document.getElementById('bk_big');if(b)b.style.display=this.value==='9+'?'block':'none'">${Array.from({length:bigAllowed(e)?Math.min(8,maxParty(e)):maxParty(e)},(_,i)=>`<option>${i+1}</option>`).join('')}${bigAllowed(e)?`<option value="9+">9+</option>`:''}</select>`}
         ${unit>0?`<span style="font-family:var(--serif);font-size:22px;color:var(--cream);">= <b id="bk_total">${esc(fmtPrice(e))}</b></span>`:`<span class="hint" style="margin:0">${t('free')}</span>`}</div></div>
       ${bigAllowed(e)?`<div id="bk_big" class="msg ok" style="display:none;">${L('За групи над 8 души екипът ще се свърже с вас по телефона, за да уточните детайлите.','For groups of more than 8 the team will call you to arrange the details.')}</div>`:''}
       <div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div>
@@ -1005,6 +1005,7 @@ async function submitTicket(f,eventId){
   const big=f.party.value==='9+';   // група над 8 (само безплатни събития) → заявка за обаждане
   const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), party=big?9:(parseInt(f.party.value,10)||1);
   if(!name||!email||!phone){setMsg('bk_msg',t('errFields'));return false;}
+  { const ev0=(EVENTS||[]).find(x=>x.id===eventId); const mx=ev0?maxParty(ev0):4; if(!big&&(party<1||party>mx)){setMsg('bk_msg',L('Брой места: от 1 до '+mx+'.','Seats: 1 to '+mx+'.'));return false;} }
   if(!validEmail(email)){setMsg('bk_msg',t('errEmail'));return false;}
   if(!validPhone(phone)){setMsg('bk_msg',t('errPhone'));return false;}
   if(!f.consent.checked){setMsg('bk_msg',t('errConsent'));return false;}
@@ -1018,7 +1019,7 @@ async function submitTicket(f,eventId){
     if(typeof r.error.left_for_email==='number'){
       const left=r.error.left_for_email, have=r.error.have||0;
       if(left>0){ if(f.party.options)[...f.party.options].forEach(o=>{o.disabled=o.value!=='9+'&&parseInt(o.value,10)>left;}); f.party.value=String(Math.min(party,left)); bkTotal(f); }
-      setMsg('bk_msg',lang==='bg'?r.error.message:(left>0?`This e-mail already has ${have} seat${have===1?'':'s'} for this event. You can add up to ${left} more.`:`This e-mail already has ${have} seats for this event — the maximum (${r.error.max||8}).`));
+      setMsg('bk_msg',lang==='bg'?r.error.message:(left>0?`This e-mail already has ${have} seat${have===1?'':'s'} for this event. You can add up to ${left} more.`:`This e-mail already has ${have} seats for this event — the maximum (${r.error.max||4}).`));
       return false;
     }
     setMsg('bk_msg',r.error.captcha?t('errCaptcha'):(r.error.message||t('errGeneric'))); return false;
@@ -1044,7 +1045,11 @@ async function submitTicket(f,eventId){
       b.disabled=true; b.textContent=L('Плащане…','Paying…'); setMsg('bk_msg','');
       try{
         const {error}=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{return_url:location.origin+location.pathname+'#/event/'+eventId+'/book',payment_method_data:{billing_details:{name,email,phone}}}});
-        if(error){setMsg('bk_msg',error.message||t('payFail'));b.disabled=false;b.textContent=t('pay')+' '+total;return;}
+        if(error){
+          // отказ от банката (често при Google Pay — някои банки отказват токенизирани карти): насочваме към директно въвеждане на картата
+          const bank=error.type==='card_error'||/declin|not allowed|do not honor|отказ/i.test(error.message||'');
+          setMsg('bk_msg',(error.message||t('payFail'))+(bank?' '+L('Ако плащате през Google Pay или Apple Pay, опитайте с „Card“ — въведете номера на картата директно, или с друга карта.','If you are paying with Google Pay or Apple Pay, try "Card" — enter the card number directly, or use another card.'):''));
+          b.disabled=false;b.textContent=t('pay')+' '+total;return;}
         const tc=r.data.ticket_code||''; const tl=tc?(CFG.SITE_URL||'https://ac2.bg/')+'t.html#'+tc:'';
         f.innerHTML=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>${tc?`<div style="margin-top:14px;padding:16px;background:var(--bg);border-radius:14px;text-align:center;"><div style="font-size:11px;letter-spacing:2px;color:var(--wine);text-transform:uppercase;">${L('Код на билета','Ticket code')}</div><div style="font-size:24px;font-weight:800;letter-spacing:4px;margin:4px 0 10px;">AC2-${tc.slice(0,4)}-${tc.slice(4)}</div><a class="btn" href="${tl}" target="_blank" rel="noopener">${L('Моят билет (QR код)','My ticket (QR code)')}</a><div class="hint" style="margin-top:8px;">${L('Запазете този линк — билетът е и в имейла ви.','Save this link — the ticket is also in your email.')}</div></div>`:''}`; track('purchase',{event_id:eventId});
       }catch(err){ setMsg('bk_msg',(err&&err.message)||t('payFail')); b.disabled=false; b.textContent=t('pay')+' '+total; }

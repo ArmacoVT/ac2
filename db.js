@@ -561,7 +561,7 @@ window.PUB_DEFAULTS={
         kind: r.kind || '', paid: !!r.paid,
         name: r.res_name || r.guest_name || '', email: r.contact_email || r.guest_email || '', phone: r.contact_phone || r.guest_phone || '',
         guest: !r.user_id && !!r.guest_email, refunded_at: r.refunded_at || '', refund_cents: r.refund_cents || 0, checked_in_at: r.checked_in_at || '', ticket_code: r.ticket_code || '',
-        seen_at: r.seen_at || '', created_at: r.created_at || '', pay_method: r.pay_method || '', sold_at: r.sold_at || '', paid_cents: r.paid_cents || 0 }));
+        seen_at: r.seen_at || '', created_at: r.created_at || '', pay_method: r.pay_method || '', sold_at: r.sold_at || '', paid_cents: r.paid_cents || 0, stripe_pi: r.stripe_pi || '' }));
     },
     async addReservation(o) {
       if (!LIVE) { const r = jget(K.res, []); o.id = 'r' + Date.now(); o.status = 'requested'; r.unshift(o); jset(K.res, r); return { error: null }; }
@@ -596,18 +596,18 @@ window.PUB_DEFAULTS={
         return s;
       } catch (e) { return null; }
     },
-    async createPayment(event_id, kind, party, slot) {
+    async createPayment(event_id, kind, party, slot, big) {
       if (!LIVE) return { error: { message: 'Налично след свързване на Supabase' } };
       const sess = await this.freshSession();
       if (!sess) return { error: { message: 'Сесията е изтекла — влезте отново.' } };
-      let { data, error } = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '' } });
+      let { data, error } = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '', big: !!big } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
         // изтекъл токен точно в момента → подновяваме и опитваме още веднъж
         if (/not signed in|jwt|401/i.test(msg)) {
           try { await sb.auth.refreshSession(); } catch (e) {}
-          const again = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '' } });
+          const again = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '', big: !!big } });
           if (!again.error) { data = again.data; error = null; }
           else { try { const b = await again.error.context.json(); if (b && b.error) msg = b.error; } catch (e) {} }
         }
