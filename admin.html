@@ -14,7 +14,7 @@
   frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';
 " />
 <!-- Sentry — мониторинг на грешки -->
-<script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous"></script>
+<script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="theme-color" content="#ebebd6" />
 <title>Arcus Club · Админ панел</title>
@@ -624,6 +624,7 @@ function eventsView(){
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${liveBtn}
         <button class="btn ghost sm" onclick="editEvent('${e.id}')">Редактирай</button>
+        ${canEvExport()?`<button class="btn ghost sm" onclick="exportEvents(['${e.id}'])" title="Списък на гостите в Excel">⬇ Excel</button>`:''}
         ${can('events_delete')?`<button class="btn no sm" onclick="delEvent('${e.id}')">Изтрий</button>`:''}</div>
     </div>${eventResList(e)}</div>`;};
   const up=EVENTS.filter(e=>!admIsPast(e)).sort((a,b)=>((a.date||'9999')<(b.date||'9999')?-1:1));
@@ -1055,6 +1056,49 @@ async function exportMonth(ym){
   try{await DB.logAudit('export_month',ym,(r1.length?r1.length-1:0)+' билета · '+(r2.length?r2.length-1:0)+' членства');}catch(e){}
   toast('Готово: '+(r1.length?r1.length-1:0)+' билета, '+(r2.length?r2.length-1:0)+' плащания за членства');
 }
+// ---------- Експорт на събития (Excel): по лист за всяко събитие + обобщение ----------
+// Съдържа лични данни (имена, имейли, телефони) — само за хора с права върху събития/резервации/счетоводство.
+const canEvExport=()=>role==='admin'||can('reservations')||can('events')||can('accounting');
+async function exportEvents(ids){
+  toast('Подготвяне на файла…');
+  try{ RES=await DB.listReservations(); }catch(e){}
+  if(!PHONES||!Object.values(PHONES).some(x=>'mem' in x)){ try{ const list=await DB.listMembers(); const m={}; (list||[]).forEach(p=>{m[p.id]={email:p.email||'',phone:p.phone||'',mem:p.membership||''};}); PHONES=m; }catch(e){ PHONES=PHONES||{}; } }
+  // кои събития: подадените, или всички с поне една резервация (текущи + минали), по дата
+  let evs=ids?EVENTS.filter(e=>ids.includes(e.id)):EVENTS.filter(e=>RES.some(r=>r.event_id===e.id));
+  evs=evs.slice().sort((a,b)=>(a.date||'')<(b.date||'')?-1:1);
+  if(!evs.length){ alert('Няма събития с резервации за експорт.'); return; }
+  const stBg={confirmed:'потвърдена',requested:'заявка',declined:'отказана',cancelled:'отменена',pending_payment:'чака плащане'};
+  const stOrder={confirmed:0,requested:1,pending_payment:2,declined:3,cancelled:4};
+  const meth=r=>r.pay_method==='cash'?'в брой':r.pay_method==='pos'?'ПОС':r.pay_method==='free'?'безплатно на място':(r.stripe_pi?'онлайн карта':((r.paid_cents||0)>0?'платено':'безплатно'));
+  const dt=ts=>{if(!ts)return '';const d=new Date(ts);const z=n=>String(n).padStart(2,'0');return z(d.getDate())+'.'+z(d.getMonth()+1)+'.'+d.getFullYear()+' '+z(d.getHours())+':'+z(d.getMinutes());};
+  const head=['Час / слот','Име','Имейл','Телефон','Тип','Членство','Места','Статус','Платено (€)','Върнато (€)','Метод','Код на билета','Влязъл','Група 9+','Бележка / алергии','Направена на'];
+  const sheets=[], summary=[];
+  const used=new Set();
+  for(const e of evs){
+    const tk=r=>r.time||e.time||'';
+    const list=RES.filter(r=>r.event_id===e.id).sort((a,b)=>(tk(a)<tk(b)?-1:tk(a)>tk(b)?1:0)||((stOrder[a.status]??9)-(stOrder[b.status]??9))||((a.name||'')<(b.name||'')?-1:1));
+    const rows=list.map(r=>{ const info=(PHONES&&r.user_id)?PHONES[r.user_id]:null;
+      return [r.time||e.time||'',r.name||r.who||'',r.email||(info&&info.email)||'',r.phone||(info&&info.phone)||'',r.guest?'гост':'член',r.guest?'':(()=>{const m=(r.membership&&r.membership!=='guest')?r.membership:((info&&info.mem)||'');return m&&m!=='guest'?memName(m):'';})(),Number(r.party)||1,stBg[r.status]||r.status||'',(r.paid_cents||0)/100,(r.refund_cents||0)/100,meth(r),r.ticket_code?('AC2-'+r.ticket_code.slice(0,4)+'-'+r.ticket_code.slice(4)):'',r.checked_in_at?dt(r.checked_in_at):'',isBigGroup(r)?'да':'',(r.note||'').replace(/\[(ГРУПА 9\+|GROUP 9\+)[^\]]*\]\s*/,''),dt(r.created_at)]; });
+    const conf=list.filter(r=>r.status==='confirmed');
+    const seats=conf.reduce((a,r)=>a+(Number(r.party)||1),0), pend=list.filter(r=>r.status==='requested').reduce((a,r)=>a+(Number(r.party)||1),0);
+    const paid=list.reduce((a,r)=>a+(r.paid_cents||0),0)/100, refd=list.reduce((a,r)=>a+(r.refund_cents||0),0)/100;
+    const inn=conf.filter(r=>r.checked_in_at).reduce((a,r)=>a+(Number(r.party)||1),0);
+    if(rows.length)rows.push(['ОБЩО','','','','','',list.filter(r=>r.status!=='declined'&&r.status!=='cancelled').reduce((a,r)=>a+(Number(r.party)||1),0),'',Math.round(paid*100)/100,Math.round(refd*100)/100,'','',inn?inn+' души':'','','','']);
+    // по слот: отделни редове в обобщението
+    const slots=(e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(x=>x&&x.time):[];
+    const slotTxt=slots.length?slots.map(sl=>{const tk=conf.filter(r=>(r.time||'')===sl.time).reduce((a,r)=>a+(Number(r.party)||1),0);return sl.time+': '+tk+(sl.cap?'/'+sl.cap:'');}).join(' · '):'';
+    summary.push([e.title,e.date?isoToBg(e.date):'',slots.length?slots.map(x=>x.time).join(', '):(e.time||''),e.place||'',FMT_LABEL[e.format]||e.format||'',Number(e.capacity)||0,seats,pend,slotTxt,inn,Math.round(paid*100)/100,Math.round(refd*100)/100,Math.round((paid-refd)*100)/100]);
+    let nm=(isoToBg(e.date||'').slice(0,5)+' '+e.title).replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31).trim()||'Събитие'; let k=2; while(used.has(nm)){ nm=nm.slice(0,28)+' '+(k++); } used.add(nm);
+    sheets.push({name:nm,head,rows});
+  }
+  const sHead=['Събитие','Дата','Час / слотове','Място','Формат','Капацитет','Потвърдени места','Чакащи заявки (места)','Заетост по слот','Влезли','Платено (€)','Върнато (€)','Нето (€)'];
+  const all=(ids&&ids.length===1)?sheets:[{name:'Обобщение',head:sHead,rows:summary}].concat(sheets);
+  const blob=xlsxBlob(all);
+  const fname=(ids&&ids.length===1)?('AC2-'+(evs[0].date||'')+'-'+evs[0].title.replace(/[^\p{L}\p{N}]+/gu,'-').slice(0,40)+'.xlsx'):('AC2-sabitiya-'+new Date().toISOString().slice(0,10)+'.xlsx');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+  try{ await DB.logAudit('export_events',(ids&&ids.length===1)?evs[0].title:'всички събития',evs.length+' събития'); }catch(e){}
+  toast('Готово: '+evs.length+' '+(evs.length===1?'събитие':'събития'));
+}
 // Минимален .xlsx (без външни библиотеки — CSP ги спира): ZIP без компресия + SpreadsheetML
 function xlsxBlob(sheets){
   const enc=new TextEncoder(); const xe=v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1263,7 +1307,8 @@ function resView(){
     const e=EVENTS.find(x=>x.id===resFilter);
     if(e)head=`<div class="card" style="border-color:var(--gold-soft);"><h3>${esc(e.title)}</h3>
       <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)} ${esc(e.time||'')} · ${esc(e.place||'')} · капацитет ${e.capacity||0}</div>
-      <div style="margin-top:6px;">${seatsInfo(e)}</div></div>`;
+      <div style="margin-top:6px;">${seatsInfo(e)}</div>
+      ${canEvExport()?`<div style="margin-top:8px;"><button class="btn ghost sm" onclick="exportEvents(['${e.id}'])">⬇ Excel — списък на гостите</button></div>`:''}</div>`;
   }
   let rows=shown.map(r=>{
     const st=r.status||'requested';
@@ -1293,7 +1338,7 @@ function resView(){
   if(!rows)rows=`<p class="empty">Няма заявки в този раздел.</p>`;
   return `${doorBtn()}<h2>Резервации${resArchive?' — архив':''}</h2>
   <div style="margin:-4px 0 10px;"><button class="btn ghost sm" onclick="toggleResArchive()">${resArchive?'‹ Текущи':'Архив ('+OLD.length+') ▾'}</button> <span class="muted" style="font-size:12px;">${resArchive?'Резервации за събития, минали преди повече от 2 дни.':'Минали събития (2+ дни) са в архива.'}</span></div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px;">${chips}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px;">${chips}${canEvExport()?`<button class="btn ghost sm" style="margin-left:auto;" onclick="exportEvents(null)" title="Всяко събитие на отделен лист + обобщение">⬇ Всички събития (Excel)</button>`:''}</div>
     ${head}${rows}`;
 }
 function toast(msg,bad){

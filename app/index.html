@@ -16,8 +16,8 @@
   frame-src https://js.stripe.com https://hooks.stripe.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://player.twitch.tv https://player.kick.com https://challenges.cloudflare.com;
   object-src 'none'; base-uri 'self'; form-action 'self';
 " />
-<!-- Sentry — мониторинг на грешки (зарежда се рано, за да улавя всичко) -->
-<script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous"></script>
+<!-- Sentry — мониторинг на грешки. async: НЕ бива да спира показването (бавна/блокирана връзка до CDN-а = празен екран — отказ от Apple 28.10) -->
+<script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#ebebd6" />
 <script>(function(){try{if(localStorage.getItem('acac_textbig')==='1')document.documentElement.style.zoom='1.15';}catch(e){}})();</script>
@@ -570,7 +570,7 @@
 <script src="../vendor/qrcode.js"></script>
 <script src="../vendor/jsqr.js"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-<script src="https://js.stripe.com/v3/"></script>
+<!-- Stripe.js се зарежда едва при плащане (loadStripeJs) — иначе блокира показването на приложението -->
 <script src="../config.js"></script>
 <script src="../brand.js"></script>
 <script src="../db.js"></script>
@@ -1362,6 +1362,15 @@ async function finishBooking(id,bname,pending){
 const evEntry=e=>(e&&e.pub&&e.pub.entry)||'ticket';   // ticket | rsvp | free
 // ---- Нативен Stripe (в приложението): системният лист за плащане с Apple Pay / Google Pay + карта ----
 // Плъгин @capacitor-community/stripe. Ако го няма (стара версия на приложението/уеб) → уеб формата по-долу.
+// Stripe.js — зарежда се при нужда (не в началото, за да не блокира екрана при бавна връзка)
+function loadStripeJs(){
+  if(window.Stripe)return Promise.resolve(window.Stripe);
+  if(window._stripeP)return window._stripeP;
+  window._stripeP=new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src='https://js.stripe.com/v3/'; sc.async=true;
+    sc.onload=()=>res(window.Stripe); sc.onerror=()=>{window._stripeP=null;rej(new Error('stripe'));}; document.head.appendChild(sc);
+    setTimeout(()=>{ if(!window.Stripe){window._stripeP=null;rej(new Error('stripe timeout'));} },20000); });
+  return window._stripeP;
+}
 function nativeStripe(){
   try{ const C=window.Capacitor; if(!(C&&C.isNativePlatform&&C.isNativePlatform()))return null;
     return (C.Plugins&&C.Plugins.Stripe)||(C.registerPlugin&&C.registerPlugin('Stripe'))||null; }catch(e){return null;}
@@ -1403,7 +1412,8 @@ async function mountPayment(id,clientSecret){
   if(IN_APP&&await nativePay(id,clientSecret))return;
   const box=document.getElementById('paybox_'+id),btn=document.getElementById('buybtn_'+id);
   if(!box){return;}
-  if(!window.Stripe||!(window.ACAC_CONFIG&&ACAC_CONFIG.STRIPE_PK)){toast('Stripe не е зареден');if(btn)updateBuy(id);return;}
+  try{ await loadStripeJs(); }catch(e){}
+  if(!window.Stripe||!(window.ACAC_CONFIG&&ACAC_CONFIG.STRIPE_PK)){toast(lang==='bg'?'Плащането не се зареди — проверете връзката и опитайте пак':'Payment could not load — check your connection and try again');if(btn)updateBuy(id);return;}
   const stripe=Stripe(ACAC_CONFIG.STRIPE_PK);
   const elements=stripe.elements({clientSecret,appearance:{theme:'flat',variables:{colorPrimary:'#82303d'}}});
   const pe=elements.create('payment',{layout:{type:'tabs'},fields:{billingDetails:{name:'never',email:'never',phone:'never'}}}); pe.mount('#paybox_'+id);
