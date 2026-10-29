@@ -452,6 +452,43 @@ window.PUB_DEFAULTS={
       if (r.user_id) { const { data: p } = await sb.from('profiles').select('id,full_name,username,membership,membership_until').eq('id', r.user_id).maybeSingle(); profile = p; }
       return { error: null, ticket: r, profile };
     },
+    // Скенер: търсене по име / телефон / имейл / код на билета — сред резервациите за ДНЕС (членове и гости)
+    // и сред членовете (по име или телефон). Телефоните се сравняват само по цифрите.
+    async doorFind(q) {
+      if (!LIVE) return { tickets: [], members: [] };
+      const raw = String(q || '').trim(); if (raw.length < 2) return { tickets: [], members: [] };
+      const low = raw.toLowerCase(), digits = raw.replace(/\D/g, ''), code = raw.toUpperCase().replace(/^AC2T?:?/, '').replace(/[^A-Z0-9]/g, '');
+      const d = new Date(), today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const { data: rs, error } = await sb.from('reservations')
+        .select('id,user_id,event_id,table_event_id,date,time,party_size,status,paid,place,format,checked_in_at,ticket_code,res_name,guest_name,guest_email,guest_phone,contact_email,contact_phone,who')
+        .eq('date', today).in('status', ['confirmed', 'requested']).limit(1000);
+      authErr(error);
+      const list = rs || [];
+      const uids = [...new Set(list.map(r => r.user_id).filter(Boolean))];
+      let profs = {};
+      if (uids.length) { const { data: ps } = await sb.from('profiles').select('id,full_name,username,phone,membership,membership_until').in('id', uids); (ps || []).forEach(p => { profs[p.id] = p; }); }
+      const dg = s => String(s || '').replace(/\D/g, '');
+      const phoneHit = ph => digits.length >= 4 && dg(ph).includes(digits.replace(/^00/, '').replace(/^359/, '').replace(/^0/, ''));
+      const tickets = list.filter(r => {
+        const p = r.user_id ? profs[r.user_id] : null;
+        const names = [r.res_name, r.guest_name, r.who, p && p.full_name, p && p.username].filter(Boolean).join(' ').toLowerCase();
+        const mails = [r.guest_email, r.contact_email].filter(Boolean).join(' ').toLowerCase();
+        return names.includes(low) || mails.includes(low) || phoneHit(r.guest_phone) || phoneHit(r.contact_phone) || phoneHit(p && p.phone)
+          || (code.length >= 4 && String(r.ticket_code || '').includes(code));
+      }).slice(0, 15).map(r => ({ ...r, profile: r.user_id ? (profs[r.user_id] || null) : null }));
+      // членове (и без резервация днес) — по име или телефон
+      const clean = raw.replace(/[%,()]/g, '');
+      let members = [];
+      const { data: m1 } = await sb.from('profiles').select('id,full_name,username,phone,membership,membership_until')
+        .or('full_name.ilike.%' + clean + '%,username.ilike.%' + clean + '%').limit(10);
+      members = m1 || [];
+      if (digits.length >= 4) {
+        const tail = digits.slice(-6);
+        const { data: m2 } = await sb.from('profiles').select('id,full_name,username,phone,membership,membership_until').ilike('phone', '%' + tail + '%').limit(10);
+        (m2 || []).forEach(p => { if (!members.some(x => x.id === p.id)) members.push(p); });
+      }
+      return { tickets, members: members.slice(0, 10) };
+    },
     async doorSearch(q) {
       if (!LIVE) return [];
       const { data, error } = await sb.from('profiles').select('id,full_name,username,membership,membership_until')
