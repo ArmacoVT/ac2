@@ -29,7 +29,6 @@ window.ACAC_CONFIG = {
   APPLE_MERCHANT_ID: "merchant.bg.arcusclub.app",
   // Държава на търговеца за Apple Pay / Google Pay
   MERCHANT_COUNTRY: "BG",
-  // ВРЕМЕННО: Google Pay в тестова среда на Google само за админи (за екранните снимки към заявката за production access).
-  // Не довършвай плащане в този режим. След одобрението → false.
-  GPAY_TEST_ADMIN: true
+  // Google Pay в тестова среда само за админи — беше за снимките към заявката. Одобрено на 30.10.2026 → изключено.
+  GPAY_TEST_ADMIN: false
 };
