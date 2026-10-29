@@ -1024,9 +1024,9 @@ function feesReadOnly(){
 }
 // ---------- Експорт за месеца (Excel) — за счетоводството ----------
 function exportMonthOpen(){
-  const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-1);   // по подразбиране — миналия месец
+  const d=new Date();   // по подразбиране — текущият месец
   const def=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-  const m=prompt('Месец за експорт (ГГГГ-ММ):',def); if(!m)return;
+  const m=prompt('Месец за експорт (ГГГГ-ММ), напр. '+def+':',def); if(!m)return;
   if(!/^\d{4}-\d{2}$/.test(m.trim())){alert('Формат: 2026-11');return;}
   exportMonth(m.trim());
 }
@@ -1046,6 +1046,7 @@ async function exportMonth(ym){
   const mp=(MPAY||[]).filter(x=>x.status==='paid'&&inM(x.paid_at||x.created_at));
   const h2=['Дата на плащане','Имейл','Членство','План','Сума (€)','Метод','Основание (банков превод)','Период от','Период до','Авто-подновяване','Stripe плащане'];
   const r2=mp.map(x=>[dt(x.paid_at||x.created_at),x.email||'',memName(x.membership),PLAN_LABEL[x.plan]||x.plan||'',(x.amount_cents||0)/100,x.method==='bank'?'банков превод':'карта',x.bank_ref||'',x.period_from?isoToBg(x.period_from):'',x.period_to?isoToBg(x.period_to):'',x.auto_renew?'да':'не',x.stripe_pi||'']);
+  if(!r1.length&&!r2.length){ alert('За '+ym+' няма плащания (билети или членства). Провери месеца — напр. '+new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'.'); return; }
   const sum=(rows,i)=>Math.round(rows.reduce((a,r)=>a+(Number(r[i])||0),0)*100)/100;
   if(r1.length)r1.push(['ОБЩО','','','','','','',sum(r1,7),'','',sum(r1,10),sum(r1,11),'',sum(r1,13),'','']);
   if(r2.length)r2.push(['ОБЩО','','','',sum(r2,4),'','','','','','']);
