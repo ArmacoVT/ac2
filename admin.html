@@ -1423,47 +1423,64 @@ async function resendMail(id,st){
   toast('Имейлът е изпратен ✓');
 }
 
+// ---------- Статистика по период (по подразбиране — предстоящите събития) ----------
+// Брои МЕСТА (не записи), приход (платено − върнато), чакащи, отменени/изоставени — за избрания период.
+let statsPeriod='upcoming';
 function statsView(){
-  const upcoming=EVENTS.filter(e=>!admIsPast(e));
-  const past=EVENTS.filter(e=>admIsPast(e));
-  const tickets=RES.filter(r=>r.event_id);
-  const tables=RES.filter(r=>r.table_event_id);
-  const cnt=s=>RES.filter(r=>(r.status||'requested')===s).length;
-  const confirmed=cnt('confirmed'),requested=cnt('requested'),declined=cnt('declined');
-  // запълване на предстоящи събития с капацитет
-  const fill=upcoming.filter(e=>e.capacity).map(e=>{
-    const t=seatsTaken(e.id);const pct=Math.min(100,Math.round(t/e.capacity*100));
-    const col=pct>=90?'#82303d':(pct>=60?'#6b6b63':'#507044');
-    return `<div style="margin-top:10px;"><div style="display:flex;justify-content:space-between;font-size:13px;"><span>${esc(e.title)}</span><span class="muted">${t}/${e.capacity}</span></div>
-      <div style="height:8px;border-radius:5px;background:var(--surface2);margin-top:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${col};"></div></div></div>`;
-  }).join('')||`<p class="muted" style="margin-top:8px;">Няма предстоящи събития с капацитет.</p>`;
-  // популярни формати по брой резервации
-  const byFmt={};
-  RES.forEach(r=>{const f=r.fmt||'—';byFmt[f]=(byFmt[f]||0)+1;});
-  const fmtRows=Object.entries(byFmt).sort((a,b)=>b[1]-a[1]).map(([f,n])=>`<tr><td>${esc(f)}</td><td style="text-align:right;">${n}</td></tr>`).join('')||'<tr><td class="muted">—</td><td></td></tr>';
-  const stat=(label,val,col)=>`<div class="card" style="flex:1;min-width:120px;text-align:center;padding:16px;">
-    <div class="countup" data-to="${val}" style="font-size:26px;color:${col||'var(--text)'};">0</div><div class="muted" style="font-size:12px;margin-top:2px;">${label}</div></div>`;
+  const now=new Date(), ym=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  const curM=ym(now), lastM=ym(new Date(now.getFullYear(),now.getMonth()-1,1));
+  const inPeriod=e=>statsPeriod==='upcoming'?!admIsPast(e):statsPeriod==='month'?(e.date||'').slice(0,7)===curM:statsPeriod==='last'?(e.date||'').slice(0,7)===lastM:true;
+  const evs=EVENTS.filter(e=>!e.archive_only&&inPeriod(e)).sort((a,b)=>(a.date||'')<(b.date||'')?-1:1);
+  const ids=new Set(evs.map(e=>e.id));
+  const R=RES.filter(r=>ids.has(r.event_id));
+  const P=r=>Number(r.party)||1, sum=(l,f)=>l.reduce((a,r)=>a+f(r),0);
+  const old30=r=>r.status==='pending_payment'&&(Date.now()-new Date(r.created_at||0).getTime()>30*60*1000);
+  const conf=R.filter(r=>r.status==='confirmed'), req=R.filter(r=>(r.status||'requested')==='requested');
+  const canc=R.filter(r=>r.status==='cancelled'||r.status==='declined'), aband=R.filter(old30), paying=R.filter(r=>r.status==='pending_payment'&&!old30(r));
+  const paid=sum(R,r=>r.paid_cents||0)/100, refd=sum(R,r=>r.refund_cents||0)/100;
+  const eur=v=>(Math.round(v*100)/100).toLocaleString('bg-BG',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+  const stat=(label,val,col,sub)=>`<div class="card" style="flex:1;min-width:130px;text-align:center;padding:14px;">
+    <div style="font-size:24px;color:${col||'var(--text)'};">${val}</div><div class="muted" style="font-size:12px;margin-top:2px;">${label}</div>${sub?`<div class="muted" style="font-size:11px;margin-top:2px;">${sub}</div>`:''}</div>`;
+  const tabs=[['upcoming','Предстоящи'],['month','Този месец'],['last','Миналия месец'],['all','Всички']].map(([k,t])=>`<button class="tab ${statsPeriod===k?'on':''}" onclick="statsPeriod='${k}';render()">${t}</button>`).join('');
+  // карта за всяко събитие
+  const cards=evs.map(e=>{
+    const L=R.filter(r=>r.event_id===e.id), C=L.filter(r=>r.status==='confirmed');
+    const seats=sum(C,P), pend=sum(L.filter(r=>(r.status||'requested')==='requested'),P);
+    const slots=(e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(x=>x&&x.time):[];
+    const cap=slots.length?slots.reduce((a,x)=>a+(Number(x.cap)||0),0):(Number(e.capacity)||0);
+    const pct=cap?Math.min(100,Math.round(seats/cap*100)):0, col=pct>=90?'#82303d':(pct>=60?'#6b6b63':'#507044');
+    const pd=sum(L,r=>r.paid_cents||0)/100, rf=sum(L,r=>r.refund_cents||0)/100;
+    const gst=sum(C.filter(r=>r.guest),P), mem=seats-gst, inn=sum(C.filter(r=>r.checked_in_at),P);
+    const slotTxt=slots.length?slots.map(x=>{const t=sum(C.filter(r=>(r.time||'')===x.time),P);return `<span class="pill">${esc(x.time)} · ${t}${x.cap?'/'+x.cap:''}</span>`;}).join(' '):'';
+    return `<div class="card" style="margin-top:8px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;"><div><b>${esc(e.title)}</b><div class="muted" style="font-size:12px;">${isoToBg(e.date||'')} ${esc(slots.length?slots.map(x=>x.time).join(', '):(e.time||''))} · ${esc(e.place||'')}</div></div>
+        <div style="text-align:right;"><b>${seats}${cap?'/'+cap:''}</b> <span class="muted" style="font-size:12px;">места</span>${pd?`<div style="font-size:12px;">${eur(pd-rf)}${rf?` <span class="muted">(върнати ${eur(rf)})</span>`:''}</div>`:''}</div></div>
+      ${cap?`<div style="height:8px;border-radius:5px;background:var(--surface2);margin-top:8px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${col};"></div></div>`:''}
+      <div class="muted" style="font-size:12px;margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${slotTxt}
+        ${seats?`<span>членове ${mem} · гости ${gst}</span>`:''}${pend?` <span style="color:#6b6b63;">· чакащи ${pend}</span>`:''}${inn?` <span style="color:#507044;">· влезли ${inn}</span>`:''}</div></div>`;
+  }).join('')||'<p class="empty">Няма събития в този период.</p>';
+  // формати по места (за периода)
+  const byFmt={}; conf.forEach(r=>{const e=EVENTS.find(x=>x.id===r.event_id);const f=(e&&(FMT_LABEL[e.format]||e.format))||'—';byFmt[f]=(byFmt[f]||0)+P(r);});
+  const fmtRows=Object.entries(byFmt).sort((a,b)=>b[1]-a[1]).map(([f,n])=>`<tr><td>${esc(f)}</td><td style="text-align:right;">${n} места</td></tr>`).join('')||'<tr><td class="muted">—</td><td></td></tr>';
   return `${canExport()?'<div style="float:right;"><button class="btn ghost sm" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button></div>':''}<h2>Статистика</h2>
+    <div class="tabs" style="margin:6px 0 12px;">${tabs}</div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;">
-      ${stat('Събития общо',EVENTS.length)}
-      ${stat('Предстоящи',upcoming.length,'#507044')}
-      ${stat('Изминали',past.length,'var(--muted)')}
+      ${stat('Събития',evs.length)}
+      ${stat('Потвърдени места',sum(conf,P),'#507044',conf.length+' резервации')}
+      ${stat('Чакащи одобрение',sum(req,P),'#6b6b63',req.length+' заявки')}
+      ${stat('Приход (нето)',eur(paid-refd),'var(--text)',refd?'платено '+eur(paid)+' · върнато '+eur(refd):'')}
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">
-      ${stat('Резервации',RES.length)}
-      ${stat('Чакащи',requested,'#6b6b63')}
-      ${stat('Одобрени',confirmed,'#507044')}
-      ${stat('Откази',declined,'#82303d')}
+      ${stat('Гости / членове',sum(conf.filter(r=>r.guest),P)+' / '+sum(conf.filter(r=>!r.guest),P),'var(--text)','места')}
+      ${stat('Влезли на вратата',sum(conf.filter(r=>r.checked_in_at),P),'#507044','места')}
+      ${stat('Отменени / отказани',sum(canc,P),'#82303d',canc.length+' резервации')}
+      ${stat('Плащат в момента / изоставени',paying.length+' / '+aband.length,'var(--muted)','записи')}
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">
-      ${stat('Билети за събития',tickets.length)}
-      ${stat('Маси след събитие',tables.length)}
-    </div>
-    <h3 style="margin-top:22px;">Запълване на предстоящи събития</h3>
-    <div class="card">${fill}</div>
-    <h3 style="margin-top:18px;">Най-търсени места/формати</h3>
+    <h3 style="margin-top:22px;">По събития</h3>
+    ${cards}
+    <h3 style="margin-top:18px;">Най-търсени формати (потвърдени места)</h3>
     <div class="card"><table style="width:100%;border-collapse:collapse;">${fmtRows}</table></div>
-    <h3 style="margin-top:22px;">Износ в CSV (за Excel)</h3>
+    <h3 style="margin-top:22px;">Износ в Excel</h3>
     <div class="card" style="display:flex;flex-wrap:wrap;gap:10px;">
       <button class="btn sm" onclick="exportCSV('members')">Членове</button>
       <button class="btn sm" onclick="exportCSV('res')">Резервации</button>
@@ -1472,16 +1489,17 @@ function statsView(){
 }
 // ---------- ИЗНОС В CSV ----------
 function csvCell(v){const s=(''+(v??'')).replace(/"/g,'""');return /[",;\n]/.test(s)?`"${s}"`:s;}
+// сваля като Excel (.xlsx), с видимо потвърждение (преди беше CSV без съобщение — изглеждаше, че нищо не става)
 function csvDownload(name,rows){
-  const csv=rows.map(r=>r.map(csvCell).join(';')).join('\r\n');
-  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=name+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  const fname=name+'_'+new Date().toISOString().slice(0,10)+'.xlsx';
+  const blob=xlsxBlob([{name:name,head:rows[0],rows:rows.slice(1)}]);
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  toast('Свален файл: '+fname+' ('+(rows.length-1)+' реда) — виж „Изтегляния“ в браузъра');
 }
 async function exportCSV(kind){
   if(kind==='members'){
-    const list=PEOPLE||await DB.listMembers();
+    toast('Подготвяне…'); const list=PEOPLE||await DB.listMembers()||[];
     const rows=[['Име','Потребител','Имейл','Телефон','Членство','Валидно до','Роля']];
     list.forEach(p=>rows.push([p.full_name||'',p.username||'',p.email||'',p.phone||'',memName(p.membership||'guest'),p.membership_until||'',p.role||'member']));
     csvDownload('chlenove',rows);
