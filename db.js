@@ -452,7 +452,7 @@ window.PUB_DEFAULTS={
       if (r.user_id) { const { data: p } = await sb.from('profiles').select('id,full_name,username,membership,membership_until').eq('id', r.user_id).maybeSingle(); profile = p; }
       return { error: null, ticket: r, profile };
     },
-    // Скенер: търсене по име / телефон / имейл / код на билета — сред резервациите за ДНЕС (членове и гости)
+    // Скенер: търсене по име / телефон / имейл / код на билета — сред резервациите за днес И ПРЕДСТОЯЩИТЕ (членове и гости)
     // и сред членовете (по име или телефон). Телефоните се сравняват само по цифрите.
     async doorFind(q) {
       if (!LIVE) return { tickets: [], members: [] };
@@ -461,7 +461,7 @@ window.PUB_DEFAULTS={
       const d = new Date(), today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       const { data: rs, error } = await sb.from('reservations')
         .select('id,user_id,event_id,table_event_id,date,time,party_size,status,paid,place,format,checked_in_at,ticket_code,res_name,guest_name,guest_email,guest_phone,contact_email,contact_phone,who')
-        .eq('date', today).in('status', ['confirmed', 'requested']).limit(1000);
+        .gte('date', today).in('status', ['confirmed', 'requested']).order('date', { ascending: true }).limit(2000);   // днес и предстоящи
       authErr(error);
       const list = rs || [];
       const uids = [...new Set(list.map(r => r.user_id).filter(Boolean))];
@@ -475,7 +475,8 @@ window.PUB_DEFAULTS={
         const mails = [r.guest_email, r.contact_email].filter(Boolean).join(' ').toLowerCase();
         return names.includes(low) || mails.includes(low) || phoneHit(r.guest_phone) || phoneHit(r.contact_phone) || phoneHit(p && p.phone)
           || (code.length >= 4 && String(r.ticket_code || '').includes(code));
-      }).slice(0, 15).map(r => ({ ...r, profile: r.user_id ? (profs[r.user_id] || null) : null }));
+      }).sort((a, b) => (a.date === today ? 0 : 1) - (b.date === today ? 0 : 1) || (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+        .slice(0, 20).map(r => ({ ...r, today: r.date === today, profile: r.user_id ? (profs[r.user_id] || null) : null }));
       // членове (и без резервация днес) — по име или телефон
       const clean = raw.replace(/[%,()]/g, '');
       let members = [];
