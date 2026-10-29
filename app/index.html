@@ -3186,7 +3186,10 @@ async function promptInitialPassword(){
   const isInvite=DB.urlType==='invite';
   const p=await askNewPassword(isInvite?tr('setPassTitle'):tr('newPassTitle'));
   if(p){const r=await DB.updatePassword(p);toast(r&&r.error?r.error.message:(isInvite?tr('passSet'):tr('passChanged')));
-    if(!(r&&r.error)){try{const u=await DB.getUser();if(u&&u.email)saveBioCreds(u.email,p);}catch(e){}}}
+    if(!(r&&r.error)){try{const u=await DB.getUser();if(u&&u.email)saveBioCreds(u.email,p);if(u)user=u;}catch(e){}
+      // служител без членство (покана от „Екип“) → работи в админ панела, не в приложението за членове
+      if(!IN_APP&&user&&isStaffView()){ toast(lang==='bg'?'Паролата е създадена. Отваряме админ панела…':'Password created. Opening the admin panel…'); setTimeout(()=>{ location.href='../admin.html'; },1200); return; }
+    }}
   // при покана питаме за име и телефон САМО ако кандидатурата не ги е донесла
   if(isInvite){
     // Профилът се дописва от Edge функцията малко след поканата (име, телефон,
