@@ -126,19 +126,23 @@ const PERM_DEFS=[
   {id:'walkin',t:'⚠ Билет на място',d:'продажба в брой / на ПОС от рецепцията',danger:true},
   {id:'events_delete',t:'⚠ Изтриване на събития',d:'заедно с резервациите към тях',danger:true},
   {id:'fees',t:'⚠ Членства и цени',d:'цени на членствата, покани за плащане, банкови преводи',danger:true},
-  {id:'team',t:'⚠ Екип и права',d:'добавя/маха служители и права (дава се само от собственика)',danger:true,ownerOnly:true}];
+  {id:'team',t:'⚠ Екип и права',d:'добавя/маха служители и права (дава се само от собственика)',danger:true,ownerOnly:true},
+  {id:'accounting',t:'Счетоводство (само преглед)',d:'вижда резервации с платени суми, плащания за членства, цени; експорт за месеца — без никакви действия'}];
 const PERM_PRESETS=[
   {id:'deputy',t:'Заместник-админ',p:['events','reservations','members_view','members_edit','applications','news','site','messages','stats','audit','res_delete','refunds','walkin','events_delete']},
   {id:'manager',t:'Мениджър',p:['events','reservations','members_view','members_edit','applications','news','site','messages','stats','audit','walkin']},
   {id:'editor',t:'Редактор',p:['events','news','site']},
-  {id:'reception',t:'Рецепция',p:['reservations','members_view','messages','walkin']}];
+  {id:'reception',t:'Рецепция',p:['reservations','members_view','messages','walkin']},
+  {id:'accountant',t:'Счетоводство',p:['accounting','stats','audit']}];
 let PERMS_UNTIL='', IS_OWNER=false;
 const permsLive=()=>!PERMS_UNTIL||PERMS_UNTIL>=new Date().toISOString().slice(0,10);
 const can=p=>role==='admin'||(permsLive()&&PERMS.includes(p));
 const isEditor=()=>role!=='admin';   // „служител“ (не админ) — показва бележка под табовете
 // кои табове с кое право
 const TAB_PERM={events:'events',archive:'events',members:'events',res:'reservations',people:'members_view',apps:'applications',ann:'news',public:'site',messages:'messages',stats:'stats',audit:'audit',team:'team',fees:'fees'};
-const tabAllowed=t=>TAB_PERM[t]?can(TAB_PERM[t]):role==='admin';
+const TAB_ALT={res:'accounting',fees:'accounting'};   // счетоводство вижда тези раздели само за преглед
+const tabAllowed=t=>TAB_PERM[t]?(can(TAB_PERM[t])||(TAB_ALT[t]&&can(TAB_ALT[t]))):role==='admin';
+const canExport=()=>role==='admin'||can('accounting')||can('fees')||can('stats');
 function firstTab(){ for(const t of ['events','res','people','apps','ann','public','messages','stats','audit','team']) if(tabAllowed(t)) return t; return 'events'; }
 let EVENTS=[], RES=[];
 const root=document.getElementById('root');
@@ -213,7 +217,7 @@ async function refresh(){
   try{ RES=await DB.listReservations(); }catch(e){ RES=[]; }
   try{ APPS=await DB.listApplications(); }catch(e){ APPS=APPS||[]; }
   if(can('messages')){ try{ MSGS=await DB.listContactMessages(); }catch(e){} }
-  if(role==='admin'){ try{ MPAY=await DB.listMembershipPayments(300); }catch(e){} }
+  if(can('fees')||can('accounting')){ try{ MPAY=await DB.listMembershipPayments(300); }catch(e){} }
 }
 let MPAY=null, MPRICES=null, MCODES=null;
 // ---------- „За действие“: какво чака човек ----------
@@ -233,12 +237,13 @@ function attItems(){
   if(can('reservations'))RES.forEach(r=>{const a=resAttention(r);if(a)out.push({k:'res',a,r});});
   if(can('applications'))(APPS||[]).forEach(x=>{if((x.status||'new')==='new'||!x.seen_at)out.push({k:'app',a:'new',r:x});});
   if(can('messages'))(MSGS||[]).forEach(m=>{if(!m.is_read)out.push({k:'msg',a:'new',r:m});});
-  if(role==='admin')(MPAY||[]).forEach(x=>{if(x.status==='pending'&&x.method==='bank')out.push({k:'mpay',a:'bank',r:x});});
+  if(can('fees'))(MPAY||[]).forEach(x=>{if(x.status==='pending'&&x.method==='bank')out.push({k:'mpay',a:'bank',r:x});});
   return out;
 }
 function attCount(k){ return attItems().filter(i=>!k||i.k===k).length; }
 function setTitleCount(){ const n=attItems().length; document.title=(n?'('+n+') ':'')+'AC² · Админ'; }
 async function markSeenRes(id){
+  if(!can('reservations'))return;
   const r=RES.find(x=>x.id===id); if(!r||r.seen_at)return;
   r.seen_at=new Date().toISOString();
   const c=document.getElementById('rescard_'+id); if(c&&!resAttention(r)){c.classList.remove('att','amber');const t=c.querySelector('.tagn');if(t)t.remove();}
@@ -943,6 +948,7 @@ function setResFilter(id){resFilter=id;render();}
 // бутоните ръчно и оставяше само „Изтрий" — затова отказана по погрешка
 // резервация не можеше да се одобри обратно, макар правилото да съществуваше.
 function resActs(id,st){
+  if(!can('reservations'))return '';   // само преглед (счетоводство)
   const del=can('res_delete')?`<button class="btn ghost sm" onclick="delRes('${id}')">Изтрий</button>`:'';
   const mail=s=>`<button class="btn ghost sm" onclick="resendMail('${id}','${s}')">✉ Изпрати отново</button>`;
   if(st==='requested')return `<button class="btn ok sm" onclick="setRes('${id}','confirmed')">Потвърди</button>
@@ -974,13 +980,14 @@ function resIsOld(r){
   const cut=new Date(); cut.setDate(cut.getDate()-2);
   return d<cut.toISOString().slice(0,10);
 }
-const doorBtn=()=>`<div style="float:right;margin-top:4px;display:flex;gap:8px;">${can('walkin')?`<button class="btn ok sm" onclick="walkinOpen()">+ Билет на място</button>`:''}<a class="btn ghost sm" href="${(window.ACAC_CONFIG&&ACAC_CONFIG.APP_URL)||'app/'}#door" target="_blank" rel="noopener">📷 Скенер за вход</a></div>`;
+const doorBtn=()=>!can('reservations')?(canExport()?`<div style="float:right;margin-top:4px;"><button class="btn ghost sm" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button></div>`:''):`<div style="float:right;margin-top:4px;display:flex;gap:8px;">${can('walkin')?`<button class="btn ok sm" onclick="walkinOpen()">+ Билет на място</button>`:''}<a class="btn ghost sm" href="${(window.ACAC_CONFIG&&ACAC_CONFIG.APP_URL)||'app/'}#door" target="_blank" rel="noopener">📷 Скенер за вход</a></div>`;
 // ---------- ЧЛЕНСТВА И ЦЕНИ (само админ) + ПОКАНА ЗА ПЛАЩАНЕ ----------
 const PLAN_LABEL={year:'12 месеца',half:'2 × 6 месеца',quarter:'4 × 3 месеца',month:'12 × 1 месец'};
 const PLAN_DIV={year:1,half:2,quarter:4,month:12};
 async function loadFees(){ try{MPRICES=await DB.listMembershipPrices();}catch(e){MPRICES=[];} try{MPAY=await DB.listMembershipPayments(300);}catch(e){MPAY=[];} try{MCODES=await DB.listMembershipCodes(200);}catch(e){MCODES=[];} }
 function feesView(){
   if(!MPRICES)return `<h2>Членства и цени</h2><p class="empty">Зареждане…</p>`;
+  if(!can('fees'))return feesReadOnly();
   const order=['founder','founding','club','alumni','corporate'];
   const rows=order.map(id=>{const p=(MPRICES||[]).find(x=>x.membership===id)||{membership:id,title:memName(id),price_year:0,vat_pct:0,plans:['year','half'],code_days:14,active:true};
     const plans=p.plans||[];
@@ -997,11 +1004,86 @@ function feesView(){
   const fmtP=x=>`<div class="card" style="padding:10px 14px;"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;"><div><b>${esc(x.email||'')}</b> · ${esc(memName(x.membership))} · ${PLAN_LABEL[x.plan]||x.plan} · <b>${(x.amount_cents/100).toFixed(2)} €</b> · ${x.method==='bank'?'банков превод':'карта'}${x.auto_renew?' · авто-подновяване':''}<div class="muted" style="font-size:12px;">${x.status==='paid'?'платено '+new Date(x.paid_at||x.created_at).toLocaleString('bg-BG'):'чака от '+new Date(x.created_at).toLocaleString('bg-BG')}${x.period_to?' · до '+isoToBg(x.period_to):''}${x.bank_ref?' · основание '+esc(x.bank_ref):''}</div></div>
     ${x.status==='pending'&&x.method==='bank'?`<div style="display:flex;gap:6px;"><button class="btn ok sm" onclick="mpayConfirm('${x.id}')">Потвърди превода</button><button class="btn ghost sm" onclick="mpayCancel('${x.id}')">Откажи</button></div>`:x.status==='pending'?`<span class="pill">чака картово плащане</span>`:'<span class="pill audAll">платено</span>'}</div></div>`;
   return `<h2>Членства и цени</h2><p class="muted" style="margin-top:-4px;">Цените важат за новите покани; вече издадените кодове пазят цената от момента на издаване. Членството се плаща само на сайта (ac2.bg/#/join) с код — не в приложението.</p>
-    <div style="margin:10px 0 16px;"><button class="btn ok" onclick="mInviteOpen({})">💳 Нова покана за плащане</button> <a class="btn ghost" href="#" onclick="event.preventDefault();setTab('public')">IBAN за банков превод → Публичен сайт → Общи</a></div>
+    <div style="margin:10px 0 16px;"><button class="btn ok" onclick="mInviteOpen({})">💳 Нова покана за плащане</button> <button class="btn ghost" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button> <a class="btn ghost" href="#" onclick="event.preventDefault();setTab('public')">IBAN за банков превод → Публичен сайт → Общи</a></div>
     ${rows}
     <h2 style="margin-top:26px;">Чакащи плащания${pend.length?' ('+pend.length+')':''}</h2>${pend.length?pend.map(fmtP).join(''):'<p class="empty">Няма чакащи.</p>'}
     <h2 style="margin-top:22px;">Активни кодове${codes.length?' ('+codes.length+')':''}</h2>${codes.length?codes.map(c=>`<div class="card" style="padding:10px 14px;"><b>AC2-${c.code.slice(0,4)}-${c.code.slice(4)}</b> · ${esc(c.email)}${c.full_name?' · '+esc(c.full_name):''} · ${esc(memName(c.membership))} · ${c.purpose==='new'?'нов член':c.purpose==='renew'?'подновяване':'2-ра вноска'} · важи до ${isoToBg(c.expires_at.slice(0,10))} <a href="https://ac2.bg/#/join?code=${c.code}" target="_blank" rel="noopener" style="color:#82303d;">линк</a></div>`).join(''):'<p class="empty">Няма активни кодове.</p>'}
     <h2 style="margin-top:22px;">Последни плащания</h2>${paid.length?paid.map(fmtP).join(''):'<p class="empty">Още няма плащания.</p>'}`;
+}
+// само преглед (счетоводство): цени като таблица, плащания без бутони, експорт
+function feesReadOnly(){
+  const order=['founder','founding','club','alumni','corporate'];
+  const pr=order.map(id=>{const p=(MPRICES||[]).find(x=>x.membership===id)||{}; return `<tr><td>${esc(memName(id))}</td><td style="text-align:right;">${(Number(p.price_year)||0).toFixed(2)} €</td><td style="text-align:right;">${p.price_half!=null?Number(p.price_half).toFixed(2)+' €':'½'}</td><td>${p.active===false?'не':'да'}</td></tr>`;}).join('');
+  const pay=(MPAY||[]).slice(0,100).map(x=>`<tr><td>${new Date(x.paid_at||x.created_at).toLocaleDateString('bg-BG')}</td><td>${esc(x.email||'')}</td><td>${esc(memName(x.membership))}</td><td>${PLAN_LABEL[x.plan]||esc(x.plan||'')}</td><td style="text-align:right;">${(x.amount_cents/100).toFixed(2)} €</td><td>${x.method==='bank'?'банков превод':'карта'}</td><td>${x.status==='paid'?'платено':x.status==='pending'?'чака':esc(x.status||'')}</td></tr>`).join('');
+  const tbl='style="width:100%;border-collapse:collapse;font-size:13px;"';
+  return `<div style="float:right;"><button class="btn ghost sm" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button></div>
+    <h2>Членства и цени <span class="pill">само преглед</span></h2>
+    <table ${tbl}><tr class="muted"><td>Членство</td><td style="text-align:right;">Годишно</td><td style="text-align:right;">6 месеца</td><td>Активно</td></tr>${pr}</table>
+    <h2 style="margin-top:22px;">Плащания за членства</h2>
+    ${pay?`<table ${tbl}><tr class="muted"><td>Дата</td><td>Имейл</td><td>Членство</td><td>План</td><td style="text-align:right;">Сума</td><td>Метод</td><td>Статус</td></tr>${pay}</table>`:'<p class="empty">Още няма плащания.</p>'}`;
+}
+// ---------- Експорт за месеца (Excel) — за счетоводството ----------
+function exportMonthOpen(){
+  const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-1);   // по подразбиране — миналия месец
+  const def=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  const m=prompt('Месец за експорт (ГГГГ-ММ):',def); if(!m)return;
+  if(!/^\d{4}-\d{2}$/.test(m.trim())){alert('Формат: 2026-11');return;}
+  exportMonth(m.trim());
+}
+async function exportMonth(ym){
+  toast('Подготвяне на файла…');
+  try{ RES=await DB.listReservations(); }catch(e){}
+  if(!MPAY){ try{ MPAY=await DB.listMembershipPayments(2000); }catch(e){ MPAY=[]; } }
+  const inM=ts=>{ if(!ts)return false; const d=new Date(ts); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')===ym; };   // по местно (българско) време
+  const evT=id=>{const e=EVENTS.find(x=>x.id===id);return e?e.title:'';};
+  const meth=r=>r.pay_method==='cash'?'в брой':r.pay_method==='pos'?'ПОС':r.pay_method==='free'?'безплатно на място':(r.stripe_pi?'онлайн карта (Stripe)':'');
+  const stBg={confirmed:'потвърдена',requested:'заявка',declined:'отказана',cancelled:'отменена',pending_payment:'чака плащане'};
+  const dt=ts=>{if(!ts)return '';const d=new Date(ts);const z=n=>String(n).padStart(2,'0');return z(d.getDate())+'.'+z(d.getMonth()+1)+'.'+d.getFullYear()+' '+z(d.getHours())+':'+z(d.getMinutes());};
+  // билети: продадени (платени) през месеца или с връщане през месеца
+  const tickets=RES.filter(r=>((r.paid_cents||0)>0||r.pay_method==='cash'||r.pay_method==='pos')&&(inM(r.sold_at||r.created_at)||inM(r.refunded_at)));
+  const h1=['Дата на продажба','Събитие','Дата на събитието','Час','Име','Имейл','Тип','Места','Статус','Метод','Платено (€)','Върнато (€)','Дата на връщане','Нето (€)','Код на билета','Stripe плащане'];
+  const r1=tickets.map(r=>{const paid=(r.paid_cents||0)/100, ref=(r.refund_cents||0)/100; return [dt(r.sold_at||r.created_at),r.event_id?evT(r.event_id):(r.place||''),r.date?isoToBg(r.date):'',r.time||'',r.name||r.who||'',r.email||'',r.guest?'гост':'член',Number(r.party)||1,stBg[r.status]||r.status||'',meth(r),paid,ref,dt(r.refunded_at),Math.round((paid-ref)*100)/100,r.ticket_code?('AC2-'+r.ticket_code.slice(0,4)+'-'+r.ticket_code.slice(4)):'',r.stripe_pi||''];});
+  const mp=(MPAY||[]).filter(x=>x.status==='paid'&&inM(x.paid_at||x.created_at));
+  const h2=['Дата на плащане','Имейл','Членство','План','Сума (€)','Метод','Основание (банков превод)','Период от','Период до','Авто-подновяване','Stripe плащане'];
+  const r2=mp.map(x=>[dt(x.paid_at||x.created_at),x.email||'',memName(x.membership),PLAN_LABEL[x.plan]||x.plan||'',(x.amount_cents||0)/100,x.method==='bank'?'банков превод':'карта',x.bank_ref||'',x.period_from?isoToBg(x.period_from):'',x.period_to?isoToBg(x.period_to):'',x.auto_renew?'да':'не',x.stripe_pi||'']);
+  const sum=(rows,i)=>Math.round(rows.reduce((a,r)=>a+(Number(r[i])||0),0)*100)/100;
+  if(r1.length)r1.push(['ОБЩО','','','','','','',sum(r1,7),'','',sum(r1,10),sum(r1,11),'',sum(r1,13),'','']);
+  if(r2.length)r2.push(['ОБЩО','','','',sum(r2,4),'','','','','','']);
+  const blob=xlsxBlob([{name:'Билети '+ym,head:h1,rows:r1},{name:'Членства '+ym,head:h2,rows:r2}]);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='AC2-otchet-'+ym+'.xlsx'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+  try{await DB.logAudit('export_month',ym,(r1.length?r1.length-1:0)+' билета · '+(r2.length?r2.length-1:0)+' членства');}catch(e){}
+  toast('Готово: '+(r1.length?r1.length-1:0)+' билета, '+(r2.length?r2.length-1:0)+' плащания за членства');
+}
+// Минимален .xlsx (без външни библиотеки — CSP ги спира): ZIP без компресия + SpreadsheetML
+function xlsxBlob(sheets){
+  const enc=new TextEncoder(); const xe=v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const col=i=>{let s='';i++;while(i){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26);}return s;};
+  const cell=(v,r,c,bold)=>{const ref=col(c)+(r+1); if(typeof v==='number'&&isFinite(v))return `<c r="${ref}"${bold?' s="1"':''}><v>${v}</v></c>`; return `<c r="${ref}" t="inlineStr"${bold?' s="1"':''}><is><t xml:space="preserve">${xe(v==null?'':v)}</t></is></c>`;};
+  const sheetXml=sh=>{const all=[sh.head].concat(sh.rows); const widths=sh.head.map((h,i)=>Math.min(48,Math.max(10,...all.map(r=>String(r[i]==null?'':r[i]).length+2))));
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${all.map((row,r)=>`<row r="${r+1}">${row.map((v,c)=>cell(v,r,c,r===0||(r===all.length-1&&row[0]==='ОБЩО'))).join('')}</row>`).join('')}</sheetData></worksheet>`;};
+  const safe=n=>xe(n.replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31));
+  const files=[
+    ['[Content_Types].xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`],
+    ['_rels/.rels',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ['xl/workbook.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s,i)=>`<sheet name="${safe(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`],
+    ['xl/_rels/workbook.xml.rels',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ['xl/styles.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`]
+  ].concat(sheets.map((s,i)=>['xl/worksheets/sheet'+(i+1)+'.xml',sheetXml(s)]));
+  // ZIP (STORE) с CRC32
+  const crcT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+  const crc32=b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=crcT[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;};
+  const parts=[], central=[]; let off=0;
+  const u16=v=>[v&255,(v>>>8)&255], u32=v=>[v&255,(v>>>8)&255,(v>>>16)&255,(v>>>24)&255];
+  for(const [name,txt] of files){
+    const nb=enc.encode(name), data=enc.encode(txt), crc=crc32(data);
+    const lh=new Uint8Array([...u32(0x04034b50),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(crc),...u32(data.length),...u32(data.length),...u16(nb.length),...u16(0)]);
+    parts.push(lh,nb,data);
+    central.push(new Uint8Array([...u32(0x02014b50),...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(crc),...u32(data.length),...u32(data.length),...u16(nb.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(off)]),nb);
+    off+=lh.length+nb.length+data.length;
+  }
+  const cdSize=central.reduce((a,b)=>a+b.length,0);
+  const end=new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),...u16(files.length),...u16(files.length),...u32(cdSize),...u32(off),...u16(0)]);
+  return new Blob([...parts,...central,end],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
 }
 async function saveFee(id){
   const g=k=>document.getElementById(k+'_'+id); const num=el=>el&&el.value!==''?Number(el.value):null;
@@ -1315,7 +1397,7 @@ function statsView(){
   const fmtRows=Object.entries(byFmt).sort((a,b)=>b[1]-a[1]).map(([f,n])=>`<tr><td>${esc(f)}</td><td style="text-align:right;">${n}</td></tr>`).join('')||'<tr><td class="muted">—</td><td></td></tr>';
   const stat=(label,val,col)=>`<div class="card" style="flex:1;min-width:120px;text-align:center;padding:16px;">
     <div class="countup" data-to="${val}" style="font-size:26px;color:${col||'var(--text)'};">0</div><div class="muted" style="font-size:12px;margin-top:2px;">${label}</div></div>`;
-  return `<h2>Статистика</h2>
+  return `${canExport()?'<div style="float:right;"><button class="btn ghost sm" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button></div>':''}<h2>Статистика</h2>
     <div style="display:flex;flex-wrap:wrap;gap:10px;">
       ${stat('Събития общо',EVENTS.length)}
       ${stat('Предстоящи',upcoming.length,'#507044')}
