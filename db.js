@@ -180,7 +180,11 @@ window.PUB_DEFAULTS={
   const FMT_ALIAS = { cinema: 'culture', music: 'culture', theater: 'culture' };
   // преименувани зали (14.10.2026): старите стойности в базата се показват с новите имена
   const PLACE_RENAME = { 'VIP зала': 'Private room', 'VIP hall': 'Private room', 'VIP room': 'Private room', 'Изложбено фоайе': 'Галерия', 'Exhibition foyer': 'Gallery' };
-  const placeName = p => (p && PLACE_RENAME[p]) || p;
+  // Сигурност: кодът на билета е само A-Z0-9; часът — без HTML символи (защита, ако в базата попадне нещо чуждо)
+const safeCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+const safeTime = t => (t == null ? t : String(t).replace(/[<>"'`&\\]/g, ''));
+const safeRes = r => (r ? { ...r, time: safeTime(r.time), ticket_code: r.ticket_code == null ? r.ticket_code : safeCode(r.ticket_code) } : r);
+const placeName = p => (p && PLACE_RENAME[p]) || p;
   window.placeName = placeName;
   const fmtId = (f) => FMT_ALIAS[f] || f;
   const SEED = [
@@ -440,7 +444,7 @@ window.PUB_DEFAULTS={
       const today = new Date().toISOString().slice(0, 10);
       const { data: rs } = await sb.from('reservations').select('id,event_id,table_event_id,date,time,party_size,status,paid,kind,place,format,checked_in_at')
         .eq('user_id', id).eq('date', today).in('status', ['confirmed', 'requested']);
-      return { error: null, profile: p, today: rs || [] };
+      return { error: null, profile: p, today: (rs || []).map(safeRes) };
     },
     async doorTicket(code) {
       if (!LIVE) return { error: { message: 'demo' } };
@@ -450,7 +454,7 @@ window.PUB_DEFAULTS={
       if (!r) return { error: { message: 'not_found' } };
       let profile = null;
       if (r.user_id) { const { data: p } = await sb.from('profiles').select('id,full_name,username,membership,membership_until').eq('id', r.user_id).maybeSingle(); profile = p; }
-      return { error: null, ticket: r, profile };
+      return { error: null, ticket: safeRes(r), profile };
     },
     // Скенер: търсене по име / телефон / имейл / код на билета — сред резервациите за днес И ПРЕДСТОЯЩИТЕ (членове и гости)
     // и сред членовете (по име или телефон). Телефоните се сравняват само по цифрите.
@@ -476,7 +480,7 @@ window.PUB_DEFAULTS={
         return names.includes(low) || mails.includes(low) || phoneHit(r.guest_phone) || phoneHit(r.contact_phone) || phoneHit(p && p.phone)
           || (code.length >= 4 && String(r.ticket_code || '').includes(code));
       }).sort((a, b) => (a.date === today ? 0 : 1) - (b.date === today ? 0 : 1) || (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
-        .slice(0, 20).map(r => ({ ...r, today: r.date === today, profile: r.user_id ? (profs[r.user_id] || null) : null }));
+        .slice(0, 20).map(r => ({ ...safeRes(r), today: r.date === today, profile: r.user_id ? (profs[r.user_id] || null) : null }));
       // членове (и без резервация днес) — по име или телефон
       const clean = raw.replace(/[%,()]/g, '');
       let members = [];
@@ -606,10 +610,10 @@ window.PUB_DEFAULTS={
       authErr(error);
       return (data || []).map(r => ({ id: r.id, user_id: r.user_id || null, event_id: r.event_id || null, table_event_id: r.table_event_id || null,
         who: r.who || '', membership: r.membership || '', fmt: r.format,
-        place: placeName(r.place), date: r.date, time: r.time, party: r.party_size, note: r.note, status: r.status,
+        place: placeName(r.place), date: r.date, time: safeTime(r.time), party: r.party_size, note: r.note, status: r.status,
         kind: r.kind || '', paid: !!r.paid,
         name: r.res_name || r.guest_name || '', email: r.contact_email || r.guest_email || '', phone: r.contact_phone || r.guest_phone || '',
-        guest: !r.user_id && !!r.guest_email, refunded_at: r.refunded_at || '', refund_cents: r.refund_cents || 0, checked_in_at: r.checked_in_at || '', ticket_code: r.ticket_code || '',
+        guest: !r.user_id && !!r.guest_email, refunded_at: r.refunded_at || '', refund_cents: r.refund_cents || 0, checked_in_at: r.checked_in_at || '', ticket_code: safeCode(r.ticket_code),
         seen_at: r.seen_at || '', created_at: r.created_at || '', pay_method: r.pay_method || '', sold_at: r.sold_at || '', paid_cents: r.paid_cents || 0, stripe_pi: r.stripe_pi || '' }));
     },
     async addReservation(o) {

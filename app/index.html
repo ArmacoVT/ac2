@@ -2876,7 +2876,7 @@ function appBadge(){
 let _activeTab='home';
 function refreshTabbar(){try{tabbar(_activeTab);}catch(e){}}
 // ================= МОЯТ БИЛЕТ =================
-const fmtTicket=c=>c?('AC2-'+c.slice(0,4)+'-'+c.slice(4)):'';
+const fmtTicket=c=>{c=String(c||'').replace(/[^A-Za-z0-9]/g,'');return c?('AC2-'+c.slice(0,4)+'-'+c.slice(4)):'';};
 function ticketView(resId){
   const r=RES.find(x=>x.id===resId&&isMine(x)); if(!r)return topbar(lang==='bg'?'Билет':'Ticket')+`<div class="page"><div class="ev">${lang==='bg'?'Билетът не е намерен.':'Ticket not found.'}</div></div>`;
   const ev=EVENTS.find(e=>e.id===(r.event_id||r.table_event_id)); const f=ev?FORMATS.find(x=>x.id===ev.format):null;
@@ -2959,8 +2959,8 @@ async function doorTicket(code){
       <div><h3 style="font-size:18px;margin:0;">${esc(name)}</h3><div style="color:var(--mid);font-size:13px;">${p?esc(m?m.t:(p.membership||'')):(lang==='bg'?'гост':'guest')} · ${lang==='bg'?'билет':'ticket'} ${fmtTicket(t.ticket_code)}</div></div>
       <div style="font-weight:800;color:${col};white-space:nowrap;text-align:right;">${already?('⚠ '+(lang==='bg'?'ВЕЧЕ ВЛЯЗЪЛ ':'ALREADY IN ')+t.checked_in_at.slice(11,16)):valid?(lang==='bg'?'✓ ВАЛИДЕН':'✓ VALID'):(lang==='bg'?'✕ НЕВАЛИДЕН':'✕ INVALID')}</div>
     </div>
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft);"><b>${esc(title)}</b><div style="font-size:12px;color:var(--mid);">${t.date?euDate(t.date):''}${t.time?' · '+t.time:''} · ${seatsTxt(t.party_size)}${t.paid?' · '+(lang==='bg'?'платен':'paid'):''}${!today?' · <span style="color:#82303d;">'+(lang==='bg'?'не е за днес':'not today')+'</span>':''}</div></div>
-    ${valid?`<button class="btn sm${already?' ghost':''}" style="margin-top:10px;" onclick="doorCheckT('${t.id}','${t.ticket_code}',${already?'true':'false'})">${already?(lang==='bg'?'Отмени влизането':'Undo'):(lang==='bg'?'Присъстват ('+(t.party_size||1)+')':'Check in ('+(t.party_size||1)+')')}</button>`:''}
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft);"><b>${esc(title)}</b><div style="font-size:12px;color:var(--mid);">${t.date?euDate(t.date):''}${t.time?' · '+esc(t.time):''} · ${seatsTxt(t.party_size)}${t.paid?' · '+(lang==='bg'?'платен':'paid'):''}${!today?' · <span style="color:#82303d;">'+(lang==='bg'?'не е за днес':'not today')+'</span>':''}</div></div>
+    ${valid?`<button class="btn sm${already?' ghost':''}" style="margin-top:10px;" onclick="doorCheckT('${t.id}','${String(t.ticket_code||'').replace(/[^A-Za-z0-9]/g,'')}',${already?'true':'false'})">${already?(lang==='bg'?'Отмени влизането':'Undo'):(lang==='bg'?'Присъстват ('+(t.party_size||1)+')':'Check in ('+(t.party_size||1)+')')}</button>`:''}
   </div>`;
 }
 async function doorCheckT(resId,code,undo){
@@ -2982,7 +2982,7 @@ async function doorSearch(q){
     const st=t.checked_in_at?`<span style="color:#507044;font-weight:700;">✓ ${bg?'влязъл':'in'} ${t.checked_in_at.slice(11,16)}</span>`:(t.status==='confirmed'?`<span style="color:#507044;">${bg?'потвърдена':'confirmed'}</span>`:`<span style="color:#6b6b63;">${bg?'чака одобрение':'pending'}</span>`);
     return `<div class="ev" style="margin-top:8px;padding:12px 16px;"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
       <div><b>${esc(name)}</b> <span style="color:var(--muted);font-size:12px;">· ${esc(who)}${ph?' · '+esc(ph):''}</span>
-        <div style="font-size:12px;color:var(--mid);">${t.today?'':`<b style="color:#b5531e;">${bg?'на':'on'} ${euDate(t.date)} — ${bg?'не е днес':'not today'}</b> · `}${esc(title)} · ${t.time||''} · ${seatsTxt(t.party_size)} · ${st}${t.ticket_code?' · '+fmtTicket(t.ticket_code):''}</div></div>
+        <div style="font-size:12px;color:var(--mid);">${t.today?'':`<b style="color:#b5531e;">${bg?'на':'on'} ${euDate(t.date)} — ${bg?'не е днес':'not today'}</b> · `}${esc(title)} · ${esc(t.time||'')} · ${seatsTxt(t.party_size)} · ${st}${t.ticket_code?' · '+fmtTicket(t.ticket_code):''}</div></div>
       ${t.status==='confirmed'&&t.today?`<button class="btn sm${t.checked_in_at?' ghost':''}" onclick="doorCheckFound('${t.id}',${t.checked_in_at?'true':'false'})">${t.checked_in_at?(bg?'Отмени':'Undo'):(bg?'Присъстват ('+(t.party_size||1)+')':'Check in ('+(t.party_size||1)+')')}</button>`:''}
     </div></div>`; }).join('');
   const shown=new Set((r.tickets||[]).map(t=>t.user_id).filter(Boolean));
@@ -3007,7 +3007,7 @@ async function doorShow(id){
     const ev=EVENTS.find(e=>e.id===(x.event_id||x.table_event_id)); const title=ev?ev.title:(x.place||x.format||'');
     const st=x.checked_in_at?`<span style="color:#507044;font-weight:700;">✓ ${lang==='bg'?'Присъствал':'Checked in'} ${x.checked_in_at.slice(11,16)}</span>`:(x.status==='confirmed'?`<span style="color:#507044;">${lang==='bg'?'Потвърдена':'Confirmed'}${x.paid?' · '+(lang==='bg'?'платена':'paid'):''}</span>`:`<span style="color:#6b6b63;">${lang==='bg'?'Изчаква одобрение':'Pending'}</span>`);
     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line-soft);">
-      <div><b>${esc(title)}</b><div style="font-size:12px;color:var(--mid);">${x.time||''} · ${seatsTxt(x.party_size)} · ${st}</div></div>
+      <div><b>${esc(title)}</b><div style="font-size:12px;color:var(--mid);">${esc(x.time||'')} · ${seatsTxt(x.party_size)} · ${st}</div></div>
       ${x.status==='confirmed'?`<button class="btn sm${x.checked_in_at?' ghost':''}" onclick="doorCheck('${x.id}','${id}',${x.checked_in_at?'true':'false'})">${x.checked_in_at?(lang==='bg'?'Отмени':'Undo'):(lang==='bg'?'Присъства':'Check in')}</button>`:''}
     </div>`;}).join('');
   box.innerHTML=`<div class="ev" style="border:2px solid ${col};">
