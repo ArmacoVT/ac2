@@ -848,7 +848,8 @@ function pageEvent(id,book){
         ${evSlots(e).length&&!ex?`<div class="row"><span>${t('time')}</span><span>${evSlots(e).map(s=>esc(fmtTime(s.time))).join(' / ')}</span></div>`:(e.time&&!ex?`<div class="row"><span>${t('time')}</span><span>${esc(fmtTime(e.time))}${e.ends?' – '+esc(fmtTime(e.ends)):''}</span></div>`:'')}
         ${e.place?`<div class="row"><span>${t('place')}</span><span>${esc(placeT(e.place))}</span></div>`:''}
         <div class="row"><span>${t('price')}</span><span>${esc(fmtPrice(e))}</span></div>
-        ${(!past&&a.href!=='#/event/'+e.id)?(a.ext?`<a class="btn" href="${esc(a.href)}" target="_blank" rel="noopener" onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a>${!p.ticket_url?`<div class="hint" style="text-align:center;">${t('inApp')} · ${t('login')}</div>`:''}`
+        ${(!past&&a.href!=='#/event/'+e.id&&soldOutPub(e))?`<span class="btn ghost" style="width:100%;cursor:default;opacity:.75;text-align:center;">${L('Продадено','Sold out')}</span>`
+          :(!past&&a.href!=='#/event/'+e.id)?(a.ext?`<a class="btn" href="${esc(a.href)}" target="_blank" rel="noopener" onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a>${!p.ticket_url?`<div class="hint" style="text-align:center;">${t('inApp')} · ${t('login')}</div>`:''}`
           :`<a class="btn" href="${esc(a.href)}" onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a>`):''}
         ${guestOpen(e)&&!past&&on('general.nav.login')?`<div class="hint" style="text-align:center;margin-top:8px;"><a class="tlink" href="${esc(APP_URL)}#event/${esc(e.id)}">${t('login')} →</a></div>`:''}
         <a class="btn ghost" style="width:100%;margin-top:10px;" href="#/program">${t('program')}</a>
