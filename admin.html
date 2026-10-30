@@ -1066,14 +1066,15 @@ async function exportEvents(ids){
   try{ RES=await DB.listReservations(); }catch(e){}
   if(!PHONES||!Object.values(PHONES).some(x=>'mem' in x)){ try{ const list=await DB.listMembers(); const m={}; (list||[]).forEach(p=>{m[p.id]={email:p.email||'',phone:p.phone||'',mem:p.membership||''};}); PHONES=m; }catch(e){ PHONES=PHONES||{}; } }
   // кои събития: подадените, или всички с поне една резервация (текущи + минали), по дата
-  let evs=ids?EVENTS.filter(e=>ids.includes(e.id)):EVENTS.filter(e=>RES.some(r=>r.event_id===e.id));
+  let evs=ids==='upcoming'?EVENTS.filter(e=>!admIsPast(e)&&RES.some(r=>r.event_id===e.id)):(Array.isArray(ids)?EVENTS.filter(e=>ids.includes(e.id)):EVENTS.filter(e=>RES.some(r=>r.event_id===e.id)));
+  if(ids==='upcoming')ids=null;
   evs=evs.slice().sort((a,b)=>(a.date||'')<(b.date||'')?-1:1);
   if(!evs.length){ alert('Няма събития с резервации за експорт.'); return; }
   const stBg={confirmed:'потвърдена',requested:'заявка',declined:'отказана',cancelled:'отменена',pending_payment:'чака плащане'};
   const stOrder={confirmed:0,requested:1,pending_payment:2,declined:3,cancelled:4};
   const meth=r=>r.pay_method==='cash'?'в брой':r.pay_method==='pos'?'ПОС':r.pay_method==='free'?'безплатно на място':(r.stripe_pi?'онлайн карта':((r.paid_cents||0)>0?'платено':'безплатно'));
   const dt=ts=>{if(!ts)return '';const d=new Date(ts);const z=n=>String(n).padStart(2,'0');return z(d.getDate())+'.'+z(d.getMonth()+1)+'.'+d.getFullYear()+' '+z(d.getHours())+':'+z(d.getMinutes());};
-  const head=['Час / слот','Име','Имейл','Телефон','Тип','Членство','Места','Статус','Платено (€)','Върнато (€)','Метод','Код на билета','Влязъл','Група 9+','Бележка / алергии','Направена на'];
+  const head=['Час / слот','Име','Имейл','Телефон','Тип','Членство','Места','Статус','Платено (€)','Върнато (€)','Нето (€)','Метод','Код на билета','Влязъл','Група 9+','Бележка / алергии','Направена на','Stripe плащане'];
   const sheets=[], summary=[];
   const used=new Set();
   const money=canMoney();
@@ -1081,12 +1082,12 @@ async function exportEvents(ids){
     const tk=r=>r.time||e.time||'';
     const list=RES.filter(r=>r.event_id===e.id).sort((a,b)=>(tk(a)<tk(b)?-1:tk(a)>tk(b)?1:0)||((stOrder[a.status]??9)-(stOrder[b.status]??9))||((a.name||'')<(b.name||'')?-1:1));
     const rows=list.map(r=>{ const info=(PHONES&&r.user_id)?PHONES[r.user_id]:null;
-      return [r.time||e.time||'',r.name||r.who||'',r.email||(info&&info.email)||'',r.phone||(info&&info.phone)||'',r.guest?'гост':'член',r.guest?'':(()=>{const m=(r.membership&&r.membership!=='guest')?r.membership:((info&&info.mem)||'');return m&&m!=='guest'?memName(m):'';})(),Number(r.party)||1,stBg[r.status]||r.status||'',(r.paid_cents||0)/100,(r.refund_cents||0)/100,meth(r),r.ticket_code?('AC2-'+r.ticket_code.slice(0,4)+'-'+r.ticket_code.slice(4)):'',r.checked_in_at?dt(r.checked_in_at):'',isBigGroup(r)?'да':'',(r.note||'').replace(/\[(ГРУПА 9\+|GROUP 9\+)[^\]]*\]\s*/,''),dt(r.created_at)]; });
+      return [r.time||e.time||'',r.name||r.who||'',r.email||(info&&info.email)||'',r.phone||(info&&info.phone)||'',r.guest?'гост':'член',r.guest?'':(()=>{const m=(r.membership&&r.membership!=='guest')?r.membership:((info&&info.mem)||'');return m&&m!=='guest'?memName(m):'';})(),Number(r.party)||1,stBg[r.status]||r.status||'',(r.paid_cents||0)/100,(r.refund_cents||0)/100,Math.round(((r.paid_cents||0)-(r.refund_cents||0)))/100,meth(r),r.ticket_code?('AC2-'+r.ticket_code.slice(0,4)+'-'+r.ticket_code.slice(4)):'',r.checked_in_at?dt(r.checked_in_at):'',isBigGroup(r)?'да':'',(r.note||'').replace(/\[(ГРУПА 9\+|GROUP 9\+)[^\]]*\]\s*/,''),dt(r.created_at),r.stripe_pi||'']; });
     const conf=list.filter(r=>r.status==='confirmed');
     const seats=conf.reduce((a,r)=>a+(Number(r.party)||1),0), pend=list.filter(r=>r.status==='requested').reduce((a,r)=>a+(Number(r.party)||1),0);
     const paid=list.reduce((a,r)=>a+(r.paid_cents||0),0)/100, refd=list.reduce((a,r)=>a+(r.refund_cents||0),0)/100;
     const inn=conf.filter(r=>r.checked_in_at).reduce((a,r)=>a+(Number(r.party)||1),0);
-    if(rows.length)rows.push(['ОБЩО','','','','','',list.filter(r=>r.status!=='declined'&&r.status!=='cancelled').reduce((a,r)=>a+(Number(r.party)||1),0),'',Math.round(paid*100)/100,Math.round(refd*100)/100,'','',inn?inn+' души':'','','','']);
+    if(rows.length)rows.push(['ОБЩО','','','','','',list.filter(r=>r.status!=='declined'&&r.status!=='cancelled').reduce((a,r)=>a+(Number(r.party)||1),0),'',Math.round(paid*100)/100,Math.round(refd*100)/100,Math.round((paid-refd)*100)/100,'','',inn?inn+' души':'','','','','']);
     // по слот: отделни редове в обобщението
     const slots=(e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(x=>x&&x.time):[];
     const slotTxt=slots.length?slots.map(sl=>{const tk=conf.filter(r=>(r.time||'')===sl.time).reduce((a,r)=>a+(Number(r.party)||1),0);return sl.time+': '+tk+(sl.cap?'/'+sl.cap:'');}).join(' · '):'';
@@ -1097,12 +1098,12 @@ async function exportEvents(ids){
   const sHead=['Събитие','Дата','Час / слотове','Място','Формат','Капацитет','Потвърдени места','Чакащи заявки (места)','Заетост по слот','Влезли','Платено (€)','Върнато (€)','Нето (€)'];
   // без право за суми — махаме паричните колони (Платено, Върнато, Нето) от всички листове
   const strip=(h,rows,cols)=>{ const keep=h.map((x,i)=>cols.includes(x)?-1:i).filter(i=>i>=0); return {head:keep.map(i=>h[i]),rows:rows.map(r=>keep.map(i=>r[i]))}; };
-  const MCOLS=['Платено (€)','Върнато (€)','Нето (€)'];
+  const MCOLS=['Платено (€)','Върнато (€)','Нето (€)','Stripe плащане'];
   if(!money){ for(const sh of sheets){ const x=strip(sh.head,sh.rows,MCOLS); sh.head=x.head; sh.rows=x.rows; } }
   const sm=money?{head:sHead,rows:summary}:strip(sHead,summary,MCOLS);
   const all=(ids&&ids.length===1)?sheets:[{name:'Обобщение',head:sm.head,rows:sm.rows}].concat(sheets);
   const blob=xlsxBlob(all);
-  const fname=(ids&&ids.length===1)?('AC2-'+(evs[0].date||'')+'-'+evs[0].title.replace(/[^\p{L}\p{N}]+/gu,'-').slice(0,40)+'.xlsx'):('AC2-sabitiya-'+new Date().toISOString().slice(0,10)+'.xlsx');
+  const fname=(ids&&ids.length===1)?('AC2-'+(evs[0].date||'')+'-'+evs[0].title.replace(/[^\p{L}\p{N}]+/gu,'-').slice(0,40)+'.xlsx'):('AC2-sabitiya-'+(evs.every(e=>!admIsPast(e))?'predstoyashti-':'')+new Date().toISOString().slice(0,10)+'.xlsx');
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
   try{ await DB.logAudit('export_events',(ids&&ids.length===1)?evs[0].title:'всички събития',evs.length+' събития'); }catch(e){}
   toast('Готово: '+evs.length+' '+(evs.length===1?'събитие':'събития'));
@@ -1349,7 +1350,7 @@ function resView(){
   if(!rows)rows=`<p class="empty">Няма заявки в този раздел.</p>`;
   return `${doorBtn()}<h2>Резервации${resArchive?' — архив':''}</h2>
   <div style="margin:-4px 0 10px;"><button class="btn ghost sm" onclick="toggleResArchive()">${resArchive?'‹ Текущи':'Архив ('+OLD.length+') ▾'}</button> <span class="muted" style="font-size:12px;">${resArchive?'Резервации за събития, минали преди повече от 2 дни.':'Минали събития (2+ дни) са в архива.'}</span></div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px;">${chips}${canEvExport()?`<button class="btn ghost sm" style="margin-left:auto;" onclick="exportEvents(null)" title="Всяко събитие на отделен лист + обобщение">⬇ Всички събития (Excel)</button>`:''}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px;">${chips}${canEvExport()?`<span style="margin-left:auto;display:flex;gap:6px;"><button class="btn ghost sm" onclick="exportEvents('upcoming')" title="Предстоящите събития — всяко на отделен лист + обобщение">⬇ Предстоящи събития (Excel)</button><button class="btn ghost sm" onclick="exportEvents(null)" title="Всички събития с резервации, вкл. минали">⬇ Всички</button></span>`:''}</div>
     ${head}${rows}`;
 }
 function toast(msg,bad){
