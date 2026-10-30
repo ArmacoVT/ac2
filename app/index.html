@@ -1108,7 +1108,7 @@ function eventView(id){
   // бутоните — същите като на картата (билет / календар / любими)
   const rowHtml=(()=>{const d=document.createElement('div');d.innerHTML=eventCard(e,0);const r=d.querySelector('.row');return r?r.innerHTML:'';})();
   return topbar(f?f.t:(lang==='bg'?'Събитие':'Event'))+`<div class="page">
-    ${e.image_url?posterHtml(e,`onclick="openImg('${esc(e.image_url)}')" style="border-radius:14px;cursor:zoom-in;"`):''}
+    ${e.image_url?posterHtml(e,`data-src="${esc(e.image_url)}" onclick="openImg(this.dataset.src)" style="border-radius:14px;cursor:zoom-in;"`):''}
     <div class="ev" style="margin-top:12px;">
       <div class="t">${esc(evFmtLabel(e))}${past?' · '+T('минало','past'):''}</div>
       <h3 style="font-size:22px;line-height:1.2;">${esc((lang==='en'&&p.title_en)?p.title_en:e.title)}</h3>
@@ -1120,13 +1120,15 @@ function eventView(id){
     </div>
     ${(short||long)?`<div class="ev"><div style="font-size:14.5px;line-height:1.6;white-space:pre-line;color:var(--text);">${esc(long||short)}</div></div>`:''}
     ${(L2(p.participants)||L2(p.curator)||L2(p.authors)||L2(p.visit))?`<div class="ev" style="padding-top:4px;">${kv(T('Участници','Participants'),L2(p.participants))}${kv(T('Куратор','Curator'),L2(p.curator))}${kv(T('Автори','Artists'),L2(p.authors))}${kv(T('Посещение','Visiting'),L2(p.visit))}</div>`:''}
-    ${gal.length?`<div style="margin:4px -16px 0;padding:0 16px 8px;display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;">${gal.map(u=>`<img src="${esc(u)}" alt="" loading="lazy" style="height:200px;border-radius:12px;flex:none;scroll-snap-align:start;max-width:85vw;object-fit:cover;" onclick="openImg('${esc(u)}')"/>`).join('')}</div>`:''}
+    ${gal.length?`<div style="margin:4px -16px 0;padding:0 16px 8px;display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;">${gal.map(u=>`<img src="${esc(u)}" alt="" loading="lazy" style="height:200px;border-radius:12px;flex:none;scroll-snap-align:start;max-width:85vw;object-fit:cover;" data-src="${esc(u)}" onclick="openImg(this.dataset.src)"/>`).join('')}</div>`:''}
     ${e.video_url?`<div class="ev"><video class="evvideo" src="${esc(e.video_url)}" controls preload="metadata" playsinline style="margin:0;"></video></div>`:''}
   </div>`;
 }
 function openImg(u){
   let o=document.getElementById('imgov'); if(!o){o=document.createElement('div');o.id='imgov';o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;';o.onclick=()=>o.remove();document.body.appendChild(o);}
-  o.innerHTML=`<img src="${u}" style="max-width:100%;max-height:100%;border-radius:10px;object-fit:contain;"/>`;
+  // сигурност: адресът се задава през DOM (не през HTML) — не може да изпълни код
+  if(!u){o.remove();return;}
+  o.innerHTML=''; const im=document.createElement('img'); im.src=u; im.style.cssText='max-width:100%;max-height:100%;border-radius:10px;object-fit:contain;'; o.appendChild(im);
 }
 // постер в рамка 3:2 (цял, с размазан фон) или изрязан (pub.fit==='cover')
 const _imgAR={}; try{Object.assign(_imgAR,JSON.parse(localStorage.getItem('ac2_imgar')||'{}'));}catch(e){}
