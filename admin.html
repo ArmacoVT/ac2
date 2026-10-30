@@ -1001,18 +1001,41 @@ function feesView(){
       <label style="margin-top:8px;">Разрешени планове за плащане</label><div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;">${Object.keys(PLAN_LABEL).map(k=>`<label style="display:flex;gap:6px;align-items:center;"><input type="checkbox" id="fp_${id}_${k}" ${plans.includes(k)?'checked':''} style="width:16px;height:16px;margin:0;"/> ${PLAN_LABEL[k]}</label>`).join('')}</div>
       <div class="muted" style="font-size:12px;margin-top:6px;">Месечно/тримесечно изискват автоматично подновяване от члена (12 ръчни кода не са практични) и допълнение в Листа с такси.</div>
       <button class="btn ok sm" style="margin-top:10px;" onclick="saveFee('${id}')">Запази</button></div>`;}).join('');
-  const pend=(MPAY||[]).filter(x=>x.status==='pending');
-  const paid=(MPAY||[]).filter(x=>x.status==='paid').slice(0,50);
-  const codes=(MCODES||[]).filter(c=>!c.used_at&&new Date(c.expires_at)>new Date()).slice(0,50);
-  const fmtP=x=>`<div class="card" style="padding:10px 14px;"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;"><div><b>${esc(x.email||'')}</b> · ${esc(memName(x.membership))} · ${PLAN_LABEL[x.plan]||x.plan} · <b>${(x.amount_cents/100).toFixed(2)} €</b> · ${x.method==='bank'?'банков превод':'карта'}${x.auto_renew?' · авто-подновяване':''}<div class="muted" style="font-size:12px;">${x.status==='paid'?'платено '+new Date(x.paid_at||x.created_at).toLocaleString('bg-BG'):'чака от '+new Date(x.created_at).toLocaleString('bg-BG')}${x.period_to?' · до '+isoToBg(x.period_to):''}${x.bank_ref?' · основание '+esc(x.bank_ref):''}</div></div>
-    ${x.status==='pending'&&x.method==='bank'?`<div style="display:flex;gap:6px;"><button class="btn ok sm" onclick="mpayConfirm('${x.id}')">Потвърди превода</button><button class="btn ghost sm" onclick="mpayCancel('${x.id}')">Откажи</button></div>`:x.status==='pending'?`<span class="pill">чака картово плащане</span>`:'<span class="pill audAll">платено</span>'}</div></div>`;
+  const fq=(feesQ||'').trim().toLowerCase();
+  const match=x=>!fq||((x.email||'')+' '+(x.full_name||'')+' '+(x.code||'')+' '+(x.bank_ref||'')).toLowerCase().includes(fq);
+  const DAY=24*3600*1000;
+  const pend=(MPAY||[]).filter(x=>x.status==='pending'&&match(x));
+  const paid=(MPAY||[]).filter(x=>x.status==='paid'&&match(x)).slice(0,fq?500:50);
+  const codes=(MCODES||[]).filter(c=>!c.used_at&&new Date(c.expires_at)>new Date()&&match(c)).slice(0,fq?500:50);
+  const btn=(lbl,fn,cls)=>`<button class="btn ${cls||'ghost'} sm" onclick="${fn}">${lbl}</button>`;
+  const fmtP=x=>{ const old=x.status==='pending'&&(Date.now()-new Date(x.created_at).getTime()>DAY);
+    // „Изтрий“ — само неплатени: банков превод (още не е дошъл) или картово, започнато преди над 1 час (изоставено)
+    const delOk=x.status==='pending'&&(x.method==='bank'||Date.now()-new Date(x.created_at).getTime()>3600*1000);
+    const del=delOk?btn('Изтрий',`mpayDelete('${x.id}')`,'no'):'';
+    const acts=x.status==='pending'&&x.method==='bank'?btn('Потвърди превода',`mpayConfirm('${x.id}')`,'ok')+btn('Откажи',`mpayCancel('${x.id}')`)+del
+      :x.status==='pending'?`<span class="pill" style="${old?'border-color:#82303d;color:#82303d;':''}">${old?'изоставено картово плащане':'чака картово плащане'}</span>`+btn('Откажи',`mpayCancel('${x.id}')`)+del
+      :`<span class="pill audAll">платено</span>`+(x.stripe_pi?`<a class="btn ghost sm" href="https://dashboard.stripe.com/payments/${encodeURIComponent(x.stripe_pi)}" target="_blank" rel="noopener">Виж в Stripe ↗</a>`:'');
+    return `<div class="card" style="padding:10px 14px;"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;"><div><b>${esc(x.email||'')}</b> · ${esc(memName(x.membership))} · ${PLAN_LABEL[x.plan]||esc(x.plan||'')} · <b>${(x.amount_cents/100).toFixed(2)} €</b> · ${x.method==='bank'?'банков превод':'карта'}${x.auto_renew?' · авто-подновяване':''}<div class="muted" style="font-size:12px;">${x.status==='paid'?'платено '+new Date(x.paid_at||x.created_at).toLocaleString('bg-BG'):'чака от '+new Date(x.created_at).toLocaleString('bg-BG')}${x.period_to?' · до '+isoToBg(x.period_to):''}${x.bank_ref?' · основание '+esc(x.bank_ref):''}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${acts}</div></div></div>`; };
+  const fmtC=c=>`<div class="card" style="padding:10px 14px;"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;"><div><b>AC2-${esc(c.code.slice(0,4))}-${esc(c.code.slice(4))}</b> · ${esc(c.email)}${c.full_name?' · '+esc(c.full_name):''} · ${esc(memName(c.membership))} · ${c.purpose==='new'?'нов член':c.purpose==='renew'?'подновяване':'2-ра вноска'}<div class="muted" style="font-size:12px;">важи до ${isoToBg(c.expires_at.slice(0,10))}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">${btn('Копирай линка',`codeCopy('${c.id}')`)}${btn('Нов код',`codeResend('${c.id}')`)}${btn('Изтрий',`codeDelete('${c.id}')`,'no')}</div></div></div>`;
+  const sec=(key,title,n,body)=>{ const open=feesOpen[key]!==false; return `<h2 style="margin-top:22px;cursor:pointer;" onclick="feesToggle('${key}')">${title}${n?' ('+n+')':''} <span class="muted" style="font-size:14px;">${open?'▴':'▾'}</span></h2>${open?body:''}`; };
   return `<h2>Членства и цени</h2><p class="muted" style="margin-top:-4px;">Цените важат за новите покани; вече издадените кодове пазят цената от момента на издаване. Членството се плаща само на сайта (ac2.bg/#/join) с код — не в приложението.</p>
     <div style="margin:10px 0 16px;"><button class="btn ok" onclick="mInviteOpen({})">💳 Нова покана за плащане</button> <button class="btn ghost" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button> <a class="btn ghost" href="#" onclick="event.preventDefault();setTab('public')">IBAN за банков превод → Публичен сайт → Общи</a></div>
     ${rows}
-    <h2 style="margin-top:26px;">Чакащи плащания${pend.length?' ('+pend.length+')':''}</h2>${pend.length?pend.map(fmtP).join(''):'<p class="empty">Няма чакащи.</p>'}
-    <h2 style="margin-top:22px;">Активни кодове${codes.length?' ('+codes.length+')':''}</h2>${codes.length?codes.map(c=>`<div class="card" style="padding:10px 14px;"><b>AC2-${c.code.slice(0,4)}-${c.code.slice(4)}</b> · ${esc(c.email)}${c.full_name?' · '+esc(c.full_name):''} · ${esc(memName(c.membership))} · ${c.purpose==='new'?'нов член':c.purpose==='renew'?'подновяване':'2-ра вноска'} · важи до ${isoToBg(c.expires_at.slice(0,10))} <a href="https://ac2.bg/#/join?code=${c.code}" target="_blank" rel="noopener" style="color:#82303d;">линк</a></div>`).join(''):'<p class="empty">Няма активни кодове.</p>'}
-    <h2 style="margin-top:22px;">Последни плащания</h2>${paid.length?paid.map(fmtP).join(''):'<p class="empty">Още няма плащания.</p>'}`;
+    <div style="margin-top:18px;"><input placeholder="Търси по имейл, име или код…" value="${esc(feesQ||'')}" oninput="feesQ=this.value;clearTimeout(window._fqT);window._fqT=setTimeout(()=>{render();const el=document.getElementById('feesq');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},250)" id="feesq" style="max-width:380px;"/></div>
+    ${sec('pend','Чакащи плащания',pend.length,pend.length?pend.map(fmtP).join(''):'<p class="empty">Няма чакащи.</p>')}
+    ${sec('codes','Активни кодове',codes.length,codes.length?codes.map(fmtC).join(''):'<p class="empty">Няма активни кодове.</p>')}
+    ${sec('paid','Последни плащания',paid.length,paid.length?paid.map(fmtP).join(''):'<p class="empty">Още няма плащания.</p>')}`;
 }
+let feesQ=''; let feesOpen=(()=>{try{return JSON.parse(localStorage.getItem('acac_fees_open')||'{}');}catch(e){return {};}})();
+function feesToggle(k){ feesOpen[k]=feesOpen[k]===false; try{localStorage.setItem('acac_fees_open',JSON.stringify(feesOpen));}catch(e){} render(); }
+function codeById(id){ return (MCODES||[]).find(c=>c.id===id); }
+function codeCopy(id){ const c=codeById(id); if(!c)return; const u='https://ac2.bg/#/join?code='+c.code; try{navigator.clipboard.writeText(u);toast('Линкът е копиран');}catch(e){prompt('Копирай линка:',u);} }
+function codeResend(id){ const c=codeById(id); if(!c)return; mInviteOpen({email:c.email||'',full_name:c.full_name||'',membership:c.membership||'club',purpose:c.purpose||'new',user_id:c.user_id||''}); }
+async function codeDelete(id){ const c=codeById(id); if(!c)return; if(!confirm('Да изтрия ли кода AC2-'+c.code.slice(0,4)+'-'+c.code.slice(4)+' за '+c.email+'? Линкът от имейла спира да работи.'))return;
+  const r=await DB.deleteMembershipCode(id); if(r&&r.error){alert('Грешка: '+r.error.message);return;}
+  try{await DB.logAudit('membership_code_deleted',c.email||'',c.code);}catch(e){} toast('Кодът е изтрит'); await loadFees(); render(); }
 // само преглед (счетоводство): цени като таблица, плащания без бутони, експорт
 function feesReadOnly(){
   const order=['founder','founding','club','alumni','corporate'];
@@ -1095,13 +1118,20 @@ async function exportEvents(ids){
     let nm=(isoToBg(e.date||'').slice(0,5)+' '+e.title).replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31).trim()||'Събитие'; let k=2; while(used.has(nm)){ nm=nm.slice(0,28)+' '+(k++); } used.add(nm);
     sheets.push({name:nm,head,rows});
   }
+  // Лист „Билети“ — ЕДИН общ списък в същия формат като „Експорт за месеца“ (ред = резервация), но за избраните събития
+  const flatHead=['Дата на продажба','Събитие','Дата на събитието','Час','Име','Имейл','Телефон','Тип','Места','Статус','Метод','Платено (€)','Върнато (€)','Дата на връщане','Нето (€)','Код на билета','Stripe плащане'];
+  const evIds=new Set(evs.map(e=>e.id));
+  const flat=RES.filter(r=>evIds.has(r.event_id)).sort((a,b)=>(a.sold_at||a.created_at||'')<(b.sold_at||b.created_at||'')?1:-1).map(r=>{ const e=EVENTS.find(x=>x.id===r.event_id)||{}; const info=(PHONES&&r.user_id)?PHONES[r.user_id]:null; const pd=(r.paid_cents||0)/100, rf=(r.refund_cents||0)/100;
+    return [dt(r.sold_at||r.created_at),e.title||'',e.date?isoToBg(e.date):'',r.time||e.time||'',r.name||r.who||'',r.email||(info&&info.email)||'',r.phone||(info&&info.phone)||'',r.guest?'гост':'член',Number(r.party)||1,stBg[r.status]||r.status||'',meth(r),pd,rf,dt(r.refunded_at),Math.round((pd-rf)*100)/100,r.ticket_code?('AC2-'+r.ticket_code.slice(0,4)+'-'+r.ticket_code.slice(4)):'',r.stripe_pi||'']; });
+  if(flat.length){ const live=flat.filter(x=>x[9]!=='отказана'&&x[9]!=='отменена'); flat.push(['ОБЩО','','','','','','','',live.reduce((a,x)=>a+(Number(x[8])||0),0),'','',Math.round(flat.reduce((a,x)=>a+(Number(x[11])||0),0)*100)/100,Math.round(flat.reduce((a,x)=>a+(Number(x[12])||0),0)*100)/100,'',Math.round(flat.reduce((a,x)=>a+(Number(x[14])||0),0)*100)/100,'','']); }
   const sHead=['Събитие','Дата','Час / слотове','Място','Формат','Капацитет','Потвърдени места','Чакащи заявки (места)','Заетост по слот','Влезли','Платено (€)','Върнато (€)','Нето (€)'];
   // без право за суми — махаме паричните колони (Платено, Върнато, Нето) от всички листове
   const strip=(h,rows,cols)=>{ const keep=h.map((x,i)=>cols.includes(x)?-1:i).filter(i=>i>=0); return {head:keep.map(i=>h[i]),rows:rows.map(r=>keep.map(i=>r[i]))}; };
   const MCOLS=['Платено (€)','Върнато (€)','Нето (€)','Stripe плащане'];
   if(!money){ for(const sh of sheets){ const x=strip(sh.head,sh.rows,MCOLS); sh.head=x.head; sh.rows=x.rows; } }
   const sm=money?{head:sHead,rows:summary}:strip(sHead,summary,MCOLS);
-  const all=(ids&&ids.length===1)?sheets:[{name:'Обобщение',head:sm.head,rows:sm.rows}].concat(sheets);
+  const fl=money?{head:flatHead,rows:flat}:strip(flatHead,flat,MCOLS.concat(['Дата на връщане']));
+  const all=(ids&&ids.length===1)?sheets:[{name:'Билети',head:fl.head,rows:fl.rows},{name:'Обобщение',head:sm.head,rows:sm.rows}].concat(sheets);
   const blob=xlsxBlob(all);
   const fname=(ids&&ids.length===1)?('AC2-'+(evs[0].date||'')+'-'+evs[0].title.replace(/[^\p{L}\p{N}]+/gu,'-').slice(0,40)+'.xlsx'):('AC2-sabitiya-'+(evs.every(e=>!admIsPast(e))?'predstoyashti-':'')+new Date().toISOString().slice(0,10)+'.xlsx');
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
@@ -1153,7 +1183,14 @@ async function mpayConfirm(id){
   const r=await DB.membershipActivate(id); if(r&&r.error){alert('Грешка: '+r.error.message);return;}
   toast('Членството е активирано · до '+(r.data&&r.data.until?isoToBg(r.data.until):'')); await refresh(); if(tab==='fees')await loadFees(); render();
 }
-async function mpayCancel(id){ if(!confirm('Да откажа ли този чакащ превод?'))return; await DB.cancelMembershipPayment(id); await refresh(); if(tab==='fees')await loadFees(); render(); }
+async function mpayDelete(id){
+  const x=(MPAY||[]).find(p=>p.id===id); if(!x||x.status==='paid')return;
+  if(!confirm('Да изтрия ли неплатеното плащане на '+(x.email||'')+' ('+(x.amount_cents/100).toFixed(2)+' €)? Записът изчезва; кодът за плащане (ако е активен) остава — може да го изтриеш отделно.'))return;
+  const r=await DB.deleteMembershipPayment(id); if(r&&r.error){alert('Грешка: '+r.error.message);return;}
+  try{await DB.logAudit('membership_payment_deleted',x.email||'',(x.amount_cents/100).toFixed(2)+' € · '+(x.method||''));}catch(e){}
+  toast('Изтрито'); await refresh(); await loadFees(); render();
+}
+async function mpayCancel(id){ if(!confirm('Да откажа ли това чакащо плащане? Ако човекът все пак плати по стария линк, ще трябва ново ръчно активиране.'))return; await DB.cancelMembershipPayment(id); await refresh(); if(tab==='fees')await loadFees(); render(); }
 // покана за плащане (нов член / подновяване / втора вноска)
 let MI=null;
 // Безопасно: в onclick подаваме само id и търсим записа в паметта (текст от кандидат/член НИКОГА в onclick — HTML го декодира преди JS)

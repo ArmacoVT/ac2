@@ -864,6 +864,9 @@ window.PUB_DEFAULTS={
     async membershipActivate(paymentId) { return fnCall('membership-activate', { payment_id: paymentId }); },
     async listMembershipPayments(limit) { if (!LIVE) return []; const { data } = await sb.from('membership_payments').select('*').order('created_at', { ascending: false }).limit(limit || 200); return data || []; },
     async listMembershipCodes(limit) { if (!LIVE) return []; const { data } = await sb.from('membership_codes').select('*').order('created_at', { ascending: false }).limit(limit || 200); return data || []; },
+    async deleteMembershipCode(id) { if (!LIVE) return { error: null }; const { error } = await sb.from('membership_codes').delete().eq('id', id); return { error }; },
+    // изтриване само на НЕПЛАТЕН запис (status pending/cancelled) — платените са финансова история
+    async deleteMembershipPayment(id) { if (!LIVE) return { error: null }; const { error } = await sb.from('membership_payments').delete().eq('id', id).in('status', ['pending', 'cancelled']); return { error }; },
     async cancelMembershipPayment(id) { if (!LIVE) return { error: null }; const { error } = await sb.from('membership_payments').update({ status: 'cancelled' }).eq('id', id); return { error }; },
     // публична страница /join (без вход) → Edge Function membership-pay (Verify JWT OFF)
     async membershipPay(o) {
