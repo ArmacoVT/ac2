@@ -325,7 +325,7 @@ function render(){
   const badge=DB.live?`<span class="badge live">Свързан Supabase</span>`:`<span class="badge">Демо режим</span>`;
   let h=`<div class="wrap">
     <div class="top"><div class="b">AC² · Админ панел<br><small>American College Arcus Club</small></div>
-      <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn sm" id="newdataBtn" onclick="adminRefresh()" style="display:${window._newData?'inline-block':'none'};background:#82303d;color:#f7f7ee;border-color:#82303d;" title="Има нови заявки / кандидатури / съобщения">● Нови заявки — обнови</button><button class="btn ghost sm" id="refreshBtn" onclick="adminRefresh()" title="Презарежда данните (резервации, членове…)">↻ Опресни</button><button class="btn sm" id="newverBtn" onclick="location.reload()" style="display:${window._newVer?'inline-block':'none'};background:#c9a86a;color:#1b1b1b;border-color:#c9a86a;" title="Има нова версия на админа — зарежда я">⬆ Нова версия — обнови</button><button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
+      <div style="display:flex;gap:10px;align-items:center;">${badge}<button class="btn sm" id="newdataBtn" onclick="adminRefresh()" style="display:${window._newData?'inline-block':'none'};background:#82303d;color:#f7f7ee;border-color:#82303d;" title="Има нови заявки / кандидатури / съобщения">● Нови заявки — обнови</button><button class="btn ghost sm" id="refreshBtn" onclick="adminRefresh()" title="Презарежда данните (резервации, членове…)">↻ Опресни</button><button class="btn sm" id="newverBtn" onclick="adminHardReload()" style="display:${window._newVer?'inline-block':'none'};background:#c9a86a;color:#1b1b1b;border-color:#c9a86a;" title="Има нова версия на админа — зарежда я">⬆ Нова версия — обнови</button><button class="btn ghost sm" onclick="logout()">Изход</button></div></div>
     ${tabsHtml()}
     ${isEditor()?`<p class="muted" style="margin:6px 0 10px;font-size:12px;">Влезли сте като служител — виждате само разделите, за които имате права.</p>`:''}
     <div id="inboxBox">${inboxView()}</div>`;
@@ -1357,6 +1357,17 @@ function toast(msg,bad){
   t.style.background=bad?'#82303d':'#507044';
   t.textContent=msg;t.style.opacity='1';
   clearTimeout(t._h);t._h=setTimeout(()=>{t.style.opacity='0';},3500);
+}
+// „Нова версия — обнови“: взима НАЙ-НОВАТА версия наведнъж (а не междинна от кеша на GitHub Pages)
+// 1) разбира кой е последният номер (sw.js без кеш), 2) обновява service worker-а и чисти старите кешове (без снимките),
+// 3) зарежда admin.html с ?v=<номер> — уникален адрес, който GitHub/браузърът няма в кеша.
+async function adminHardReload(){
+  const b1=document.getElementById('newverBtn'); if(b1){b1.disabled=true;b1.textContent='⬆ Обновяване…';}
+  let v='';
+  try{ const t=await (await fetch('sw.js?'+Date.now(),{cache:'no-store'})).text(); const m=t.match(/acac-v(\d+)/); v=m?m[1]:''; }catch(e){}
+  try{ const reg=await navigator.serviceWorker.getRegistration(); if(reg){ await reg.update(); } }catch(e){}
+  try{ const ks=await caches.keys(); await Promise.all(ks.filter(k=>k!=='acac-media').map(k=>caches.delete(k))); }catch(e){}
+  const u=new URL(location.href); u.searchParams.set('v',v||String(Date.now())); location.replace(u.pathname+u.search+u.hash);
 }
 async function adminRefresh(){
   const b=document.getElementById('refreshBtn'); if(b){b.disabled=true;b.textContent='↻ …';}
@@ -2471,7 +2482,7 @@ boot();
     const nb=document.getElementById('newverBtn'); if(nb)nb.style.display='inline-block';
     if(document.getElementById('swbar'))return; const b=document.createElement('div'); b.id='swbar';
     b.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;background:#1b1b1b;color:#ebebd6;border:1px solid #c9a86a;border-radius:24px;padding:10px 16px;font-size:13px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 28px rgba(0,0,0,.35);';
-    b.innerHTML='Налична е нова версия на админа <button onclick="location.reload()" style="background:#c9a86a;color:#1b1b1b;border:0;border-radius:16px;padding:6px 12px;font-weight:600;cursor:pointer;">Обнови</button>';
+    b.innerHTML='Налична е нова версия на админа <button onclick="adminHardReload()" style="background:#c9a86a;color:#1b1b1b;border:0;border-radius:16px;padding:6px 12px;font-weight:600;cursor:pointer;">Обнови</button>';
     document.body.appendChild(b); };
   // Проверка за нова версия — НЕ зависи от service worker-а (при Ctrl+F5 страницата е без worker и старата логика мълчеше):
   // на всеки 2 мин., при връщане в таба и при клик (≥15 s) теглим sw.js от сървъра и сравняваме номера на версията
