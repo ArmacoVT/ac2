@@ -1155,6 +1155,9 @@ async function mpayConfirm(id){
 async function mpayCancel(id){ if(!confirm('Да откажа ли този чакащ превод?'))return; await DB.cancelMembershipPayment(id); await refresh(); if(tab==='fees')await loadFees(); render(); }
 // покана за плащане (нов член / подновяване / втора вноска)
 let MI=null;
+// Безопасно: в onclick подаваме само id и търсим записа в паметта (текст от кандидат/член НИКОГА в onclick — HTML го декодира преди JS)
+function mInviteFromApp(id){ const a=byId(APPS,id); mInviteOpen({app_id:a.id,email:a.email||'',full_name:a.name||'',membership:a.membership||'club',purpose:'new'}); }
+function mInviteFromMember(id){ const p=byId(PEOPLE,id); mInviteOpen({user_id:p.id,email:p.email||'',full_name:p.full_name||p.username||'',membership:p.membership||'club',purpose:'renew'}); }
 function mInviteOpen(o){ MI=Object.assign({email:'',full_name:'',membership:'club',purpose:'new',user_id:'',app_id:'',send:true},o||{}); if(!MPRICES)DB.listMembershipPrices().then(p=>{MPRICES=p;mInviteRender();}); mInviteRender(); }
 function mInviteRender(){
   let m=document.getElementById('miModal'); if(!m){m=document.createElement('div');m.id='miModal';m.style.cssText='position:fixed;inset:0;background:rgba(28,28,27,.55);z-index:9000;display:flex;align-items:flex-start;justify-content:center;padding:30px 12px;overflow:auto;';m.onclick=e=>{if(e.target===m){m.remove();MI=null;}};document.body.appendChild(m);}
@@ -1968,11 +1971,13 @@ function messagesView(){
     <h2 style="margin-top:28px;">Абонати за нюзлетъра (${subs.length})</h2>
     <p class="muted" style="margin-top:-6px;">Записват се от сайта със съгласие. Експортът е CSV за Mailchimp или друг инструмент.</p>
     <div style="display:flex;gap:10px;margin:8px 0 12px;"><button class="btn ghost sm" onclick="subsCsv()">⬇ Експорт CSV</button></div>
-    <div class="card" style="max-height:360px;overflow:auto;font-size:13px;">${subs.length?subs.map(s=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #e0e0c8;"><span>${esc(s.email)} <span class="muted">· ${s.lang||'bg'} · ${fmt(s.consent_at)}</span></span><button class="btn no sm" style="padding:1px 8px;" onclick="subDel('${esc(s.email)}')">×</button></div>`).join(''):'<span class="muted">Още няма абонати.</span>'}</div>`;
+    <div class="card" style="max-height:360px;overflow:auto;font-size:13px;">${subs.length?subs.map((s,i)=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #e0e0c8;"><span>${esc(s.email)} <span class="muted">· ${s.lang||'bg'} · ${fmt(s.consent_at)}</span></span><button class="btn no sm" style="padding:1px 8px;" onclick="subDelAt(${i})">×</button></div>`).join(''):'<span class="muted">Още няма абонати.</span>'}</div>`;
 }
 async function loadMessages(){ MSGS=await DB.listContactMessages(); SUBS=await DB.listSubscribers(); render(); }
 async function msgRead(id,r){ await DB.setMessageRead(id,r); await loadMessages(); }
 async function msgDel(id){ if(!confirm('Да изтрия ли съобщението?'))return; await DB.deleteMessage(id); await loadMessages(); }
+// по индекс — имейлът идва от публичната форма и не се вгражда в onclick
+function subDelAt(i){ const s=(SUBS||[])[i]; if(s)subDel(s.email); }
 async function subDel(email){ if(!confirm('Да премахна ли '+email+' от списъка?'))return; await DB.deleteSubscriber(email); await loadMessages(); }
 function subsCsv(){
   const rows=[['email','lang','consent_at']].concat((SUBS||[]).map(s=>[s.email,s.lang||'',s.consent_at||'']));
@@ -2048,7 +2053,7 @@ function appsView(){
     if(a.type==='nomination'&&a.proposer_email)lines.push('Предложен от: '+esc(a.proposer_email));
     if(a.rules_accepted_at)lines.push('✓ Приел правилника: '+esc(new Date(a.rules_accepted_at).toLocaleString('bg-BG')));
     const acts=st==='new'
-      ? `${role==='admin'&&a.type!=='nomination'?`<button class="btn ok sm" onclick="mInviteOpen({app_id:'${a.id}',email:'${esc(a.email||'')}',full_name:'${esc(a.name||'')}',membership:'${esc(a.membership||'club')}',purpose:'new'})">💳 Одобри → код за плащане</button>`:''}<button class="btn ${role==='admin'&&a.type!=='nomination'?'ghost':'ok'} sm" onclick="approveApp('${a.id}')">Одобри и покани${role==='admin'&&a.type!=='nomination'?' (без плащане)':''}</button>
+      ? `${role==='admin'&&a.type!=='nomination'?`<button class="btn ok sm" onclick="mInviteFromApp('${a.id}')">💳 Одобри → код за плащане</button>`:''}<button class="btn ${role==='admin'&&a.type!=='nomination'?'ghost':'ok'} sm" onclick="approveApp('${a.id}')">Одобри и покани${role==='admin'&&a.type!=='nomination'?' (без плащане)':''}</button>
          <button class="btn no sm" onclick="setApp('${a.id}','declined')">Откажи</button>
          <button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button>`
       : `<button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button>`;
@@ -2144,7 +2149,7 @@ function peopleView(){
         <div><label style="margin-bottom:4px;">Членство валидно до</label><input id="${fid}" readonly value="${p.membership_until?isoToBg(p.membership_until):''}" placeholder="избери дата" data-iso="${esc(p.membership_until||'')}" onclick="openCal('${fid}')" style="cursor:pointer;"/></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="btn ghost sm" onclick="untilPlus('${fid}',12)">+1 година</button><button class="btn ghost sm" onclick="untilPlus('${fid}',6)">+6 мес.</button><button class="btn sm" onclick="renewPerson('${p.id}','${fid}')">Запази датата</button></div>
       </div>
-      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn ghost sm" onclick="memberQr('${p.id}')">▦ QR за членската карта</button>${role==='admin'?`<button class="btn ghost sm" onclick="mInviteOpen({user_id:'${p.id}',email:'${esc(p.email||'')}',full_name:'${esc(p.full_name||p.username||'')}',membership:'${esc(p.membership||'club')}',purpose:'renew'})">💳 Покана за плащане</button>`:''}</div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn ghost sm" onclick="memberQr('${p.id}')">▦ QR за членската карта</button>${role==='admin'?`<button class="btn ghost sm" onclick="mInviteFromMember('${p.id}')">💳 Покана за плащане</button>`:''}</div>
       <div class="row2" style="margin-top:8px;align-items:center;">
         <div><label style="margin-bottom:4px;">Членство</label><select id="${mid}">${memOpts}</select></div>
         <div><button class="btn ghost sm" onclick="changeMembership('${p.id}')">Промени членството</button></div>
