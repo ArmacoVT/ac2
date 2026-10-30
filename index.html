@@ -502,9 +502,20 @@ function on(path){ const v=dig(PUB,path); return (v===undefined||v===null)?!!dig
 function lT(path){ const v=dig(LAND,path), d=dig(SD,path); if(v&&typeof v==='object'){const s=lang==='bg'?(v.bg||''):(v.en||''); if(s)return s;} else if(v)return String(v); return loc(d); }
 
 async function loadAll(){
-  const [p,l,ev]=await Promise.all([DB.getSiteContent('public'),DB.getSiteContent('landing'),DB.listPublicEvents().catch(()=>[])]);
-  PUB=p||{}; LAND=l||{}; EVENTS=ev||[];
+  const [p,l,ev,st]=await Promise.all([DB.getSiteContent('public'),DB.getSiteContent('landing'),DB.listPublicEvents().catch(()=>[]),(DB.publicEventSeats?DB.publicEventSeats():Promise.resolve({})).catch(()=>({}))]);
+  PUB=p||{}; LAND=l||{}; EVENTS=ev||[]; SEATS=st||{};
 }
+// Заети места (само бройки) → „Продадено“. Без данни (SQL функцията не е пусната) → null = не знаем, нищо не се крие.
+let SEATS={};
+function slotLeft(e,slot){ const sl=evSlots(e).find(x=>x.time===slot); const cap=sl?Number(sl.cap)||0:0; if(!cap||!SEATS[e.id])return null; return Math.max(0,cap-(SEATS[e.id].bySlot[slot]||0)); }
+function seatsLeftPub(e){
+  if(!SEATS[e.id]&&!Object.keys(SEATS).length)return null;   // няма данни изобщо
+  const slots=evSlots(e);
+  if(slots.length){ if(slots.some(x=>!(Number(x.cap)>0)))return null; return slots.reduce((a,x)=>a+Math.max(0,(Number(x.cap)||0)-((SEATS[e.id]&&SEATS[e.id].bySlot[x.time])||0)),0); }
+  const cap=Number(e.capacity)||0; if(!cap)return null;
+  return Math.max(0,cap-((SEATS[e.id]&&SEATS[e.id].total)||0));
+}
+const soldOutPub=e=>{ const l=seatsLeftPub(e); return l!==null&&l<=0; };
 
 // ---------- Дати ----------
 const MONTHS={bg:['януари','февруари','март','април','май','юни','юли','август','септември','октомври','ноември','декември'],en:['January','February','March','April','May','June','July','August','September','October','November','December']};
@@ -570,7 +581,7 @@ function evCard(e,dark){
       <h3><a href="#/event/${esc(e.id)}" style="text-decoration:none;color:inherit;">${esc(evTitle(e))}</a></h3>
       ${evDesc(e)?`<div class="desc">${esc(evDesc(e))}</div>`:''}
       <div class="ft"><span class="price">${(isDinner(e)&&!(e.price>0))?'':esc(fmtPrice(e))}</span>
-        <a class="btn sm ${dark?'gilt':''}" href="${esc(a.href)}" ${a.ext?'target="_blank" rel="noopener"':''} onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a></div>
+        ${soldOutPub(e)&&a.kind!=='details_click'?`<span class="btn sm ghost" style="cursor:default;opacity:.75;">${L('Продадено','Sold out')}</span>`:`<a class="btn sm ${dark?'gilt':''}" href="${esc(a.href)}" ${a.ext?'target="_blank" rel="noopener"':''} onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a>`}</div>
     </div></div>`;
 }
 // „текущата изложба остава видима през целия период": изложба = упcoming докато end_date не мине
@@ -959,11 +970,12 @@ function bookingBox(e){
   const unit=Number(e.price)||0;
   let inner='';
   if(!guestOpen(e))inner=`<p class="body">${t('guestClosed')}</p>`;
+  else if(soldOutPub(e)&&!(paidBack&&PAY_RESULT.ok))inner=`<div class="msg" style="font-size:16px;border:1px solid var(--line);">${L('Продадено — всички места са заети.','Sold out — all seats are taken.')}</div>`;
   else if(from&&from>td)inner=`<p class="body">${t('opensOn')} <b>${esc(fmtD(from,true))}</b>.</p>`;
   else if(paidBack&&PAY_RESULT.ok)inner=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`;
   else inner=`<form class="form" id="bookForm" onsubmit="return false;" data-unit="${unit}">
       ${paidBack&&!PAY_RESULT.ok?`<div class="msg err">${t('payFail')}</div>`:''}
-      ${evSlots(e).length?`<div><label>${L('Час','Time')} *</label><div class="selrow" id="bk_slots">${evSlots(e).map((s,i)=>`<button type="button" class="achip ${i===0?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on')">${esc(s.time)}</button>`).join('')}</div></div>`:''}
+      ${evSlots(e).length?`<div><label>${L('Час','Time')} *</label><div class="selrow" id="bk_slots">${(()=>{ const firstFree=evSlots(e).findIndex(s=>{const l=slotLeft(e,s.time);return l===null||l>0;}); return evSlots(e).map((s,i)=>{ const l=slotLeft(e,s.time), full=l!==null&&l<=0; return full?`<button type="button" class="achip" disabled style="opacity:.45;cursor:default;text-decoration:line-through;" title="${L('Продадено','Sold out')}">${esc(s.time)} · ${L('продадено','sold out')}</button>`:`<button type="button" class="achip ${i===firstFree?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on')">${esc(s.time)}</button>`; }).join(''); })()}</div></div>`:''}
       <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;">${(isDinner(e)&&unit>0)?`<input name="party" type="number" inputmode="numeric" min="1" max="${maxParty(e)}" value="1" style="width:110px;" oninput="bkTotal(this.form)"/>`:`<select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form);const b=document.getElementById('bk_big');if(b)b.style.display=this.value==='9+'?'block':'none'">${Array.from({length:bigAllowed(e)?Math.min(8,maxParty(e)):maxParty(e)},(_,i)=>`<option>${i+1}</option>`).join('')}${bigAllowed(e)?`<option value="9+">9+</option>`:''}</select>`}
         ${unit>0?`<span style="font-family:var(--serif);font-size:22px;color:var(--cream);">= <b id="bk_total">${esc(fmtPrice(e))}</b></span>`:`<span class="hint" style="margin:0">${t('free')}</span>`}</div></div>
       ${bigAllowed(e)?`<div id="bk_big" class="msg ok" style="display:none;">${L('За групи над 8 души екипът ще се свърже с вас по телефона, за да уточните детайлите.','For groups of more than 8 the team will call you to arrange the details.')}</div>`:''}
@@ -1022,7 +1034,9 @@ async function submitTicket(f,eventId){
       setMsg('bk_msg',lang==='bg'?r.error.message:(left>0?`This e-mail already has ${have} seat${have===1?'':'s'} for this event. You can add up to ${left} more.`:`This e-mail already has ${have} seats for this event — the maximum (${r.error.max||4}).`));
       return false;
     }
-    setMsg('bk_msg',r.error.captcha?t('errCaptcha'):(r.error.message||t('errGeneric'))); return false;
+    const full=/Няма свободни места|Остават само/.test(r.error.message||'');
+    setMsg('bk_msg',r.error.captcha?t('errCaptcha'):(r.error.message||t('errGeneric'))); if(full){ const mm=document.getElementById('bk_msg'); if(mm){mm.style.fontSize='16px';mm.style.fontWeight='600';} }
+    return false;
   }
   if(r.data&&r.data.free){ const ev0=(EVENTS||[]).find(x=>x.id===eventId); const rs=ev0&&evEntry(ev0)==='rsvp'; const tc=r.data.ticket_code||''; f.innerHTML=`<div class="msg ok" style="font-size:16px;">${rs?L('Записахме ви. Билетът с QR код е изпратен на имейла ви.','You are registered. Your QR ticket has been e-mailed to you.'):t('bookFree')}</div>${rs&&tc?`<div style="margin-top:12px;"><a class="btn" href="${(CFG.SITE_URL||'https://ac2.bg/')}t.html#${tc}" target="_blank" rel="noopener">${L('Моят билет (QR код)','My ticket (QR code)')}</a></div>`:''}`; track('reservation_request',{event_id:eventId}); return false; }
   try{

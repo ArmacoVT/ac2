@@ -531,6 +531,16 @@ window.PUB_DEFAULTS={
       const m = {}; (data || []).forEach(r => { m[r.event_id] = r.taken || 0; });
       return m;
     },
+    // Публичен сайт: заети места по събитие и час (само бройки). Ако SQL функцията още я няма — празно (сайтът работи както преди).
+    async publicEventSeats() {
+      if (!LIVE) return {};
+      try {
+        const { data, error } = await sb.rpc('public_event_seats');
+        if (error || !data) return {};
+        const m = {}; data.forEach(r => { const e = (m[r.event_id] = m[r.event_id] || { total: 0, bySlot: {} }); e.total += Number(r.taken) || 0; e.bySlot[r.slot || ''] = (e.bySlot[r.slot || ''] || 0) + (Number(r.taken) || 0); });
+        return m;
+      } catch (e) { return {}; }
+    },
     async addEvent(o) {
       if (!LIVE) { const e = seedDemo(); o.id = 'e' + Date.now(); e.unshift(o); jset(K.ev, e); return { error: null }; }
       const { error } = await sb.from('events').insert({ title: o.title, format: o.format, place: o.place, date: o.date || null,
