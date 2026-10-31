@@ -2108,9 +2108,13 @@ function appsView(){
   const done=APPS.filter(a=>(a.status||'new')!=='new');
   let h='<h2>Кандидатури</h2>';
   h+=news.length?news.map(row).join(''):'<p class="empty">Няма нови кандидатури.</p>';
-  if(done.length)h+=`<h3 style="margin-top:18px;">Обработени</h3>${done.map(row).join('')}`;
+  if(done.length){ const op=appsDoneOpen();
+    h+=`<h3 style="margin-top:18px;cursor:pointer;user-select:none;" onclick="appsDoneToggle()">Обработени (${done.length}) <span class="muted" style="font-size:14px;">${op?'▴ свий':'▾ покажи'}</span></h3>${op?done.map(row).join(''):''}`; }
   return h;
 }
+// обработените кандидатури: свити по подразбиране, изборът се помни на това устройство
+function appsDoneOpen(){ try{return localStorage.getItem('acac_apps_done_open')==='1';}catch(e){return false;} }
+function appsDoneToggle(){ try{localStorage.setItem('acac_apps_done_open',appsDoneOpen()?'0':'1');}catch(e){} render(); }
 function appMark(id,status){
   const a=(APPS||[]).find(x=>x.id===id);if(a)a.status=status;
   const badge=status==='approved'?'<span class="pill audAll">одобрена</span>':'<span class="pill" style="border-color:var(--warn);color:#9a3a49;">отказана</span>';
