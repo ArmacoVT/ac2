@@ -1018,7 +1018,7 @@ function feesView(){
     return `<div class="card" style="padding:10px 14px;"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;"><div><b>${esc(x.email||'')}</b> · ${esc(memName(x.membership))} · ${PLAN_LABEL[x.plan]||esc(x.plan||'')} · <b>${(x.amount_cents/100).toFixed(2)} €</b> · ${x.method==='bank'?'банков превод':'карта'}${x.auto_renew?' · авто-подновяване':''}<div class="muted" style="font-size:12px;">${x.status==='paid'?'платено '+new Date(x.paid_at||x.created_at).toLocaleString('bg-BG'):'чака от '+new Date(x.created_at).toLocaleString('bg-BG')}${x.period_to?' · до '+isoToBg(x.period_to):''}${x.bank_ref?' · основание '+esc(x.bank_ref):''}</div></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${acts}</div></div></div>`; };
   const fmtC=c=>`<div class="card" style="padding:10px 14px;"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;"><div><b>AC2-${esc(c.code.slice(0,4))}-${esc(c.code.slice(4))}</b> · ${esc(c.email)}${c.full_name?' · '+esc(c.full_name):''} · ${esc(memName(c.membership))} · ${c.purpose==='new'?'нов член':c.purpose==='renew'?'подновяване':'2-ра вноска'}<div class="muted" style="font-size:12px;">важи до ${isoToBg(c.expires_at.slice(0,10))}</div></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">${btn('Копирай линка',`codeCopy('${c.id}')`)}${btn('Нов код',`codeResend('${c.id}')`)}${btn('Изтрий',`codeDelete('${c.id}')`,'no')}</div></div></div>`;
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">${btn('Копирай линка',`codeCopy('${esc(c.code)}')`)}${btn('Нов код',`codeResend('${esc(c.code)}')`)}${btn('Изтрий',`codeDelete('${esc(c.code)}')`,'no')}</div></div></div>`;
   const sec=(key,title,n,body)=>{ const open=feesOpen[key]!==false; return `<h2 style="margin-top:22px;cursor:pointer;" onclick="feesToggle('${key}')">${title}${n?' ('+n+')':''} <span class="muted" style="font-size:14px;">${open?'▴':'▾'}</span></h2>${open?body:''}`; };
   return `<h2>Членства и цени</h2><p class="muted" style="margin-top:-4px;">Цените важат за новите покани; вече издадените кодове пазят цената от момента на издаване. Членството се плаща само на сайта (ac2.bg/#/join) с код — не в приложението.</p>
     <div style="margin:10px 0 16px;"><button class="btn ok" onclick="mInviteOpen({})">💳 Нова покана за плащане</button> <button class="btn ghost" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button> <a class="btn ghost" href="#" onclick="event.preventDefault();setTab('public')">IBAN за банков превод → Публичен сайт → Общи</a></div>
@@ -1030,7 +1030,7 @@ function feesView(){
 }
 let feesQ=''; let feesOpen=(()=>{try{return JSON.parse(localStorage.getItem('acac_fees_open')||'{}');}catch(e){return {};}})();
 function feesToggle(k){ feesOpen[k]=feesOpen[k]===false; try{localStorage.setItem('acac_fees_open',JSON.stringify(feesOpen));}catch(e){} render(); }
-function codeById(id){ return (MCODES||[]).find(c=>c.id===id); }
+function codeById(id){ return (MCODES||[]).find(c=>c.code===id); }   // ключът на кода е самият код (таблицата няма id)
 function codeCopy(id){ const c=codeById(id); if(!c)return; const u='https://ac2.bg/#/join?code='+c.code; try{navigator.clipboard.writeText(u);toast('Линкът е копиран');}catch(e){prompt('Копирай линка:',u);} }
 function codeResend(id){ const c=codeById(id); if(!c)return; mInviteOpen({email:c.email||'',full_name:c.full_name||'',membership:c.membership||'club',purpose:c.purpose||'new',user_id:c.user_id||''}); }
 async function codeDelete(id){ const c=codeById(id); if(!c)return; if(!confirm('Да изтрия ли кода AC2-'+c.code.slice(0,4)+'-'+c.code.slice(4)+' за '+c.email+'? Линкът от имейла спира да работи.'))return;
@@ -2170,7 +2170,7 @@ function peopleView(){
   const personRow=p=>{
     const nm=p.full_name||p.username||p.email||'член';
     const exp=p.membership_until&&p.membership_until<today;
-    const until=p.membership_until?`Членство до ${isoToBg(p.membership_until)}${exp?' · <span style="color:#82303d;">изтекло</span>':''}`:'Без зададен срок';
+    const until=p.membership_until?`Членство до ${isoToBg(p.membership_until)}${exp?' · <span style="color:#82303d;">изтекло</span>':''}${memRenewTag(p,today)}`:'Без зададен срок';
     // връзка към фирма (корпоративни)
     let companyTag='';
     if(p.company_id){
@@ -2227,7 +2227,7 @@ function peopleView(){
     h+=orphans.map(personRow).join('');
     return h;
   };
-  let html='<h2>Членове</h2>';
+  let html='<h2>Членове</h2>'+memSoonBlock(today);
   cats.forEach((c,ci)=>{
     const list=PEOPLE.filter(p=>p.membership===c.id);
     if(!list.length)return;
@@ -2238,6 +2238,39 @@ function peopleView(){
       <div id="${id}" style="display:none;">${c.id==='corporate'?corpBlock(list):list.map(personRow).join('')}</div>`;
   });
   return html;
+}
+// ----- изтичащи / подновени членства (данни от „Членства и цени“: плащания и кодове) -----
+function memDaysLeft(until,today){ return Math.round((new Date(until+'T00:00:00Z')-new Date(today+'T00:00:00Z'))/86400000); }
+function memRenewInfo(p,today){
+  const out={};
+  const pay=(MPAY||[]).filter(x=>x.user_id===p.id&&x.status==='paid'&&x.paid_at).sort((a,b)=>a.paid_at<b.paid_at?1:-1)[0];
+  if(pay&&(Date.now()-new Date(pay.paid_at).getTime())<30*86400000)out.renewed=pay.paid_at.slice(0,10);
+  const code=(MCODES||[]).filter(c=>c.user_id===p.id&&!c.used_at&&(c.purpose==='renew'||c.purpose==='instalment')&&new Date(c.expires_at)>new Date()).sort((a,b)=>a.created_at<b.created_at?1:-1)[0];
+  if(code){out.reminded=(code.created_at||'').slice(0,10);out.second=String(code.note||'').includes('remind7');}
+  if(p.membership_until&&p.membership_until>=today){const d=memDaysLeft(p.membership_until,today);if(d<=14)out.soon=d;}
+  return out;
+}
+function memRenewTag(p,today){
+  const i=memRenewInfo(p,today); let t='';
+  if(i.renewed)t+=` · <span style="color:#507044;">✓ подновено на ${isoToBg(i.renewed)}</span>`;
+  else if(i.soon!==undefined){
+    t+=` · <span style="color:#b5531e;">изтича ${i.soon===0?'днес':'след '+i.soon+(i.soon===1?' ден':' дни')}</span>`;
+    if(p.auto_renew)t+=' <span class="muted">(автоматично подновяване)</span>';
+    else if(i.reminded)t+=` <span class="muted">· напомняне пратено ${isoToBg(i.reminded)}${i.second?' + второ':''}</span>`;
+  }
+  return t;
+}
+function memSoonBlock(today){
+  if(MPAY===null&&!window.__memFeesLoading&&(role==='admin'||can('fees')||can('accounting'))){ window.__memFeesLoading=true; loadFees().then(()=>{ if(typeof tab!=='undefined'?tab==='people':true)render(); }).catch(()=>{}); }
+  const soon=(PEOPLE||[]).filter(p=>p.membership&&p.membership!=='guest'&&p.membership_until&&p.membership_until>=today&&memDaysLeft(p.membership_until,today)<=14&&!memRenewInfo(p,today).renewed)
+    .sort((a,b)=>a.membership_until<b.membership_until?-1:1);
+  const ren=(PEOPLE||[]).filter(p=>memRenewInfo(p,today).renewed);
+  if(!soon.length&&!ren.length)return '';
+  const line=p=>`<div style="margin-top:4px;"><b>${esc(p.full_name||p.username||p.email||'член')}</b> <span class="muted">· ${esc(memName(p.membership||'guest'))} · до ${isoToBg(p.membership_until)}</span>${memRenewTag(p,today)}</div>`;
+  return `<div class="card" style="margin-top:8px;border-color:${soon.length?'#b5531e':'var(--line)'};">
+    ${soon.length?`<b style="color:#b5531e;">Изтичат до 14 дни (${soon.length})</b>${soon.map(line).join('')}`:''}
+    ${ren.length?`<div style="${soon.length?'margin-top:10px;':''}"><b style="color:#507044;">Подновени през последните 30 дни (${ren.length})</b>${ren.map(line).join('')}</div>`:''}
+  </div>`;
 }
 function togglePG(id){
   const d=document.getElementById(id),a=document.getElementById('pa_'+id);
