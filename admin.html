@@ -248,7 +248,7 @@ async function markSeenRes(id){
   if(!can('reservations'))return;
   const r=RES.find(x=>x.id===id); if(!r||r.seen_at)return;
   r.seen_at=new Date().toISOString();
-  const c=document.getElementById('rescard_'+id); if(c&&!resAttention(r)){c.classList.remove('att','amber');const t=c.querySelector('.tagn');if(t)t.remove();}
+  const c=document.getElementById('rescard_'+id); if(c&&!resAttention(r)){c.classList.remove('att','amber');const t=c.querySelector('.atttag');if(t)t.remove();}
   try{await DB.markSeen('reservations',[id]);}catch(e){}
   renderTabsOnly();
 }
@@ -1371,16 +1371,18 @@ function resView(){
     const contact=[em,ph].filter(Boolean).map(esc).join(' · ');
     const acts=resActs(r.id,st);
     const att=resAttention(r);
-    const tag=att==='refund'?'<span class="tagn amber">ЗА ВРЪЩАНЕ НА СУМА</span>':att==='cancel'?'<span class="tagn amber">ОТКАЗ ОТ ЧЛЕН</span>':att==='new'?(st==='requested'?'<span class="tagn">НОВА ЗАЯВКА</span>':'<span class="tagn">НОВО</span>'):'';
+    const tag=att==='refund'?'<span class="tagn amber atttag">ЗА ВРЪЩАНЕ НА СУМА</span>':att==='cancel'?'<span class="tagn amber atttag">ОТКАЗ ОТ ЧЛЕН</span>':att==='new'?(st==='requested'?'<span class="tagn atttag">НОВА ЗАЯВКА</span>':'<span class="tagn atttag">НОВО</span>'):'';
     const attCls=att?' att'+(att==='refund'||att==='cancel'?' amber':''):'';
-    const big=isBigGroup(r);
+    const big=isBigGroup(r), bigSet=big&&/уточнено:/.test(r.note||'');
+    const bigEdit=(big&&st==='requested'&&can('reservations'))?`<div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;" onclick="event.stopPropagation()"><span class="muted" style="font-size:13px;">Реален брой места:</span><input id="bigp_${r.id}" type="number" min="1" max="200" value="${bigSet?(r.party||9):''}" placeholder="напр. 14" style="width:90px;padding:6px 8px;"/><button class="btn ok sm" onclick="bigPartySave('${r.id}',true)">Запази и одобри</button><button class="btn ghost sm" onclick="bigPartySave('${r.id}')">Само запази</button></div>`:'';
     return `<div class="card${attCls}" id="rescard_${r.id}" onclick="markSeenRes('${r.id}')"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-      <div><h3>${ev?esc(ev.title)+(r.place&&r.place!==ev.title?' <span class="muted" style="font-weight:400;">· '+esc(r.place)+'</span>':''):esc(r.place||r.fmt||'Резервация')} · ${big?'9+ души':(r.party||1)+' '+(r.party==1?'място':'места')}${big?' <span class="tagn amber" title="Група над 8 души — обадете се за уточняване на детайлите преди потвърждение">☎ ГРУПА 9+ · ЗА ОБАЖДАНЕ</span>':''}${tag}</h3>
+      <div><h3>${ev?esc(ev.title)+(r.place&&r.place!==ev.title?' <span class="muted" style="font-weight:400;">· '+esc(r.place)+'</span>':''):esc(r.place||r.fmt||'Резервация')} · ${big&&!bigSet?'9+ души':(r.party||1)+' '+(r.party==1?'място':'места')}${big?(bigSet?' <span class="tagn" title="Броят места е уточнен по телефона">ГРУПА · уточнено</span>':' <span class="tagn amber" title="Група над 8 души — обадете се за уточняване на детайлите преди потвърждение">☎ ГРУПА 9+ · ЗА ОБАЖДАНЕ</span>'):''}${tag}</h3>
         <div class="muted" style="margin-top:3px;"><b style="color:var(--text);">${esc(nm)}</b> · ${r.guest?'<span class="pill" style="border-color:#6b6b63;color:#6b6b63;">гост от сайта</span>':esc(memName(r.membership||'guest'))} · ${isoToBg(r.date||'')} ${esc(r.time||'')}${r.paid?' · <b style="color:#3d5634;">платено'+(r.paid_cents?' '+(r.paid_cents/100).toFixed(2)+' €':'')+(r.pay_method==='cash'?' в брой':r.pay_method==='pos'?' на ПОС':'')+'</b>':(r.pay_method==='free'?' · <b style="color:#5f6064;">на място · безплатно</b>':'')}${r.refunded_at?' · <b style="color:#82303d;">възстановени '+(r.refund_cents/100).toFixed(2)+' €</b>':''}${r.checked_in_at?' · <b style="color:#507044;">✓ присъствал '+r.checked_in_at.slice(11,16)+'</b>':''}</div>
         ${contact?`<div class="muted" style="margin-top:3px;">${contact}</div>`:''}
         ${r.created_at?`<div class="muted" style="margin-top:3px;font-size:12px;">Направена: ${fmtStamp(r.created_at)}${st==='pending_payment'?(Date.now()-new Date(r.created_at).getTime()>30*60*1000?' · <span style="color:#82303d;">изоставено плащане (над 30 мин.) — мястото е свободно</span>':' · плаща в момента'):''}</div>`:''}
         ${r.ticket_code&&st==='confirmed'?`<div class="muted" style="margin-top:4px;">Билет: <b style="color:var(--text);letter-spacing:1px;">AC2-${r.ticket_code.slice(0,4)}-${r.ticket_code.slice(4)}</b> · <a href="https://ac2.bg/t.html#${r.ticket_code}" target="_blank" rel="noopener" style="color:#82303d;">отвори билета</a> · <a href="#" onclick="event.preventDefault();event.stopPropagation();navigator.clipboard&&navigator.clipboard.writeText('https://ac2.bg/t.html#${r.ticket_code}');toast('Линкът е копиран')" style="color:#82303d;">копирай линка</a></div>`:''}
         ${r.note?`<div class="muted" style="margin-top:4px;">„${esc(r.note)}"</div>`:''}
+        ${bigEdit}
         <div style="margin-top:7px;" id="resbadge_${r.id}">${badge}${cap}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;" id="resact_${r.id}">${acts}${att==='refund'&&can('refunds')?`<button class="btn ok sm" onclick="refundRes('${r.id}')">↩ Върни сумата</button><button class="btn ghost sm" onclick="markRefundedRes('${r.id}')">Върната в брой/по банка</button>`:(att==='refund'?'<span class="muted" style="font-size:12px;">за връщане на сума — само с право „Връщане на пари“</span>':'')}</div>
     </div></div>`;}).join('');
@@ -1433,8 +1435,40 @@ async function delRes(id){
   render();
   toast('Резервацията е изтрита');
 }
+// група 9+: след разговора се записва реалният брой места; при „Одобри“ имейлът тръгва с този брой
+async function bigPartySave(id,approve){
+  const r=RES.find(x=>x.id===id); if(!r)return;
+  const n=parseInt((document.getElementById('bigp_'+id)||{}).value,10);
+  if(!(n>=1&&n<=200)){alert('Въведете брой места (1–200).');return;}
+  // проверка за свободни места — същото правило като навсякъде: потвърдени + плащания в ход (до 30 мин.); по час, ако събитието има часове
+  const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null;
+  if(ev){
+    const slots=evSlots(ev); const sl=slots.length?slots.find(x=>x.time===r.time):null;
+    const cap=slots.length?(sl?Number(sl.cap)||0:0):(Number(ev.capacity)||0);
+    if(cap>0){
+      const cutoff=Date.now()-30*60*1000;
+      const taken=RES.filter(x=>x.id!==id&&x.event_id===ev.id&&(x.kind||'physical')==='physical'&&(!slots.length||(x.time||'')===(r.time||''))
+        &&(x.status==='confirmed'||(x.status==='pending_payment'&&new Date(x.created_at).getTime()>cutoff))).reduce((a,x)=>a+(Number(x.party)||1),0);
+      const left=Math.max(0,cap-taken);
+      if(n>left){alert('Няма достатъчно свободни места: остават '+left+' от '+cap+(slots.length?' за '+(r.time||''):'')+'.\n\nНамалете броя или увеличете капацитета на събитието.');return;}
+    }
+  }
+  const base=String(r.note||'').replace(/\s*·?\s*уточнено:\s*\d+\s*места/,'').replace(/^\[(ГРУПА 9\+|GROUP 9\+)[^\]]*\]\s*/,'');
+  const note='[ГРУПА 9+ — уточнено: '+n+' места] '+base;
+  const x=await DB.setReservationParty(id,n,note.trim());
+  if(x&&x.error){alert('Грешка: '+x.error.message);return;}
+  r.party=n; r.note=note.trim();
+  try{DB.logAudit('reservation_party_set',r.name||r.who||'',n+' места');}catch(e){}
+  if(approve){
+    render();
+    if(!confirm('Да одобря ли групата „'+(r.name||r.who||'')+'“ за '+n+' места и да изпратя билета по имейл?')){toast('Записано: '+n+' места (не е одобрено).');return;}
+    await setRes(id,'confirmed'); render(); return;
+  }
+  toast('Записано: '+n+' места. Натиснете „Одобри“, за да изпратите билета.'); render();
+}
 async function setRes(id,st){
   { const rr0=RES.find(x=>x.id===id);
+    if(st==='confirmed'&&rr0&&isBigGroup(rr0)&&!/уточнено:/.test(rr0.note||'')){ if(!confirm('Не е въведен реалният брой места за групата. Да одобря ли с '+(rr0.party||9)+' места?'))return; }
     if(st==='declined'&&rr0&&rr0.paid&&!rr0.refunded_at){ const ev0=rr0.event_id?EVENTS.find(e=>e.id===rr0.event_id):null; const sum=rr0.paid_cents?((rr0.paid_cents-(rr0.refund_cents||0))/100).toFixed(2)+' €':(ev0&&ev0.price?(ev0.price*(rr0.party||1)).toFixed(2)+' €':'сумата');
       if(!confirm('Това е ПЛАТЕН билет. Да откажа ли резервацията и да върна '+sum+' по картата през Stripe?'))return; } }
   const r=await DB.setReservationStatus(id,st);
@@ -1447,7 +1481,7 @@ async function setRes(id,st){
   const be=document.getElementById('resbadge_'+id);if(be)be.innerHTML=resBadge(st)+cap;
   const ae=document.getElementById('resact_'+id);if(ae)ae.innerHTML=resActs(id,st);
   if(rr&&!rr.seen_at){rr.seen_at=new Date().toISOString();DB.markSeen('reservations',[id]).catch(()=>{});}
-  const ce=document.getElementById('rescard_'+id);if(ce){ce.classList.remove('att','amber');const t=ce.querySelector('.tagn');if(t)t.remove();}
+  const ce=document.getElementById('rescard_'+id);if(ce){ce.classList.remove('att','amber');const t=ce.querySelector('.atttag');if(t)t.remove();}
   renderTabsOnly();
   // отказ на ПЛАТЕН билет от клуба → връщаме сумата автоматично
   if(st==='declined'&&rr&&rr.paid&&!rr.refunded_at&&!can('refunds')){ toast('Отказана. Връщането на сумата изисква право „Връщане на пари“ — остава в „За действие“ за админ.',true); }

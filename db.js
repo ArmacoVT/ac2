@@ -669,6 +669,12 @@ const placeName = p => (p && PLACE_RENAME[p]) || p;
       if (data && data.error) return { error: { message: data.error } };
       return data;
     },
+    // група 9+: реалният брой места след разговора с клиента (само докато заявката чака одобрение)
+    async setReservationParty(id, party, note) {
+      if (!LIVE) return { error: null };
+      const { error } = await sb.from('reservations').update({ party_size: party, note }).eq('id', id).eq('status', 'requested');
+      return { error };
+    },
     async setReservationStatus(id, status) {
       if (!LIVE) { let r = jget(K.res, []); r = r.map(x => x.id === id ? { ...x, status } : x); jset(K.res, r); return { error: null }; }
       const { error } = await sb.from('reservations').update({ status }).eq('id', id);
