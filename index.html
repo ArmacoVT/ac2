@@ -486,6 +486,9 @@ let PUB=null, LAND=null, EVENTS=null;
 const dig=(o,p)=>p.split('.').reduce((a,k)=>(a&&a[k]!==undefined&&a[k]!==null)?a[k]:undefined,o||{});
 const loc=v=>{ if(v&&typeof v==='object'&&!Array.isArray(v)&&('bg'in v||'en'in v)){return (lang==='bg'?(v.bg||v.en):(v.en||v.bg))||'';} return v==null?'':v; };
 // pT('home.manifesto.body') → текст на текущия език: от базата, иначе по подразбиране
+// телефоните за контакт: основен + втори, всеки с етикет по избор (Админ → Публичен сайт → Общи)
+function phoneList(){ return [[pT('general.phone'),pT('general.phone_label')],[pT('general.phone2'),pT('general.phone2_label')]].filter(x=>x[0]&&String(x[0]).trim()); }
+const telHref=p=>'tel:'+esc(String(p).replace(/[^+\d]/g,''));
 function pT(path){
   const v=dig(PUB,path), d=dig(PD,path);
   if(v&&typeof v==='object'&&!Array.isArray(v)){ const s=lang==='bg'?(v.bg||''):(v.en||''); if(s)return s; const s2=lang==='bg'?(v.en||''):(v.bg||''); return s2||loc(d); }
@@ -655,7 +658,7 @@ function footer(){
     <div class="cols">
       <div><div class="flogo">${LOGO_SVG}</div>
         <div class="v">${esc(pT('general.address'))}</div>
-        ${phone?`<a href="tel:${esc(phone.replace(/\s+/g,''))}">${esc(phone)}</a>`:''}
+        ${phoneList().map(([p,l])=>`<a href="${telHref(p)}">${l?esc(l)+': ':''}${esc(p)}</a>`).join('')}
         ${email?`<a href="mailto:${esc(email)}">${esc(email)}</a>`:''}
         <div class="soc">${socials()}</div></div>
       <div><h4>${t('hours')}</h4><div class="v">${esc(pT('general.hours'))}</div></div>
@@ -1158,7 +1161,7 @@ function pageContacts(){
       </div>
       <div class="cinfo">
         ${kv(t('address'),pT('general.address'))}
-        ${phone?`<div class="k">${t('phone')}</div><div class="v"><a href="tel:${esc(phone.replace(/\s+/g,''))}">${esc(phone)}</a></div>`:''}
+        ${phoneList().map(([p,l])=>`<div class="k">${esc(l||t('phone'))}</div><div class="v"><a href="${telHref(p)}">${esc(p)}</a></div>`).join('')}
         ${email?`<div class="k">${t('email')}</div><div class="v"><a href="mailto:${esc(email)}">${esc(email)}</a></div>`:''}
         ${kv(t('hours'),pT('general.hours'))}
         ${kv(t('parking'),pT('general.parking'))}

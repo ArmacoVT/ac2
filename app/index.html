@@ -757,7 +757,9 @@ function socialRow(){
   const a=(u,i,l)=>`<a href="${esc(u)}" target="_blank" rel="noopener" aria-label="${l}" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;border:1px solid var(--line-soft);color:var(--gold);text-decoration:none;">${i}</a>`;
   return `<div style="display:flex;justify-content:center;gap:12px;margin:14px 0 4px;">${a(fb,ICON_FB,'Facebook')}${a(ig,ICON_IG,'Instagram')}</div>`;
 }
-function pubContact(){const g=(PUB&&PUB.general)||{},d=(window.PUB_DEFAULTS&&PUB_DEFAULTS.general)||{};const pick=k=>{const v=g[k]!==undefined&&g[k]!==''&&g[k]!==null?g[k]:d[k];return v&&typeof v==='object'?(v[lang]||v.bg||''):(v||'');};return {email:pick('email'),phone:pick('phone'),address:pick('address'),hours:pick('hours')};}
+function pubContact(){const g=(PUB&&PUB.general)||{},d=(window.PUB_DEFAULTS&&PUB_DEFAULTS.general)||{};const pick=k=>{const v=g[k]!==undefined&&g[k]!==''&&g[k]!==null?g[k]:d[k];return v&&typeof v==='object'?(v[lang]||v.bg||''):(v||'');};return {email:pick('email'),phone:pick('phone'),phone_label:pick('phone_label'),phone2:pick('phone2'),phone2_label:pick('phone2_label'),address:pick('address'),hours:pick('hours')};}
+// телефоните за контакт (основен + втори, с етикети) — от Админ → Публичен сайт → Общи
+function phoneLinesHtml(c,style){ return [[c.phone,c.phone_label],[c.phone2,c.phone2_label]].filter(x=>x[0]&&String(x[0]).trim()).map(([p,l])=>`<a href="tel:${esc(String(p).replace(/[^+\d]/g,''))}" style="${style||''}">${l?esc(l)+': ':''}${esc(p)}</a>`); }
 // текст от базата, ако е попълнен; иначе от подразбиране
 function sT(path){
   const get=(o,p)=>p.split('.').reduce((a,k)=>(a&&a[k]!==undefined)?a[k]:undefined,o);
@@ -973,7 +975,7 @@ function home(){
     ${forYouHtml}
     <div class="sec-title">${tr('formats')}</div><div class="sec-sub">${tr('formatsSub')}</div>
     <div class="grid">${cards}</div>
-    ${(()=>{const c=pubContact();return `<div class="contact">${c.email?`<a href="mailto:${esc(c.email)}" style="color:inherit;text-decoration:none;">${esc(c.email)}</a><br>`:''}${c.phone?`<a href="tel:${esc(c.phone.replace(/[^+\d]/g,''))}" style="color:inherit;text-decoration:none;">${esc(c.phone)}</a><br>`:''}${esc(c.address)}${c.hours?`<div style="margin-top:8px;font-size:13px;white-space:pre-line;">${esc(c.hours)}</div>`:''}${socialRow()}</div>`;})()}`;
+    ${(()=>{const c=pubContact();return `<div class="contact">${c.email?`<a href="mailto:${esc(c.email)}" style="color:inherit;text-decoration:none;">${esc(c.email)}</a><br>`:''}${phoneLinesHtml(c,'color:inherit;text-decoration:none;').map(x=>x+'<br>').join('')}${esc(c.address)}${c.hours?`<div style="margin-top:8px;font-size:13px;white-space:pre-line;">${esc(c.hours)}</div>`:''}${socialRow()}</div>`;})()}`;
 }
 function formatPage(id){
   const f=FORMATS.find(x=>x.id===id); if(!f)return home();
@@ -2284,7 +2286,8 @@ function landing(mode){
       <div class="contact">
         <div class="body" style="margin-bottom:10px;">${esc(sT('contact.body'))}</div>
         ${email?`<div><a href="mailto:${esc(email)}">${esc(email)}</a></div>`:''}
-        ${phone?`<div style="margin-top:4px;"><a href="tel:${esc(phone.replace(/\s+/g,''))}">${esc(phone)}</a></div>`:''}
+        ${phone?`<div style="margin-top:4px;"><a href="tel:${esc(phone.replace(/\s+/g,''))}">${(()=>{const c=pubContact();return c.phone_label&&c.phone&&c.phone.replace(/\D/g,'')===phone.replace(/\D/g,'')?esc(c.phone_label)+': ':'';})()}${esc(phone)}</a></div>`:''}
+        ${(()=>{const c=pubContact();return c.phone2?`<div style="margin-top:4px;">${phoneLinesHtml({phone:c.phone2,phone_label:c.phone2_label})[0]}</div>`:'';})()}
         <div style="margin-top:4px;color:var(--mid);">${esc(sT('contact.address'))}</div>
       </div>
     </section>

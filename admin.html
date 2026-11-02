@@ -1852,7 +1852,7 @@ const F=(k,t,label,o)=>Object.assign({k,t,label},o||{});
 const PUB_SCHEMA=[
   {id:'general',title:'Общи: контакти, социални мрежи, магазини, карта',fields:[
     F('general.tagline','bi','Кратко описание на сайта (за търсачки)'),
-    F('general.email','txt','Имейл за контакт (получава формата от сайта)'),F('general.phone','txt','Телефон'),
+    F('general.email','txt','Имейл за контакт (получава формата от сайта)'),F('general.phone','txt','Телефон'),F('general.phone_label','bi','Етикет на телефона (по избор, напр. „Клуб“) — показва се пред номера'),F('general.phone2','txt','Втори телефон (по избор)'),F('general.phone2_label','bi','За какво е вторият телефон (напр. „Ресторант — резервации“)'),
     F('general.address','bi','Адрес'),F('general.hours','bit','Работно време (един ред = един ред на сайта; показва се и в приложението)',{rows:3}),F('general.table_cutoff','txt','Маса след събитие — предлага се, ако събитието свършва до (ЧЧ:ММ, напр. 22:30)'),F('general.iban','txt','IBAN за плащане на членство по банков път (празно = опцията не се показва)'),F('general.bank','txt','Банка (име, по избор)'),F('general.auto_refund','bool','Автоматично връщане на сумата (Stripe), когато член сам откаже платен билет в срок. Изключено = отива в „За действие“ за решение от екипа.'),
     F('general.parking','bit','Паркиране (по избор)',{rows:2}),F('general.access','bit','Достъп за хора с увреждания (по избор)',{rows:2}),
     F('general.facebook','url','Facebook (пълен адрес)'),F('general.instagram','url','Instagram (пълен адрес)'),
