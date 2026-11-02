@@ -574,7 +574,7 @@ function eventResList(e){
       <div><b>${esc(nm)}</b> · ${r.party||1} ${isTable?'на маса':'места'}${isTable?' 🍽':''}
         <span style="color:${stCol[st]||'var(--muted)'};font-size:12px;"> · ${stTxt[st]||'чакаща'}</span></div>
       ${contact?`<div class="muted" style="font-size:12px;">${contact}</div>`:''}
-      ${r.note&&isTable?`<div class="muted" style="font-size:12px;">„${esc(r.note)}"</div>`:''}</div>`;
+      ${r.note&&r.note.trim()!=='Билет / ticket'?`<div class="muted" style="font-size:12px;">„${esc(r.note)}"</div>`:''}</div>`;
   };
   const body=tickets.map(r=>row(r,false)).join('')+tables.map(r=>row(r,true)).join('');
   return `<button class="btn ghost sm" style="margin-top:10px;" onclick="toggleEvRes('${e.id}')" id="evrb_${e.id}">Запазили (${all.length}) ▾</button>

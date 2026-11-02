@@ -982,6 +982,7 @@ function bookingBox(e){
       ${bigAllowed(e)?`<div id="bk_big" class="msg ok" style="display:none;">${L('За групи над 8 души екипът ще се свърже с вас по телефона, за да уточните детайлите.','For groups of more than 8 the team will call you to arrange the details.')}</div>`:''}
       <div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div>
       <div class="r2"><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
+      <div><label>${L('Забележки (по избор)','Notes (optional)')}</label><textarea name="note" rows="2" maxlength="500" placeholder="${L('напр. алергии, специални изисквания, с кого искате да седнете','e.g. allergies, special requests, who you would like to sit with')}"></textarea></div>
       <label class="chk"><input type="checkbox" name="consent"/> <span>${t('consentContact')}</span></label>
       <div id="bk_captcha" class="cap"></div>
       <div id="bk_pay" style="display:none;margin:6px 0;"></div>
@@ -1025,7 +1026,8 @@ async function submitTicket(f,eventId){
   const tok=captchaToken('bk_captcha'); if(CFG.TURNSTILE_SITE_KEY&&!tok){setMsg('bk_msg',t('errCaptcha'));return false;}
   const b=document.getElementById('bk_btn'); b.disabled=true; const old=b.textContent; b.textContent=t('sending'); setMsg('bk_msg','');
   const slotEl=document.querySelector('#bk_slots .achip.on'); const slot=slotEl?slotEl.dataset.slot:'';
-  const r=await DB.publicForm('ticket',{event_id:eventId,name,email,phone,party,big,slot,lang,captcha_token:tok});
+  const note=(f.note&&f.note.value||'').trim().slice(0,500);
+  const r=await DB.publicForm('ticket',{event_id:eventId,name,email,phone,party,big,slot,note,lang,captcha_token:tok});
   if(r.error){
     b.disabled=false;b.textContent=old; resetCaptcha('bk_captcha');
     // лимит по имейл (до 4 места общо за събитие, може на части): свиваме избора до оставащите и казваме колко
