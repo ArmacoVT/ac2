@@ -872,6 +872,9 @@ const placeName = p => (p && PLACE_RENAME[p]) || p;
     async saveMembershipPrice(row) { if (!LIVE) return { error: { message: 'demo' } }; const { error } = await sb.from('membership_prices').upsert(Object.assign({ updated_at: new Date().toISOString() }, row), { onConflict: 'membership' }); return { error }; },
     async membershipInvite(o) { return fnCall('membership-invite', o); },
     async membershipActivate(paymentId) { return fnCall('membership-activate', { payment_id: paymentId }); },
+    // платено на място (в брой / ПОС) — membership-pay action onsite (сървърът проверява правата и смята сумата)
+    async membershipOnsite(code, plan, method) { return fnCall('membership-pay', { action: 'onsite', code, plan, method }); },
+    async membershipCodeInfo(code) { return fnCall('membership-pay', { action: 'info', code }); },
     async listMembershipPayments(limit) { if (!LIVE) return []; const { data } = await sb.from('membership_payments').select('*').order('created_at', { ascending: false }).limit(limit || 200); return data || []; },
     async listMembershipCodes(limit) { if (!LIVE) return []; const { data } = await sb.from('membership_codes').select('*').order('created_at', { ascending: false }).limit(limit || 200); return data || []; },
     async deleteMembershipCode(id) { if (!LIVE) return { error: null }; const { error } = await sb.from('membership_codes').delete().eq('code', id); return { error }; },
