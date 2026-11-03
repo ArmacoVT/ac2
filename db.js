@@ -877,7 +877,17 @@ const placeName = p => (p && PLACE_RENAME[p]) || p;
     async membershipCodeInfo(code) { return fnCall('membership-pay', { action: 'info', code }); },
     async listMembershipPayments(limit) { if (!LIVE) return []; const { data } = await sb.from('membership_payments').select('*').order('created_at', { ascending: false }).limit(limit || 200); return data || []; },
     async listMembershipCodes(limit) { if (!LIVE) return []; const { data } = await sb.from('membership_codes').select('*').order('created_at', { ascending: false }).limit(limit || 200); return data || []; },
-    async deleteMembershipCode(id) { if (!LIVE) return { error: null }; const { error } = await sb.from('membership_codes').delete().eq('code', id); return { error }; },
+    // изтриване на код; ако към него има записани плащания (напр. започнато и изоставено плащане), те се пазят
+    // като история → кодът не се трие, а се ДЕАКТИВИРА (изтича сега) — линкът спира да работи, изчезва от „Активни кодове“
+    async deleteMembershipCode(id) {
+      if (!LIVE) return { error: null };
+      const { error } = await sb.from('membership_codes').delete().eq('code', id);
+      if (error && /foreign key|membership_payments_code_fkey/i.test(error.message || '')) {
+        const { error: e2 } = await sb.from('membership_codes').update({ expires_at: new Date().toISOString() }).eq('code', id);
+        return { error: e2 || null, deactivated: !e2 };
+      }
+      return { error };
+    },
     // изтриване само на НЕПЛАТЕН запис (status pending/cancelled) — платените са финансова история
     async deleteMembershipPayment(id) { if (!LIVE) return { error: null }; const { error } = await sb.from('membership_payments').delete().eq('id', id).in('status', ['pending', 'cancelled']); return { error }; },
     async cancelMembershipPayment(id) { if (!LIVE) return { error: null }; const { error } = await sb.from('membership_payments').update({ status: 'cancelled' }).eq('id', id); return { error }; },

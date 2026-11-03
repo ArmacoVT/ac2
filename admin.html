@@ -1066,7 +1066,8 @@ function codeCopy(id){ const c=codeById(id); if(!c)return; const u='https://ac2.
 function codeResend(id){ const c=codeById(id); if(!c)return; mInviteOpen({email:c.email||'',full_name:c.full_name||'',membership:c.membership||'club',purpose:c.purpose||'new',user_id:c.user_id||''}); }
 async function codeDelete(id){ const c=codeById(id); if(!c)return; if(!confirm('Да изтрия ли кода AC2-'+c.code.slice(0,4)+'-'+c.code.slice(4)+' за '+c.email+'? Линкът от имейла спира да работи.'))return;
   const r=await DB.deleteMembershipCode(id); if(r&&r.error){alert('Грешка: '+r.error.message);return;}
-  try{await DB.logAudit('membership_code_deleted',c.email||'',c.code);}catch(e){} toast('Кодът е изтрит'); await loadFees(); render(); }
+  try{await DB.logAudit(r&&r.deactivated?'membership_code_deactivated':'membership_code_deleted',c.email||'',c.code);}catch(e){}
+  toast(r&&r.deactivated?'Кодът е деактивиран — линкът вече не работи (има записано плащане към него, което се пази като история)':'Кодът е изтрит'); await loadFees(); render(); }
 // само преглед (счетоводство): цени като таблица, плащания без бутони, експорт
 function feesReadOnly(){
   const order=['founder','founding','club','alumni','corporate'];
