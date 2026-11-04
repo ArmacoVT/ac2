@@ -2828,7 +2828,8 @@ async function scheduleLocalNotifs(){
   EVENTS.forEach(e=>{
     if(!canAccess(e)||isPast(e))return;
     if(hasBooking(e.id)){
-      const st=evStart(e); if(st){const at=new Date(st.getTime()-3600000); if(at.getTime()>now)notifs.push({id:idFor('ev'+e.id),title:lang==='bg'?'Скоро започва':'Starting soon',body:(lang==='bg'?'„'+e.title+'" започва в ':'“'+e.title+'” starts at ')+(e.time||''),schedule:{at}});}
+      const myT=(myBookingFor(e.id)||{}).time||e.time;   // при часове (слотове) — часът от моята резервация
+      const st=evStart(Object.assign({},e,{time:myT})); if(st){const at=new Date(st.getTime()-3600000); if(at.getTime()>now)notifs.push({id:idFor('ev'+e.id),title:lang==='bg'?'Скоро започва':'Starting soon',body:(lang==='bg'?'„'+e.title+'" започва в ':'“'+e.title+'” starts at ')+(myT||''),schedule:{at}});}
     }
     const w=e.booking_windows&&e.booking_windows[user.membership];
     if(w&&w>=todayISO()&&!hasBooking(e.id)){const p=w.split('-').map(Number);const at=new Date(p[0],p[1]-1,p[2],9,0,0);if(at.getTime()>now)notifs.push({id:idFor('bw'+e.id),title:lang==='bg'?'Билетите се отвориха':'Booking is open',body:(lang==='bg'?'Вече можеш да запазиш билет за „'+e.title+'"':'You can now book “'+e.title+'”'),schedule:{at}});}
