@@ -461,7 +461,7 @@ const placeName = p => (p && PLACE_RENAME[p]) || p;
     async doorFind(q) {
       if (!LIVE) return { tickets: [], members: [] };
       const raw = String(q || '').trim(); if (raw.length < 2) return { tickets: [], members: [] };
-      const low = raw.toLowerCase(), digits = raw.replace(/\D/g, ''), code = raw.toUpperCase().replace(/^AC2T?:?/, '').replace(/[^A-Z0-9]/g, '');
+      const low = raw.toLowerCase(), digits = raw.replace(/\D/g, ''), code = raw.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^AC2T?(?=[A-Z0-9]{8}$)/, '');
       const d = new Date(), today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       const { data: rs, error } = await sb.from('reservations')
         .select('id,user_id,event_id,table_event_id,date,time,party_size,status,paid,place,format,checked_in_at,ticket_code,res_name,guest_name,guest_email,guest_phone,contact_email,contact_phone,who')
