@@ -1205,14 +1205,17 @@ function pageJoin(){
     const purposeTxt=i.purpose==='renew'?L('Подновяване на членство','Membership renewal'):i.purpose==='instalment'?L('Втора вноска','Second instalment'):L('Активиране на членство','Membership activation');
     inner=`<div style="background:var(--card);border:1px solid var(--line-soft);border-radius:14px;padding:16px 18px;margin-bottom:18px;">
         <div class="kicker">${purposeTxt}</div><h3 style="font-size:22px;margin:4px 0 2px;">${esc(i.title)}</h3><div class="hint">${esc(i.name||i.email)}${i.period_from&&i.purpose==='renew'?' · '+L('от','from')+' '+fmtD(i.period_from,true):''}${i.vat_pct?' · '+L('цените са с ДДС','prices incl. VAT'):''}</div></div>
-      ${i.purpose!=='instalment'?`<label class="lbl">${L('План на плащане','Payment plan')}</label>
+      <div id="join_opts">${i.purpose!=='instalment'?`<label class="lbl">${L('План на плащане','Payment plan')}</label>
       <div class="plans">${i.plans.map(p=>`<label class="plan ${plan.id===p.id?'on':''}"><input type="radio" name="plan" value="${p.id}" ${plan.id===p.id?'checked':''} onchange="JOIN.plan='${p.id}';renderJoin()"/><div><b>${esc(p.label)}</b><div class="hint">${p.instalments>1?L('сега','now')+' '+eur(p.amount_cents)+' · '+L('общо','total')+' '+eur(p.total_cents):eur(p.total_cents)}</div></div></label>`).join('')}</div>`:`<div style="margin-bottom:12px;">${L('Дължима вноска','Instalment due')}: <b>${eur(i.plans[0].amount_cents)}</b></div>`}
       <label class="lbl" style="margin-top:14px;">${L('Начин на плащане','Payment method')}</label>
       <div class="plans"><label class="plan ${JOIN.method==='card'?'on':''}"><input type="radio" name="m" value="card" ${JOIN.method==='card'?'checked':''} onchange="JOIN.method='card';renderJoin()"/><div><b>${L('Карта · Apple Pay · Google Pay','Card · Apple Pay · Google Pay')}</b><div class="hint">${L('Плащането е през Stripe — картата не минава през нашия сървър.','Processed by Stripe — card data never touches our server.')}</div></div></label>
         ${i.bank?`<label class="plan ${JOIN.method==='bank'?'on':''}"><input type="radio" name="m" value="bank" ${JOIN.method==='bank'?'checked':''} onchange="JOIN.method='bank';renderJoin()"/><div><b>${L('Банков превод','Bank transfer')}</b><div class="hint">${L('Членството се активира след получаване на превода (1–2 работни дни).','Activated after the transfer is received (1–2 working days).')}</div></div></label>`:''}</div>
       ${JOIN.method==='card'&&i.purpose!=='instalment'?`<label class="chk" style="margin-top:12px;"><input type="checkbox" ${JOIN.auto?'checked':''} onchange="JOIN.auto=this.checked"/> <span>${L('Автоматично подновяване — картата се запазва и сумата се удържа автоматично на падежа. Ще ви уведомим 7 дни преди това; можете да го спрете по всяко време.','Automatic renewal — your card is saved and charged automatically on the due date. We notify you 7 days before; you can stop it at any time.')}</span></label>`:''}
+      </div>
+      <div id="join_payhint" style="display:none;margin-top:16px;"></div>
+      <div id="join_pay" style="display:none;margin-top:10px;"></div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap;"><button class="btn" type="button" id="joinGo" onclick="joinPay()">${JOIN.method==='bank'?L('Покажи данните за превод','Show transfer details'):L('Плати','Pay')+' '+eur(i.purpose==='instalment'?i.plans[0].amount_cents:plan.amount_cents)}</button><span class="hint">${L('С плащането приемате','By paying you accept')} <a href="#/legal/terms" target="_blank">${L('условията','the terms')}</a>.</span></div>
-      <div id="join_pay" style="display:none;margin-top:14px;"></div><div class="msg" id="join_msg">${JOIN.msg?esc(JOIN.msg):''}</div>`;
+      <div class="msg" id="join_msg">${JOIN.msg?esc(JOIN.msg):''}</div>`;
   } else if(JOIN.step==='bank'){
     const b=JOIN.bank;
     inner=`<div class="msg ok" style="margin-bottom:14px;">${L('Регистрирахме заявката. Направете превода с данните по-долу — ВАЖНО: основанието трябва да е кодът.','Request registered. Make the transfer with the details below — IMPORTANT: the reference must be the code.')}</div>
@@ -1257,8 +1260,15 @@ async function joinPay(){
     const elements=stripe.elements({clientSecret:r.data.client_secret,appearance:{theme:'flat',variables:{colorPrimary:'#82303d'}}});
     const box=document.getElementById('join_pay'); box.style.display='block';
     const pe=elements.create('payment',{fields:{billingDetails:{name:'never',email:'never'}}}); pe.mount('#join_pay');
+    // избраното (период, автоматично подновяване) вече е в плащането → заключваме го; смяна само през „Промени“
+    const opts=document.getElementById('join_opts'); if(opts){ opts.querySelectorAll('input').forEach(x=>{x.disabled=true;}); opts.style.opacity='.55'; }
+    const amt=((r.data.amount_cents||0)/100).toFixed(2).replace('.',',')+' €';
+    const hint=document.getElementById('join_payhint'); if(hint){ hint.style.display='block';
+      hint.innerHTML=`<div class="msg ok" style="margin:0;">${L('Изберете <b>Card</b> (въведете картата) или <b>Apple Pay / Google Pay</b> по-долу и натиснете <b>„Потвърди плащането“</b>.','Choose <b>Card</b> (enter your card) or <b>Apple Pay / Google Pay</b> below and press <b>“Confirm payment”</b>.')}</div>
+        <div class="hint" style="margin-top:6px;">${JOIN.auto?L('С автоматично подновяване','With automatic renewal'):L('Еднократно плащане','One-time payment')} · ${amt} · <a href="#" onclick="event.preventDefault();JOIN.msg='';renderJoin()">${L('Промени','Change')}</a></div>`; }
+    setTimeout(()=>{ try{ (hint||box).scrollIntoView({behavior:'smooth',block:'start'}); }catch(_){} },150);
     pe.on('loaderror',ev=>{ msg.textContent=L('Платежната форма не се зареди: ','Payment form failed to load: ')+((ev&&ev.error&&ev.error.message)||''); });
-    b.disabled=false; b.textContent=L('Потвърди плащането','Confirm payment');
+    b.disabled=false; b.textContent=L('Потвърди плащането','Confirm payment')+' · '+amt;
     b.onclick=async()=>{
       b.disabled=true; b.textContent=L('Плащане…','Paying…'); msg.textContent='';
       try{
