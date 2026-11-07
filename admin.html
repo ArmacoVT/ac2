@@ -76,6 +76,37 @@
   table{width:100%;border-collapse:collapse;font-size:13px;}
   th{text-align:left;color:var(--mid);font-weight:500;padding:8px;border-bottom:1px solid var(--line);}
   td{padding:8px;border-bottom:1px solid var(--line);color:var(--text);}
+  /* ---------- ТЕЛЕФОН / ТАБЛЕТ ---------- */
+  img,video{max-width:100%;}
+  @media(max-width:820px){
+    .wrap{padding:0 12px 60px;}
+    .card{overflow-wrap:anywhere;}
+    table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  }
+  @media(max-width:640px){
+    .wrap{padding:0 10px 70px;}
+    .top{flex-wrap:wrap;gap:8px;padding:10px 0;margin-bottom:12px;}
+    .top .b{font-size:17px;}
+    .top>div:last-child{flex-wrap:wrap;gap:6px!important;justify-content:flex-end;}
+    /* разделите — един ред с хоризонтално плъзгане вместо голям блок бутони */
+    .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px;margin-bottom:12px;}
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab{flex:none;padding:7px 12px;font-size:13px;}
+    h2{font-size:20px;}
+    .card{padding:12px;border-radius:10px;}
+    .row2{grid-template-columns:1fr;gap:6px;}
+    input,select,textarea{font-size:16px;padding:10px;}   /* 16px — iPhone не увеличава страницата при писане */
+    .btn{padding:11px 14px;}
+    .btn.sm{padding:7px 11px;}
+    /* карти с текст вляво и бутони вдясно → бутоните слизат отдолу */
+    .card>div[style*="space-between"]{flex-wrap:wrap;}
+    .card>div[style*="space-between"]>div:first-child{flex:1 1 220px;min-width:0;}
+    [id^="resact_"],[id^="appact_"]{flex-direction:row!important;flex-wrap:wrap;}
+    [style*="float:right"]{float:none!important;margin:0 0 8px!important;}
+    .inbox{padding:12px;}
+    .inbox .row .a{width:100%;}
+    .pill{letter-spacing:.3px;}
+  }
 </style>
 </head>
 <body>
@@ -324,6 +355,8 @@ async function goRes(id){ const r=RES.find(x=>x.id===id); resArchive=false; resF
 function tabBadge(n){return n?` <span style="background:#82303d;color:#f7f7ee;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${n}</span>`:'';}
 function render(){
   if(!admin){gate();return;}
+  // стилът на „Зареждане…“ (центриран текст + 40px отстъп) оставаше върху целия админ → махаме го
+  if(root.getAttribute('style'))root.removeAttribute('style');
   const badge=DB.live?`<span class="badge live">Свързан Supabase</span>`:`<span class="badge">Демо режим</span>`;
   let h=`<div class="wrap">
     <div class="top"><div class="b">AC² · Админ панел<br><small>American College Arcus Club</small></div>
@@ -1123,10 +1156,16 @@ async function exportEvents(ids){
   try{ RES=await DB.listReservations(); }catch(e){}
   if(!PHONES||!Object.values(PHONES).some(x=>'mem' in x)){ try{ const list=await DB.listMembers(); const m={}; (list||[]).forEach(p=>{m[p.id]={email:p.email||'',phone:p.phone||'',mem:p.membership||''};}); PHONES=m; }catch(e){ PHONES=PHONES||{}; } }
   // кои събития: подадените, или всички с поне една резервация (текущи + минали), по дата
+  const upcomingOnly=ids==='upcoming';
   let evs=ids==='upcoming'?EVENTS.filter(e=>!admIsPast(e)&&RES.some(r=>r.event_id===e.id)):(Array.isArray(ids)?EVENTS.filter(e=>ids.includes(e.id)):EVENTS.filter(e=>RES.some(r=>r.event_id===e.id)));
   if(ids==='upcoming')ids=null;
   evs=evs.slice().sort((a,b)=>(a.date||'')<(b.date||'')?-1:1);
-  if(!evs.length){ alert('Няма събития с резервации за експорт.'); return; }
+  const single=!!(ids&&ids.length===1);
+  // запитвания (резервации без събитие: ресторант, зали, маса след събитие) и съобщения от сайта — само в общия файл
+  const todayI=new Date().toISOString().slice(0,10);
+  const enq=single?[]:RES.filter(r=>!r.event_id&&(!upcomingOnly||!r.date||r.date>=todayI));
+  let msgs=[]; if(!single&&can('messages')){ try{ msgs=await DB.listContactMessages(); }catch(e){ msgs=MSGS||[]; } }
+  if(!evs.length&&!enq.length&&!msgs.length){ alert('Няма събития с резервации за експорт.'); return; }
   const stBg={confirmed:'потвърдена',requested:'заявка',declined:'отказана',cancelled:'отменена',pending_payment:'чака плащане'};
   const stOrder={confirmed:0,requested:1,pending_payment:2,declined:3,cancelled:4};
   const meth=r=>r.pay_method==='cash'?'в брой':r.pay_method==='pos'?'ПОС':r.pay_method==='free'?'безплатно на място':(r.stripe_pi?'онлайн карта':((r.paid_cents||0)>0?'платено':'безплатно'));
@@ -1165,12 +1204,20 @@ async function exportEvents(ids){
   if(!money){ for(const sh of sheets){ const x=strip(sh.head,sh.rows,MCOLS); sh.head=x.head; sh.rows=x.rows; } }
   const sm=money?{head:sHead,rows:summary}:strip(sHead,summary,MCOLS);
   const fl=money?{head:flatHead,rows:flat}:strip(flatHead,flat,MCOLS.concat(['Дата на връщане']));
-  const all=(ids&&ids.length===1)?sheets:[{name:'Билети',head:fl.head,rows:fl.rows},{name:'Обобщение',head:sm.head,rows:sm.rows}].concat(sheets);
+  let all=(ids&&ids.length===1)?sheets:[{name:'Билети',head:fl.head,rows:fl.rows},{name:'Обобщение',head:sm.head,rows:sm.rows}].concat(sheets);
+  if(!single){
+    const tbl=r=>r.table_event_id?('Маса след: '+((EVENTS.find(x=>x.id===r.table_event_id)||{}).title||'събитие')):(r.place||r.fmt||'');
+    const eRows=enq.slice().sort((a,b)=>((a.date||'')<(b.date||'')?-1:(a.date||'')>(b.date||'')?1:((a.time||'')<(b.time||'')?-1:1))).map(r=>{ const info=(PHONES&&r.user_id)?PHONES[r.user_id]:null;
+      return [dt(r.created_at),r.date?isoToBg(r.date):'',r.time||'',tbl(r),FMT_LABEL[r.fmt]||r.fmt||'',r.name||r.who||'',r.email||(info&&info.email)||'',r.phone||(info&&info.phone)||'',r.guest?'гост':'член',Number(r.party)||1,stBg[r.status]||r.status||'',isBigGroup(r)?'да':'',r.note||''];});
+    if(eRows.length||!upcomingOnly)all.push({name:'Запитвания',head:['Направено на','Дата','Час','Място / зала','Формат','Име','Имейл','Телефон','Тип','Брой хора','Статус','Група 9+','Повод / бележка'],rows:eRows});
+    if(can('messages'))all.push({name:'Съобщения',head:['Дата','Име','Имейл','Телефон','Тема','Съобщение','Език','Страница'],rows:(msgs||[]).map(m=>[dt(m.created_at),m.name||'',m.email||'',m.phone||'',m.subject||'',m.message||'',m.lang||'',m.page||''])});
+    if(!evs.length)all=all.filter(x=>x.name!=='Билети'&&x.name!=='Обобщение');
+  }
   const blob=xlsxBlob(all);
-  const fname=(ids&&ids.length===1)?('AC2-'+(evs[0].date||'')+'-'+evs[0].title.replace(/[^\p{L}\p{N}]+/gu,'-').slice(0,40)+'.xlsx'):('AC2-sabitiya-'+(evs.every(e=>!admIsPast(e))?'predstoyashti-':'')+new Date().toISOString().slice(0,10)+'.xlsx');
+  const fname=(ids&&ids.length===1)?('AC2-'+(evs[0].date||'')+'-'+evs[0].title.replace(/[^\p{L}\p{N}]+/gu,'-').slice(0,40)+'.xlsx'):('AC2-sabitiya-'+(upcomingOnly?'predstoyashti-':'')+new Date().toISOString().slice(0,10)+'.xlsx');
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
   try{ await DB.logAudit('export_events',(ids&&ids.length===1)?evs[0].title:'всички събития',evs.length+' събития'); }catch(e){}
-  toast('Готово: '+evs.length+' '+(evs.length===1?'събитие':'събития'));
+  toast('Готово: '+evs.length+' '+(evs.length===1?'събитие':'събития')+(single?'':' · '+enq.length+' запитвания'+(can('messages')?' · '+(msgs||[]).length+' съобщения':'')));
 }
 // Минимален .xlsx (без външни библиотеки — CSP ги спира): ZIP без компресия + SpreadsheetML
 function xlsxBlob(sheets){
@@ -1423,7 +1470,7 @@ function resView(){
   if(!rows)rows=`<p class="empty">Няма заявки в този раздел.</p>`;
   return `${doorBtn()}<h2>Резервации${resArchive?' — архив':''}</h2>
   <div style="margin:-4px 0 10px;"><button class="btn ghost sm" onclick="toggleResArchive()">${resArchive?'‹ Текущи':'Архив ('+OLD.length+') ▾'}</button> <span class="muted" style="font-size:12px;">${resArchive?'Резервации за събития, минали преди повече от 2 дни.':'Минали събития (2+ дни) са в архива.'}</span></div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px;">${chips}${canEvExport()?`<span style="margin-left:auto;display:flex;gap:6px;"><button class="btn ghost sm" onclick="exportEvents('upcoming')" title="Предстоящите събития — всяко на отделен лист + обобщение">⬇ Предстоящи събития (Excel)</button><button class="btn ghost sm" onclick="exportEvents(null)" title="Всички събития с резервации, вкл. минали">⬇ Всички</button></span>`:''}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px;">${chips}${canEvExport()?`<span style="margin-left:auto;display:flex;gap:6px;"><button class="btn ghost sm" onclick="exportEvents('upcoming')" title="Предстоящите събития — всяко на отделен лист + обобщение + предстоящите запитвания и съобщенията">⬇ Предстоящи събития (Excel)</button><button class="btn ghost sm" onclick="exportEvents(null)" title="Всички събития с резервации (вкл. минали) + всички запитвания и съобщения от сайта — в един файл">⬇ Всички + запитвания и съобщения</button></span>`:''}</div>
     ${head}${rows}`;
 }
 function toast(msg,bad){
@@ -1585,8 +1632,19 @@ function statsView(){
         <div style="text-align:right;"><b>${seats}${cap?'/'+cap:''}</b> <span class="muted" style="font-size:12px;">места</span>${pd&&canMoney()?`<div style="font-size:12px;">${eur(pd-rf)}${rf?` <span class="muted">(върнати ${eur(rf)})</span>`:''}</div>`:''}</div></div>
       ${cap?`<div style="height:8px;border-radius:5px;background:var(--surface2);margin-top:8px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${col};"></div></div>`:''}
       <div class="muted" style="font-size:12px;margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${slotTxt}
-        ${seats?`<span>членове ${mem} · гости ${gst}</span>`:''}${pend?` <span style="color:#6b6b63;">· чакащи ${pend}</span>`:''}${inn?` <span style="color:#507044;">· влезли ${inn}</span>`:''}</div></div>`;
+        ${seats?`<span>членове ${mem} · гости ${gst}</span>`:''}${pend?` <span style="color:#6b6b63;">· чакащи ${pend}</span>`:''}${inn||(admIsPast(e)&&seats)?` <span style="color:#507044;">· влезли ${inn}${seats?' от '+seats+' ('+Math.round(inn/seats*100)+'%)':''}</span>`:''}</div></div>`;
   }).join('')||'<p class="empty">Няма събития в този период.</p>';
+  // ПРИСЪСТВИЕ (отбелязани на входа) — само за минали събития в периода
+  const pastEvs=evs.filter(e=>admIsPast(e));
+  const attRows=pastEvs.map(e=>{ const C=conf.filter(r=>r.event_id===e.id); const s0=sum(C,P), i0=sum(C.filter(r=>r.checked_in_at),P); return {e,s0,i0}; }).filter(x=>x.s0>0);
+  const attS=attRows.reduce((a,x)=>a+x.s0,0), attI=attRows.reduce((a,x)=>a+x.i0,0);
+  const pc=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+  const pastConf=conf.filter(r=>pastEvs.some(e=>e.id===r.event_id));
+  const memC=pastConf.filter(r=>!r.guest), gstC=pastConf.filter(r=>r.guest);
+  const attTable=attRows.length?`<div class="card" style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:420px;"><tr class="muted"><td>Събитие</td><td style="text-align:right;">Потвърдени</td><td style="text-align:right;">Влезли</td><td style="text-align:right;">Не дошли</td><td style="text-align:right;">%</td></tr>${attRows.map(x=>`<tr style="border-top:1px solid var(--line-soft);"><td>${esc(x.e.title)} <span class="muted">· ${isoToBg(x.e.date||'')}</span></td><td style="text-align:right;">${x.s0}</td><td style="text-align:right;color:#507044;">${x.i0}</td><td style="text-align:right;color:#82303d;">${x.s0-x.i0}</td><td style="text-align:right;"><b>${pc(x.i0,x.s0)}</b></td></tr>`).join('')}</table></div>`:'<p class="empty">Няма минали събития с потвърдени места в този период.</p>';
+  // най-активни членове (брой събития, на които са отбелязани като влезли)
+  const act={}; pastConf.filter(r=>r.checked_in_at&&r.user_id).forEach(r=>{ const k=r.user_id; act[k]=act[k]||{n:0,name:r.name||r.who||'член'}; act[k].n++; });
+  const topAct=Object.values(act).sort((a,b)=>b.n-a.n).slice(0,10);
   // формати по места (за периода)
   const byFmt={}; conf.forEach(r=>{const e=EVENTS.find(x=>x.id===r.event_id);const f=(e&&(FMT_LABEL[e.format]||e.format))||'—';byFmt[f]=(byFmt[f]||0)+P(r);});
   const fmtRows=Object.entries(byFmt).sort((a,b)=>b[1]-a[1]).map(([f,n])=>`<tr><td>${esc(f)}</td><td style="text-align:right;">${n} места</td></tr>`).join('')||'<tr><td class="muted">—</td><td></td></tr>';
@@ -1606,6 +1664,16 @@ function statsView(){
     </div>
     <h3 style="margin-top:22px;">По събития</h3>
     ${cards}
+    <h3 style="margin-top:22px;">Присъствие (отбелязани на входа)</h3>
+    <div class="muted" style="font-size:12px;margin:-4px 0 8px;">Само минали събития от периода. „Влезли“ = отбелязани със скенера или с „Присъстват“ в приложението.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      ${stat('Присъствие',pc(attI,attS),'#507044',attI+' от '+attS+' места')}
+      ${stat('Не дошли',attS-attI,'#82303d','места')}
+      ${stat('Членове',pc(sum(memC.filter(r=>r.checked_in_at),P),sum(memC,P)),'var(--text)',sum(memC.filter(r=>r.checked_in_at),P)+' от '+sum(memC,P))}
+      ${stat('Гости',pc(sum(gstC.filter(r=>r.checked_in_at),P),sum(gstC,P)),'var(--text)',sum(gstC.filter(r=>r.checked_in_at),P)+' от '+sum(gstC,P))}
+    </div>
+    <div style="margin-top:10px;">${attTable}</div>
+    ${topAct.length?`<h3 style="margin-top:18px;">Най-активни членове (присъствали събития)</h3><div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px;">${topAct.map((x,i)=>`<tr style="${i?'border-top:1px solid var(--line-soft);':''}"><td>${i+1}. ${esc(x.name)}</td><td style="text-align:right;">${x.n} ${x.n===1?'събитие':'събития'}</td></tr>`).join('')}</table></div>`:''}
     <h3 style="margin-top:18px;">Най-търсени формати (потвърдени места)</h3>
     <div class="card"><table style="width:100%;border-collapse:collapse;">${fmtRows}</table></div>
     <h3 style="margin-top:22px;">Износ в Excel</h3>

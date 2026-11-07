@@ -526,6 +526,8 @@
   @media(min-width:700px){.rulescard .rb h2{font-size:18px;} .rulescard .rb h3{font-size:14px;} .rulescard .rb p{font-size:14px;line-height:1.6;}}
   .rulescard .rb{overflow-x:hidden;word-break:break-word;overflow-wrap:anywhere;} .rulescard .rb table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:10.5px;line-height:1.3;margin:8px 0;} .rulescard .rb th,.rulescard .rb td{border:1px solid var(--line-soft);padding:4px 5px;text-align:left;vertical-align:top;word-break:normal;overflow-wrap:anywhere;} .rulescard .rb th{background:var(--card);font-weight:600;}
   @media(min-width:700px){.rulescard .rb table{font-size:12.5px;} .rulescard .rb th,.rulescard .rb td{padding:6px 8px;}}
+  .rulescard .rb h4{font-size:12px;margin:8px 0 2px;color:var(--text);font-weight:700;} .rulescard .rb .rules-note{color:var(--muted);font-size:11.5px;} .rulescard .rb .tblw{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  @media(min-width:700px){.rulescard .rb h4{font-size:13.5px;} .rulescard .rb .rules-note{font-size:13px;}}
   .ltabs{display:flex;gap:6px;overflow-x:auto;padding:8px 22px 0;flex:none;-webkit-overflow-scrolling:touch;} .ltabs button{flex:none;font:inherit;font-size:12px;padding:6px 11px;border-radius:14px;border:1px solid var(--line-soft);background:var(--card);color:var(--text);cursor:pointer;} .ltabs button.on{background:var(--gold);color:var(--cream);border-color:var(--gold);}
   .rulescard .rf label.l2{display:flex;gap:8px;align-items:flex-start;font-size:10.5px;line-height:1.3;margin-top:4px;color:var(--text);} .rulescard .rf label.l2 input{width:15px;height:15px;margin:1px 0 0;flex:none;}
   @media(min-width:700px){.rulescard .rf label.l2{font-size:12.5px;line-height:1.45;}}
@@ -2115,10 +2117,15 @@ let entered=false;
 // Текстовете са в ../legal.js (AC2_LEGAL). Задължителна една отметка; съгласието за снимки/видео е по избор.
 const LEGAL=()=>window.AC2_LEGAL||{version:'0',docs:[],accept:{bg:'',en:''},media:{bg:'',en:''}};
 const rulesAccepted=()=>{try{return sessionStorage.getItem('acac_rules_ok')===LEGAL().version;}catch(e){return false;}};
-const termsCurrent=()=>!!user&&user.terms_version===LEGAL().version;
+// приел ли е условия: при reaccept:false е достатъчна КОЯ ДА Е приета версия (старите членове не се питат отново, само новите)
+const termsCurrent=()=>!!user&&!!user.terms_version&&(LEGAL().reaccept===false||user.terms_version===LEGAL().version);
+// документите за приемане (Клубен правилник + Единна декларация); старите текстове остават за сайта (гости, поверителност)
+const gateDocs=L=>{const g=(L.docs||[]).filter(d=>d.gate);return g.length?g:(L.docs||[]);};
+// за преглед от профила: членът вижда документите, които е приел (по-стара версия → старите текстове)
+const acceptedDocs=L=>{ if(user&&user.terms_version&&user.terms_version!==L.version){ const o=(L.docs||[]).filter(d=>!d.gate); if(o.length)return o; } return gateDocs(L); };
 function termsGate(opts){
   // opts: {mode:'apply'|'member', onOk(media), onCancel}
-  const bg=lang==='bg', L=LEGAL(), docs=L.docs;
+  const bg=lang==='bg', L=LEGAL(), docs=gateDocs(L);
   const ov=document.createElement('div');ov.className='rulesov';
   const isMember=opts.mode==='member';
   ov.innerHTML=`<div class="rulescard" role="dialog" aria-modal="true">
@@ -2159,7 +2166,7 @@ function ensureTerms(){
 }
 // от профила: преглед на условията (без отметки) + смяна на съгласието за снимки
 function viewTerms(){
-  const bg=lang==='bg', L=LEGAL(), docs=L.docs;
+  const bg=lang==='bg', L=LEGAL(), docs=acceptedDocs(L);
   const ov=document.createElement('div');ov.className='rulesov';
   ov.innerHTML=`<div class="rulescard"><div class="rh"><h3>${bg?'Условия на клуба':'Club terms'}</h3><div class="m">${bg?'Версия':'Version'} ${esc(L.version)} · ${user&&user.terms_accepted_at?(bg?'приети на ':'accepted on ')+new Date(user.terms_accepted_at).toLocaleDateString('bg-BG'):''}</div></div>
     <div class="ltabs" id="ltabs">${docs.map((d,i)=>`<button class="${i===0?'on':''}" data-i="${i}">${esc(d.short)}</button>`).join('')}</div>
