@@ -1432,7 +1432,7 @@ let consent=null; try{consent=localStorage.getItem('ac2_consent');}catch(e){}
 let analyticsLoaded=false;
 function cookieBanner(){
   const el=document.getElementById('cookie');
-  if(consent||(!CFG.GA_ID&&!CFG.META_PIXEL_ID)){el.classList.remove('show');return;}
+  if(consent||(!CFG.GA_ID&&!CFG.GTM_ID&&!CFG.META_PIXEL_ID)){el.classList.remove('show');return;}
   el.innerHTML=`<p>${t('cookieText')} <a href="#/legal/cookies">${t('more')}</a></p><div class="acts"><button class="btn gilt sm" onclick="setConsent('necessary')">${t('onlyNeeded')}</button><button class="btn sm" onclick="setConsent('all')">${t('acceptAll')}</button></div>`;
   el.classList.add('show');
 }
@@ -1440,6 +1440,11 @@ function setConsent(v){consent=v;try{localStorage.setItem('ac2_consent',v);}catc
 function resetConsent(){consent=null;try{localStorage.removeItem('ac2_consent');}catch(e){}cookieBanner();}
 function loadAnalytics(){
   if(analyticsLoaded||consent!=='all')return; analyticsLoaded=true;
+  if(CFG.GTM_ID){
+    // Google Tag Manager — само след съгласие „Приемам всички“
+    window.dataLayer=window.dataLayer||[]; window.dataLayer.push({'gtm.start':Date.now(),event:'gtm.js'});
+    const g=document.createElement('script');g.async=true;g.src='https://www.googletagmanager.com/gtm.js?id='+encodeURIComponent(CFG.GTM_ID);document.head.appendChild(g);
+  }
   if(CFG.GA_ID){
     const s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(CFG.GA_ID);document.head.appendChild(s);
     window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};gtag('js',new Date());gtag('config',CFG.GA_ID,{anonymize_ip:true,send_page_view:false});
@@ -1454,6 +1459,8 @@ function loadAnalytics(){
 function track(name,params){
   if(consent!=='all'||!analyticsLoaded)return;
   try{ if(window.gtag){ if(name==='page_view')gtag('event','page_view',{page_path:params.page,page_title:document.title}); else gtag('event',name,params||{}); } }catch(e){}
+  // за GTM: събитие в dataLayer (тригер „Custom Event“ с името на събитието; за страници — „page_view“ с page_path)
+  try{ if(CFG.GTM_ID&&window.dataLayer){ window.dataLayer.push(Object.assign({event:name},name==='page_view'?{page_path:'/'+(params&&params.page||'').replace(/^\/+/,''),page_title:document.title}:(params||{}))); } }catch(e){}
   try{ if(window.fbq){ if(name==='page_view')fbq('track','PageView'); else fbq('trackCustom',name,params||{}); } }catch(e){}
 }
 function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2600);}

@@ -24,6 +24,8 @@ window.ACAC_CONFIG = {
   // Аналитика на публичния сайт — зарежда се САМО след съгласие с бисквитките.
   // Празно = изключено. GA4: "G-XXXXXXXXXX" (Google Analytics → Admin → Data streams). Meta Pixel: само цифри.
   GA_ID: "",
+  // Google Tag Manager (контейнер): "GTM-XXXXXXX". Зарежда се също само след съгласие. В GTM се настройва GA4 тагът.
+  GTM_ID: "GTM-KBLBM28L",
   META_PIXEL_ID: "",
   // Apple Pay в iOS приложението: Merchant ID от developer.apple.com (Identifiers → Merchant IDs).
   APPLE_MERCHANT_ID: "merchant.bg.arcusclub.app",
