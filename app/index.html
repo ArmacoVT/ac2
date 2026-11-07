@@ -1973,7 +1973,7 @@ function reserve(q){
       <label>${lang==='bg'?'Алергени / хранителни ограничения':'Allergens / dietary'} *</label>
       <div class="selrow" id="algsel">${(lang==='bg'?['Нямам алергии','Глутен','Мляко/лактоза','Яйца','Ядки','Фъстъци','Риба','Ракообразни','Соя','Сусам','Целина','Синап','Сулфити']:['No allergies','Gluten','Milk/lactose','Eggs','Tree nuts','Peanuts','Fish','Crustaceans','Soy','Sesame','Celery','Mustard','Sulphites']).map((a,i)=>`<button type="button" class="chip" data-alg="${esc(a)}"${i===0?' data-none="1"':''} onclick="toggleAlg(this)">${a}</button>`).join('')}</div>
     </div>
-    <label>${tr('note')} *</label><textarea id="r_note" rows="3" placeholder="${tr('notePlaceholder')}"></textarea>
+    <label>${tr('note')}</label><textarea id="r_note" rows="3" placeholder="${tr('notePlaceholder')}"></textarea>
     <button class="btn" onclick="sendRes(${seats})">${tr('send')}</button></div>`;
 }
 let pickedVenue=null;
@@ -2049,7 +2049,6 @@ async function sendRes(seats){
   if(!rdate){toast(lang==='bg'?'Изберете дата':'Choose a date');return;}
   if(!rtime){toast(lang==='bg'?'Въведете час':'Enter a time');return;}
   if(!(n>=1)){toast(lang==='bg'?'Изберете брой хора':'Choose the number of people');return;}
-  if(!note){toast(lang==='bg'?'Опишете повода в бележката':'Describe the occasion in the note');return;}
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast(tr('reqEmail'));return;}
   if(!phone){toast(tr('reqPhone'));return;}
   if(!validPhone(phone)){toast(lang==='bg'?'Въведете валиден телефонен номер':'Enter a valid phone number');return;}
