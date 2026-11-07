@@ -23,7 +23,7 @@ window.ACAC_CONFIG = {
   APP_URL: "https://ac2.bg/app/",
   // Аналитика на публичния сайт — зарежда се САМО след съгласие с бисквитките.
   // Празно = изключено. GA4: "G-XXXXXXXXXX" (Google Analytics → Admin → Data streams). Meta Pixel: само цифри.
-  GA_ID: "",
+  GA_ID: "G-YQHKNZ3PGG",   // Google Analytics 4 — директно от сайта (затова в GTM НЕ се добавя GA4 таг, иначе ще се брои двойно)
   // Google Tag Manager (контейнер): "GTM-XXXXXXX". Зарежда се също само след съгласие. В GTM се настройва GA4 тагът.
   GTM_ID: "GTM-KBLBM28L",
   META_PIXEL_ID: "",
