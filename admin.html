@@ -142,7 +142,8 @@ let tab='events', editId=null, draftAud=['all'], admin=false, role='', PERMS=[];
 // Администраторът има всичко. Останалите служители — само отметнатите права (profiles.perms).
 const PERM_DEFS=[
   {id:'events',t:'Събития',d:'създаване и редакция на събития, архив, видимост по членство'},
-  {id:'reservations',t:'Резервации',d:'одобряване/отказ, check-in, архив на резервациите'},
+  {id:'reservations',t:'Резервации',d:'одобряване/отказ, check-in, архив на резервациите (+ настаняване по маси)'},
+  {id:'tables',t:'Маси',d:'схема на залите и настаняване; подрежда залата, маси и столове'},
   {id:'members_view',t:'Членове — преглед',d:'вижда списъка с членове (без промени)'},
   {id:'members_edit',t:'Членове — редакция',d:'покани, подновяване, нива, телефони, пароли'},
   {id:'applications',t:'Кандидатури',d:'преглед и одобряване на кандидатури'},
@@ -161,8 +162,8 @@ const PERM_DEFS=[
   {id:'money',t:'Суми и приходи (преглед)',d:'вижда приходите в Статистика и сумите в Excel експорта на събития + месечния отчет'},
   {id:'accounting',t:'Счетоводство (само преглед)',d:'вижда резервации с платени суми, плащания за членства, цени; експорт за месеца — без никакви действия'}];
 const PERM_PRESETS=[
-  {id:'deputy',t:'Заместник-админ',p:['events','reservations','members_view','members_edit','applications','news','site','messages','stats','audit','res_delete','refunds','walkin','events_delete']},
-  {id:'manager',t:'Мениджър',p:['events','reservations','members_view','members_edit','applications','news','site','messages','stats','audit','walkin']},
+  {id:'deputy',t:'Заместник-админ',p:['events','reservations','tables','members_view','members_edit','applications','news','site','messages','stats','audit','res_delete','refunds','walkin','events_delete']},
+  {id:'manager',t:'Мениджър',p:['events','reservations','tables','members_view','members_edit','applications','news','site','messages','stats','audit','walkin']},
   {id:'editor',t:'Редактор',p:['events','news','site']},
   {id:'reception',t:'Рецепция',p:['reservations','members_view','messages','walkin']},
   {id:'accountant',t:'Счетоводство',p:['accounting','stats','audit']}];
@@ -387,6 +388,7 @@ function tabsHtml(){
   return `<div class="tabs">
       ${tabAllowed('events')?`<button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>`:''}
       ${tabAllowed('res')?`<button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации${tabBadge(attCount('res'))}</button>`:''}
+      ${(can('tables')||can('reservations'))?`<a class="tab" href="tables.html" style="text-decoration:none;display:inline-flex;align-items:center;" title="Схема на залите и настаняване (отваря се на цял екран)">Маси</a>`:''}
       ${tabAllowed('people')?`<button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>`:''}
       ${tabAllowed('apps')?`<button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge(attCount('app'))}</button>`:''}
       ${tabAllowed('ann')?`<button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>`:''}

@@ -1090,6 +1090,9 @@ const placeName = p => (p && PLACE_RENAME[p]) || p;
       return { error: null, password: data && data.password };
     },
 
+    // клиентът на Supabase за модула „Маси“ (tables.html) — същата сесия, без втори вход
+    client() { return sb; },
+
     MEMBERSHIPS: MEM
   };
 

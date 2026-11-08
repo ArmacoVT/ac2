@@ -8,10 +8,10 @@
 //   Supabase, видео/аудио, външни скриптове → без намеса (винаги по мрежата).
 // При нов CACHE: старите кешове се трият, новият worker поема веднага (skipWaiting + claim),
 // а страниците се презареждат сами, когато е безопасно (вж. края на index.html / app/index.html / admin.html).
-const CACHE = 'acac-v448';
+const CACHE = 'acac-v449';
 const MEDIA = 'acac-media';   // снимки от Supabase Storage — отделен кеш, който НЕ се трие при нова версия
 const ASSETS = [
-  './', './index.html', './landing.html', './t.html', './privacy.html', './delete-account.html', './cards/contour-tall.svg', './cards/contour-wide.svg', './app/index.html', './admin.html', './config.js', './db.js', './legal.js', './brand.js', './rules.html',
+  './', './index.html', './landing.html', './t.html', './privacy.html', './delete-account.html', './cards/contour-tall.svg', './cards/contour-wide.svg', './app/index.html', './admin.html', './tables.html', './config.js', './db.js', './legal.js', './brand.js', './rules.html',
   './vendor/supabase.js', './vendor/qrcode.js', './vendor/jsqr.js',
   './cards/logo-ac2.webp', './cards/logo-ac2.svg', './cards/logo-culture.webp', './cards/logo-cinema.webp',
   './cards/logo-table.webp', './cards/logo-music.webp', './cards/logo-conversation.webp',
