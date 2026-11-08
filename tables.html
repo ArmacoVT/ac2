@@ -66,6 +66,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .ibtn:hover{background:rgba(235,235,214,.1);opacity:1;}
 .ibtn.on{background:var(--wine);opacity:1;}
 .ibtn svg{width:21px;height:21px;}
+.ibtn.edtxt{width:auto;padding:0 14px 0 12px;gap:8px;display:flex;border:1px solid rgba(235,235,214,.25);font-size:14px;}
+@media (max-width:1100px){.ibtn.edtxt span{display:none;}.ibtn.edtxt{width:42px;padding:0;justify-content:center;border:0;}}
 .live{width:8px;height:8px;border-radius:4px;background:#6f9a5f;box-shadow:0 0 0 3px rgba(111,154,95,.25);flex:0 0 auto;}
 .live.off{background:#888;box-shadow:none;}
 
@@ -118,6 +120,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .tb .ch.x{fill:none;stroke:var(--wine);stroke-dasharray:3 2;}
 .tb .num{font-family:var(--serif);font-style:italic;font-weight:700;font-size:22px;fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none;}
 .tb .cap{font-size:11px;fill:var(--muted);text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+.tb .hitc{fill:transparent;}
+.tb .cbar{fill:var(--ink);}
+.tb.sel .cbar,.edit .tb.sel .cbar{fill:var(--wine);}
+.tb.fit .cbar{fill:var(--green);animation:pulse 1.4s ease-in-out infinite;}
+.tb.drop .cbar{fill:var(--wine);}
+.tb .stl{fill:var(--tbl);stroke:var(--chairS);stroke-width:1.5;}
+.tb .stl.g{fill:var(--green);stroke:var(--green);} .tb .stl.r{fill:var(--wine);stroke:var(--wine);} .tb .stl.b{fill:url(#hatch);stroke:var(--ink);}
+.tb .clbl{font-size:15px;font-weight:600;fill:var(--ink);dominant-baseline:central;pointer-events:none;}
 .tb .who{font-size:12.5px;font-weight:600;fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none;}
 .tb .when{font-size:11px;fill:var(--mid);text-anchor:middle;dominant-baseline:central;pointer-events:none;}
 .tb.st-reserved .body{fill:var(--wine);stroke:var(--wine);stroke-width:2;}
@@ -508,10 +518,31 @@ const resById = id => RES.find(r => r.id === id);
 const seatById = id => SEATS.find(s => s.id === id);
 const seatsOfRes = id => SEATS.filter(s => s.reservation_id === id);
 const tLabel = t => t ? (t.label || '?') : '?';
+const tName = t => !t ? '?' : (t.shape === 'counter' || t.shape === 'counter2') ? (t.label || 'Бар') : 'Маса ' + (t.label || '?');
 const zoneOfPlace = p => ZONES.find(z => z.place && p && z.place === p);
 function seatName(s) { if (s.reservation_id) { const r = resById(s.reservation_id); if (r) return r.name; } return s.name || (s.kind === 'block' ? 'Запазена' : 'Гост на място'); }
 function seatParty(s) { if (s.reservation_id) { const r = resById(s.reservation_id); if (r) return r.party; } return s.party || 0; }
-function overlaps(tid, a, b, exceptId) {
+// бар от двете страни: колко столчета са горе (пази се в min_party — за бара не се ползва иначе)
+const cTop = t => { const n = t.seats || 0; if (t.shape !== 'counter2') return 0; const v = t.min_party; return Math.max(0, Math.min(n, v > 1 || n <= 3 ? (v || 0) : Math.ceil(n / 2))); };
+const isCounter = t => !!t && (t.shape === 'counter' || t.shape === 'counter2');
+// какво пречи на нов запис за [a,b). При бар/тепаняки — само ако местата не стигат (или е запазен изцяло)
+function overlaps(tid, a, b, exceptId, party) {
+  const t = tableById(tid);
+  if (isCounter(t)) {
+    const L = SEATS.filter(s => s.table_id === tid && s.id !== exceptId && s.status !== 'done' && tm(s.start_t) < b && a < tm(s.end_t));
+    const blocks = L.filter(s => s.kind === 'block'); if (blocks.length) return blocks;
+    const used = L.reduce((n, s) => n + (seatParty(s) || 1), 0);
+    return used + (party || 1) > (t.seats || 0) ? L : [];
+  }
+  return overlapsRaw(tid, a, b, exceptId);
+}
+function counterUse(t, T) {
+  const L = SEATS.filter(s => s.table_id === t.id && s.status !== 'done' && (s.status === 'seated' ? tm(s.start_t) <= T + 30 : tm(s.start_t) <= T && T < tm(s.end_t)));
+  const seated = L.filter(s => s.status === 'seated').reduce((n, s) => n + (seatParty(s) || 1), 0);
+  const res = L.filter(s => s.status !== 'seated' && s.kind !== 'block').reduce((n, s) => n + (seatParty(s) || 1), 0);
+  return { seated, res, block: L.some(s => s.kind === 'block'), list: L };
+}
+function overlapsRaw(tid, a, b, exceptId) {
   return SEATS.filter(s => s.table_id === tid && s.id !== exceptId && s.status !== 'done' && tm(s.start_t) < b && a < tm(s.end_t));
 }
 function tableState(t, T) {
@@ -534,7 +565,7 @@ function resState(r) {
 }
 function suggest(party, a, b, zid) {
   const pool = TABLES.filter(t => t.kind === 'table' && t.active !== false && (!zid || t.zone_id === zid));
-  return pool.filter(t => t.seats >= party && t.seats - party <= 6 && !overlaps(t.id, a, b).length)
+  return pool.filter(t => t.seats >= party && (isCounter(t) ? party <= 3 : t.seats - party <= 6) && !overlaps(t.id, a, b, null, party).length)
     .sort((x, y) => (x.seats - party) - (y.seats - party) || (x.vip - y.vip) || String(x.label).localeCompare(String(y.label), 'bg', { numeric: true }))
     .slice(0, 4);
 }
@@ -619,18 +650,18 @@ async function assignRes(r, tid, opts) {
   const a = opts.start != null ? opts.start : (tm(r.time) ?? Math.max(OPEN(), snap15(S.at)));
   const b = Math.min(1440, a + dur(r.party));
   const evId = r.event_id || r.table_event_id;
-  const clash = overlaps(tid, a, b).filter(x => x.reservation_id !== r.id && !(x.kind === 'block' && evId && x.event_id === evId));
+  const clash = overlaps(tid, a, b, null, r.party).filter(x => x.reservation_id !== r.id && !(x.kind === 'block' && evId && x.event_id === evId));
   if (clash.length && !confirm('Маса ' + tLabel(t) + ' е заета ' + clash.map(c => c.start_t + '–' + c.end_t + ' (' + seatName(c) + ')').join(', ') + '.\nДа я дам въпреки това?')) return;
   const existing = seatsOfRes(r.id).filter(x => x.status !== 'done');
   if (existing.length && !opts.add) {
     // преместване: първата маса на резервацията отива на новата
-    const s = existing[0]; s.table_id = tid; await saveSeat(s, r.name + ' → маса ' + tLabel(t));
+    const s = existing[0]; s.table_id = tid; await saveSeat(s, r.name + ' → ' + tName(t));
   } else {
     if (seatsOfRes(r.id).some(x => x.table_id === tid && x.status !== 'done')) { toast('Вече е на тази маса'); return; }
     const s = newSeat({ table_id: tid, start_t: fm(a), end_t: fm(b), kind: 'res', reservation_id: r.id, event_id: r.event_id || r.table_event_id || null,
       status: existing.some(x => x.status === 'seated') ? 'seated' : 'planned' });
     if (s.status === 'seated') s.seated_at = new Date().toISOString();
-    await saveSeat(s, r.name + ' · маса ' + tLabel(t) + (existing.length ? ' (събрани маси)' : ''));
+    await saveSeat(s, r.name + ' · ' + tName(t) + (existing.length ? ' (събрани маси)' : ''));
   }
   if (opts.seat) { const s = seatsOfRes(r.id).find(x => x.table_id === tid); if (s) await seatNow(s); }
   if (r.party > seatsCount(t) && !existing.length && !opts.add) toast('Внимание: ' + plural(r.party, 'гост', 'гости') + ' на маса с ' + t.seats + ' места — добави стол или маса');
@@ -658,7 +689,7 @@ function render() {
       <button class="${S.view === 'floor' ? 'on' : ''}" data-a="view" data-v="floor">Схема</button>
       <button class="${S.view === 'time' ? 'on' : ''}" data-a="view" data-v="time">По часове</button>
     </div>
-    ${CAN_LAYOUT ? (S.edit ? `<button class="donebtn" data-a="edit">Готово</button>` : `<button class="ibtn" data-a="edit" title="Подреди залата" aria-label="Подреди залата">${ICON.edit}</button>`) : ''}
+    ${CAN_LAYOUT ? (S.edit ? `<button class="donebtn" data-a="edit">Готово</button>` : `<button class="ibtn edtxt" data-a="edit" title="Подреди залата: добави, премести или махни маси">${ICON.edit}<span>Подреди залата</span></button>`) : ''}
     <button class="ibtn" data-a="settings" title="Настройки" aria-label="Настройки">${ICON.cog}</button>
     <span class="live ${DEMO ? 'off' : ''}" title="${DEMO ? 'Демо — без база' : 'На живо: промените от другите таблети идват веднага'}"></span>
   </header>
@@ -676,7 +707,7 @@ function subBar(zone) {
   const T = S.at;
   return `<div class="sub">
     <div class="zones">${ZONES.filter(z => z.active !== false || S.edit).map(z => {
-      const tt = zoneTables(z.id).filter(t => t.active !== false); const busy = tt.filter(t => tableState(t, T).st !== 'free').length;
+      const tt = zoneTables(z.id).filter(t => t.active !== false); const busy = tt.filter(t => isCounter(t) ? (counterUse(t, T).seated + counterUse(t, T).res >= t.seats || counterUse(t, T).block) : tableState(t, T).st !== 'free').length;
       return `<button class="zbtn ${z.id === S.zone ? 'on' : ''}" data-a="zone" data-id="${z.id}">${esc(z.name)}<i>${busy}/${tt.length}</i></button>`; }).join('')}
       ${S.edit ? `<button class="zbtn add" data-a="addzone">+ Зала</button>` : ''}</div>
     ${S.edit || !zone ? '' : EVENTS.filter(e => e.place && zone.place && e.place === zone.place).map(e => { const blocked = SEATS.some(x => x.event_id === e.id && x.kind === 'block');
@@ -745,11 +776,30 @@ function chairPos(t, n) {
   for (let i = 0; i < A[3]; i++) out.push([w + o - 2, h * (i + .5) / A[3], 90]);
   return out;
 }
+function counterSvg(t, T, assignR) {
+  const u = counterUse(t, T), n = t.seats || 0, two = t.shape === 'counter2';
+  let cls = 'tb counter' + (t.active === false ? ' inactive' : '') + (S.sel && S.sel.t === 'table' && S.sel.id === t.id ? ' sel' : '');
+  if (assignR && !S.edit) { const a = tm(assignR.time) ?? T; cls += !overlaps(t.id, a, a + dur(assignR.party), null, assignR.party).length && n >= assignR.party ? ' fit' : ' nofit'; }
+  const top = cTop(t), bot = n - top, sz = 20, gap = 10;
+  const st = i => (u.block ? 'b' : i < u.seated ? 'g' : i < u.seated + u.res ? 'r' : '');
+  let stools = '', k = 0;
+  for (let i = 0; i < top; i++, k++) stools += `<rect class="stl ${st(k)}" x="${(t.w * (i + .5) / top - sz / 2).toFixed(1)}" y="${-gap - sz}" width="${sz}" height="${sz}" rx="5"/>`;
+  for (let i = 0; i < bot; i++, k++) stools += `<rect class="stl ${st(k)}" x="${(t.w * (i + .5) / bot - sz / 2).toFixed(1)}" y="${t.h + gap}" width="${sz}" height="${sz}" rx="5"/>`;
+  const used = u.seated + u.res;
+  const lbl = esc(t.label) + (u.block ? ' · запазен' : used ? ' · ' + used + '/' + n : ' · ' + n + ' м.');
+  const ly = two ? -gap - sz - 14 : -16, lx = t.w / 2, anchor = 'middle';
+  const hitY = two ? -gap - sz - 26 : -30, hitH = two ? t.h + 2 * (gap + sz) + 32 : t.h + gap + sz + 36;
+  return `<g class="${cls}" data-tid="${t.id}" transform="translate(${t.x} ${t.y}) rotate(${t.rot || 0} ${t.w / 2} ${t.h / 2})">
+    <rect class="hitc" x="-8" y="${hitY}" width="${t.w + 16}" height="${hitH}"/>
+    <rect class="cbar" width="${t.w}" height="${t.h}" rx="2"/>${stools}
+    <text class="clbl" x="${lx}" y="${ly}" text-anchor="${anchor}">${lbl}</text></g>`;
+}
 function tableSvg(t, T, assignR) {
+  if (isCounter(t)) return counterSvg(t, T, assignR);
   const { st, s } = tableState(t, T);
   const base = t.seats || 0, n = seatsCount(t, s && st !== 'free' ? s : null);
   let cls = 'tb st-' + st + (t.active === false ? ' inactive' : '') + (S.sel && S.sel.t === 'table' && S.sel.id === t.id ? ' sel' : '');
-  if (assignR && !S.edit) { const a = tm(assignR.time) ?? T, b = a + dur(assignR.party); const ok = t.seats >= assignR.party && !overlaps(t.id, a, b).filter(x => x.reservation_id !== assignR.id).length; cls += ok ? ' fit' : ' nofit'; }
+  if (assignR && !S.edit) { const a = tm(assignR.time) ?? T, b = a + dur(assignR.party); const ok = t.seats >= assignR.party && !overlaps(t.id, a, b, null, assignR.party).filter(x => x.reservation_id !== assignR.id).length; cls += ok ? ' fit' : ' nofit'; }
   const ch = chairPos(t, n).map((p, i) => `<rect class="ch ${i >= base ? 'x' : ''}" x="-9" y="-6" width="18" height="12" rx="4" transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)}) rotate(${p[2].toFixed(0)})"/>`).join('');
   let body;
   if (t.shape === 'round') body = `<ellipse class="body" cx="${t.w / 2}" cy="${t.h / 2}" rx="${t.w / 2}" ry="${t.h / 2}"/>`;
@@ -783,6 +833,7 @@ function tableSvg(t, T, assignR) {
 // кратко име: „Мария П.“ — да се събира върху масата и етикетите да не се застъпват
 function shortName(x) { const p = String(seatName(x)).trim().split(/\s+/); return p.length > 1 && p[0].length > 2 && !/^(Семейство|Фирма|Гост|Бизнес)$/i.test(p[0]) ? p[0] + ' ' + p[1][0] + '.' : String(seatName(x)); }
 function chipSvg(t, T) {
+  if (isCounter(t)) return '';
   const { st, s, next } = tableState(t, T);
   if (st !== 'free' && Math.min(t.w, t.h) >= 56) return '';   // голяма маса — всичко е написано върху нея
   let txt = '', cls = '';
@@ -866,7 +917,7 @@ function listHtml() {
         <div class="stat"><b>${seatedNow}</b><span>на маса</span></div>
         <div class="stat"><b>${free}<small style="font-size:14px;opacity:.5">/${tt.length}</small></b><span>свободни</span></div>
       </div>
-      <div class="newres"><label class="search" style="flex:1">${ICON.search}<input type="search" placeholder="Име, телефон или код" value="${esc(S.q)}" data-a="q" autocomplete="off"></label><button class="btn w" data-a="newres" style="min-height:42px;padding:0 14px;" title="Резервация по телефон, имейл или съобщение">+ Резервация</button></div>
+      <div class="newres"><label class="search" style="flex:1">${ICON.search}<input type="search" placeholder="Търси име, телефон" value="${esc(S.q)}" data-a="q" autocomplete="off"></label><button class="btn w" data-a="newres" style="min-height:42px;padding:0 14px;" title="Резервация по телефон, имейл или съобщение">+ Резервация</button></div>
       <div class="filters">
         ${[['todo', 'Без маса'], ['assigned', 'Разпределени'], ['seated', 'Настанени'], ['all', 'Всички']].map(([k, l]) => `<button class="${S.filter === k ? 'on' : ''}" data-a="filter" data-v="${k}">${l}<em>${cnt[k]}</em></button>`).join('')}
       </div>
@@ -941,7 +992,27 @@ function resCard(r) {
     ${st === 'todo' || st === 'assigned' ? `<div class="grip" data-drag="${r.id}" title="Влачи до маса" aria-label="Влачи до маса">${ICON.grip}</div>` : ''}
   </div>`;
 }
+function counterPanel(t) {
+  const zone = ZONES.find(z => z.id === t.zone_id), T = S.at, u = counterUse(t, T), freeN = Math.max(0, t.seats - u.seated - u.res);
+  const list = SEATS.filter(x => x.table_id === t.id).sort((a, b) => tm(a.start_t) - tm(b.start_t));
+  return `<div class="det">
+    <div class="phead"><button class="btn o sm" data-a="back">‹ Назад</button><button class="btn sm" data-a="close">Готово</button></div>
+    <h2>${esc(t.label)}</h2>
+    <div class="sub2">${esc(zone ? zone.name : '')} · <b style="color:var(--ink)">${u.block ? 'запазен' : freeN + ' от ' + t.seats + ' места свободни'}</b> в ${fm(T)}</div>
+    ${u.list.map(x => seatBox(x, t)).join('')}
+    ${freeN && !u.block ? `<div class="acts" style="margin-bottom:12px;">
+        <button class="btn g" data-a="walkin" data-id="${t.id}">Гост на място</button>
+        <button class="btn w" data-a="pickres" data-id="${t.id}">Настани резервация</button>
+        <button class="btn o full" data-a="block" data-id="${t.id}">Запази целия</button></div>` : ''}
+    <div class="box"><div class="row"><div><b>Места</b><div class="muted" style="font-size:12.5px;">${CAN_LAYOUT ? 'столчета на плота' : 'промяна — с право „Маси“'}</div></div>
+      <div class="stepper"><button data-a="seats" data-id="${t.id}" data-v="-1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Махни място">−</button><b>${t.seats}</b><button data-a="seats" data-id="${t.id}" data-v="1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Добави място">+</button></div></div>${t.shape === 'counter2' ? `<div class="row" style="margin-top:10px"><span>Горе</span><div class="stepper"><button data-a="cside" data-id="${t.id}" data-v="top-1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Махни място горе">−</button><b>${cTop(t)}</b><button data-a="cside" data-id="${t.id}" data-v="top+1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Добави място горе">+</button></div></div>
+      <div class="row" style="margin-top:8px"><span>Долу</span><div class="stepper"><button data-a="cside" data-id="${t.id}" data-v="bot-1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Махни място долу">−</button><b>${t.seats - cTop(t)}</b><button data-a="cside" data-id="${t.id}" data-v="bot+1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Добави място долу">+</button></div></div>` : ''}</div>
+    <div class="box"><h4>Днес</h4>
+      ${list.length ? list.map(x => `<div class="sl" data-a="seat" data-id="${x.id}"><span class="dot ${x.status === 'seated' ? 'seated' : x.kind === 'block' ? 'block' : x.status === 'done' ? 'done' : ''}"></span><span class="tt">${x.start_t}–${x.end_t}</span><span class="nn">${esc(seatName(x))}${seatParty(x) ? ', ' + seatParty(x) : ''}</span><span class="muted">›</span></div>`).join('') : '<p class="muted" style="font-size:14px;">Свободен цял ден.</p>'}
+    </div></div>`;
+}
 function tablePanel(t) {
+  if (isCounter(t)) return counterPanel(t);
   const zone = ZONES.find(z => z.id === t.zone_id);
   const T = S.at, { st, s } = tableState(t, T);
   const list = SEATS.filter(x => x.table_id === t.id).sort((a, b) => tm(a.start_t) - tm(b.start_t));
@@ -971,11 +1042,11 @@ function seatBox(s, t) {
       <div class="muted" style="font-size:13.5px;">${s.start_t}–${s.end_t}${seatParty(s) ? ', ' + plural(seatParty(s), 'човек', 'души') : ''}${others.length ? ', + маса ' + others.map(esc).join(', ') : ''}</div>
       ${r && r.note ? `<div style="font-size:13.5px;margin-top:4px;">${esc(r.note)}</div>` : s.note ? `<div style="font-size:13.5px;margin-top:4px;">${esc(s.note)}</div>` : ''}</div>
       <button class="btn o sm" data-a="seat" data-id="${s.id}">Промени</button></div>
-    <div class="row" style="margin:10px 0 4px;"><span class="muted" style="font-size:13px;">Столове само за сега</span>
-      <div class="stepper"><button data-a="extra" data-id="${s.id}" data-v="-1" aria-label="Махни стол">−</button><b>${seatsCount(t, s)}</b><button data-a="extra" data-id="${s.id}" data-v="1" aria-label="Добави стол">+</button></div></div>
+    ${isCounter(t) ? '' : `<div class="row" style="margin:10px 0 4px;"><span class="muted" style="font-size:13px;">Столове само за сега</span>
+      <div class="stepper"><button data-a="extra" data-id="${s.id}" data-v="-1" aria-label="Махни стол">−</button><b>${seatsCount(t, s)}</b><button data-a="extra" data-id="${s.id}" data-v="1" aria-label="Добави стол">+</button></div></div>`}
     <div class="acts" style="margin-top:10px;">
       ${s.kind === 'block' ? `<button class="btn g" data-a="block2walk" data-id="${s.id}">Настани гост</button><button class="btn d" data-a="unseat" data-id="${s.id}">Освободи</button>`
-        : seated ? `<button class="btn o" data-a="move" data-id="${s.id}">Премести</button><button class="btn d" data-a="free" data-id="${s.id}">Освободи масата</button>`
+        : seated ? `<button class="btn o" data-a="move" data-id="${s.id}">Премести</button><button class="btn d" data-a="free" data-id="${s.id}">${isCounter(t) ? 'Тръгнаха си' : 'Освободи масата'}</button>`
         : `<button class="btn g" data-a="seatnow" data-id="${s.id}">Настани</button><button class="btn o" data-a="move" data-id="${s.id}">Друга маса</button><button class="btn d full" data-a="unseat" data-id="${s.id}">Махни от масата</button>`}
     </div></div>`;
 }
@@ -991,10 +1062,10 @@ function resPanel(r) {
     <h2>${esc(r.name)}</h2>
     <div class="sub2">${esc(r.time || 'без час')}, ${plural(r.party, 'човек', 'души')}${r.place ? ', ' + esc(r.place) : ''}</div>
     ${r.status === 'requested' ? `<div class="box" style="border-color:var(--amber)"><div class="row"><span>Резервацията чака одобрение.</span>${r.paid ? '' : `<button class="btn sm g" data-a="confirm" data-id="${r.id}">Потвърди</button>`}</div><div class="muted" style="font-size:12.5px;margin-top:6px;">При потвърждение гостът получава имейл${r.user_id ? ' и известие' : ''}.</div></div>` : ''}
-    ${ss.length ? `<div class="box"><h4>Маса</h4>${ss.map(s => `<div class="sl" data-a="seat" data-id="${s.id}"><span class="dot ${s.status === 'seated' ? 'seated' : s.status === 'done' ? 'done' : ''}"></span><span class="tt">Маса ${esc(tLabel(tableById(s.table_id)))}</span><span class="nn muted">${s.start_t}–${s.end_t}, ${s.status === 'seated' ? 'настанени' : s.status === 'done' ? 'тръгнаха' : 'чакаме ги'}</span><span class="muted">›</span></div>`).join('')}
+    ${ss.length ? `<div class="box"><h4>Маса</h4>${ss.map(s => `<div class="sl" data-a="seat" data-id="${s.id}"><span class="dot ${s.status === 'seated' ? 'seated' : s.status === 'done' ? 'done' : ''}"></span><span class="tt">${esc(tName(tableById(s.table_id)))}</span><span class="nn muted">${s.start_t}–${s.end_t}, ${s.status === 'seated' ? 'настанени' : s.status === 'done' ? 'тръгнаха' : 'чакаме ги'}</span><span class="muted">›</span></div>`).join('')}
       <div class="acts" style="margin-top:10px;">${st === 'assigned' ? `<button class="btn g" data-a="seatnow" data-id="${ss.find(s => s.status === 'planned').id}">Настани</button>` : ''}${st !== 'done' ? `<button class="btn o" data-a="addtable" data-id="${r.id}">+ Събери с маса</button>` : ''}</div></div>`
     : `<div class="box"><h4>${sug.length ? 'Подходящи маси' + (zone ? ' в ' + esc(zone.name) : '') : sugAll.length ? 'Подходящи маси в други зали' : 'Няма свободна маса с толкова места'}</h4>
-      <div class="sugg">${(sug.length ? sug : sugAll).map(t => `<button data-a="sugg" data-id="${t.id}" data-r="${r.id}">Маса ${esc(t.label)}<small>${t.seats} места${!zone || t.zone_id !== zone.id ? ', ' + esc((ZONES.find(z => z.id === t.zone_id) || {}).name || '') : ''}</small></button>`).join('')}</div>
+      <div class="sugg">${(sug.length ? sug : sugAll).map(t => `<button data-a="sugg" data-id="${t.id}" data-r="${r.id}">${esc(tName(t))}<small>${t.seats} места${!zone || t.zone_id !== zone.id ? ', ' + esc((ZONES.find(z => z.id === t.zone_id) || {}).name || '') : ''}</small></button>`).join('')}</div>
       <div class="acts" style="margin-top:10px;"><button class="btn w full" data-a="assign" data-id="${r.id}">Избери маса от схемата</button></div>
       <p class="muted" style="font-size:12.5px;margin-top:8px;">Или хвани ⠿ на картата в списъка и я пусни върху маса. Голяма група → дай маса и после „Събери с маса“.</p></div>`}
     <div class="box"><h4>Данни</h4><div class="kv">
@@ -1022,7 +1093,8 @@ const PALETTE = [
   ['rect10', 'Дълга 10', { shape: 'rect', w: 320, h: 100, seats: 10 }, '<rect x="1" y="10" width="38" height="10" rx="3"/>'],
   ['soft', 'Мек квадрат', { shape: 'soft', w: 92, h: 90, seats: 4 }, '<rect x="11" y="6" width="18" height="18" rx="6"/>'],
   ['oval', 'Овал 8', { shape: 'round', w: 288, h: 104, seats: 8 }, '<ellipse cx="20" cy="15" rx="17" ry="8"/>'],
-  ['stool', 'Място на бар', { shape: 'stool', w: 22, h: 22, seats: 1 }, '<rect x="15" y="10" width="10" height="10" rx="1"/>'],
+  ['counter', 'Бар / тепаняки', { shape: 'counter', w: 240, h: 6, seats: 6, label: 'Бар' }, '<rect class="k" x="2" y="8" width="36" height="3"/><rect class="c" x="4" y="15" width="6" height="6" rx="1"/><rect class="c" x="13" y="15" width="6" height="6" rx="1"/><rect class="c" x="22" y="15" width="6" height="6" rx="1"/><rect class="c" x="31" y="15" width="6" height="6" rx="1"/>'],
+  ['counter2', 'Бар (2 страни)', { shape: 'counter2', w: 300, h: 6, seats: 10, min_party: 5, label: 'Бар' }, '<rect class="c" x="5" y="4" width="6" height="6" rx="1"/><rect class="c" x="17" y="4" width="6" height="6" rx="1"/><rect class="c" x="29" y="4" width="6" height="6" rx="1"/><rect class="k" x="2" y="13" width="36" height="3"/><rect class="c" x="5" y="20" width="6" height="6" rx="1"/><rect class="c" x="17" y="20" width="6" height="6" rx="1"/><rect class="c" x="29" y="20" width="6" height="6" rx="1"/>'],
   ['booth', 'Сепаре', { shape: 'booth', w: 180, h: 110, seats: 4 }, '<path d="M4 26 L4 6 L36 6 L36 26 L31 26 L31 11 L9 11 L9 26 Z" class="c"/><rect x="12" y="14" width="16" height="10" rx="2"/>'],
   ['text', 'Надпис', { kind: 'decor', shape: 'text', w: 180, h: 50, seats: 0, label: 'LOUNGE' }, '<text x="20" y="20" text-anchor="middle" style="font-size:13px;fill:var(--ink);stroke:none">Aa</text>'],
   ['line', 'Линия', { kind: 'decor', shape: 'line', w: 300, h: 3, seats: 0, label: '' }, '<rect class="k" x="2" y="14" width="36" height="2"/>'],
@@ -1037,13 +1109,14 @@ function editorHtml(zone) {
   const t = S.sel && S.sel.t === 'table' ? tableById(S.sel.id) : null;
   if (t) {
     const isT = t.kind === 'table';
-    const shapes = isT ? [['round', 'Кръгла / овал'], ['square', 'Квадрат'], ['soft', 'Мек квадрат'], ['rect', 'Правоъгълна'], ['booth', 'Сепаре'], ['stool', 'Място на бар']] : [['text', 'Надпис'], ['line', 'Линия'], ['bar', 'Бар'], ['stage', 'Сцена'], ['wall', 'Стена'], ['window', 'Прозорец'], ['door', 'Врата'], ['plant', 'Растение']];
+    const shapes = isT ? [['round', 'Кръгла / овал'], ['square', 'Квадрат'], ['soft', 'Мек квадрат'], ['rect', 'Правоъгълна'], ['booth', 'Сепаре'], ['counter', 'Бар / тепаняки'], ['counter2', 'Бар (2 страни)']] : [['text', 'Надпис'], ['line', 'Линия'], ['bar', 'Бар'], ['stage', 'Сцена'], ['wall', 'Стена'], ['window', 'Прозорец'], ['door', 'Врата'], ['plant', 'Растение']];
     return `<div class="det">
       <div class="phead"><button class="btn o sm" data-a="back">‹ Към залата</button><button class="btn sm" data-a="back">Готово</button></div>
-      <h2>${isT ? 'Маса ' + esc(t.label) : esc(t.label || 'Елемент')}</h2><div class="sub2">Влачи на схемата, кръгчето в ъгъла променя размера.</div>
+      <h2>${isT ? (isCounter(t) ? esc(t.label) : 'Маса ' + esc(t.label)) : esc(t.label || 'Елемент')}</h2><div class="sub2">Влачи на схемата, кръгчето в ъгъла променя размера.</div>
       <label class="fld"><span>${isT ? 'Номер / име' : 'Надпис'}</span><input class="inp" maxlength="20" value="${esc(t.label)}" data-f="label"></label>
       <div class="fld"><span>Форма</span><div class="shapes">${shapes.map(([k, l]) => `<button class="${t.shape === k ? 'on' : ''}" data-a="shape" data-v="${k}">${l}</button>`).join('')}</div></div>
-      ${isT ? `<div class="box"><div class="row"><b>Столове</b><div class="stepper"><button data-a="seats" data-id="${t.id}" data-v="-1">−</button><b>${t.seats}</b><button data-a="seats" data-id="${t.id}" data-v="1">+</button></div></div>
+      ${isT ? `<div class="box"><div class="row"><b>${isCounter(t) ? 'Места (столчета)' : 'Столове'}</b><div class="stepper"><button data-a="seats" data-id="${t.id}" data-v="-1">−</button><b>${t.seats}</b><button data-a="seats" data-id="${t.id}" data-v="1">+</button></div></div>${t.shape === 'counter2' ? `<div class="row" style="margin-top:10px"><span>Горе</span><div class="stepper"><button data-a="cside" data-id="${t.id}" data-v="top-1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Махни място горе">−</button><b>${cTop(t)}</b><button data-a="cside" data-id="${t.id}" data-v="top+1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Добави място горе">+</button></div></div>
+      <div class="row" style="margin-top:8px"><span>Долу</span><div class="stepper"><button data-a="cside" data-id="${t.id}" data-v="bot-1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Махни място долу">−</button><b>${t.seats - cTop(t)}</b><button data-a="cside" data-id="${t.id}" data-v="bot+1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Добави място долу">+</button></div></div>` : ''}
         <div class="tog"><span>VIP маса</span><button class="sw ${t.vip ? 'on' : ''}" data-a="tog" data-f="vip" aria-label="VIP"></button></div>
         <div class="tog"><span>Ползва се</span><button class="sw ${t.active !== false ? 'on' : ''}" data-a="tog" data-f="active" aria-label="Ползва се"></button></div></div>` : ''}
       <div class="two"><label class="fld"><span>Ширина</span><input class="inp" type="number" min="2" max="2000" step="1" value="${t.w}" data-f="w"></label><label class="fld"><span>Височина</span><input class="inp" type="number" min="2" max="2000" step="1" value="${t.h}" data-f="h"></label></div>
@@ -1090,9 +1163,12 @@ function timelineHtml() {
     const evs = EVENTS.filter(e => e.place && z.place === e.place && tm(e.time) != null);
     rows += `<div class="tlzone"><div class="lab">${esc(z.name)}</div><div class="lane" style="width:${W}px;height:${evs.length ? 40 : 36}px">${evs.map(e => { const a = tm(e.time), b = tm(e.ends) || a + 120; return `<div class="evband" style="left:${(a - o) * ppm}px;width:${Math.max(40, (b - a) * ppm)}px">${esc(e.time)} ${esc(e.title)}</div>`; }).join('')}</div></div>`;
     tt.forEach(t => {
-      const ss = SEATS.filter(s => s.table_id === t.id);
-      rows += `<div class="tlrow" data-row="${t.id}"><div class="lab" data-a="table" data-id="${t.id}"><b>${esc(t.label)}</b><span>${t.seats} м.</span></div>
-        <div class="lane" data-lane="${t.id}" style="width:${W}px">${grid}${ss.map(s => blkHtml(s, o, ppm)).join('')}</div></div>`;
+      const ss = SEATS.filter(s => s.table_id === t.id).sort((a, b) => tm(a.start_t) - tm(b.start_t));
+      const ends = []; const lane = {};
+      ss.forEach(s => { let k = ends.findIndex(e => e <= tm(s.start_t)); if (k < 0) { k = ends.length; ends.push(0); } ends[k] = tm(s.end_t); lane[s.id] = k; });
+      const nl = Math.max(1, ends.length), H = 42;
+      rows += `<div class="tlrow" data-row="${t.id}" style="height:${nl * (H + 4) + 8}px"><div class="lab" data-a="table" data-id="${t.id}"><b${isCounter(t) ? ' style="font-size:15px"' : ''}>${esc(t.label)}</b><span>${t.seats} м.</span></div>
+        <div class="lane" data-lane="${t.id}" style="width:${W}px">${grid}${ss.map(s => blkHtml(s, o, ppm, 6 + lane[s.id] * (H + 4), H)).join('')}</div></div>`;
     });
   });
   if (!rows) rows = `<div class="empty" style="position:static;padding:60px;"><div><h3>Още няма маси</h3><p>Начертай залата от изгледа „Схема“.</p></div></div>`;
@@ -1102,12 +1178,12 @@ function timelineHtml() {
     ${nowX >= 0 ? `<div class="nowline" style="left:${lab + nowX}px"></div>` : ''}
   </div></div>`;
 }
-function blkHtml(s, o, ppm) {
+function blkHtml(s, o, ppm, top, hh) {
   const a = tm(s.start_t), b = tm(s.end_t);
-  const conflict = overlaps(s.table_id, a, b, s.id).length > 0;
+  const conflict = overlaps(s.table_id, a, b, s.id, seatParty(s)).length > 0;
   const cls = 'blk ' + (s.kind === 'block' ? 'block' : s.kind === 'walkin' ? 'walkin' : '') + (s.status === 'seated' ? ' seated' : '') + (s.status === 'done' ? ' done' : '') + (conflict ? ' conf' : '');
   const p = seatParty(s);
-  return `<div class="${cls}" data-blk="${s.id}" style="left:${(a - o) * ppm + 1}px;width:${Math.max(24, (b - a) * ppm - 2)}px"><b>${esc(seatName(s))}${p ? ' · ' + p : ''}</b><span>${s.start_t}–${s.end_t}</span></div>`;
+  return `<div class="${cls}" data-blk="${s.id}" style="left:${(a - o) * ppm + 1}px;width:${Math.max(24, (b - a) * ppm - 2)}px;${top != null ? `top:${top}px;bottom:auto;height:${hh}px;` : ''}"><b>${esc(seatName(s))}${p ? ' · ' + p : ''}</b><span>${s.start_t}–${s.end_t}</span></div>`;
 }
 function afterTimeline() {
   const w = $('#tlwrap'); if (!w) return;
@@ -1138,15 +1214,16 @@ function timeOpts(sel, from, to) {
 function startDefault() { return S.date === todayIso() && S.follow ? Math.floor(nowMin() / 15) * 15 : Math.max(OPEN(), snap15(S.at)); }
 function walkinSheet(tid, start) {
   const t = tableById(tid); if (!t) return;
-  let party = Math.min(t.seats || 2, 2), d = dur(party), name = '';
+  const cnt = isCounter(t); const freeC = cnt ? Math.max(1, t.seats - counterUse(t, start != null ? start : startDefault()).seated - counterUse(t, start != null ? start : startDefault()).res) : 0;
+  let party = cnt ? Math.min(2, freeC) : Math.min(t.seats || 2, 2), d = dur(party), name = '';
   const a0 = start != null ? start : startDefault();
   const isNow = start == null && S.date === todayIso() && S.follow;
   const draw = () => `
-    <h3>Гост на място · маса ${esc(t.label)}</h3><p class="lead">${isNow ? 'Настаняваме сега' : 'От ' + fm(a0)}, до ${fm(Math.min(1440, a0 + d))}</p>
+    <h3>Гост на място · ${cnt ? esc(t.label) : 'маса ' + esc(t.label)}</h3><p class="lead">${isNow ? 'Настаняваме сега' : 'От ' + fm(a0)}, до ${fm(Math.min(1440, a0 + d))}</p>
     <div class="fld"><span>Брой гости</span><div class="nums">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => `<button class="${party === n ? 'on' : ''}" data-p="${n}">${n}</button>`).join('')}</div></div>
     <div class="fld"><span>Колко време</span><div class="chips">${[[60, '1 ч'], [90, '1:30'], [120, '2 ч'], [150, '2:30'], [180, '3 ч'], [1440 - a0, 'до затваряне']].map(([m, l]) => `<button class="${d === m ? 'on' : ''}" data-d="${m}">${l}</button>`).join('')}</div></div>
     <label class="fld"><span>Име (по желание)</span><input class="inp" id="wi_name" maxlength="80" value="${esc(name)}" placeholder="напр. Петрови"></label>
-    ${party > seatsCount(t) ? `<p class="muted" style="color:var(--amber)">Масата е за ${t.seats}; ще добавим ${party - t.seats} ${party - t.seats === 1 ? 'стол' : 'стола'}.</p>` : ''}
+    ${cnt ? (party > freeC ? `<p class="muted" style="color:var(--amber)">Свободни са ${freeC} места на ${esc(t.label)}.</p>` : '') : party > seatsCount(t) ? `<p class="muted" style="color:var(--amber)">Масата е за ${t.seats}; ще добавим ${party - t.seats} ${party - t.seats === 1 ? 'стол' : 'стола'}.</p>` : ''}
     <div class="foot"><button class="btn o" data-x="close">Отказ</button><button class="btn g" data-x="ok">${isNow ? 'Настани' : 'Запиши'}</button></div>`;
   sheet(draw(), el => {
     el.addEventListener('click', async e => {
@@ -1157,11 +1234,11 @@ function walkinSheet(tid, start) {
       else if (b.dataset.x === 'close') closeSheet();
       else if (b.dataset.x === 'ok') {
         const a = a0, bEnd = Math.min(1440, a + d);
-        const cl = overlaps(t.id, a, bEnd);
+        const cl = overlaps(t.id, a, bEnd, null, party);
         if (cl.length && !confirm('Масата има ' + cl.map(c => c.start_t + ' ' + seatName(c)).join(', ') + '. Да запиша въпреки това?')) return;
         closeSheet();
-        await saveSeat(newSeat({ table_id: t.id, start_t: fm(a), end_t: fm(bEnd), kind: 'walkin', name: name.trim(), party, extra_seats: Math.max(0, party - t.seats),
-          status: isNow ? 'seated' : 'planned', seated_at: isNow ? new Date().toISOString() : null }), isNow ? 'Настанени на маса ' + t.label : 'Записано за ' + fm(a));
+        await saveSeat(newSeat({ table_id: t.id, start_t: fm(a), end_t: fm(bEnd), kind: 'walkin', name: name.trim(), party, extra_seats: cnt ? 0 : Math.max(0, party - t.seats),
+          status: isNow ? 'seated' : 'planned', seated_at: isNow ? new Date().toISOString() : null }), isNow ? 'Настанени: ' + tName(t) : 'Записано за ' + fm(a));
       }
     });
   });
@@ -1192,9 +1269,9 @@ function seatSheet(id) {
   const s = seatById(id); if (!s) return;
   if (s.kind === 'block') return blockSheet(null, null, s);
   const t = tableById(s.table_id), r = s.reservation_id ? resById(s.reservation_id) : null;
-  sheet(`<h3>${esc(seatName(s))}</h3><p class="lead">Маса ${esc(tLabel(t))}${r ? ', резервация за ' + plural(r.party, 'човек', 'души') : ', гост на място'}</p>
+  sheet(`<h3>${esc(seatName(s))}</h3><p class="lead">${esc(tName(t))}${r ? ', резервация за ' + plural(r.party, 'човек', 'души') : ', гост на място'}</p>
     <div class="two"><label class="fld"><span>От</span><select class="inp" id="ss_a">${timeOpts(s.start_t, OPEN(), CLOSE() - 15)}</select></label><label class="fld"><span>До</span><select class="inp" id="ss_b">${timeOpts(s.end_t, OPEN() + 15, 1440)}</select></label></div>
-    <label class="fld"><span>Маса</span><select class="inp" id="ss_t">${ZONES.map(z => `<optgroup label="${esc(z.name)}">${zoneTables(z.id).filter(x => x.active !== false).map(x => `<option value="${x.id}" ${x.id === s.table_id ? 'selected' : ''}>Маса ${esc(x.label)} (${x.seats} м.)</option>`).join('')}</optgroup>`).join('')}</select></label>
+    <label class="fld"><span>Маса</span><select class="inp" id="ss_t">${ZONES.map(z => `<optgroup label="${esc(z.name)}">${zoneTables(z.id).filter(x => x.active !== false).map(x => `<option value="${x.id}" ${x.id === s.table_id ? 'selected' : ''}>${esc(tName(x))} (${x.seats} м.)</option>`).join('')}</optgroup>`).join('')}</select></label>
     ${r ? '' : `<div class="two"><label class="fld"><span>Име</span><input class="inp" id="ss_n" maxlength="80" value="${esc(s.name)}"></label><label class="fld"><span>Гости</span><input class="inp" id="ss_p" type="number" min="1" max="60" value="${s.party || 1}"></label></div>`}
     <label class="fld"><span>Бележка за сервиза</span><input class="inp" id="ss_note" maxlength="200" value="${esc(s.note)}" placeholder="напр. рожден ден, детско столче"></label>
     <div class="foot">
@@ -1208,7 +1285,7 @@ function seatSheet(id) {
       if (x === 'reopen') { s.status = 'seated'; s.left_at = null; closeSheet(); await saveSeat(s, 'Отново на масата'); return; }
       const a = el.querySelector('#ss_a').value, bb = el.querySelector('#ss_b').value, nt = el.querySelector('#ss_t').value;
       if (tm(bb) <= tm(a)) { toast('Краят трябва да е след началото', true); return; }
-      const cl = overlaps(nt, tm(a), tm(bb), s.id).filter(c => !s.reservation_id || c.reservation_id !== s.reservation_id);
+      const cl = overlaps(nt, tm(a), tm(bb), s.id, seatParty(s)).filter(c => !s.reservation_id || c.reservation_id !== s.reservation_id);
       if (cl.length && !confirm('Маса ' + tLabel(tableById(nt)) + ' е заета ' + cl.map(c => c.start_t + '–' + c.end_t).join(', ') + '. Да запиша въпреки това?')) return;
       s.start_t = a; s.end_t = bb; s.table_id = nt; s.note = el.querySelector('#ss_note').value.trim();
       if (!r) { s.name = el.querySelector('#ss_n').value.trim(); s.party = Math.max(1, +el.querySelector('#ss_p').value || 1); }
@@ -1247,7 +1324,7 @@ function addTableSheet(rid) {
   const ss = seatsOfRes(rid).filter(s => s.status !== 'done'); const s0 = ss[0]; if (!s0) return;
   const t0 = tableById(s0.table_id);
   const cand = TABLES.filter(t => t.kind === 'table' && t.active !== false && t.zone_id === (t0 && t0.zone_id) && !ss.some(s => s.table_id === t.id))
-    .map(t => ({ t, busy: overlaps(t.id, tm(s0.start_t), tm(s0.end_t)).length > 0, d: t0 ? Math.hypot(t.x - t0.x, t.y - t0.y) : 0 }))
+    .map(t => ({ t, busy: overlaps(t.id, tm(s0.start_t), tm(s0.end_t), null, 1).length > 0, d: t0 ? Math.hypot(t.x - t0.x, t.y - t0.y) : 0 }))
     .sort((a, b) => a.busy - b.busy || a.d - b.d);
   const now = ss.reduce((a, s) => a + seatsCount(tableById(s.table_id), s), 0);
   sheet(`<h3>Събери маси за ${esc(r.name)}</h3><p class="lead">Сега ${now} места за ${r.party} души. Най-близките маси първо.</p>
@@ -1322,7 +1399,12 @@ app.addEventListener('click', async e => {
     case 'block2walk': { const s = seatById(id); if (!s) break; s.kind = 'walkin'; s.status = 'seated'; s.seated_at = new Date().toISOString(); await saveSeat(s, 'Настанени'); break; }
     case 'move': { const s = seatById(id); if (!s) break; if (s.reservation_id) { S.assign = s.reservation_id; S.sel = null; S._moveSeat = s.id; render(); toast('Докосни новата маса'); } else seatSheet(id); break; }
     case 'extra': { const s = seatById(id); if (!s) break; const t = tableById(s.table_id); s.extra_seats = Math.max(-(t.seats || 0), (s.extra_seats || 0) + (+v)); await saveSeat(s); break; }
-    case 'seats': { if (!CAN_LAYOUT) break; const t = tableById(id); if (!t) break; snap(t); t.seats = Math.max(0, Math.min(40, (t.seats || 0) + (+v))); render(); saveTableSoon(t); break; }
+    case 'cside': { if (!CAN_LAYOUT) break; const t = tableById(id); if (!t) break; snap(t);
+      const top = cTop(t), side = v.slice(0, 3), d = v.endsWith('+1') ? 1 : -1;
+      if (side === 'top') { if (top + d < 0) break; t.min_party = top + d; t.seats = Math.max(0, t.seats + d); }
+      else { if (t.seats - top + d < 0) break; t.min_party = top; t.seats = Math.max(0, t.seats + d); }
+      render(); saveTableSoon(t); break; }
+    case 'seats': { if (!CAN_LAYOUT) break; const t = tableById(id); if (!t) break; snap(t); if (t.shape === 'counter2') { const tp = cTop(t); t.seats = Math.max(tp, Math.min(40, t.seats + (+v))); t.min_party = tp; render(); saveTableSoon(t); break; } t.seats = Math.max(0, Math.min(40, (t.seats || 0) + (+v))); render(); saveTableSoon(t); break; }
     case 'addtable': addTableSheet(id); break;
     case 'confirm': await confirmRes(id); break;
     case 'checkin': { const r = resById(id); await checkIn(r); render(); toast('Отбелязано: пристигна'); break; }
@@ -1337,10 +1419,11 @@ app.addEventListener('click', async e => {
     // редактор
     case 'addel': addElement(v); break;
     case 'shape': { const t = selT(); if (!t) break;
-      const DEF = { round: [90, 90, 4], square: [80, 80, 4], soft: [92, 90, 4], rect: [200, 100, 6], booth: [180, 110, 4], stool: [22, 22, 1] };
-      snap(t); const cx = t.x + t.w / 2, cy0 = t.y + t.h / 2, wasTiny = t.shape === 'stool' || Math.min(t.w, t.h) < 40;
+      const DEF = { round: [90, 90, 4], square: [80, 80, 4], soft: [92, 90, 4], rect: [200, 100, 6], booth: [180, 110, 4], stool: [22, 22, 1], counter: [240, 6, 6], counter2: [300, 6, 10] };
+      snap(t); const cx = t.x + t.w / 2, cy0 = t.y + t.h / 2, wasTiny = t.shape === 'stool' || isCounter(t) || Math.min(t.w, t.h) < 40;
       t.shape = v;
-      if (t.kind === 'table' && DEF[v] && (v === 'stool' || wasTiny)) { t.w = DEF[v][0]; t.h = DEF[v][1]; if (v === 'stool' || t.seats < 2) t.seats = DEF[v][2]; }
+      if (t.kind === 'table' && DEF[v] && (v === 'stool' || v.startsWith('counter') || wasTiny)) { t.w = DEF[v][0]; t.h = DEF[v][1]; if (v === 'stool' || t.seats < 2) t.seats = DEF[v][2]; }
+      if (v === 'counter2') t.min_party = Math.ceil((t.seats || 0) / 2);
       else if (v === 'square') t.h = t.w;
       t.x = Math.round(cx - t.w / 2); t.y = Math.round(cy0 - t.h / 2);
       render(); saveTableSoon(t); break; }
@@ -1401,7 +1484,7 @@ function tableClick(tid) {
   if (t.kind !== 'table') return;
   if (S.assign) {
     const r = resById(S.assign); const moving = S._moveSeat; S.assign = null; S._moveSeat = null;
-    if (r) { if (moving) { const s = seatById(moving); if (s) { const cl = overlaps(tid, tm(s.start_t), tm(s.end_t), s.id).filter(c => c.reservation_id !== r.id); if (cl.length && !confirm('Маса ' + t.label + ' е заета. Да преместя въпреки това?')) { render(); return; } s.table_id = tid; saveSeat(s, r.name + ' → маса ' + t.label); } }
+    if (r) { if (moving) { const s = seatById(moving); if (s) { const cl = overlaps(tid, tm(s.start_t), tm(s.end_t), s.id, seatParty(s)).filter(c => c.reservation_id !== r.id); if (cl.length && !confirm('Маса ' + t.label + ' е заета. Да преместя въпреки това?')) { render(); return; } s.table_id = tid; saveSeat(s, r.name + ' → маса ' + t.label); } }
       else assignRes(r, tid, {}); }
     S.sel = { t: 'table', id: tid }; render(); return;
   }
@@ -1425,7 +1508,7 @@ async function loadPlan() {
     for (const z of oldZ) await api.del('floor_zones', z.id);
     const nz = [], nt = [];
     AC2_LAYOUT.zones.forEach((z, i) => { const id = uuid(); nz.push({ id, name: z.name, place: z.place, w: z.w, h: z.h, sort: i + 1, active: true });
-      z.items.forEach(([kind, label, shape, x, y, w, h, rot, seats]) => nt.push({ id: uuid(), zone_id: id, kind, label, shape, x, y, w, h, rot, seats, min_party: 1, vip: false, active: true })); });
+      z.items.forEach(([kind, label, shape, x, y, w, h, rot, seats, top]) => nt.push({ id: uuid(), zone_id: id, kind, label, shape, x, y, w, h, rot, seats, min_party: top || 1, vip: false, active: true })); });
     await api.upMany('floor_zones', nz); await api.upMany('floor_tables', nt);
     ZONES = nz; TABLES = nt; SEATS = []; S.zone = nz[0].id; S.sel = null; render(); toast('Планът е зареден: ' + nt.filter(t => t.kind === 'table').length + ' маси');
   } catch (e) { err(e); try { await api.load(); await api.loadDay(); } catch (x) {} render(); }
@@ -1519,7 +1602,7 @@ window.addEventListener('pointerup', async e => {
   setTimeout(() => { if (DRAG === d) DRAG = null; }, 0);
   if (d.k === 'lane' && !d.moved) {
     const lane = d.lane, rect = lane.getBoundingClientRect(); const m = snap15(OPEN() + (e.clientX - rect.left) / PPM());
-    const tid = lane.dataset.lane, busy = SEATS.find(s => s.table_id === tid && s.status !== 'done' && tm(s.start_t) <= m && m < tm(s.end_t));
+    const tid = lane.dataset.lane, busy = overlaps(tid, m, m + 15, null, 1).length > 0;
     if (!busy) slotSheet(tid, Math.max(OPEN(), Math.min(CLOSE() - 15, m)));
     return;
   }
@@ -1544,7 +1627,7 @@ window.addEventListener('pointerup', async e => {
     d.el.style.visibility = 'hidden';
     const under = document.elementFromPoint(e.clientX, e.clientY); d.el.style.visibility = '';
     const row = under && under.closest('[data-row]'); const nt = row ? row.dataset.row : s.table_id;
-    const cl = overlaps(nt, na, nb, s.id).filter(c => !s.reservation_id || c.reservation_id !== s.reservation_id);
+    const cl = overlaps(nt, na, nb, s.id, seatParty(s)).filter(c => !s.reservation_id || c.reservation_id !== s.reservation_id);
     if (cl.length && !confirm('Там вече има ' + cl.map(c => c.start_t + ' ' + seatName(c)).join(', ') + '. Да преместя въпреки това?')) return render();
     s.start_t = fm(na); s.end_t = fm(nb); s.table_id = nt;
     await saveSeat(s, seatName(s) + ': маса ' + tLabel(tableById(nt)) + ', ' + s.start_t);
@@ -1640,12 +1723,12 @@ addEventListener('resize', () => { if (S.view === 'time') throttleRender(); });
 // =====================================================================
 //  ДЕМО (tables.html?demo=1) — нищо не се записва в базата
 // =====================================================================
-const AC2_LAYOUT = {"zones":[{"name":"Ресторант","place":"Ресторант","w":910,"h":1287,"items":[["decor","","line",382,57,233,3,0,0],["decor","бар","text",453,10,90,40,0,0],["table","1","stool",383,71,20,22,0,1],["table","2","stool",425,71,20,22,0,1],["table","3","stool",466,71,20,22,0,1],["table","4","stool",507,71,20,22,0,1],["table","5","stool",547,71,20,22,0,1],["table","6","stool",588,71,20,22,0,1],["decor","LOUNGE","text",710,108,170,40,0,0],["table","10","round",694,42,40,40,0,2],["table","9","round",818,23,40,40,0,2],["table","7","round",680,176,40,40,0,2],["table","8","round",777,179,108,36,0,4],["table","204","round",82,16,80,80,0,4],["table","205","square",47,162,77,77,0,4],["table","206","square",164,162,77,77,0,4],["table","203","square",362,186,75,75,0,4],["table","214","square",509,186,75,75,0,4],["table","207","round",83,287,78,78,0,4],["table","202","round",362,303,74,74,0,4],["table","212","round",658,288,72,72,0,4],["table","208","square",47,392,77,77,0,4],["table","209","square",164,392,77,77,0,4],["table","201","square",364,424,73,73,0,2],["table","211","round",559,424,288,112,0,8],["table","210","round",83,509,78,78,0,4],["decor","стъпала","line",165,642,705,3,0,0],["decor","стъпала","text",415,603,140,30,0,0],["decor","","line",48,640,3,232,0,0],["decor","тепаняки","text",-84,735,220,40,-90,0],["table","15","stool",63,682,20,24,0,1],["table","14","stool",63,722,20,24,0,1],["table","12","stool",63,763,20,24,0,1],["table","11","stool",63,805,20,24,0,1],["table","106","square",183,693,69,69,0,4],["table","105","square",358,693,69,69,0,4],["table","107","square",183,790,69,69,0,4],["table","104","square",358,790,69,69,0,4],["table","110","round",559,719,288,96,0,8],["decor","ВХОД","text",-29,997,110,40,90,0],["table","108","round",229,941,120,120,0,6],["table","109","round",559,944,288,104,0,8],["table","101","round",90,1130,120,120,0,6],["table","102","round",229,1130,120,120,0,6],["table","103","round",368,1130,120,120,0,6]]},{"name":"White · Red","place":null,"w":910,"h":867,"items":[["decor","WHITE","text",35,164,190,56,0,0],["table","301","soft",446,41,92,90,0,4],["table","302","soft",446,267,92,90,0,4],["table","304","round",667,23,56,158,0,4],["table","303","round",667,223,56,158,0,4],["decor","","line",50,454,320,2,0,0],["decor","","line",415,453,345,4,0,0],["decor","бар","text",805,425,80,46,0,0],["table","316","stool",438,407,24,24,0,1],["table","315","stool",478,407,24,24,0,1],["table","314","stool",519,407,24,24,0,1],["table","312","stool",560,407,24,24,0,1],["table","311","stool",600,407,24,24,0,1],["table","310","stool",641,407,24,24,0,1],["table","317","stool",438,478,24,24,0,1],["table","318","stool",478,478,24,24,0,1],["table","319","stool",519,478,24,24,0,1],["table","320","stool",560,478,24,24,0,1],["decor","RED","text",28,575,120,56,0,0],["table","405","soft",324,580,92,90,0,4],["table","404","soft",504,580,92,90,0,4],["table","401","soft",206,713,92,90,0,4],["table","402","soft",398,713,92,90,0,4],["table","403","soft",626,713,92,90,0,4]]},{"name":"Private","place":"Private room","w":910,"h":420,"items":[["table","503","round",319,68,214,76,0,6],["table","502","round",319,179,214,76,0,6],["table","501","round",319,287,214,76,0,6],["decor","PRIVATE","text",625,94,230,56,0,0]]}]};
+const AC2_LAYOUT = {"zones":[{"name":"Ресторант","place":"Ресторант","w":910,"h":1287,"items":[["table","Бар","counter",382,56,233,6,0,6],["decor","LOUNGE","text",710,108,170,40,0,0],["table","10","round",694,42,40,40,0,2],["table","9","round",818,23,40,40,0,2],["table","7","round",680,176,40,40,0,2],["table","8","round",777,179,108,36,0,4],["table","204","round",82,16,80,80,0,4],["table","205","square",47,162,77,77,0,4],["table","206","square",164,162,77,77,0,4],["table","203","square",362,186,75,75,0,4],["table","214","square",509,186,75,75,0,4],["table","207","round",83,287,78,78,0,4],["table","202","round",362,303,74,74,0,4],["table","212","round",658,288,72,72,0,4],["table","208","square",47,392,77,77,0,4],["table","209","square",164,392,77,77,0,4],["table","201","square",364,424,73,73,0,2],["table","211","round",559,424,288,112,0,8],["table","210","round",83,509,78,78,0,4],["decor","стъпала","line",165,642,705,3,0,0],["decor","стъпала","text",415,603,140,30,0,0],["table","Тепаняки","counter",-67,753,232,6,270,4],["table","106","square",183,693,69,69,0,4],["table","105","square",358,693,69,69,0,4],["table","107","square",183,790,69,69,0,4],["table","104","square",358,790,69,69,0,4],["table","110","round",559,719,288,96,0,8],["decor","ВХОД","text",-29,997,110,40,90,0],["table","108","round",229,941,120,120,0,6],["table","109","round",559,944,288,104,0,8],["table","101","round",90,1130,120,120,0,6],["table","102","round",229,1130,120,120,0,6],["table","103","round",368,1130,120,120,0,6]]},{"name":"White · Red","place":null,"w":910,"h":867,"items":[["decor","WHITE","text",35,164,190,56,0,0],["table","301","soft",446,41,92,90,0,4],["table","302","soft",446,267,92,90,0,4],["table","304","round",667,23,56,158,0,4],["table","303","round",667,223,56,158,0,4],["decor","","line",50,454,320,2,0,0],["table","Бар","counter2",415,452,345,6,0,10,6],["decor","RED","text",28,575,120,56,0,0],["table","405","soft",324,580,92,90,0,4],["table","404","soft",504,580,92,90,0,4],["table","401","soft",206,713,92,90,0,4],["table","402","soft",398,713,92,90,0,4],["table","403","soft",626,713,92,90,0,4]]},{"name":"Private","place":"Private room","w":910,"h":420,"items":[["table","503","round",319,68,214,76,0,6],["table","502","round",319,179,214,76,0,6],["table","501","round",319,287,214,76,0,6],["decor","PRIVATE","text",625,94,230,56,0,0]]}]};
 function demoInit() {
   ZONES = []; TABLES = []; let n = 0;
   AC2_LAYOUT.zones.forEach((z, zi) => {
     const id = 'z' + (zi + 1); ZONES.push({ id, name: z.name, place: z.place, w: z.w, h: z.h, sort: zi + 1, active: true });
-    z.items.forEach(([kind, label, shape, x, y, w, h, rot, seats]) => TABLES.push({ id: 't' + (++n), zone_id: id, kind, label, shape, x, y, w, h, rot, seats, vip: false, active: true, min_party: 1 }));
+    z.items.forEach(([kind, label, shape, x, y, w, h, rot, seats, top]) => TABLES.push({ id: 't' + (++n), zone_id: id, kind, label, shape, x, y, w, h, rot, seats, vip: false, active: true, min_party: top || 1 }));
   });
   ALLEV = [{ id: 'ev1', title: 'Вечер в Private', format: 'culture', place: 'Private room', date: todayIso(), time: '19:30', ends: '22:00', capacity: 18 }];
   window.__demoDay = {};
@@ -1672,8 +1755,8 @@ function demoDay() {
     sd('203', '19:00', '21:00', { reservation_id: 'r2' }),
     sd('108', '19:30', '22:00', { reservation_id: 'r3' }),
     sd('101', '18:00', '20:30', { kind: 'walkin', name: 'Гост на място', party: 4, status: 'seated' }),
-    sd('3', '19:15', '20:45', { kind: 'walkin', name: 'Бар', party: 1, status: 'seated' }),
-    sd('4', '19:15', '20:45', { kind: 'walkin', name: 'Бар', party: 1, status: 'seated' }),
+    sd('Бар', '19:15', '20:45', { kind: 'walkin', name: 'Гост на бара', party: 2, status: 'seated' }),
+    sd('Бар', '20:00', '21:30', { kind: 'walkin', name: 'Двама', party: 2 }),
     sd('211', '20:00', '23:00', { kind: 'block', name: 'Балкан Медиа, по телефона' }),
     sd('104', '20:00', '22:00', { reservation_id: 'r5' }),
     sd('202', '12:30', '14:00', { kind: 'walkin', name: 'Обяд', party: 2, status: 'done' })
