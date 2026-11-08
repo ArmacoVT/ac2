@@ -142,8 +142,8 @@ let tab='events', editId=null, draftAud=['all'], admin=false, role='', PERMS=[];
 // Администраторът има всичко. Останалите служители — само отметнатите права (profiles.perms).
 const PERM_DEFS=[
   {id:'events',t:'Събития',d:'създаване и редакция на събития, архив, видимост по членство'},
-  {id:'reservations',t:'Резервации',d:'одобряване/отказ, check-in, архив на резервациите (+ настаняване по маси)'},
-  {id:'tables',t:'Маси',d:'схема на залите и настаняване; подрежда залата, маси и столове'},
+  {id:'reservations',t:'Резервации',d:'одобряване/отказ, check-in, архив на резервациите'},
+  {id:'tables',t:'Маси',d:'схема на залите: настаняване, запазване на маси, гости на място'},
   {id:'members_view',t:'Членове — преглед',d:'вижда списъка с членове (без промени)'},
   {id:'members_edit',t:'Членове — редакция',d:'покани, подновяване, нива, телефони, пароли'},
   {id:'applications',t:'Кандидатури',d:'преглед и одобряване на кандидатури'},
@@ -157,15 +157,16 @@ const PERM_DEFS=[
   {id:'refunds',t:'⚠ Връщане на пари',d:'refund по картата през Stripe',danger:true},
   {id:'walkin',t:'⚠ Билет на място',d:'продажба в брой / на ПОС от рецепцията',danger:true},
   {id:'events_delete',t:'⚠ Изтриване на събития',d:'заедно с резервациите към тях',danger:true},
+  {id:'tables_layout',t:'⚠ Подреждане на залата',d:'добавя/мести/трие маси, брой столове, основен план',danger:true},
   {id:'fees',t:'⚠ Членства и цени',d:'цени на членствата, покани за плащане, банкови преводи',danger:true},
   {id:'team',t:'⚠ Екип и права',d:'добавя/маха служители и права (дава се само от собственика)',danger:true,ownerOnly:true},
   {id:'money',t:'Суми и приходи (преглед)',d:'вижда приходите в Статистика и сумите в Excel експорта на събития + месечния отчет'},
   {id:'accounting',t:'Счетоводство (само преглед)',d:'вижда резервации с платени суми, плащания за членства, цени; експорт за месеца — без никакви действия'}];
 const PERM_PRESETS=[
-  {id:'deputy',t:'Заместник-админ',p:['events','reservations','tables','members_view','members_edit','applications','news','site','messages','stats','audit','res_delete','refunds','walkin','events_delete']},
-  {id:'manager',t:'Мениджър',p:['events','reservations','tables','members_view','members_edit','applications','news','site','messages','stats','audit','walkin']},
+  {id:'deputy',t:'Заместник-админ',p:['events','reservations','tables','tables_layout','members_view','members_edit','applications','news','site','messages','stats','audit','res_delete','refunds','walkin','events_delete']},
+  {id:'manager',t:'Мениджър',p:['events','reservations','tables','tables_layout','members_view','members_edit','applications','news','site','messages','stats','audit','walkin']},
   {id:'editor',t:'Редактор',p:['events','news','site']},
-  {id:'reception',t:'Рецепция',p:['reservations','members_view','messages','walkin']},
+  {id:'reception',t:'Рецепция',p:['reservations','tables','members_view','messages','walkin']},
   {id:'accountant',t:'Счетоводство',p:['accounting','stats','audit']}];
 let PERMS_UNTIL='', IS_OWNER=false;
 const permsLive=()=>!PERMS_UNTIL||PERMS_UNTIL>=new Date().toISOString().slice(0,10);
@@ -365,6 +366,8 @@ function render(){
     ${tabsHtml()}
     ${isEditor()?`<p class="muted" style="margin:6px 0 10px;font-size:12px;">Влезли сте като служител — виждате само разделите, за които имате права.</p>`:''}
     <div id="inboxBox">${inboxView()}</div>`;
+  // (08.11.2026) служител без нито един раздел тук (напр. само „Маси“) — не показваме чужд раздел по подразбиране
+  if(!tabAllowed(tab)){ h+=`<div class="card" style="text-align:center;padding:28px 16px;"><p style="margin-bottom:12px;">Нямате раздели в админ панела.</p>${(can('tables')||can('tables_layout'))?'<a class="btn" href="tables.html" style="text-decoration:none;display:inline-block;">Към Маси</a>':''}</div>`; h+=`</div>`; root.innerHTML=h; setTitleCount(); return; }
   if(tab==='events')h+=eventsView();
   else if(tab==='res')h+=resView();
   else if(tab==='people')h+=peopleView();
@@ -388,7 +391,7 @@ function tabsHtml(){
   return `<div class="tabs">
       ${tabAllowed('events')?`<button class="tab ${tab==='events'?'on':''}" onclick="setTab('events')">Събития</button>`:''}
       ${tabAllowed('res')?`<button class="tab ${tab==='res'?'on':''}" onclick="setTab('res')">Резервации${tabBadge(attCount('res'))}</button>`:''}
-      ${(can('tables')||can('reservations'))?`<a class="tab" href="tables.html" style="text-decoration:none;display:inline-flex;align-items:center;" title="Схема на залите и настаняване (отваря се на цял екран)">Маси</a>`:''}
+      ${(can('tables')||can('tables_layout'))?`<a class="tab" href="tables.html" style="text-decoration:none;display:inline-flex;align-items:center;" title="Схема на залите и настаняване (отваря се на цял екран)">Маси</a>`:''}
       ${tabAllowed('people')?`<button class="tab ${tab==='people'?'on':''}" onclick="setTab('people')">Членове</button>`:''}
       ${tabAllowed('apps')?`<button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge(attCount('app'))}</button>`:''}
       ${tabAllowed('ann')?`<button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>`:''}
@@ -2706,6 +2709,25 @@ async function logout(){
   try{ if(DB.live)await DB.signOut(); else localStorage.removeItem('acac_admin'); }
   finally{ admin=false;role='';render(); setTimeout(()=>{_loggingOut=false;},1500); }
 }
+// (08.11.2026) Правата се четяха само при отваряне на админа → промяна в „Екип“ не важеше за вече отворен прозорец
+// (служителят продължаваше да вижда старите раздели, докато не презареди). Сега: проверка всяка минута и при връщане в прозореца.
+let _permSig='';
+async function recheckPerms(){
+  if(!DB.live||!admin||_loggingOut)return;
+  try{
+    const u=await DB.getUser(); if(!u)return;
+    const sig=JSON.stringify([u.role,(u.perms||[]).slice().sort(),u.perms_until||'']);
+    if(!_permSig){_permSig=sig;return;}
+    if(sig===_permSig)return; _permSig=sig;
+    role=u.role; PERMS=u.perms||[]; PERMS_UNTIL=u.perms_until||''; if(role==='editor'&&!PERMS.length)PERMS=['events','news','site','messages'];
+    const still=role==='admin'||(PERMS.length&&permsLive());
+    if(!still){ alert('Правата ви в админ панела бяха премахнати.'); location.reload(); return; }
+    if(!tabAllowed(tab))tab=firstTab(); await refresh(); render(); toast('Правата ви бяха променени');
+  }catch(e){}
+}
+setInterval(recheckPerms,60000);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible')recheckPerms(); });
+setTimeout(recheckPerms,3000);
 boot();
 </script>
 <script>if('serviceWorker' in navigator){

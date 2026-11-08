@@ -478,7 +478,7 @@ const api = {
     const miss = [...new Set(SEATS.map(x => x.reservation_id).filter(id => id && !rows.some(y => y.id === id)))];
     if (miss.length) { const m = await sb.from('reservations').select('*').in('id', miss); rows = rows.concat(m.data || []); }
     RES = rows.map(mapRes).filter(Boolean);
-    try { const since = new Date(Date.now() - 21 * 864e5).toISOString();
+    if (canMsgs()) try { const since = new Date(Date.now() - 21 * 864e5).toISOString();
       const m = await sb.from('contact_messages').select('id,name,email,phone,subject,message,is_read,created_at').eq('is_read', false).gte('created_at', since).order('created_at', { ascending: false }).limit(40);
       MSGS = m.error ? [] : (m.data || []); } catch (e) { MSGS = []; }
   },
@@ -930,7 +930,8 @@ let MSGS = [];
 const RESTO_RX = /\bмас[аи]\b|резерв|ресторант|вечер|обяд|брънч|дегустац|рожден|меню|\btable|book|reserv|dinner|lunch|brunch|restaurant/i;
 const msgHidden = () => { try { return JSON.parse(localStorage.getItem('acac_tables_msg_hidden') || '[]'); } catch (e) { return []; } };
 function hideMsg(id) { const h = msgHidden(); h.push(id); try { localStorage.setItem('acac_tables_msg_hidden', JSON.stringify(h.slice(-300))); } catch (e) {} }
-function restoMsgs() { const h = msgHidden(); return MSGS.filter(m => !m.is_read && !h.includes(m.id) && RESTO_RX.test((m.subject || '') + ' ' + (m.message || ''))); }
+const canMsgs = () => DEMO || (ME && (ME.role === 'admin' || (ME.perms || []).includes('messages')));
+function restoMsgs() { if (!canMsgs()) return []; const h = msgHidden(); return MSGS.filter(m => !m.is_read && !h.includes(m.id) && RESTO_RX.test((m.subject || '') + ' ' + (m.message || ''))); }
 function msgsHtml() {
   const list = restoMsgs(); if (!list.length) return '';
   const open = S.msgOpen !== false;
@@ -1128,16 +1129,16 @@ function editorHtml(zone) {
   return `<div class="det">
     <h2>Подреди залата</h2><div class="sub2">Докосни елемент, за да го добавиш в средата. После го влачи.</div>
     <div class="pal">${PALETTE.map(([k, l, , svg]) => `<button data-a="addel" data-v="${k}"><svg viewBox="0 0 40 30">${svg}</svg>${l}</button>`).join('')}</div>
+    <div class="box" style="margin-top:14px;"><h4>Основен план</h4>
+      <p class="muted" style="font-size:13px;margin-bottom:10px;">${MAIN ? 'Запазен на ' + esc(new Date(MAIN.saved_at).toLocaleString('bg-BG', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })) + (MAIN.saved_name ? ' от ' + esc(MAIN.saved_name) : '') + '. Ако нещо се размести — върни го с един бутон.' : 'Когато залите са подредени както трябва, запази ги като основен план. После винаги можеш да се върнеш към него.'}</p>
+      <div class="acts"><button class="btn w" data-a="savemain">Запази като основен</button><button class="btn o" data-a="restoremain" ${MAIN ? '' : 'disabled'}>Върни основния</button></div>
+      <button class="btn o sm full" style="margin-top:8px;opacity:.8" data-a="loadplan">Започни отначало от плана в PDF</button></div>
     ${zone ? `<div class="box" style="margin-top:14px;"><h4>Зала</h4>
       <label class="fld"><span>Име</span><input class="inp" maxlength="40" value="${esc(zone.name)}" data-z="name"></label>
       <label class="fld"><span>Свързана с мястото от резервациите и събитията</span><select class="inp" data-z="place"><option value="">— няма —</option>${[...new Set(['Ресторант', 'Камерна зала', 'Галерия', 'Private room'].concat(zone.place ? [zone.place] : []))].map(p => `<option ${zone.place === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label>
       <div class="two"><label class="fld"><span>Ширина (см)</span><input class="inp" type="number" min="200" max="5000" step="50" value="${zone.w}" data-z="w"></label><label class="fld"><span>Дълбочина (см)</span><input class="inp" type="number" min="200" max="5000" step="50" value="${zone.h}" data-z="h"></label></div>
       <div class="tog"><span>Показвай залата</span><button class="sw ${zone.active !== false ? 'on' : ''}" data-a="ztog" aria-label="Показвай залата"></button></div>
       <div class="acts"><button class="btn o" data-a="zmove" data-v="-1">← По-напред</button><button class="btn o" data-a="zmove" data-v="1">По-назад →</button><button class="btn d full" data-a="delzone">Изтрий залата</button></div></div>` : ''}
-    <div class="box" style="margin-top:6px;"><h4>Основен план</h4>
-      <p class="muted" style="font-size:13px;margin-bottom:10px;">${MAIN ? 'Запазен на ' + esc(new Date(MAIN.saved_at).toLocaleString('bg-BG', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })) + (MAIN.saved_name ? ' от ' + esc(MAIN.saved_name) : '') + '. Ако нещо се размести — върни го с един бутон.' : 'Когато залите са подредени както трябва, запази ги като основен план. После винаги можеш да се върнеш към него.'}</p>
-      <div class="acts"><button class="btn w" data-a="savemain">Запази като основен</button><button class="btn o" data-a="restoremain" ${MAIN ? '' : 'disabled'}>Върни основния</button></div>
-      <button class="btn o sm full" style="margin-top:8px;opacity:.8" data-a="loadplan">Започни отначало от плана в PDF</button></div>
     <button class="btn full" style="margin-top:6px;" data-a="edit">Готово</button>
   </div>`;
 }
@@ -1749,6 +1750,15 @@ function subscribe() {
   setInterval(() => softReload(false), 60000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { softReload(false); wake(); } });
 }
+// правата се проверяват отново всяка минута — промяна в „Екип“ важи и за вече отворен таблет
+let _pSig = '';
+async function recheckPerms() {
+  if (DEMO || !ME) return;
+  try { const u = await DB.getUser(); if (!u) return; const sig = JSON.stringify([u.role, (u.perms || []).slice().sort(), u.perms_until || '']);
+    if (!_pSig) { _pSig = sig; return; } if (sig !== _pSig) location.reload(); } catch (e) {}
+}
+setInterval(recheckPerms, 60000); setTimeout(recheckPerms, 3000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') recheckPerms(); });
 // часовникът „сега“ върви сам
 setInterval(() => { if (S.follow && S.date === todayIso() && !DRAG && !SHEET && !S.edit) { const n = nowMin(); if (n !== S.at) { S.at = n; if (!document.activeElement || !document.activeElement.matches('input')) render(); } } }, 30000);
 // екранът на таблета да не заспива по време на сервиз
