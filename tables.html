@@ -439,7 +439,7 @@ function applyTheme() {
 applyTheme();
 
 // ---------- състояние ----------
-let ME = null, CAN_LAYOUT = false;
+let ME = null, CAN_LAYOUT = false, MAIN = null;   // MAIN = кога е запазен основният план
 let ZONES = [], TABLES = [], SEATS = [], RES = [], EVENTS = [], ALLEV = [];
 const S = { zoom: 1, date: todayIso(), view: 'floor', zone: null, at: nowMin(), follow: true, edit: false,
   sel: null,            // {t:'table'|'res'|'seat'|'zone', id}
@@ -459,6 +459,7 @@ const api = {
     ]);
     if (z.error) throw z.error; if (t.error) throw t.error;
     ZONES = z.data || []; TABLES = t.data || [];
+    try { const m = await sb.from('floor_layouts').select('saved_at,saved_name').eq('id', 'main').maybeSingle(); MAIN = m.error ? null : m.data; } catch (e) { MAIN = null; }
     try { ALLEV = await DB.listEvents(); } catch (e) { ALLEV = []; }
   },
   async loadDay() {
@@ -1133,8 +1134,10 @@ function editorHtml(zone) {
       <div class="two"><label class="fld"><span>Ширина (см)</span><input class="inp" type="number" min="200" max="5000" step="50" value="${zone.w}" data-z="w"></label><label class="fld"><span>Дълбочина (см)</span><input class="inp" type="number" min="200" max="5000" step="50" value="${zone.h}" data-z="h"></label></div>
       <div class="tog"><span>Показвай залата</span><button class="sw ${zone.active !== false ? 'on' : ''}" data-a="ztog" aria-label="Показвай залата"></button></div>
       <div class="acts"><button class="btn o" data-a="zmove" data-v="-1">← По-напред</button><button class="btn o" data-a="zmove" data-v="1">По-назад →</button><button class="btn d full" data-a="delzone">Изтрий залата</button></div></div>` : ''}
-    <div class="box" style="margin-top:6px;"><h4>Схема по плана AC² (PDF)</h4><p class="muted" style="font-size:13px;margin-bottom:10px;">Заменя всички зали и маси с плана: Ресторант, White · Red, Private.</p>
-      <button class="btn o full" data-a="loadplan">Зареди плана</button></div>
+    <div class="box" style="margin-top:6px;"><h4>Основен план</h4>
+      <p class="muted" style="font-size:13px;margin-bottom:10px;">${MAIN ? 'Запазен на ' + esc(new Date(MAIN.saved_at).toLocaleString('bg-BG', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })) + (MAIN.saved_name ? ' от ' + esc(MAIN.saved_name) : '') + '. Ако нещо се размести — върни го с един бутон.' : 'Когато залите са подредени както трябва, запази ги като основен план. После винаги можеш да се върнеш към него.'}</p>
+      <div class="acts"><button class="btn w" data-a="savemain">Запази като основен</button><button class="btn o" data-a="restoremain" ${MAIN ? '' : 'disabled'}>Върни основния</button></div>
+      <button class="btn o sm full" style="margin-top:8px;opacity:.8" data-a="loadplan">Започни отначало от плана в PDF</button></div>
     <button class="btn full" style="margin-top:6px;" data-a="edit">Готово</button>
   </div>`;
 }
@@ -1416,6 +1419,8 @@ app.addEventListener('click', async e => {
     case 'blockevent': await blockEvent(id); break;
     case 'unblockevent': await unblockEvent(id); break;
     case 'loadplan': await loadPlan(); break;
+    case 'savemain': await saveMain(); break;
+    case 'restoremain': await restoreMain(); break;
     // редактор
     case 'addel': addElement(v); break;
     case 'shape': { const t = selT(); if (!t) break;
@@ -1500,9 +1505,39 @@ async function confirmRes(id) {
   r.status = 'confirmed'; render();
   try { const n = await DB.notifyReservation(id, 'confirmed'); toast(n && n.error ? 'Потвърдена, но имейлът не тръгна: ' + n.error.message : 'Потвърдена, гостът получава имейл', !!(n && n.error)); } catch (e) { toast('Потвърдена'); }
 }
+// ---------- основен план: запазено копие на всички зали и маси ----------
+async function saveMain() {
+  if (!confirm((MAIN ? 'Сегашната подредба ще замени запазения основен план. ' : '') + 'Да запазя ли залите и масите така, както са сега, като основен план?')) return;
+  const data = { zones: ZONES.map(z => clean(z, ZONE_COLS)), tables: TABLES.map(t => clean(t, TABLE_COLS)) };
+  const name = ME ? (ME.full_name || ME.username || ME.email || '') : '';
+  try {
+    if (DEMO) { try { localStorage.setItem('acac_tables_main_demo', JSON.stringify(data)); } catch (e) {} }
+    else { const { error } = await sb.from('floor_layouts').upsert({ id: 'main', data, saved_at: new Date().toISOString(), saved_name: name }); if (error) throw error; }
+    MAIN = { saved_at: new Date().toISOString(), saved_name: name }; render(); toast('Основният план е запазен');
+  } catch (e) { err(/does not exist|floor_layouts/i.test(e.message || '') ? { message: 'Пусни отново SQL 2026-11-08-tables-reservations.sql' } : e); }
+}
+async function restoreMain() {
+  let data = null;
+  try {
+    if (DEMO) data = JSON.parse(localStorage.getItem('acac_tables_main_demo') || 'null');
+    else { const { data: row, error } = await sb.from('floor_layouts').select('data').eq('id', 'main').maybeSingle(); if (error) throw error; data = row && row.data; }
+  } catch (e) { err(e); return; }
+  if (!data || !Array.isArray(data.zones)) { toast('Няма запазен основен план', true); return; }
+  if (!confirm('Да върна ли залите и масите към основния план?\nМасите, добавени след това, ще се махнат. Записите по съществуващите маси остават.')) return;
+  const keepZ = new Set(data.zones.map(z => z.id)), keepT = new Set(data.tables.map(t => t.id));
+  const delT = TABLES.filter(t => !keepT.has(t.id)), delZ = ZONES.filter(z => !keepZ.has(z.id));
+  try {
+    await api.upMany('floor_zones', data.zones); await api.upMany('floor_tables', data.tables);
+    for (const t of delT) await api.del('floor_tables', t.id);
+    for (const z of delZ) await api.del('floor_zones', z.id);
+    ZONES = data.zones.map(z => Object.assign({}, z)).sort((a, b) => (a.sort || 0) - (b.sort || 0)); TABLES = data.tables.map(t => Object.assign({}, t));
+    SEATS = SEATS.filter(x => keepT.has(x.table_id)); UNDO.length = 0;
+    if (!ZONES.some(z => z.id === S.zone)) S.zone = ZONES[0] && ZONES[0].id; S.sel = null; render(); toast('Върнат е основният план');
+  } catch (e) { err(e); try { await api.load(); await api.loadDay(); } catch (x) {} render(); }
+}
 async function loadPlan() {
   const used = SEATS.length;
-  if (!confirm('Да заменя ли ВСИЧКИ зали и маси с плана AC² (Ресторант, White · Red, Private)?' + (used || !DEMO ? '\n\nВсички записи по масите (настанявания, запазени маси) ще се изтрият. Резервациите остават.' : ''))) return;
+  if (!confirm('Да започна ли отначало с плана от PDF-а (Ресторант, White · Red, Private)? Това заменя ВСИЧКИ зали и маси' + (MAIN ? ' — основният ти план остава запазен и можеш да се върнеш към него.' : '.') + (used || !DEMO ? '\n\nВсички записи по масите (настанявания, запазени маси) ще се изтрият. Резервациите остават.' : ''))) return;
   try {
     const oldZ = ZONES.slice();
     for (const z of oldZ) await api.del('floor_zones', z.id);
