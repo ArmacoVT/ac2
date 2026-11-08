@@ -103,16 +103,25 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .tb .ch.x{fill:none;stroke:var(--wine);stroke-dasharray:3 2;}
 .tb .num{font-family:var(--serif);font-style:italic;font-weight:700;font-size:22px;fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none;}
 .tb .cap{font-size:11px;fill:var(--muted);text-anchor:middle;dominant-baseline:central;pointer-events:none;}
-.tb.st-reserved .body{fill:var(--wineT);stroke:var(--wine);stroke-width:2.2;}
-.tb.st-reserved .ch{fill:color-mix(in srgb,var(--chair) 70%,var(--wine) 30%);}
-.tb.st-soon .body{fill:var(--amberT);stroke:var(--amber);stroke-width:2.2;}
+.tb .who{font-size:12.5px;font-weight:600;fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+.tb .when{font-size:11px;fill:var(--mid);text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+.tb.st-reserved .body{fill:var(--wine);stroke:var(--wine);stroke-width:2;}
+.tb.st-reserved .ch{fill:color-mix(in srgb,var(--chair) 45%,var(--wine) 55%);stroke:var(--wine);}
+.tb.st-reserved .num,.tb.st-reserved .who,.tb.st-reserved .cap{fill:#F7F7EE;}
+.tb.st-reserved .when{fill:#F7F7EE;opacity:.8;}
+.tb.st-soon .body{fill:var(--amber);stroke:var(--amber);stroke-width:2;}
+.tb.st-soon .ch{fill:color-mix(in srgb,var(--chair) 45%,var(--amber) 55%);}
+.tb.st-soon .num,.tb.st-soon .who,.tb.st-soon .when,.tb.st-soon .cap{fill:#1C1C1B;}
 .tb.st-seated .body{fill:var(--green);stroke:var(--green);}
 .tb.st-seated .ch{fill:color-mix(in srgb,var(--green) 55%,var(--chair) 45%);stroke:var(--green);}
-.tb.st-seated .num{fill:#F4F4E8;}
+.tb.st-seated .num,.tb.st-seated .who,.tb.st-over .who{fill:#F4F4E8;}
+.tb.st-seated .when,.tb.st-over .when{fill:#F4F4E8;opacity:.8;}
 .tb.st-seated .cap{fill:#F4F4E8;opacity:.85;}
 .tb.st-over .body{fill:var(--green);stroke:var(--amber);stroke-width:3;stroke-dasharray:6 4;}
 .tb.st-over .num,.tb.st-over .cap{fill:#F4F4E8;}
-.tb.st-block .body{fill:url(#hatch);stroke:var(--muted);stroke-width:1.5;}
+.tb.st-block .body{fill:url(#hatch);stroke:var(--ink);stroke-width:2;stroke-dasharray:6 4;}
+.tb.st-block .ch{fill:var(--grey);}
+.tb .tag{fill:var(--card);stroke:var(--line2);}
 .tb.inactive{opacity:.35;}
 .tb.sel .body{stroke:var(--ink);stroke-width:3;}
 .tb.fit .body{stroke:var(--green);stroke-width:3;animation:pulse 1.4s ease-in-out infinite;}
@@ -149,7 +158,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:22px;padding:7px 14px;font-size:12.5px;color:var(--mid);}
 .legend span{display:flex;align-items:center;gap:6px;}
 .legend i{width:12px;height:12px;border-radius:4px;display:inline-block;border:1.5px solid var(--chairS);background:var(--tbl);}
-.legend i.r{border-color:var(--wine);background:var(--wineT);} .legend i.s{border-color:var(--amber);background:var(--amberT);}
+.legend i.r{border-color:var(--wine);background:var(--wine);} .legend i.s{border-color:var(--amber);background:var(--amber);}
 .legend i.g{border-color:var(--green);background:var(--green);} .legend i.b{background:repeating-linear-gradient(45deg,var(--grey) 0 2px,transparent 2px 5px);border-color:var(--muted);}
 .zoom{position:absolute;right:16px;bottom:14px;display:flex;flex-direction:column;gap:6px;z-index:4;}
 .zoom button{width:44px;height:44px;border-radius:22px;background:color-mix(in srgb,var(--card) 92%,transparent);border:1px solid var(--line);box-shadow:var(--shadow);font-size:20px;color:var(--ink);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
@@ -491,7 +500,7 @@ function tableState(t, T) {
   const ss = SEATS.filter(s => s.table_id === t.id && s.status !== 'done');
   const seated = ss.find(s => s.status === 'seated' && tm(s.start_t) <= T + 30);
   if (seated) return { st: T >= tm(seated.end_t) ? 'over' : 'seated', s: seated };
-  const act = ss.find(s => tm(s.start_t) <= T && T < tm(s.end_t));
+  const act = ss.find(s => s.kind !== 'block' && tm(s.start_t) <= T && T < tm(s.end_t)) || ss.find(s => tm(s.start_t) <= T && T < tm(s.end_t));
   if (act) return { st: act.kind === 'block' ? 'block' : 'reserved', s: act };
   const next = ss.filter(s => tm(s.start_t) > T).sort((a, b) => tm(a.start_t) - tm(b.start_t))[0];
   if (next && tm(next.start_t) - T <= 45) return { st: next.kind === 'block' ? 'block' : 'soon', s: next };
@@ -572,7 +581,8 @@ async function assignRes(r, tid, opts) {
   const t = tableById(tid); if (!t) return;
   const a = opts.start != null ? opts.start : (tm(r.time) ?? Math.max(OPEN(), snap15(S.at)));
   const b = Math.min(1440, a + dur(r.party));
-  const clash = overlaps(tid, a, b).filter(x => x.reservation_id !== r.id);
+  const evId = r.event_id || r.table_event_id;
+  const clash = overlaps(tid, a, b).filter(x => x.reservation_id !== r.id && !(x.kind === 'block' && evId && x.event_id === evId));
   if (clash.length && !confirm('Маса ' + tLabel(t) + ' е заета ' + clash.map(c => c.start_t + '–' + c.end_t + ' (' + seatName(c) + ')').join(', ') + '.\nДа я дам въпреки това?')) return;
   const existing = seatsOfRes(r.id).filter(x => x.status !== 'done');
   if (existing.length && !opts.add) {
@@ -661,15 +671,15 @@ function stageHtml(zone) {
   const zm = S.zoom > 1 ? ` style="width:${S.zoom * 100}%;height:${S.zoom * 100}%"` : '';
   return `<div class="stage ${S.edit ? 'edit' : ''} ${S.zoom > 1 ? 'zoomed' : ''}" id="stage">
     <div class="scroller" id="scroller"><svg class="floor" id="floor"${zm} viewBox="${-P} ${-P} ${zone.w + 2 * P} ${zone.h + 2 * P}" preserveAspectRatio="xMidYMid meet">
-      <defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="var(--tbl)"/><rect width="3" height="8" fill="var(--grey)"/></pattern></defs>
+      <defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="var(--tbl)"/><rect width="3.5" height="8" fill="var(--grey)"/></pattern></defs>
       <rect class="room" x="0" y="0" width="${zone.w}" height="${zone.h}" rx="6"/>
       ${decor}${joins}${tables}${chips}${handle}
     </svg></div>
     <div class="overlay">
       ${evs.map(e => { const cnt = RES.filter(r => r.event_id === e.id && ['confirmed', 'requested'].includes(r.status)).reduce((a, r) => a + r.party, 0);
         const blocked = SEATS.some(s => s.event_id === e.id && s.kind === 'block');
-        return `<div class="evbanner"><div><b>${esc(e.title)}</b><div class="m">${esc(e.time || '')}${e.ends ? '–' + esc(e.ends) : ''}, ${plural(cnt, 'гост', 'гости')}${e.capacity ? ' от ' + e.capacity : ''}</div></div>
-          ${blocked ? `<span class="pill">залата е запазена</span>` : `<button class="btn sm o" data-a="blockevent" data-id="${e.id}">Запази залата</button>`}</div>`; }).join('')}
+        return `<div class="evbanner"><div><b>Събитие тук: ${esc(e.title)}</b><div class="m">${esc(e.time || '')}${e.ends ? '–' + esc(e.ends) : ''}, ${plural(cnt, 'гост', 'гости')}${e.capacity ? ' от ' + e.capacity : ''}${blocked ? '. Масите са заети за събитието.' : '. Масите още се дават на гости на ресторанта.'}</div></div>
+          ${blocked ? `<button class="btn sm o" data-a="unblockevent" data-id="${e.id}">Отвори масите</button>` : `<button class="btn sm w" data-a="blockevent" data-id="${e.id}">Заеми масите за събитието</button>`}</div>`; }).join('')}
     </div>
     <div class="zoom"><button data-a="zoom" data-v="1" aria-label="Увеличи">+</button><button class="fit" data-a="zoom" data-v="0" aria-label="Цялата зала">цяла</button><button data-a="zoom" data-v="-1" aria-label="Намали">−</button></div>
     ${assignR ? `<div class="assignbar">Избери маса за <b>${esc(assignR.name)}</b> (${assignR.party}) <button data-a="cancelassign">Отказ</button></div>` : ''}
@@ -716,14 +726,33 @@ function tableSvg(t, T, assignR) {
   const small = Math.min(t.w, t.h) < 56;
   const fs = Math.max(9, Math.min(26, Math.min(t.w, t.h) * (small ? .5 : .3) * (String(t.label).length > 2 && small ? .8 : 1)));
   const capTxt = n + (n !== base ? ' (' + (n > base ? '+' : '') + (n - base) + ')' : '') + ' м.' + (t.vip ? ' · VIP' : '');
+  const rt = t.rot ? ` transform="rotate(${-t.rot} ${t.w / 2} ${cy})"` : '';
+  // заета/резервирана/запазена маса: името и часът се пишат ВЪРХУ масата (етикет над нея — само за малките)
+  const busy = st !== 'free' && s && !small;
+  let inner;
+  if (busy) {
+    const inW = (t.shape === 'round' ? .78 : .9) * (t.rot % 180 ? t.h : t.w);
+    const maxCh = Math.max(4, Math.floor(inW / 7.2));
+    const cut = x => (x.length > maxCh ? x.slice(0, maxCh - 1) + '…' : x);
+    const who = st === 'block' ? (s.name || 'Запазена') : shortName(s) + (seatParty(s) ? ' · ' + seatParty(s) : '');
+    const when = st === 'block' ? 'запазена ' + s.start_t + '–' + s.end_t : st === 'seated' ? 'до ' + s.end_t : st === 'over' ? 'над времето' : s.start_t + '–' + s.end_t;
+    const tall = (t.rot % 180 ? t.w : t.h) >= 74;
+    const tag = st === 'block' ? `<rect class="tag" x="${t.w / 2 - inW / 2}" y="${cy - (tall ? 4 : 2)}" width="${inW}" height="${tall ? 34 : 18}" rx="6"${rt}/>` : '';
+    inner = `${tag}<text class="num" x="${t.w / 2}" y="${cy - (tall ? 17 : 9)}" style="font-size:${Math.min(fs, 20).toFixed(1)}px"${rt}>${esc(t.label)}</text>
+      <text class="who" x="${t.w / 2}" y="${cy + (tall ? 5 : 7)}"${rt}>${esc(cut(who))}</text>${tall ? `<text class="when" x="${t.w / 2}" y="${cy + 21}"${rt}>${esc(cut(when))}</text>` : ''}`;
+  } else {
+    inner = `<text class="num" x="${t.w / 2}" y="${small ? cy : cy - 6}" style="font-size:${fs.toFixed(1)}px"${rt}>${esc(t.label)}</text>${small ? '' : `<text class="cap" x="${t.w / 2}" y="${cy + 14}"${rt}>${esc(capTxt)}</text>`}`;
+  }
   return `<g class="${cls}" data-tid="${t.id}" transform="translate(${t.x} ${t.y}) rotate(${t.rot || 0} ${t.w / 2} ${t.h / 2})">
-    ${ch}${body}<text class="num" x="${t.w / 2}" y="${small ? cy : cy - 6}" style="font-size:${fs.toFixed(1)}px" ${t.rot ? `transform="rotate(${-t.rot} ${t.w / 2} ${cy})"` : ''}>${esc(t.label)}</text>${small ? '' : `<text class="cap" x="${t.w / 2}" y="${cy + 14}" ${t.rot ? `transform="rotate(${-t.rot} ${t.w / 2} ${cy})"` : ''}>${esc(capTxt)}</text>`}</g>`;
+    ${ch}${body}${inner}</g>`;
 }
+// кратко име: „Мария П.“ — да се събира върху масата и етикетите да не се застъпват
+function shortName(x) { const p = String(seatName(x)).trim().split(/\s+/); return p.length > 1 && p[0].length > 2 && !/^(Семейство|Фирма|Гост|Бизнес)$/i.test(p[0]) ? p[0] + ' ' + p[1][0] + '.' : String(seatName(x)); }
 function chipSvg(t, T) {
   const { st, s, next } = tableState(t, T);
+  if (st !== 'free' && Math.min(t.w, t.h) >= 56) return '';   // голяма маса — всичко е написано върху нея
   let txt = '', cls = '';
-  // кратко име: „Мария П.“ — етикетите над съседни маси не бива да се застъпват
-  const nm = x => { const p = String(seatName(x)).split(/\s+/); return p.length > 1 && p[0].length > 2 && !/^(Семейство|Фирма|Гост)$/i.test(p[0]) ? p[0] + ' ' + p[1][0] + '.' : String(seatName(x)); };
+  const nm = shortName;
   if (st === 'seated') { txt = 'до ' + s.end_t + ' · ' + nm(s); cls = 'seated'; }
   else if (st === 'over') { txt = 'над времето · ' + nm(s); cls = 'seated'; }
   else if (st === 'reserved') { txt = s.start_t + ' · ' + nm(s); cls = 'res'; }
@@ -938,6 +967,8 @@ function editorHtml(zone) {
       <div class="two"><label class="fld"><span>Ширина (см)</span><input class="inp" type="number" min="200" max="5000" step="50" value="${zone.w}" data-z="w"></label><label class="fld"><span>Дълбочина (см)</span><input class="inp" type="number" min="200" max="5000" step="50" value="${zone.h}" data-z="h"></label></div>
       <div class="tog"><span>Показвай залата</span><button class="sw ${zone.active !== false ? 'on' : ''}" data-a="ztog" aria-label="Показвай залата"></button></div>
       <div class="acts"><button class="btn o" data-a="zmove" data-v="-1">← По-напред</button><button class="btn o" data-a="zmove" data-v="1">По-назад →</button><button class="btn d full" data-a="delzone">Изтрий залата</button></div></div>` : ''}
+    <div class="box" style="margin-top:6px;"><h4>Схема по плана AC² (PDF)</h4><p class="muted" style="font-size:13px;margin-bottom:10px;">Заменя всички зали и маси с плана: Ресторант, White · Red, Private.</p>
+      <button class="btn o full" data-a="loadplan">Зареди плана</button></div>
     <button class="btn full" style="margin-top:6px;" data-a="edit">Готово</button>
   </div>`;
 }
@@ -1203,9 +1234,18 @@ app.addEventListener('click', async e => {
     case 'confirm': await confirmRes(id); break;
     case 'checkin': { const r = resById(id); await checkIn(r); render(); toast('Отбелязано: пристигна'); break; }
     case 'blockevent': await blockEvent(id); break;
+    case 'unblockevent': await unblockEvent(id); break;
+    case 'loadplan': await loadPlan(); break;
     // редактор
     case 'addel': addElement(v); break;
-    case 'shape': { const t = selT(); if (!t) break; t.shape = v; if (v === 'square') t.h = t.w; if (v === 'stool') { t.w = t.h = 22; t.seats = 1; } render(); saveTableSoon(t); break; }
+    case 'shape': { const t = selT(); if (!t) break;
+      const DEF = { round: [90, 90, 4], square: [80, 80, 4], soft: [92, 90, 4], rect: [200, 100, 6], booth: [180, 110, 4], stool: [22, 22, 1] };
+      const cx = t.x + t.w / 2, cy0 = t.y + t.h / 2, wasTiny = t.shape === 'stool' || Math.min(t.w, t.h) < 40;
+      t.shape = v;
+      if (t.kind === 'table' && DEF[v] && (v === 'stool' || wasTiny)) { t.w = DEF[v][0]; t.h = DEF[v][1]; if (v === 'stool' || t.seats < 2) t.seats = DEF[v][2]; }
+      else if (v === 'square') t.h = t.w;
+      t.x = Math.round(cx - t.w / 2); t.y = Math.round(cy0 - t.h / 2);
+      render(); saveTableSoon(t); break; }
     case 'tog': { const t = selT(); if (!t) break; const f = el.dataset.f; t[f] = f === 'active' ? t.active === false : !t[f]; render(); saveTableSoon(t); break; }
     case 'rot': { const t = selT(); if (!t) break; t.rot = v === '+15' ? ((t.rot || 0) + 15) % 360 : +v; render(); saveTableSoon(t); break; }
     case 'dup': { const t = selT(); if (!t) break; const n = Object.assign({}, t, { id: uuid(), x: t.x + 30, y: t.y + 30, label: t.kind === 'table' ? nextLabel(t.zone_id) : t.label }); TABLES.push(n); S.sel = { t: 'table', id: n.id }; render(); saveTableSoon(n); break; }
@@ -1277,14 +1317,33 @@ async function confirmRes(id) {
   r.status = 'confirmed'; render();
   try { const n = await DB.notifyReservation(id, 'confirmed'); toast(n && n.error ? 'Потвърдена, но имейлът не тръгна: ' + n.error.message : 'Потвърдена, гостът получава имейл', !!(n && n.error)); } catch (e) { toast('Потвърдена'); }
 }
+async function loadPlan() {
+  const used = SEATS.length;
+  if (!confirm('Да заменя ли ВСИЧКИ зали и маси с плана AC² (Ресторант, White · Red, Private)?' + (used || !DEMO ? '\n\nВсички записи по масите (настанявания, запазени маси) ще се изтрият. Резервациите остават.' : ''))) return;
+  try {
+    const oldZ = ZONES.slice();
+    for (const z of oldZ) await api.del('floor_zones', z.id);
+    const nz = [], nt = [];
+    AC2_LAYOUT.zones.forEach((z, i) => { const id = uuid(); nz.push({ id, name: z.name, place: z.place, w: z.w, h: z.h, sort: i + 1, active: true });
+      z.items.forEach(([kind, label, shape, x, y, w, h, rot, seats]) => nt.push({ id: uuid(), zone_id: id, kind, label, shape, x, y, w, h, rot, seats, min_party: 1, vip: false, active: true })); });
+    await api.upMany('floor_zones', nz); await api.upMany('floor_tables', nt);
+    ZONES = nz; TABLES = nt; SEATS = []; S.zone = nz[0].id; S.sel = null; render(); toast('Планът е зареден: ' + nt.filter(t => t.kind === 'table').length + ' маси');
+  } catch (e) { err(e); try { await api.load(); await api.loadDay(); } catch (x) {} render(); }
+}
+async function unblockEvent(eid) {
+  const rows = SEATS.filter(s => s.event_id === eid && s.kind === 'block');
+  if (!confirm('Да отворя ли пак масите (' + rows.length + ') за гости на ресторанта?')) return;
+  SEATS = SEATS.filter(s => !rows.includes(s)); render();
+  try { for (const r of rows) await api.del('floor_seatings', r.id); toast('Масите са отворени'); } catch (e) { err(e); await reloadDay(); }
+}
 async function blockEvent(eid) {
   const e = ALLEV.find(x => x.id === eid); const z = e && zoneOfPlace(e.place); if (!z) return;
   const a = tm(e.time) ?? 19 * 60, b = Math.min(1440, tm(e.ends) || a + 150);
   const tt = zoneTables(z.id).filter(t => t.active !== false && !SEATS.some(s => s.table_id === t.id && s.event_id === eid && s.kind === 'block'));
-  if (!confirm('Да запазя ли всички ' + tt.length + ' маси в ' + z.name + ' за „' + e.title + '“ (' + fm(a) + '–' + fm(b) + ')?\nГостите на събитието после се слагат по масите с влачене.')) return;
+  if (!confirm('Всички ' + tt.length + ' маси в „' + z.name + '“ стават заети за „' + e.title + '“ от ' + fm(Math.max(OPEN(), a - 30)) + ' до ' + fm(b) + '.\nТака никой от рецепцията няма да даде маса там на гост на ресторанта.\n\nГостите на събитието после се слагат по масите с влачене. Продължаваме ли?')) return;
   const rows = tt.map(t => newSeat({ table_id: t.id, start_t: fm(Math.max(OPEN(), a - 30)), end_t: fm(b), kind: 'block', event_id: eid, name: e.title }));
   SEATS = SEATS.concat(rows); render();
-  try { await api.upMany('floor_seatings', rows.map(r => clean(r, SEAT_COLS))); toast('Залата е запазена за събитието'); } catch (er) { err(er); await reloadDay(); }
+  try { await api.upMany('floor_seatings', rows.map(r => clean(r, SEAT_COLS))); toast('Масите са заети за събитието'); } catch (er) { err(er); await reloadDay(); }
 }
 
 // ---------- ВЛАЧЕНЕ: маси (редактор), резервации към маса, блокове в „По часове“ ----------
