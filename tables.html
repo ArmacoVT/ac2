@@ -130,7 +130,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 /* декор */
 .dec .bar{fill:var(--ink);} .dec .bartxt{fill:var(--bg);font-family:var(--serif);font-style:italic;font-size:22px;letter-spacing:.06em;text-anchor:middle;dominant-baseline:central;}
 .dec .stage{fill:var(--wineT);stroke:var(--wine);stroke-width:1.5;} .dec .stagetxt{fill:var(--wine);font-family:var(--serif);font-style:italic;font-size:16px;text-anchor:middle;dominant-baseline:central;}
-.dec .wall{fill:var(--ink);} .dec .win{fill:var(--floor);stroke:var(--ink);stroke-width:1.5;}
+.dec .wall{fill:var(--ink);} .dec .hit{fill:transparent;stroke:none;} .edit .dec .hit{stroke:var(--line2);stroke-dasharray:4 4;} .dec .win{fill:var(--floor);stroke:var(--ink);stroke-width:1.5;}
 .dec .door{fill:none;stroke:var(--ink);stroke-width:1.5;} .dec .lbl{fill:var(--muted);font-size:11px;text-anchor:middle;}
 .dec .plant{fill:color-mix(in srgb,var(--green) 70%,transparent);}
 .edit .tb,.edit .dec{cursor:grab;}
@@ -151,6 +151,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .legend i{width:12px;height:12px;border-radius:4px;display:inline-block;border:1.5px solid var(--chairS);background:var(--tbl);}
 .legend i.r{border-color:var(--wine);background:var(--wineT);} .legend i.s{border-color:var(--amber);background:var(--amberT);}
 .legend i.g{border-color:var(--green);background:var(--green);} .legend i.b{background:repeating-linear-gradient(45deg,var(--grey) 0 2px,transparent 2px 5px);border-color:var(--muted);}
+.zoom{position:absolute;right:16px;bottom:14px;display:flex;flex-direction:column;gap:6px;z-index:4;}
+.zoom button{width:44px;height:44px;border-radius:22px;background:color-mix(in srgb,var(--card) 92%,transparent);border:1px solid var(--line);box-shadow:var(--shadow);font-size:20px;color:var(--ink);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+.zoom button.fit{font-size:12px;}
+.scroller{position:absolute;inset:0;overflow:hidden;}
+.stage.zoomed .scroller{overflow:auto;-webkit-overflow-scrolling:touch;}
+.stage.zoomed .floor{touch-action:pan-x pan-y;}
+.stage.zoomed .legend{display:none;}
+.stage.zoomed.edit .floor{touch-action:none;}
+.dec .txt{fill:var(--ink);font-family:var(--sans);text-anchor:middle;dominant-baseline:central;opacity:.82;}
+.dec .ln{fill:var(--ink);}
 .assignbar{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:24px;padding:10px 10px 10px 18px;
   display:flex;gap:12px;align-items:center;box-shadow:var(--shadow);z-index:5;white-space:nowrap;max-width:calc(100% - 32px);}
 .assignbar button{background:rgba(235,235,214,.15);border-radius:16px;padding:6px 12px;font-size:13px;}
@@ -339,9 +349,7 @@ textarea.inp{height:70px;padding:10px 12px;resize:vertical;}
   .ibtn{width:36px;height:36px;}
   .live{display:none;}
   .datenav .d{white-space:nowrap;font-size:14px;}
-  .stage{overflow:auto;-webkit-overflow-scrolling:touch;}
-  .floor{position:static;display:block;width:820px;height:auto;touch-action:pan-x pan-y;}
-  .edit .floor{touch-action:none;}
+  .zoom{bottom:84px;}
   .seg button{padding:8px 10px;}
   .datenav{margin-left:0;}
   .today{display:none;}
@@ -399,11 +407,11 @@ applyTheme();
 // ---------- състояние ----------
 let ME = null, CAN_LAYOUT = false;
 let ZONES = [], TABLES = [], SEATS = [], RES = [], EVENTS = [], ALLEV = [];
-const S = { date: todayIso(), view: 'floor', zone: null, at: nowMin(), follow: true, edit: false,
+const S = { zoom: 1, date: todayIso(), view: 'floor', zone: null, at: nowMin(), follow: true, edit: false,
   sel: null,            // {t:'table'|'res'|'seat'|'zone', id}
   assign: null,         // id на резервация, която чака избор на маса
   filter: 'todo', q: '', side: false, openGroups: {} };
-try { const v = localStorage.getItem('acac_tables_view'); if (v === 'time' || v === 'floor') S.view = v; } catch (e) {}
+try { const v = localStorage.getItem('acac_tables_view'); if (v === 'time' || v === 'floor') S.view = v; S.zoom = Math.max(1, Math.min(3, +localStorage.getItem('acac_tables_zoom') || 1)); } catch (e) {}
 
 // =====================================================================
 //  ДАННИ
@@ -586,6 +594,7 @@ async function assignRes(r, tid, opts) {
 // =====================================================================
 function render() {
   if (!ME) return;
+  const st0 = $('#scroller'); const keep = st0 ? [st0.scrollLeft, st0.scrollTop] : null;
   const d = bgDate(S.date), isToday = S.date === todayIso();
   const zone = ZONES.find(z => z.id === S.zone) || ZONES[0];
   if (zone) S.zone = zone.id;
@@ -612,6 +621,8 @@ function render() {
     <aside class="side ${S.side ? 'open' : ''}"><div class="sidetoggle" data-a="side"><i></i></div>${sideHtml(zone)}</aside>
   </div>`;
   if (S.view === 'time') afterTimeline();
+  const st1 = $('#scroller');
+  if (st1 && S.zoom > 1) { if (S._zr) { st1.scrollLeft = S._zr.x * st1.scrollWidth - st1.clientWidth / 2; st1.scrollTop = S._zr.y * st1.scrollHeight - st1.clientHeight / 2; S._zr = null; } else if (keep) { st1.scrollLeft = keep[0]; st1.scrollTop = keep[1]; } }
 }
 function subBar(zone) {
   const T = S.at;
@@ -647,18 +658,20 @@ function stageHtml(zone) {
   const chips = S.edit ? '' : all.filter(t => t.kind === 'table' && t.active !== false).map(t => chipSvg(t, T)).join('');
   const selT = S.edit && S.sel && S.sel.t === 'table' ? tableById(S.sel.id) : null;
   const handle = selT && selT.zone_id === zone.id ? `<rect class="selbox" x="${selT.x - 6}" y="${selT.y - 6}" width="${selT.w + 12}" height="${selT.h + 12}" rx="8" transform="rotate(${selT.rot || 0} ${selT.x + selT.w / 2} ${selT.y + selT.h / 2})"/><circle class="handle" data-h="${selT.id}" cx="${selT.x + selT.w + 6}" cy="${selT.y + selT.h + 6}" r="11"/>` : '';
-  return `<div class="stage ${S.edit ? 'edit' : ''}" id="stage">
-    <svg class="floor" id="floor" viewBox="${-P} ${-P} ${zone.w + 2 * P} ${zone.h + 2 * P}" preserveAspectRatio="xMidYMid meet">
+  const zm = S.zoom > 1 ? ` style="width:${S.zoom * 100}%;height:${S.zoom * 100}%"` : '';
+  return `<div class="stage ${S.edit ? 'edit' : ''} ${S.zoom > 1 ? 'zoomed' : ''}" id="stage">
+    <div class="scroller" id="scroller"><svg class="floor" id="floor"${zm} viewBox="${-P} ${-P} ${zone.w + 2 * P} ${zone.h + 2 * P}" preserveAspectRatio="xMidYMid meet">
       <defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="var(--tbl)"/><rect width="3" height="8" fill="var(--grey)"/></pattern></defs>
       <rect class="room" x="0" y="0" width="${zone.w}" height="${zone.h}" rx="6"/>
       ${decor}${joins}${tables}${chips}${handle}
-    </svg>
+    </svg></div>
     <div class="overlay">
       ${evs.map(e => { const cnt = RES.filter(r => r.event_id === e.id && ['confirmed', 'requested'].includes(r.status)).reduce((a, r) => a + r.party, 0);
         const blocked = SEATS.some(s => s.event_id === e.id && s.kind === 'block');
         return `<div class="evbanner"><div><b>${esc(e.title)}</b><div class="m">${esc(e.time || '')}${e.ends ? '–' + esc(e.ends) : ''}, ${plural(cnt, 'гост', 'гости')}${e.capacity ? ' от ' + e.capacity : ''}</div></div>
           ${blocked ? `<span class="pill">залата е запазена</span>` : `<button class="btn sm o" data-a="blockevent" data-id="${e.id}">Запази залата</button>`}</div>`; }).join('')}
     </div>
+    <div class="zoom"><button data-a="zoom" data-v="1" aria-label="Увеличи">+</button><button class="fit" data-a="zoom" data-v="0" aria-label="Цялата зала">цяла</button><button data-a="zoom" data-v="-1" aria-label="Намали">−</button></div>
     ${assignR ? `<div class="assignbar">Избери маса за <b>${esc(assignR.name)}</b> (${assignR.party}) <button data-a="cancelassign">Отказ</button></div>` : ''}
     ${S.edit ? '' : `<div class="legend"><span><i></i>Свободна</span><span><i class="r"></i>Резервирана</span><span><i class="s"></i>Идват скоро</span><span><i class="g"></i>Настанени</span><span><i class="b"></i>Запазена</span></div>`}
     ${!all.length ? `<div class="empty"><div><h3>Празна зала</h3><p>${S.edit ? 'Добави маси от панела вдясно.' : (CAN_LAYOUT ? 'Натисни „Подреди залата“, за да добавиш маси.' : 'Още няма маси в тази зала.')}</p></div></div>` : ''}
@@ -667,13 +680,16 @@ function stageHtml(zone) {
 function chairPos(t, n) {
   const w = t.w, h = t.h, o = 12, out = [];
   if (n <= 0) return out;
+  if (t.shape === 'stool') return out;
   if (t.shape === 'round') {
-    const R = Math.min(w, h) / 2 + o - 2;
-    for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + 2 * Math.PI * i / n; out.push([w / 2 + R * Math.cos(a), h / 2 + R * Math.sin(a), a * 180 / Math.PI + 90]); }
+    const A = w / 2 + o - 2, B = h / 2 + o - 2, N = 720, pts = [], len = [0];
+    for (let i = 0; i <= N; i++) { const a = -Math.PI / 2 + 2 * Math.PI * i / N; pts.push([A * Math.cos(a), B * Math.sin(a)]); if (i) len.push(len[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])); }
+    const tot = len[N]; let k = 0;
+    for (let i = 0; i < n; i++) { const target = tot * i / n; while (k < N && len[k] < target) k++; const [x, y] = pts[k]; const ang = Math.atan2(y / (B * B), x / (A * A)) * 180 / Math.PI + 90; out.push([w / 2 + x, h / 2 + y, ang]); }
     return out;
   }
   if (t.shape === 'booth') { const k = n; for (let i = 0; i < k; i++) out.push([w * (i + .5) / k, h + o - 2, 180]); return out; }
-  const sq = t.shape === 'square' || Math.abs(w - h) < 20;
+  const sq = t.shape === 'square' || t.shape === 'soft' || Math.abs(w - h) < 20;
   let top, bot, left = 0, right = 0;
   if (sq) { const s = [0, 0, 0, 0]; for (let i = 0; i < n; i++) s[[0, 1, 2, 3][i % 4]]++; [top, bot, left, right] = s; }
   else { const ends = n >= 6 ? 2 : (n % 2 ? 1 : 0); const L = n - ends; top = Math.ceil(L / 2); bot = Math.floor(L / 2); left = ends >= 1 ? 1 : 0; right = ends >= 2 ? 1 : 0; }
@@ -694,11 +710,14 @@ function tableSvg(t, T, assignR) {
   let body;
   if (t.shape === 'round') body = `<ellipse class="body" cx="${t.w / 2}" cy="${t.h / 2}" rx="${t.w / 2}" ry="${t.h / 2}"/>`;
   else if (t.shape === 'booth') body = `<path class="body" d="M0 ${t.h * .25} Q0 0 ${t.w * .1} 0 L${t.w * .9} 0 Q${t.w} 0 ${t.w} ${t.h * .25} L${t.w} ${t.h} L${t.w - 16} ${t.h} L${t.w - 16} 16 L16 16 L16 ${t.h} L0 ${t.h} Z" style="fill:var(--chair)"/><rect class="body" x="22" y="26" width="${t.w - 44}" height="${t.h - 30}" rx="6"/>`;
-  else body = `<rect class="body" x="0" y="0" width="${t.w}" height="${t.h}" rx="${t.shape === 'square' ? 10 : 12}"/>`;
+  else if (t.shape === 'stool') body = `<rect class="body" x="0" y="0" width="${t.w}" height="${t.h}" rx="3"/>`;
+  else body = `<rect class="body" x="0" y="0" width="${t.w}" height="${t.h}" rx="${t.shape === 'soft' ? Math.min(t.w, t.h) * .32 : t.shape === 'square' ? 6 : 12}"/>`;
   const cy = t.shape === 'booth' ? t.h / 2 + 12 : t.h / 2;
+  const small = Math.min(t.w, t.h) < 56;
+  const fs = Math.max(9, Math.min(26, Math.min(t.w, t.h) * (small ? .5 : .3) * (String(t.label).length > 2 && small ? .8 : 1)));
   const capTxt = n + (n !== base ? ' (' + (n > base ? '+' : '') + (n - base) + ')' : '') + ' м.' + (t.vip ? ' · VIP' : '');
   return `<g class="${cls}" data-tid="${t.id}" transform="translate(${t.x} ${t.y}) rotate(${t.rot || 0} ${t.w / 2} ${t.h / 2})">
-    ${ch}${body}<text class="num" x="${t.w / 2}" y="${cy - 6}">${esc(t.label)}</text><text class="cap" x="${t.w / 2}" y="${cy + 14}">${esc(capTxt)}</text></g>`;
+    ${ch}${body}<text class="num" x="${t.w / 2}" y="${small ? cy : cy - 6}" style="font-size:${fs.toFixed(1)}px" ${t.rot ? `transform="rotate(${-t.rot} ${t.w / 2} ${cy})"` : ''}>${esc(t.label)}</text>${small ? '' : `<text class="cap" x="${t.w / 2}" y="${cy + 14}" ${t.rot ? `transform="rotate(${-t.rot} ${t.w / 2} ${cy})"` : ''}>${esc(capTxt)}</text>`}</g>`;
 }
 function chipSvg(t, T) {
   const { st, s, next } = tableState(t, T);
@@ -727,6 +746,8 @@ function decorSvg(t) {
     case 'wall': return g(`<rect class="wall" width="${t.w}" height="${t.h}" rx="2"/>${L ? `<text class="lbl" x="${t.w / 2}" y="${t.h + 16}">${L}</text>` : ''}`);
     case 'window': return g(`<rect class="win" width="${t.w}" height="${t.h}"/><line x1="0" y1="${t.h / 2}" x2="${t.w}" y2="${t.h / 2}" stroke="var(--ink)" stroke-width="1"/>${L ? `<text class="lbl" x="${t.w / 2}" y="${t.h + 16}">${L}</text>` : ''}`);
     case 'door': { const r = Math.min(t.w, 90); return g(`<rect width="${t.w}" height="${t.h}" fill="var(--floor)"/><path class="door" d="M0 0 L0 ${-r} M0 ${-r} A${r} ${r} 0 0 1 ${r} 0"/><text class="lbl" x="${t.w / 2}" y="${t.h + 16}">${L}</text>`); }
+    case 'text': { const fs = Math.max(10, Math.min(t.h * .78, t.w / Math.max(2, String(t.label).length) * 1.7)); return g(`<rect class="hit" width="${t.w}" height="${t.h}"/><text class="txt" x="${t.w / 2}" y="${t.h / 2}" style="font-size:${fs.toFixed(1)}px">${L}</text>`); }
+    case 'line': return g(`<rect class="hit" x="-4" y="-8" width="${t.w + 8}" height="${t.h + 16}"/><rect class="ln" width="${t.w}" height="${t.h}"/>`);
     case 'plant': return g(`<circle class="plant" cx="${t.w / 2}" cy="${t.h / 2}" r="${Math.min(t.w, t.h) / 2}"/><circle cx="${t.w / 2}" cy="${t.h / 2}" r="${Math.min(t.w, t.h) / 5}" fill="var(--green)"/>`);
     default: return g(`<rect class="win" width="${t.w}" height="${t.h}"/>`);
   }
@@ -877,7 +898,12 @@ const PALETTE = [
   ['sq4', 'Квадрат 4', { shape: 'square', w: 100, h: 100, seats: 4 }, '<rect x="10" y="5" width="20" height="20" rx="3"/>'],
   ['rect6', 'Правоъг. 6', { shape: 'rect', w: 200, h: 100, seats: 6 }, '<rect x="4" y="8" width="32" height="14" rx="3"/>'],
   ['rect10', 'Дълга 10', { shape: 'rect', w: 320, h: 100, seats: 10 }, '<rect x="1" y="10" width="38" height="10" rx="3"/>'],
+  ['soft', 'Мек квадрат', { shape: 'soft', w: 92, h: 90, seats: 4 }, '<rect x="11" y="6" width="18" height="18" rx="6"/>'],
+  ['oval', 'Овал 8', { shape: 'round', w: 288, h: 104, seats: 8 }, '<ellipse cx="20" cy="15" rx="17" ry="8"/>'],
+  ['stool', 'Място на бар', { shape: 'stool', w: 22, h: 22, seats: 1 }, '<rect x="15" y="10" width="10" height="10" rx="1"/>'],
   ['booth', 'Сепаре', { shape: 'booth', w: 180, h: 110, seats: 4 }, '<path d="M4 26 L4 6 L36 6 L36 26 L31 26 L31 11 L9 11 L9 26 Z" class="c"/><rect x="12" y="14" width="16" height="10" rx="2"/>'],
+  ['text', 'Надпис', { kind: 'decor', shape: 'text', w: 180, h: 50, seats: 0, label: 'LOUNGE' }, '<text x="20" y="20" text-anchor="middle" style="font-size:13px;fill:var(--ink);stroke:none">Aa</text>'],
+  ['line', 'Линия', { kind: 'decor', shape: 'line', w: 300, h: 3, seats: 0, label: '' }, '<rect class="k" x="2" y="14" width="36" height="2"/>'],
   ['bar', 'Бар', { kind: 'decor', shape: 'bar', w: 300, h: 80, seats: 0, label: 'Бар' }, '<rect class="k" x="2" y="10" width="36" height="10" rx="3"/>'],
   ['stage', 'Сцена', { kind: 'decor', shape: 'stage', w: 360, h: 120, seats: 0, label: 'Сцена' }, '<rect x="4" y="6" width="32" height="18" rx="2" style="fill:var(--wineT);stroke:var(--wine)"/>'],
   ['wall', 'Стена', { kind: 'decor', shape: 'wall', w: 300, h: 14, seats: 0, label: '' }, '<rect class="k" x="2" y="13" width="36" height="4"/>'],
@@ -889,7 +915,7 @@ function editorHtml(zone) {
   const t = S.sel && S.sel.t === 'table' ? tableById(S.sel.id) : null;
   if (t) {
     const isT = t.kind === 'table';
-    const shapes = isT ? [['round', 'Кръгла'], ['square', 'Квадрат'], ['rect', 'Правоъгълна'], ['booth', 'Сепаре']] : [['bar', 'Бар'], ['stage', 'Сцена'], ['wall', 'Стена'], ['window', 'Прозорец'], ['door', 'Врата'], ['plant', 'Растение']];
+    const shapes = isT ? [['round', 'Кръгла / овал'], ['square', 'Квадрат'], ['soft', 'Мек квадрат'], ['rect', 'Правоъгълна'], ['booth', 'Сепаре'], ['stool', 'Място на бар']] : [['text', 'Надпис'], ['line', 'Линия'], ['bar', 'Бар'], ['stage', 'Сцена'], ['wall', 'Стена'], ['window', 'Прозорец'], ['door', 'Врата'], ['plant', 'Растение']];
     return `<div class="det">
       <button class="back" data-a="back">‹ Зала ${esc(zone ? zone.name : '')}</button>
       <h2>${isT ? 'Маса ' + esc(t.label) : esc(t.label || 'Елемент')}</h2><div class="sub2">Влачи на схемата, кръгчето в ъгъла променя размера.</div>
@@ -898,8 +924,8 @@ function editorHtml(zone) {
       ${isT ? `<div class="box"><div class="row"><b>Столове</b><div class="stepper"><button data-a="seats" data-id="${t.id}" data-v="-1">−</button><b>${t.seats}</b><button data-a="seats" data-id="${t.id}" data-v="1">+</button></div></div>
         <div class="tog"><span>VIP маса</span><button class="sw ${t.vip ? 'on' : ''}" data-a="tog" data-f="vip" aria-label="VIP"></button></div>
         <div class="tog"><span>Ползва се</span><button class="sw ${t.active !== false ? 'on' : ''}" data-a="tog" data-f="active" aria-label="Ползва се"></button></div></div>` : ''}
-      <div class="two"><label class="fld"><span>Ширина</span><input class="inp" type="number" min="10" max="2000" step="10" value="${t.w}" data-f="w"></label><label class="fld"><span>Височина</span><input class="inp" type="number" min="10" max="2000" step="10" value="${t.h}" data-f="h"></label></div>
-      <div class="fld"><span>Завъртане: ${t.rot || 0}°</span><div class="chips">${[0, 45, 90, 135].map(v => `<button class="${(t.rot || 0) === v ? 'on' : ''}" data-a="rot" data-v="${v}">${v}°</button>`).join('')}<button data-a="rot" data-v="+15">+15°</button></div></div>
+      <div class="two"><label class="fld"><span>Ширина</span><input class="inp" type="number" min="2" max="2000" step="1" value="${t.w}" data-f="w"></label><label class="fld"><span>Височина</span><input class="inp" type="number" min="2" max="2000" step="1" value="${t.h}" data-f="h"></label></div>
+      <div class="fld"><span>Завъртане: ${t.rot || 0}°</span><div class="chips">${[0, 90, 180, 270].map(v => `<button class="${((t.rot || 0) + 360) % 360 === v ? 'on' : ''}" data-a="rot" data-v="${v}">${v}°</button>`).join('')}<button data-a="rot" data-v="+15">+15°</button><button data-a="rot" data-v="-90">−90°</button></div></div>
       <div class="acts" style="margin-top:14px;"><button class="btn o" data-a="dup">Копирай</button><button class="btn d" data-a="deltable">Изтрий</button></div>
     </div>`;
   }
@@ -908,7 +934,7 @@ function editorHtml(zone) {
     <div class="pal">${PALETTE.map(([k, l, , svg]) => `<button data-a="addel" data-v="${k}"><svg viewBox="0 0 40 30">${svg}</svg>${l}</button>`).join('')}</div>
     ${zone ? `<div class="box" style="margin-top:14px;"><h4>Зала</h4>
       <label class="fld"><span>Име</span><input class="inp" maxlength="40" value="${esc(zone.name)}" data-z="name"></label>
-      <label class="fld"><span>Свързана с мястото от резервациите и събитията</span><select class="inp" data-z="place"><option value="">— няма —</option>${['Ресторант', 'Камерна зала', 'Галерия', 'Private room'].map(p => `<option ${zone.place === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
+      <label class="fld"><span>Свързана с мястото от резервациите и събитията</span><select class="inp" data-z="place"><option value="">— няма —</option>${[...new Set(['Ресторант', 'Камерна зала', 'Галерия', 'Private room'].concat(zone.place ? [zone.place] : []))].map(p => `<option ${zone.place === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label>
       <div class="two"><label class="fld"><span>Ширина (см)</span><input class="inp" type="number" min="200" max="5000" step="50" value="${zone.w}" data-z="w"></label><label class="fld"><span>Дълбочина (см)</span><input class="inp" type="number" min="200" max="5000" step="50" value="${zone.h}" data-z="h"></label></div>
       <div class="tog"><span>Показвай залата</span><button class="sw ${zone.active !== false ? 'on' : ''}" data-a="ztog" aria-label="Показвай залата"></button></div>
       <div class="acts"><button class="btn o" data-a="zmove" data-v="-1">← По-напред</button><button class="btn o" data-a="zmove" data-v="1">По-назад →</button><button class="btn d full" data-a="delzone">Изтрий залата</button></div></div>` : ''}
@@ -1152,6 +1178,8 @@ app.addEventListener('click', async e => {
     case 'side': S.side = !S.side; $('.side').classList.toggle('open', S.side); break;
     case 'zone': S.zone = id; if (S.edit) S.sel = null; render(); break;
     case 'now': S.follow = true; S.at = S.date === todayIso() ? nowMin() : 19 * 60; render(); break;
+    case 'zoom': { const st = $('#scroller'); const ratio = st ? { x: (st.scrollLeft + st.clientWidth / 2) / Math.max(1, st.scrollWidth), y: (st.scrollTop + st.clientHeight / 2) / Math.max(1, st.scrollHeight) } : null;
+      S.zoom = +v === 0 ? 1 : Math.max(1, Math.min(3, (S.zoom || 1) + (+v) * .5)); try { localStorage.setItem('acac_tables_zoom', S.zoom); } catch (er) {} S._zr = ratio; render(); break; }
     case 'filter': S.filter = v; render(); break;
     case 'grp': S.openGroups[id] = !(S.openGroups[id] ?? false); render(); break;
     case 'back': S.sel = null; render(); break;
@@ -1177,9 +1205,9 @@ app.addEventListener('click', async e => {
     case 'blockevent': await blockEvent(id); break;
     // редактор
     case 'addel': addElement(v); break;
-    case 'shape': { const t = selT(); if (!t) break; t.shape = v; if (v === 'round' || v === 'square') t.h = t.w; render(); saveTableSoon(t); break; }
+    case 'shape': { const t = selT(); if (!t) break; t.shape = v; if (v === 'square') t.h = t.w; if (v === 'stool') { t.w = t.h = 22; t.seats = 1; } render(); saveTableSoon(t); break; }
     case 'tog': { const t = selT(); if (!t) break; const f = el.dataset.f; t[f] = f === 'active' ? t.active === false : !t[f]; render(); saveTableSoon(t); break; }
-    case 'rot': { const t = selT(); if (!t) break; t.rot = v[0] === '+' ? ((t.rot || 0) + 15) % 360 : +v; render(); saveTableSoon(t); break; }
+    case 'rot': { const t = selT(); if (!t) break; t.rot = v === '+15' ? ((t.rot || 0) + 15) % 360 : +v; render(); saveTableSoon(t); break; }
     case 'dup': { const t = selT(); if (!t) break; const n = Object.assign({}, t, { id: uuid(), x: t.x + 30, y: t.y + 30, label: t.kind === 'table' ? nextLabel(t.zone_id) : t.label }); TABLES.push(n); S.sel = { t: 'table', id: n.id }; render(); saveTableSoon(n); break; }
     case 'deltable': { const t = selT(); if (!t) break; const used = SEATS.some(s => s.table_id === t.id && s.status !== 'done');
       if (!confirm((used ? 'На тази маса има записи за днес — ще изчезнат. ' : '') + 'Да изтрия ли ' + (t.kind === 'table' ? 'маса ' + t.label : 'елемента') + '?\n(За временно — изключи „Ползва се“.)')) break;
@@ -1200,14 +1228,14 @@ app.addEventListener('input', e => {
 app.addEventListener('change', async e => {
   const el = e.target;
   if (el.dataset.a === 'pickdate' && el.value) { setDate(el.value); return; }
-  if (el.dataset.f) { const t = selT(); if (!t) return; const f = el.dataset.f; t[f] = (f === 'w' || f === 'h') ? Math.max(10, Math.min(2000, +el.value || 10)) : el.value.trim(); render(); saveTableSoon(t); return; }
+  if (el.dataset.f) { const t = selT(); if (!t) return; const f = el.dataset.f; t[f] = (f === 'w' || f === 'h') ? Math.max(2, Math.min(2000, +el.value || 10)) : el.value.trim(); render(); saveTableSoon(t); return; }
   if (el.dataset.z) { const z = curZone(); if (!z) return; const f = el.dataset.z; z[f] = (f === 'w' || f === 'h') ? Math.max(200, Math.min(5000, +el.value || 1000)) : (el.value.trim() || null); if (f === 'name' && !z.name) z.name = 'Зала'; render(); await saveZone(z); }
 });
 let _thp = 0; function throttlePartial() { if (_thp) return; _thp = requestAnimationFrame(() => { _thp = 0; renderPartial(); }); }
 // само схемата, панелът и броячите на залите — без лентата с плъзгача (иначе плъзгането се прекъсва)
 function renderPartial() {
   const zone = curZone(); const st = $('#stage');
-  if (st) { const tmp = document.createElement('div'); tmp.innerHTML = stageHtml(zone); st.replaceWith(tmp.firstElementChild); }
+  if (st) { const sc = $('#scroller'), k = sc ? [sc.scrollLeft, sc.scrollTop] : [0, 0]; const tmp = document.createElement('div'); tmp.innerHTML = stageHtml(zone); st.replaceWith(tmp.firstElementChild); const n = $('#scroller'); if (n) { n.scrollLeft = k[0]; n.scrollTop = k[1]; } }
   const side = $('.side'); if (side) side.innerHTML = '<div class="sidetoggle" data-a="side"><i></i></div>' + sideHtml(zone);
   const zb = $('.zones'); if (zb) { const tmp = document.createElement('div'); tmp.innerHTML = subBar(zone); const nz = tmp.querySelector('.zones'); if (nz) zb.innerHTML = nz.innerHTML; }
 }
@@ -1303,8 +1331,8 @@ window.addEventListener('pointermove', e => {
   if (DRAG.k === 'move' || DRAG.k === 'resize') {
     e.preventDefault();
     const p = svgPt(e), t = DRAG.t, z = curZone();
-    if (DRAG.k === 'move') { t.x = Math.max(-20, Math.min(z.w - 10, Math.round((DRAG.x0 + p.x - DRAG.p0.x) / 10) * 10)); t.y = Math.max(-20, Math.min(z.h - 10, Math.round((DRAG.y0 + p.y - DRAG.p0.y) / 10) * 10)); }
-    else { t.w = Math.max(20, Math.round((DRAG.w0 + p.x - DRAG.p0.x) / 10) * 10); t.h = Math.max(10, Math.round((DRAG.h0 + p.y - DRAG.p0.y) / 10) * 10); if (t.shape === 'round' || t.shape === 'square') t.h = t.w; }
+    if (DRAG.k === 'move') { t.x = Math.max(-20, Math.min(z.w - 5, Math.round((DRAG.x0 + p.x - DRAG.p0.x) / 5) * 5)); t.y = Math.max(-20, Math.min(z.h - 5, Math.round((DRAG.y0 + p.y - DRAG.p0.y) / 5) * 5)); }
+    else { t.w = Math.max(10, Math.round((DRAG.w0 + p.x - DRAG.p0.x) / 2) * 2); t.h = Math.max(2, Math.round((DRAG.h0 + p.y - DRAG.p0.y) / 2) * 2); if (t.shape === 'square') t.h = t.w; }
     throttleStage();
     return;
   }
@@ -1351,7 +1379,7 @@ window.addEventListener('pointerup', async e => {
 });
 window.addEventListener('pointercancel', () => { if (DRAG) { if (DRAG.ghost) DRAG.ghost.remove(); if (DRAG.el) { DRAG.el.classList.remove('drag'); DRAG.el.style.transform = ''; } DRAG = null; } });
 let _stRaf = 0;
-function throttleStage() { if (_stRaf) return; _stRaf = requestAnimationFrame(() => { _stRaf = 0; const st = $('#stage'); if (!st) return; const tmp = document.createElement('div'); tmp.innerHTML = stageHtml(curZone()); st.replaceWith(tmp.firstElementChild); }); }
+function throttleStage() { if (_stRaf) return; _stRaf = requestAnimationFrame(() => { _stRaf = 0; const st = $('#stage'); if (!st) return; const sc = $('#scroller'), k = sc ? [sc.scrollLeft, sc.scrollTop] : [0, 0]; const tmp = document.createElement('div'); tmp.innerHTML = stageHtml(curZone()); st.replaceWith(tmp.firstElementChild); const n = $('#scroller'); if (n) { n.scrollLeft = k[0]; n.scrollTop = k[1]; } }); }
 document.addEventListener('keydown', e => {
   if (SHEET && e.key === 'Escape') return closeSheet();
   if (e.target.matches('input,select,textarea')) return;
@@ -1436,22 +1464,14 @@ addEventListener('resize', () => { if (S.view === 'time') throttleRender(); });
 // =====================================================================
 //  ДЕМО (tables.html?demo=1) — нищо не се записва в базата
 // =====================================================================
+const AC2_LAYOUT = {"zones":[{"name":"Ресторант","place":"Ресторант","w":910,"h":1287,"items":[["decor","","line",382,57,233,3,0,0],["decor","бар","text",453,10,90,40,0,0],["table","1","stool",383,71,20,22,0,1],["table","2","stool",425,71,20,22,0,1],["table","3","stool",466,71,20,22,0,1],["table","4","stool",507,71,20,22,0,1],["table","5","stool",547,71,20,22,0,1],["table","6","stool",588,71,20,22,0,1],["decor","LOUNGE","text",710,108,170,40,0,0],["table","10","round",694,42,40,40,0,2],["table","9","round",818,23,40,40,0,2],["table","7","round",680,176,40,40,0,2],["table","8","round",777,179,108,36,0,4],["table","204","round",82,16,80,80,0,4],["table","205","square",47,162,77,77,0,4],["table","206","square",164,162,77,77,0,4],["table","203","square",362,186,75,75,0,4],["table","214","square",509,186,75,75,0,4],["table","207","round",83,287,78,78,0,4],["table","202","round",362,303,74,74,0,4],["table","212","round",658,288,72,72,0,4],["table","208","square",47,392,77,77,0,4],["table","209","square",164,392,77,77,0,4],["table","201","square",364,424,73,73,0,2],["table","211","round",559,424,288,112,0,8],["table","210","round",83,509,78,78,0,4],["decor","стъпала","line",165,642,705,3,0,0],["decor","стъпала","text",415,603,140,30,0,0],["decor","","line",48,640,3,232,0,0],["decor","тепаняки","text",-84,735,220,40,-90,0],["table","15","stool",63,682,20,24,0,1],["table","14","stool",63,722,20,24,0,1],["table","12","stool",63,763,20,24,0,1],["table","11","stool",63,805,20,24,0,1],["table","106","square",183,693,69,69,0,4],["table","105","square",358,693,69,69,0,4],["table","107","square",183,790,69,69,0,4],["table","104","square",358,790,69,69,0,4],["table","110","round",559,719,288,96,0,8],["decor","ВХОД","text",-29,997,110,40,90,0],["table","108","round",229,941,120,120,0,6],["table","109","round",559,944,288,104,0,8],["table","101","round",90,1130,120,120,0,6],["table","102","round",229,1130,120,120,0,6],["table","103","round",368,1130,120,120,0,6]]},{"name":"White · Red","place":null,"w":910,"h":867,"items":[["decor","WHITE","text",35,164,190,56,0,0],["table","301","soft",446,41,92,90,0,4],["table","302","soft",446,267,92,90,0,4],["table","304","round",667,23,56,158,0,4],["table","303","round",667,223,56,158,0,4],["decor","","line",50,454,320,2,0,0],["decor","","line",415,453,345,4,0,0],["decor","бар","text",805,425,80,46,0,0],["table","316","stool",438,407,24,24,0,1],["table","315","stool",478,407,24,24,0,1],["table","314","stool",519,407,24,24,0,1],["table","312","stool",560,407,24,24,0,1],["table","311","stool",600,407,24,24,0,1],["table","310","stool",641,407,24,24,0,1],["table","317","stool",438,478,24,24,0,1],["table","318","stool",478,478,24,24,0,1],["table","319","stool",519,478,24,24,0,1],["table","320","stool",560,478,24,24,0,1],["decor","RED","text",28,575,120,56,0,0],["table","405","soft",324,580,92,90,0,4],["table","404","soft",504,580,92,90,0,4],["table","401","soft",206,713,92,90,0,4],["table","402","soft",398,713,92,90,0,4],["table","403","soft",626,713,92,90,0,4]]},{"name":"Private","place":"Private room","w":910,"h":420,"items":[["table","503","round",319,68,214,76,0,6],["table","502","round",319,179,214,76,0,6],["table","501","round",319,287,214,76,0,6],["decor","PRIVATE","text",625,94,230,56,0,0]]}]};
 function demoInit() {
-  const Z = (n, p, w, h, s) => ({ id: 'z' + s, name: n, place: p, w, h, sort: s, active: true });
-  ZONES = [Z('Ресторант', 'Ресторант', 1200, 800, 1), Z('Камерна зала', 'Камерна зала', 1000, 700, 2), Z('Галерия', 'Галерия', 1000, 600, 3), Z('Private room', 'Private room', 700, 500, 4)];
-  let i = 0; const T = (z, kind, label, shape, x, y, w, h, seats, vip) => ({ id: 't' + (++i), zone_id: z, kind, label, shape, x, y, w, h, rot: 0, seats, vip: !!vip, active: true, min_party: 1 });
-  TABLES = [
-    T('z1', 'decor', 'Прозорци', 'window', 60, 20, 1080, 14, 0), T('z1', 'decor', 'Бар', 'bar', 1040, 160, 110, 420, 0), T('z1', 'decor', 'Вход', 'door', 540, 770, 120, 20, 0),
-    T('z1', 'table', '1', 'round', 120, 110, 90, 90, 2), T('z1', 'table', '2', 'round', 290, 110, 90, 90, 2), T('z1', 'table', '3', 'round', 460, 110, 90, 90, 2),
-    T('z1', 'table', '4', 'square', 120, 300, 100, 100, 4), T('z1', 'table', '5', 'square', 300, 300, 100, 100, 4), T('z1', 'table', '6', 'rect', 480, 300, 200, 100, 6),
-    T('z1', 'table', '7', 'round', 760, 130, 120, 120, 6, true), T('z1', 'table', '8', 'round', 760, 330, 120, 120, 6), T('z1', 'table', '9', 'booth', 110, 540, 180, 110, 4),
-    T('z1', 'table', '10', 'booth', 340, 540, 180, 110, 4), T('z1', 'table', '11', 'rect', 600, 560, 300, 100, 10),
-    T('z2', 'decor', 'Сцена', 'stage', 300, 30, 400, 120, 0), T('z2', 'table', 'К1', 'round', 120, 240, 120, 120, 6), T('z2', 'table', 'К2', 'round', 440, 240, 120, 120, 6),
-    T('z2', 'table', 'К3', 'round', 760, 240, 120, 120, 6), T('z2', 'table', 'К4', 'round', 280, 450, 120, 120, 6), T('z2', 'table', 'К5', 'round', 600, 450, 120, 120, 6),
-    T('z3', 'decor', 'Стена с картини', 'wall', 60, 40, 880, 16, 0), T('z3', 'table', 'Г1', 'rect', 200, 250, 600, 110, 16),
-    T('z4', 'table', 'P1', 'rect', 160, 180, 380, 130, 10), T('z4', 'decor', '', 'plant', 600, 40, 60, 60, 0)
-  ];
-  ALLEV = [{ id: 'ev1', title: 'Вечер на камерната музика', format: 'culture', place: 'Камерна зала', date: todayIso(), time: '19:30', ends: '21:30', capacity: 30 }];
+  ZONES = []; TABLES = []; let n = 0;
+  AC2_LAYOUT.zones.forEach((z, zi) => {
+    const id = 'z' + (zi + 1); ZONES.push({ id, name: z.name, place: z.place, w: z.w, h: z.h, sort: zi + 1, active: true });
+    z.items.forEach(([kind, label, shape, x, y, w, h, rot, seats]) => TABLES.push({ id: 't' + (++n), zone_id: id, kind, label, shape, x, y, w, h, rot, seats, vip: false, active: true, min_party: 1 }));
+  });
+  ALLEV = [{ id: 'ev1', title: 'Вечер в Private', format: 'culture', place: 'Private room', date: todayIso(), time: '19:30', ends: '22:00', capacity: 18 }];
   window.__demoDay = {};
 }
 function demoDay() {
@@ -1465,21 +1485,22 @@ function demoDay() {
     mk('r5', 'Николай Тодоров', 3, '20:00', 'confirmed', { membership: 'founder', user_id: 'u3' }),
     mk('r6', 'Фирма „Балкан Медиа“', 12, '20:30', 'confirmed', { note: '[ГРУПА 9+] служебна вечеря', membership: 'corporate', user_id: 'u4' }),
     mk('r7', 'Анна Колева', 2, '21:00', 'requested'),
-    mk('r8', 'Иван и Деси', 2, '21:30', 'confirmed', { grp: 'after', table_event_id: 'ev1', evTitle: 'Вечер на камерната музика', place: 'Ресторант' }),
-    mk('r9', 'Петър Николов', 2, '19:30', 'confirmed', { grp: 'event', event_id: 'ev1', evTitle: 'Вечер на камерната музика', place: 'Камерна зала', paid: true, code: 'K7Q2M9XA' }),
-    mk('r10', 'Красимира Андреева', 4, '19:30', 'confirmed', { grp: 'event', event_id: 'ev1', evTitle: 'Вечер на камерната музика', place: 'Камерна зала', paid: true, code: 'B3T8W1PD' })
+    mk('r8', 'Иван и Деси', 2, '21:30', 'confirmed', { grp: 'after', table_event_id: 'ev1', evTitle: 'Вечер в Private', place: 'Ресторант' }),
+    mk('r9', 'Петър Николов', 2, '19:30', 'confirmed', { grp: 'event', event_id: 'ev1', evTitle: 'Вечер в Private', place: 'Private room', paid: true, code: 'K7Q2M9XA' }),
+    mk('r10', 'Красимира Андреева', 4, '19:30', 'confirmed', { grp: 'event', event_id: 'ev1', evTitle: 'Вечер в Private', place: 'Private room', paid: true, code: 'B3T8W1PD' })
   ];
   const byL = l => (TABLES.find(t => t.kind === 'table' && t.label === l) || {}).id;
   const sd = (lab, start_t, end_t, o) => newSeat(Object.assign({ id: 's' + Math.random().toString(36).slice(2, 8), table_id: byL(lab), start_t, end_t }, o));
   SEATS = [
-    sd('4', '18:30', '20:00', { reservation_id: 'r1', status: 'seated', seated_at: new Date().toISOString() }),
-    sd('7', '19:00', '21:00', { reservation_id: 'r2' }),
-    sd('8', '19:30', '22:00', { reservation_id: 'r3', extra_seats: 2 }),
-    sd('1', '18:00', '20:30', { kind: 'walkin', name: 'Гост на място', party: 2, status: 'seated' }),
-    sd('11', '20:00', '23:00', { kind: 'block', name: 'Балкан Медиа, по телефона' }),
-    sd('5', '20:00', '22:00', { reservation_id: 'r5' }),
-    sd('2', '12:30', '14:00', { kind: 'walkin', name: 'Обяд', party: 2, status: 'done' }),
-    sd('6', '13:00', '14:30', { kind: 'walkin', name: 'Бизнес обяд', party: 5, status: 'done' })
+    sd('205', '18:30', '20:00', { reservation_id: 'r1', status: 'seated', seated_at: new Date().toISOString() }),
+    sd('203', '19:00', '21:00', { reservation_id: 'r2' }),
+    sd('108', '19:30', '22:00', { reservation_id: 'r3' }),
+    sd('101', '18:00', '20:30', { kind: 'walkin', name: 'Гост на място', party: 4, status: 'seated' }),
+    sd('3', '19:15', '20:45', { kind: 'walkin', name: 'Бар', party: 1, status: 'seated' }),
+    sd('4', '19:15', '20:45', { kind: 'walkin', name: 'Бар', party: 1, status: 'seated' }),
+    sd('211', '20:00', '23:00', { kind: 'block', name: 'Балкан Медиа, по телефона' }),
+    sd('104', '20:00', '22:00', { reservation_id: 'r5' }),
+    sd('202', '12:30', '14:00', { kind: 'walkin', name: 'Обяд', party: 2, status: 'done' })
   ];
   window.__demoDay[S.date] = { SEATS, RES };
 }
