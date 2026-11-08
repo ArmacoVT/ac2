@@ -536,6 +536,12 @@ function evWhen(e,long){
   return fmtD(e.date,long)+(e.time?' · '+fmtTime(e.time):'');
 }
 function isPast(e){ const td=todayIso(); const last=e.end_date||e.date; return !!last&&last<td; }
+// ПРОДАЖБИТЕ СПИРАТ 15 мин. след началото (по часа на събитието / на слота). Без час → в края на деня.
+// Многодневни → в края на последния ден. Билет на място от админа не се засяга. Сървърът проверява същото.
+const SALES_GRACE_MS=15*60*1000;
+function evStartTs(dIso,time){ if(!dIso)return null; const p=dIso.split('-').map(Number); if(p.length<3)return null; const m=/^(\d{1,2}):(\d{2})/.exec(time||''); return m?new Date(p[0],p[1]-1,p[2],+m[1],+m[2]).getTime()+SALES_GRACE_MS:new Date(p[0],p[1]-1,p[2],23,59,59).getTime(); }
+function slotClosed(e,time){ if(e.end_date&&e.end_date!==e.date){ const t=evStartTs(e.end_date,null); return t!=null&&Date.now()>t; } const t=evStartTs(e.date,time); return t!=null&&Date.now()>t; }
+function salesClosed(e){ const sl=evSlots(e); return sl.length?sl.every(x=>slotClosed(e,x.time)):slotClosed(e,e.time); }
 function isUpcoming(e){ return !isPast(e)&&!e.archive_only; }
 function fmtPrice(e){ if(e.pub&&e.pub.entry==='free')return L('Свободен вход','Free entry'); if(!(e.price>0))return t('free'); return (Math.round(e.price*100)/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv'); }
 
@@ -567,6 +573,7 @@ const placeT=p=>{ if(!p)return ''; const s=String(p).trim(); return lang==='en'?
 const evEntry=e=>(e.pub&&e.pub.entry)||'ticket';   // ticket | rsvp | free
 function evAction(e){
   const ext=e.pub&&e.pub.ticket_url;
+  if(!ext&&!isPast(e)&&salesClosed(e))return {href:'#/event/'+e.id,label:t('details'),ext:false,kind:'details_click'};
   const dinner=isDinner(e);
   if(evEntry(e)==='free'&&!ext)return {href:'#/event/'+e.id,label:t('details'),ext:false,kind:'details_click'};
   const label=dinner?t('table'):(e.price>0?t('tickets'):(evEntry(e)==='rsvp'?L('Запази място','Reserve a seat'):(e.capacity>0?t('reserve'):t('details'))));
@@ -848,6 +855,7 @@ function pageEvent(id,book){
         ${kv(t('visit'),loc(p.visit))}
         ${g.length?`<div class="kv"><div class="k">${ex?t('works'):L('Галерия','Gallery')}</div>${galleryHtml(g)}</div>`:''}
         ${book&&!past?bookingBox(e):''}
+        ${!past&&salesClosed(e)&&!(e.pub&&e.pub.ticket_url)&&evEntry(e)!=='free'?`<div class="msg" style="font-size:15px;border:1px solid var(--line);margin-top:14px;">${L('Продажбата на билети за това събитие е приключила.','Ticket sales for this event have closed.')}</div>`:''}
       </div>
       <aside><div class="box">
         <div class="row"><span>${t('date')}</span><span>${esc((e.end_date&&e.end_date!==e.date)?evWhen(e,true):fmtD(e.date,true))}</span></div>
@@ -977,12 +985,13 @@ function bookingBox(e){
   const unit=Number(e.price)||0;
   let inner='';
   if(!guestOpen(e))inner=`<p class="body">${t('guestClosed')}</p>`;
+  else if(salesClosed(e)&&!(paidBack&&PAY_RESULT.ok))inner=`<div class="msg" style="font-size:16px;border:1px solid var(--line);">${L('Продажбата на билети за това събитие е приключила.','Ticket sales for this event have closed.')}</div>`;
   else if(soldOutPub(e)&&!(paidBack&&PAY_RESULT.ok))inner=`<div class="msg" style="font-size:16px;border:1px solid var(--line);">${L('Продадено — всички места са заети.','Sold out — all seats are taken.')}</div>`;
   else if(from&&from>td)inner=`<p class="body">${t('opensOn')} <b>${esc(fmtD(from,true))}</b>.</p>`;
   else if(paidBack&&PAY_RESULT.ok)inner=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`;
   else inner=`<form class="form" id="bookForm" onsubmit="return false;" data-unit="${unit}">
       ${paidBack&&!PAY_RESULT.ok?`<div class="msg err">${t('payFail')}</div>`:''}
-      ${evSlots(e).length?`<div><label>${L('Час','Time')} *</label><div class="selrow" id="bk_slots">${(()=>{ const firstFree=evSlots(e).findIndex(s=>{const l=slotLeft(e,s.time);return l===null||l>0;}); return evSlots(e).map((s,i)=>{ const l=slotLeft(e,s.time), full=l!==null&&l<=0; return full?`<button type="button" class="achip" disabled style="opacity:.45;cursor:default;text-decoration:line-through;" title="${L('Продадено','Sold out')}">${esc(s.time)} · ${L('продадено','sold out')}</button>`:`<button type="button" class="achip ${i===firstFree?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on')">${esc(s.time)}</button>`; }).join(''); })()}</div></div>`:''}
+      ${evSlots(e).length?`<div><label>${L('Час','Time')} *</label><div class="selrow" id="bk_slots">${(()=>{ const firstFree=evSlots(e).findIndex(s=>{const l=slotLeft(e,s.time);return !slotClosed(e,s.time)&&(l===null||l>0);}); return evSlots(e).map((s,i)=>{ const l=slotLeft(e,s.time), full=l!==null&&l<=0; if(slotClosed(e,s.time))return `<button type="button" class="achip" disabled style="opacity:.45;cursor:default;" title="${L('Продажбата приключи','Sales closed')}">${esc(s.time)} · ${L('приключи','closed')}</button>`; return full?`<button type="button" class="achip" disabled style="opacity:.45;cursor:default;text-decoration:line-through;" title="${L('Продадено','Sold out')}">${esc(s.time)} · ${L('продадено','sold out')}</button>`:`<button type="button" class="achip ${i===firstFree?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on')">${esc(s.time)}</button>`; }).join(''); })()}</div></div>`:''}
       <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;">${(isDinner(e)&&unit>0)?`<input name="party" type="number" inputmode="numeric" min="1" max="${maxParty(e)}" value="1" style="width:110px;" oninput="bkTotal(this.form)"/>`:`<select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form);const b=document.getElementById('bk_big');if(b)b.style.display=this.value==='9+'?'block':'none'">${Array.from({length:bigAllowed(e)?Math.min(8,maxParty(e)):maxParty(e)},(_,i)=>`<option>${i+1}</option>`).join('')}${bigAllowed(e)?`<option value="9+">9+</option>`:''}</select>`}
         ${unit>0?`<span style="font-family:var(--serif);font-size:22px;color:var(--cream);">= <b id="bk_total">${esc(fmtPrice(e))}</b></span>`:`<span class="hint" style="margin:0">${t('free')}</span>`}</div></div>
       ${bigAllowed(e)?`<div id="bk_big" class="msg ok" style="display:none;">${L('За групи над 8 души екипът ще се свърже с вас по телефона, за да уточните детайлите.','For groups of more than 8 the team will call you to arrange the details.')}</div>`:''}

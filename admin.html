@@ -259,6 +259,7 @@ let MPAY=null, MPRICES=null, MCODES=null;
 // резервация: нова заявка (requested) · непрегледана (seen_at празно) · отказ от член (cancelled) непрегледан · платена+отменена без върната сума
 function resNeedsRefund(r){ return r.paid && !r.refunded_at && (r.status==='cancelled'||r.status==='declined'); }
 function resAttention(r){
+  if(resNeedsRefund(r))return 'refund';   // връщане на сума остава „за действие“ и след архивиране
   if(resIsOld(r))return '';
   const st=r.status||'requested';
   if(st==='requested')return 'new';
@@ -1016,12 +1017,12 @@ function resBadge(st){
 }
 let resArchive=false;
 function toggleResArchive(){resArchive=!resArchive;render();}
-// резервация е „стара", ако събитието (или датата ѝ) е минало преди повече от 2 дни → отива в архив
+// резервация е „стара“ от ДЕНЯ СЛЕД събитието (последния му ден) → отива в архив (в деня на събитието остава под ръка за входа)
 function resIsOld(r){
   const ev=(r.event_id||r.table_event_id)?EVENTS.find(e=>e.id===(r.event_id||r.table_event_id)):null;
   const d=ev?(ev.end_date||ev.date):r.date; if(!d)return false;
-  const cut=new Date(); cut.setDate(cut.getDate()-2);
-  return d<cut.toISOString().slice(0,10);
+  const n=new Date(), today=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+  return d<today;
 }
 const doorBtn=()=>!can('reservations')?(canExport()?`<div style="float:right;margin-top:4px;"><button class="btn ghost sm" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button></div>`:''):`<div style="float:right;margin-top:4px;display:flex;gap:8px;">${can('walkin')?`<button class="btn ok sm" onclick="walkinOpen()">+ Билет на място</button>`:''}<a class="btn ghost sm" href="${(window.ACAC_CONFIG&&ACAC_CONFIG.APP_URL)||'app/'}#door" target="_blank" rel="noopener">📷 Скенер за вход</a></div>`;
 // ---------- ЧЛЕНСТВА И ЦЕНИ (само админ) + ПОКАНА ЗА ПЛАЩАНЕ ----------
@@ -1474,7 +1475,7 @@ function resView(){
     </div></div>`;}).join('');
   if(!rows)rows=`<p class="empty">Няма заявки в този раздел.</p>`;
   return `${doorBtn()}<h2>Резервации${resArchive?' — архив':''}</h2>
-  <div style="margin:-4px 0 10px;"><button class="btn ghost sm" onclick="toggleResArchive()">${resArchive?'‹ Текущи':'Архив ('+OLD.length+') ▾'}</button> <span class="muted" style="font-size:12px;">${resArchive?'Резервации за събития, минали преди повече от 2 дни.':'Минали събития (2+ дни) са в архива.'}</span></div>
+  <div style="margin:-4px 0 10px;"><button class="btn ghost sm" onclick="toggleResArchive()">${resArchive?'‹ Текущи':'Архив ('+OLD.length+') ▾'}</button> <span class="muted" style="font-size:12px;">${resArchive?'Резервации за минали събития (от следващия ден).':'Минали събития отиват в архива на следващия ден.'}</span></div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px;">${chips}${canEvExport()?`<span style="margin-left:auto;display:flex;gap:6px;"><button class="btn ghost sm" onclick="exportEvents('upcoming')" title="Предстоящите събития — всяко на отделен лист + обобщение + предстоящите запитвания и съобщенията">⬇ Предстоящи събития (Excel)</button><button class="btn ghost sm" onclick="exportEvents(null)" title="Всички събития с резервации (вкл. минали) + всички запитвания и съобщения от сайта — в един файл">⬇ Всички + запитвания и съобщения</button></span>`:''}</div>
     ${head}${rows}`;
 }

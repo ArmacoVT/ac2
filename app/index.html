@@ -1007,7 +1007,7 @@ function topupLeft(e){
   if(!user||!e||isPast(e)||!membershipActive()||isStaffView()||evEntry(e)==='free'||myBigGroup(e.id))return 0;
   const have=myPhysSeats(e.id); if(!have)return 0;
   if(!eventTiers(e).some(t=>t.kind==='physical'))return 0;
-  if(!canBookNow(e))return 0;
+  if(!canBookNow(e)||salesClosed(e))return 0;
   let rem=bookMax(e)-have; const l=seatsLeft(e); if(l!==null)rem=Math.min(rem,l);
   return Math.max(0,rem);
 }
@@ -1039,6 +1039,11 @@ const evEnd=e=>e.end_date||e.date||'';
 const PAST_BUFFER_MS=2*3600000; // 2 часа след края → „Изминали"
 const PAST_VISIBLE_DAYS=30; // изминали се виждат до 30 дни назад (после се скриват, но остават в базата)
 function pastVisible(e){const ed=e.end_date||e.date;if(!ed)return false;return new Date(ed+'T23:59:59').getTime()>=Date.now()-PAST_VISIBLE_DAYS*86400000;}
+// ПРОДАЖБИТЕ (присъствие) СПИРАТ 15 мин. след началото (по часа на събитието / слота). Без час → край на деня; многодневни → край на последния ден.
+const SALES_GRACE_MS=15*60*1000;
+function evStartTs(dIso,time){ if(!dIso)return null; const p=dIso.split('-').map(Number); if(p.length<3)return null; const m=/^(\d{1,2}):(\d{2})/.exec(time||''); return m?new Date(p[0],p[1]-1,p[2],+m[1],+m[2]).getTime()+SALES_GRACE_MS:new Date(p[0],p[1]-1,p[2],23,59,59).getTime(); }
+function slotClosed(e,time){ if(e.end_date&&e.end_date!==e.date){ const t=evStartTs(e.end_date,null); return t!=null&&Date.now()>t; } const t=evStartTs(e.date,time); return t!=null&&Date.now()>t; }
+function salesClosed(e){ const sl=(e&&e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(x=>x&&x.time):[]; return sl.length?sl.every(x=>slotClosed(e,x.time)):slotClosed(e,e.time); }
 function isPast(e){
   const ed=e.end_date||e.date; if(!ed)return false;
   const t=(e.ends&&/^\d{1,2}:\d{2}/.test(e.ends))?e.ends.slice(0,5):'23:59';
@@ -1088,6 +1093,7 @@ function eventCard(e,i){
     :expiredMember?`<button class="chip locked" onclick="event.stopPropagation();go('profile')">${lockSvg}${tr('membershipOver')}</button>`
     :booked?`<button class="chip on${popCls}" onclick="event.stopPropagation();(function(){const r=myBookingFor('${e.id}');if(r&&r.status==='confirmed')go('ticket/'+r.id);else toast(tr('alreadyBooked'));})()">✓ ${bookedLabel(e.id)}</button>${topupLeft(e)>0?`<button class="chip" onclick="event.stopPropagation();openBook('${e.id}','topup')">+ ${lang==='bg'?'Добави места':'Add seats'}</button>`:''}`
     :locked?`<button class="chip locked" onclick="event.stopPropagation();toast(tr('bookFrom')+' '+'${lockEu}')">${lockSvg}${tr('bookFrom')} ${lockEu}</button>`
+    :(salesClosed(e)&&!e.offer_online&&evEntry(e)!=='free')?`<span class="chip locked" onclick="event.stopPropagation();toast(lang==='bg'?'Продажбата на билети приключи':'Ticket sales have closed')">${lang==='bg'?'Продажбата приключи':'Sales closed'}</span>`
     :soldOut?`<button class="chip locked" onclick="event.stopPropagation();toast(lang==='bg'?'Продадено':'Sold out')">${lang==='bg'?'Продадено':'Sold out'}</button>`
     :evEntry(e)==='free'?`<span class="chip" style="background:var(--card);color:var(--muted);cursor:default;">${lang==='bg'?'Свободен вход':'Free entry'}</span>`
     :`<button class="chip" onclick="event.stopPropagation();openBook('${e.id}')">${e.price>0?(lang==='bg'?'Купи билет':'Buy ticket'):(evEntry(e)==='rsvp'?(lang==='bg'?'Запази място':'Reserve a seat'):tr('ticket'))}</button>`);
@@ -1248,6 +1254,7 @@ function openBook(id,onlyKind){
   document.getElementById('booksheet')?.remove();
   document.getElementById('sheetbd')?.remove();
   let tiers=eventTiers(e);
+  if(salesClosed(e))tiers=tiers.filter(t=>t.kind!=='physical');   // присъствие — спряно след началото; онлайн остава
   _bookTopup=null;
   if(onlyKind==='topup'){
     if(topupLeft(e)<=0){toast(lang==='bg'?'Достигнали сте максимума места за това събитие':'You have reached the seat limit for this event');return;}
@@ -1264,7 +1271,7 @@ function openBook(id,onlyKind){
   const tableOpt=(_bookTopup!==e.id&&endsEarly(e))?`<div class="tableopt"><label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" id="tb_${e.id}" onchange="toggleTableOpt('${e.id}')"/><span>${tr('addTable')} <small>· ${tr('afterEvent')} · ${esc(e.ends||'')}</small></span></label><div class="tablebox" id="tbx_${e.id}"><div class="qrow" style="border-bottom:none;padding:8px 0 0;"><span>${tr('tableParty')}</span><div class="qstep"><button onclick="tblQty('${e.id}',-1)">−</button><b id="tbp_lbl_${e.id}">1</b><button onclick="tblQty('${e.id}',1)">+</button></div></div><input id="tbp_${e.id}" type="hidden" value="1"/></div></div>`:'';
   // слотове (часове) с капацитет по слот — човекът избира час; местата се броят за всеки час отделно
   const slots=evSlots(e);
-  const slotRow=slots.length?`<div class="qrow" style="flex-direction:column;align-items:flex-start;gap:8px;"><span>${lang==='bg'?'Час':'Time'}</span><div class="selrow" id="slotsel_${e.id}" style="margin:0;">${slots.map((s,i)=>`<button type="button" class="chip ${i===0?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on');try{hap('select')}catch(e){}">${esc(s.time)}</button>`).join('')}</div></div>`:'';
+  const slotRow=slots.length?`<div class="qrow" style="flex-direction:column;align-items:flex-start;gap:8px;"><span>${lang==='bg'?'Час':'Time'}</span><div class="selrow" id="slotsel_${e.id}" style="margin:0;">${(()=>{ const f0=slots.findIndex(x=>!slotClosed(e,x.time)); return slots.map((s,i)=>slotClosed(e,s.time)?`<span class="chip locked" style="opacity:.45;">${esc(s.time)} · ${lang==='bg'?'приключи':'closed'}</span>`:`<button type="button" class="chip ${i===f0?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on');try{hap('select')}catch(e){}">${esc(s.time)}</button>`).join(''); })()}</div></div>`:'';
   // безплатно събитие: „9+ души“ → заявка за обаждане от екипа (без автоматично потвърждение)
   const bigOpt=(_bookTopup!==e.id&&isDin&&tierPrice(e,'physical')<=0)?`<div class="tableopt"><label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" id="bigp_${e.id}" onchange="const on=this.checked;const q=document.getElementById('qstep_${e.id}');if(q)q.style.opacity=on?'.35':'1';updateBuy('${e.id}')"/><span>${lang==='bg'?'Група 9+ души':'Group of 9+ people'} <small>· ${lang==='bg'?'екипът ще се свърже с вас за детайлите':'the team will call you to arrange details'}</small></span></label></div>`:'';
   const partyInner=`${slotRow}<div class="qrow"><span>${tr('party')}</span><div class="qstep" id="qstep_${e.id}"><button onclick="bookQty('${e.id}',-1,${maxN})">−</button><b id="bp_lbl_${e.id}">1</b><button onclick="bookQty('${e.id}',1,${maxN})">+</button></div></div>${bigOpt}${tableOpt}`;
@@ -1357,6 +1364,7 @@ async function confirmBuy(id){
   // безплатно ниво → заявка за одобрение от админ (стария поток)
   const slot=kind==='physical'?pickedSlot(id):'';   // слот (час), ако събитието има слотове
   if(evSlots(e).length&&kind==='physical'&&!slot){fail(lang==='bg'?'Изберете час':'Choose a time');if(btn)updateBuy(id);return;}
+  if(kind==='physical'&&slotClosed(e,slot||e.time)){fail(lang==='bg'?'Продажбата на билети за този час приключи':'Ticket sales for this time have closed');if(btn)updateBuy(id);return;}
   // безплатно ниво в демо режим (без Supabase) → локален запис; иначе ВСИЧКО минава през сървъра (create-payment):
   // той знае правилата (свободен вход / с регистрация → билет веднага / заявка за одобрение, 9+, слотове, капацитет, лимити)
   if(tierPrice(e,kind)<=0&&!DB.live){
