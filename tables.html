@@ -210,7 +210,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .stat span{font-size:11.5px;color:var(--muted);}
 .search{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0 12px;height:42px;}
 .search input{flex:1;border:0;background:transparent;font:inherit;color:var(--ink);outline:none;min-width:0;}
-.filters{display:flex;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none;}
+.filters{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
 .filters button{padding:6px 11px;border-radius:16px;font-size:13px;border:1px solid var(--line);color:var(--mid);white-space:nowrap;}
 .filters button.on{background:var(--wine);border-color:var(--wine);color:#F7F7EE;}
 .filters button em{font-style:normal;opacity:.7;margin-left:3px;}
@@ -363,11 +363,17 @@ textarea.inp{height:70px;padding:10px 12px;resize:vertical;}
   .brand span{display:none;}
 }
 @media (max-width:860px){
-  .side{position:absolute;left:0;right:0;bottom:0;width:auto;height:62%;border-left:0;border-top:1px solid var(--line);border-radius:20px 20px 0 0;
-    box-shadow:0 -10px 30px rgba(0,0,0,.14);transform:translateY(calc(100% - 66px));transition:transform .28s cubic-bezier(.2,.8,.2,1);z-index:10;}
+  /* долен лист: дърпа се с пръст нагоре/надолу или с докосване; затворен — остава лента с обобщение */
+  .side{--peek:calc(88px + env(safe-area-inset-bottom));position:absolute;left:0;right:0;bottom:0;width:auto;height:min(80%,calc(100% - 24px));border-left:0;border-top:1px solid var(--line);border-radius:22px 22px 0 0;
+    box-shadow:0 -10px 30px rgba(0,0,0,.18);transform:translateY(calc(100% - var(--peek)));transition:transform .28s cubic-bezier(.2,.8,.2,1);z-index:10;}
   .side.open{transform:none;}
-  .sidetoggle{display:flex;justify-content:center;padding:8px 0 0;cursor:pointer;}
-  .sidetoggle i{width:42px;height:5px;border-radius:3px;background:var(--line2);}
+  .side.dragging{transition:none;}
+  .sidetoggle{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 16px 8px;cursor:grab;touch-action:none;min-height:60px;flex:0 0 auto;border-bottom:1px solid var(--line);}
+  .sidetoggle i{width:44px;height:5px;border-radius:3px;background:var(--line2);}
+  .sidetoggle .peek{display:flex;justify-content:space-between;align-items:center;width:100%;font-size:14px;gap:10px;pointer-events:none;}
+  .sidetoggle .peek b{font-weight:600;}
+  .sidetoggle .peek span{color:var(--muted);white-space:nowrap;}
+  .side .list,.side .det{padding-bottom:calc(100px + env(safe-area-inset-bottom));}
   .legend{bottom:80px;}
   .scrub{flex-basis:220px;}
   .datenav .d{min-width:130px;}
@@ -377,6 +383,7 @@ textarea.inp{height:70px;padding:10px 12px;resize:vertical;}
 }
 @media (max-width:560px){
   .brand{display:none;}
+  .ibtn.txtb{display:none;}
   .legend{display:none;}
   .datenav .ar{width:30px;}
   .datenav .d{min-width:0;padding:6px 4px;}
@@ -388,7 +395,36 @@ textarea.inp{height:70px;padding:10px 12px;resize:vertical;}
   .datenav{margin-left:0;}
   .today{display:none;}
 }
-@media print{.top,.sub,.side,.legend{display:none;}}
+@media print{.top,.sub,.side,.legend{display:none;}
+  #app{display:none!important;} body{overflow:visible;background:#fff;color:#000;}
+  .scrim{position:static!important;background:none!important;display:block!important;animation:none;}
+  .sheet{max-height:none!important;overflow:visible!important;box-shadow:none!important;width:100%!important;border-radius:0!important;padding:0!important;animation:none;background:#fff;}
+  .noprint,.toast{display:none!important;} .brt tr{break-inside:avoid;}}
+.sheet.wide{width:min(1000px,100%);}
+.gl{font-size:13.5px;margin-top:4px;} .gl.alg,.alg{color:var(--amber);font-weight:600;}
+.msgs.al{border-left-color:var(--wine);}
+.rc.noshow{opacity:.55;}
+.brief h4{font-size:13px;color:var(--muted);font-weight:500;margin:16px 0 6px;}
+.bev{list-style:none;font-size:14px;} .bev li{padding:4px 0;}
+.brt{width:100%;border-collapse:collapse;font-size:14px;}
+.brt th{text-align:left;font-weight:500;color:var(--muted);font-size:12.5px;padding:6px 8px;border-bottom:1px solid var(--line2);}
+.brt td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top;}
+.brt td.t{font-family:var(--serif);font-style:italic;font-weight:700;font-size:17px;white-space:nowrap;}
+.brt td.n{text-align:center;font-weight:600;} .brt td.i{color:var(--mid);font-size:13px;}
+.brt tr.big td{background:var(--wineT);}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px;}
+.kpis>div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;}
+.kpis b{display:block;font-family:var(--serif);font-style:italic;font-weight:700;font-size:28px;line-height:1.1;}
+.kpis span{font-size:12.5px;color:var(--muted);}
+.repgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px;}
+.bars{display:flex;flex-direction:column;gap:5px;}
+.bar{display:grid;grid-template-columns:64px 1fr 40px;align-items:center;gap:8px;font-size:13px;}
+.bar .bl{color:var(--mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar .bt{height:14px;border-radius:4px;background:var(--line);overflow:hidden;}
+.bar .bt i{display:block;height:100%;background:var(--wine);border-radius:4px;}
+.bar .bv{text-align:right;font-weight:600;}
+.ibtn.txtb{width:auto;padding:0 14px 0 12px;gap:8px;display:flex;border:1px solid rgba(235,235,214,.25);font-size:14px;}
+@media (max-width:1100px){.ibtn.txtb span{display:none;}.ibtn.txtb{width:42px;padding:0;justify-content:center;border:0;}}
 </style>
 </head>
 <body>
@@ -439,7 +475,7 @@ function applyTheme() {
 applyTheme();
 
 // ---------- състояние ----------
-let ME = null, CAN_LAYOUT = false, MAIN = null;   // MAIN = кога е запазен основният план
+let ME = null, CAN_LAYOUT = false, CAN_RES = false, MAIN = null;   // MAIN = кога е запазен основният план
 let ZONES = [], TABLES = [], SEATS = [], RES = [], EVENTS = [], ALLEV = [];
 const S = { zoom: 1, date: todayIso(), view: 'floor', zone: null, at: nowMin(), follow: true, edit: false,
   sel: null,            // {t:'table'|'res'|'seat'|'zone', id}
@@ -460,6 +496,8 @@ const api = {
     if (z.error) throw z.error; if (t.error) throw t.error;
     ZONES = z.data || []; TABLES = t.data || [];
     try { const m = await sb.from('floor_layouts').select('saved_at,saved_name').eq('id', 'main').maybeSingle(); MAIN = m.error ? null : m.data; } catch (e) { MAIN = null; }
+    try { const [gn, rf, fc] = await Promise.all([sb.from('guest_notes').select('*').limit(5000), sb.from('res_flags').select('*').limit(10000), sb.from('floor_combos').select('*')]);
+      NOTES = {}; (gn.data || []).forEach(n => { NOTES[n.gkey] = n; }); FLAGS = rf.data || []; COMBOS = fc.data || []; } catch (e) {}
     try { ALLEV = await DB.listEvents(); } catch (e) { ALLEV = []; }
   },
   async loadDay() {
@@ -478,6 +516,7 @@ const api = {
     const miss = [...new Set(SEATS.map(x => x.reservation_id).filter(id => id && !rows.some(y => y.id === id)))];
     if (miss.length) { const m = await sb.from('reservations').select('*').in('id', miss); rows = rows.concat(m.data || []); }
     RES = rows.map(mapRes).filter(Boolean);
+    try { const w = await sb.from('floor_waitlist').select('*').eq('date', S.date); WAIT = w.error ? [] : (w.data || []); } catch (e) { WAIT = []; }
     if (canMsgs()) try { const since = new Date(Date.now() - 21 * 864e5).toISOString();
       const m = await sb.from('contact_messages').select('id,name,email,phone,subject,message,is_read,created_at').eq('is_read', false).gte('created_at', since).order('created_at', { ascending: false }).limit(40);
       MSGS = m.error ? [] : (m.data || []); } catch (e) { MSGS = []; }
@@ -558,6 +597,7 @@ function tableState(t, T) {
 }
 const seatsCount = (t, s) => Math.max(0, (t.seats || 0) + (s ? (s.extra_seats || 0) : 0));
 function resState(r) {
+  const f = typeof flagOf === 'function' ? flagOf(r) : null; if (f && f.kind === 'no_show' && !seatsOfRes(r.id).some(s => s.status !== 'planned')) return 'noshow';
   const ss = seatsOfRes(r.id);
   if (!ss.length) return 'todo';
   if (ss.some(s => s.status === 'seated')) return 'seated';
@@ -632,7 +672,7 @@ async function seatNow(s) {
     if (S.date === todayIso() && T >= OPEN() && T < tm(x.start_t)) { const d = tm(x.end_t) - tm(x.start_t); x.start_t = fm(snap15(T)); x.end_t = fm(Math.min(1440, tm(x.start_t) + d)); }
     await saveSeat(x);
   }
-  if (r) await checkIn(r);
+  if (r) { await checkIn(r); await autoLate(r); }
   toast((r ? r.name : 'Гостите') + ' са настанени');
 }
 async function freeSeat(s) {
@@ -691,13 +731,14 @@ function render() {
       <button class="${S.view === 'time' ? 'on' : ''}" data-a="view" data-v="time">По часове</button>
     </div>
     ${CAN_LAYOUT ? (S.edit ? `<button class="donebtn" data-a="edit">Готово</button>` : `<button class="ibtn edtxt" data-a="edit" title="Подреди залата: добави, премести или махни маси">${ICON.edit}<span>Подреди залата</span></button>`) : ''}
-    <button class="ibtn" data-a="settings" title="Настройки" aria-label="Настройки">${ICON.cog}</button>
+    ${S.edit ? '' : `<button class="ibtn txtb" data-a="brief" title="Брифинг за вечерта">${ICON.brief}<span>Брифинг</span></button>`}
+    <button class="ibtn" data-a="menu" title="Справки и настройки" aria-label="Меню">${ICON.menu}</button>
     <span class="live ${DEMO ? 'off' : ''}" title="${DEMO ? 'Демо — без база' : 'На живо: промените от другите таблети идват веднага'}"></span>
   </header>
   ${S.view === 'floor' ? subBar(zone) : ''}
   <div class="main">
     ${S.view === 'floor' ? stageHtml(zone) : timelineHtml()}
-    <aside class="side ${S.side ? 'open' : ''}"><div class="sidetoggle" data-a="side"><i></i></div>${sideHtml(zone)}</aside>
+    <aside class="side ${S.side ? 'open' : ''}">${gripHtml()}${sideHtml(zone)}</aside>
   </div>`;
   if (S.view === 'time') afterTimeline();
   saveState();
@@ -748,6 +789,7 @@ function stageHtml(zone) {
       ${decor}${joins}${tables}${chips}${handle}
     </svg></div>
     <div class="zoom"><button data-a="zoom" data-v="1" aria-label="Увеличи">+</button><button class="fit" data-a="zoom" data-v="0" aria-label="Цялата зала">цяла</button><button data-a="zoom" data-v="-1" aria-label="Намали">−</button></div>
+    ${S.comboPick ? `<div class="assignbar">Докосни масите: <b>${S.comboPick.length ? esc(S.comboPick.map(id => tLabel(tableById(id))).join(' + ')) + ' · ' + S.comboPick.reduce((n, id) => n + ((tableById(id) || {}).seats || 0), 0) + ' места' : 'нищо избрано'}</b> <button data-a="combosave">Запази</button><button data-a="combocancel">Отказ</button></div>` : ''}
     ${assignR ? `<div class="assignbar">Избери маса за <b>${esc(assignR.name)}</b> (${assignR.party}) <button data-a="cancelassign">Отказ</button></div>` : ''}
     ${S.edit ? '' : `<div class="legend"><span><i></i>Свободна</span><span><i class="r"></i>Резервирана</span><span><i class="s"></i>Идват скоро</span><span><i class="g"></i>Настанени</span><span><i class="b"></i>Запазена</span></div>`}
     ${!all.length ? `<div class="empty"><div><h3>Празна зала</h3><p>${S.edit ? 'Добави маси от панела вдясно.' : (CAN_LAYOUT ? 'Натисни „Подреди залата“, за да добавиш маси.' : 'Още няма маси в тази зала.')}</p></div></div>` : ''}
@@ -799,7 +841,7 @@ function tableSvg(t, T, assignR) {
   if (isCounter(t)) return counterSvg(t, T, assignR);
   const { st, s } = tableState(t, T);
   const base = t.seats || 0, n = seatsCount(t, s && st !== 'free' ? s : null);
-  let cls = 'tb st-' + st + (t.active === false ? ' inactive' : '') + (S.sel && S.sel.t === 'table' && S.sel.id === t.id ? ' sel' : '');
+  let cls = 'tb st-' + st + (t.active === false ? ' inactive' : '') + (S.sel && S.sel.t === 'table' && S.sel.id === t.id ? ' sel' : '') + (S.comboPick && S.comboPick.includes(t.id) ? ' fit' : '');
   if (assignR && !S.edit) { const a = tm(assignR.time) ?? T, b = a + dur(assignR.party); const ok = t.seats >= assignR.party && !overlaps(t.id, a, b, null, assignR.party).filter(x => x.reservation_id !== assignR.id).length; cls += ok ? ' fit' : ' nofit'; }
   const ch = chairPos(t, n).map((p, i) => `<rect class="ch ${i >= base ? 'x' : ''}" x="-9" y="-6" width="18" height="12" rx="4" transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)}) rotate(${p[2].toFixed(0)})"/>`).join('');
   let body;
@@ -819,7 +861,7 @@ function tableSvg(t, T, assignR) {
     const inW = (t.shape === 'round' ? .78 : .9) * (t.rot % 180 ? t.h : t.w);
     const maxCh = Math.max(4, Math.floor(inW / 7.2));
     const cut = x => (x.length > maxCh ? x.slice(0, maxCh - 1) + '…' : x);
-    const who = st === 'block' ? (s.name || 'Запазена') : shortName(s) + (seatParty(s) ? ' · ' + seatParty(s) : '');
+    const who = st === 'block' ? (s.name || 'Запазена') : (algOf(s) ? '⚠ ' : '') + shortName(s) + (seatParty(s) ? ' · ' + seatParty(s) : '');
     const when = st === 'block' ? 'запазена ' + s.start_t + '–' + s.end_t : st === 'seated' ? 'до ' + s.end_t : st === 'over' ? 'над времето' : s.start_t + '–' + s.end_t;
     const tall = (t.rot % 180 ? t.w : t.h) >= 74;
     const tag = st === 'block' ? `<rect class="tag" x="${t.w / 2 - inW / 2}" y="${cy - (tall ? 4 : 2)}" width="${inW}" height="${tall ? 34 : 18}" rx="6"${rt}/>` : '';
@@ -875,6 +917,39 @@ function sideHtml(zone) {
   if (S.sel && S.sel.t === 'res') { const r = resById(S.sel.id); if (r) return resPanel(r); }
   return listHtml();
 }
+// дръжката на долния лист (само на телефон/таблет изправен): обобщение, видимо и когато листът е свит
+function gripHtml() {
+  let txt;
+  if (S.sel && S.sel.t === 'table') { const t = tableById(S.sel.id); txt = '<b>' + esc(t ? tName(t) : '') + '</b>'; }
+  else if (S.sel && S.sel.t === 'res') { const r = resById(S.sel.id); txt = '<b>' + esc(r ? r.name : '') + '</b>'; }
+  else if (S.edit) txt = '<b>Подреди залата</b>';
+  else { const v = visibleRes().filter(r => ['rest', 'after'].includes(grpOf(r))); const todo = v.filter(r => resState(r) === 'todo').length; const al = alerts().length; txt = '<b>' + plural(v.length, 'резервация', 'резервации') + '</b>' + (todo ? ' · ' + todo + ' без маса' : '') + (al ? ' · <b style="color:var(--wine)">⚠ ' + al + '</b>' : ''); }
+  return `<div class="sidetoggle" data-grip="1" role="button" aria-label="Отвори или свий панела"><i></i><div class="peek"><span style="color:var(--ink)">${txt}</span><span>${S.side ? 'свий ▾' : 'отвори ▴'}</span></div></div>`;
+}
+function setSide(open) { S.side = open; const sd = $('.side'); if (sd) { sd.classList.toggle('open', open); sd.style.transform = ''; const pk = sd.querySelector('.peek span:last-child'); if (pk) pk.textContent = open ? 'свий ▾' : 'отвори ▴'; } }
+// дърпане на листа с пръст (pointer events — работи и с мишка)
+let SG = null;
+document.addEventListener('pointerdown', e => {
+  const g = e.target.closest('[data-grip]'); if (!g || innerWidth > 860) return;
+  const sd = $('.side'); if (!sd) return;
+  const h = sd.getBoundingClientRect().height, peek = parseFloat(getComputedStyle(sd).getPropertyValue('--peek')) || 70;
+  const closedY = h - (g.getBoundingClientRect().height + 10);
+  SG = { y0: e.clientY, base: S.side ? 0 : closedY, closedY, moved: false, t0: Date.now(), sd };
+  sd.classList.add('dragging'); try { g.setPointerCapture(e.pointerId); } catch (er) {}
+  e.preventDefault();
+});
+document.addEventListener('pointermove', e => {
+  if (!SG) return; const dy = e.clientY - SG.y0; if (Math.abs(dy) > 5) SG.moved = true;
+  const y = Math.max(0, Math.min(SG.closedY, SG.base + dy)); SG.y = y; SG.sd.style.transform = 'translateY(' + y + 'px)';
+});
+const sgEnd = e => {
+  if (!SG) return; const g = SG; SG = null; g.sd.classList.remove('dragging');
+  if (!g.moved) { setSide(!S.side); return; }
+  const dy = e.clientY - g.y0;   // достатъчно е да дръпнеш ~60 px в посоката
+  setSide(dy < -60 ? true : dy > 60 ? false : S.side);
+};
+document.addEventListener('pointerup', sgEnd);
+document.addEventListener('pointercancel', sgEnd);
 function listHtml() {
   const vis = visibleRes();
   const T = S.at;
@@ -884,7 +959,7 @@ function listHtml() {
     + vis.filter(r => resState(r) === 'seated').reduce((a, r) => a + r.party, 0);
   const tt = TABLES.filter(t => t.kind === 'table' && t.active !== false);
   const free = tt.filter(t => tableState(t, T).st === 'free').length;
-  const cnt = { todo: 0, assigned: 0, seated: 0, all: vis.filter(r => grpOf(r) !== 'event').length };
+  const cnt = { todo: 0, assigned: 0, seated: 0, all: vis.filter(r => grpOf(r) !== 'event').length, wait: WAIT.filter(w => w.status === 'waiting').length };
   vis.filter(r => grpOf(r) !== 'event').forEach(r => { const st = resState(r); if (st === 'todo') cnt.todo++; else if (st === 'seated') cnt.seated++; else if (st === 'assigned') cnt.assigned++; });
   const q = S.q.trim().toLowerCase();
   let rows = vis.filter(r => {
@@ -909,7 +984,9 @@ function listHtml() {
       });
     } else { html += `<div class="grp"><span>${title}</span><span>${gr.length}</span></div>` + gr.map(resCard).join(''); }
   });
-  html = msgsHtml() + html;
+  if (S.filter === 'wait') html = waitHtml();
+  else if (S.filter === 'todo' && cnt.todo > 0) html = `<button class="btn w full" data-a="autoassign" style="margin-bottom:10px">Разпредели всички по масите (${cnt.todo})</button>` + html;
+  html = alertsHtml() + msgsHtml() + html;
   if (!html) html = `<div class="empty" style="position:static;padding:40px 10px;"><div><h3 style="font-size:20px;">${S.filter === 'todo' && vis.length ? 'Всички са разпределени' : 'Няма резервации'}</h3><p style="font-size:14px;">${S.filter === 'todo' && vis.length ? 'Виж „Всички“, за да прегледаш деня.' : 'Гост без резервация: докосни свободна маса → „Гост на място“.'}</p></div></div>`;
   return `<div class="sidehead">
       <div class="stats">
@@ -918,9 +995,9 @@ function listHtml() {
         <div class="stat"><b>${seatedNow}</b><span>на маса</span></div>
         <div class="stat"><b>${free}<small style="font-size:14px;opacity:.5">/${tt.length}</small></b><span>свободни</span></div>
       </div>
-      <div class="newres"><label class="search" style="flex:1">${ICON.search}<input type="search" placeholder="Търси име, телефон" value="${esc(S.q)}" data-a="q" autocomplete="off"></label><button class="btn w" data-a="newres" style="min-height:42px;padding:0 14px;" title="Резервация по телефон, имейл или съобщение">+ Резервация</button></div>
+      <div class="newres"><label class="search" style="flex:1">${ICON.search}<input type="search" placeholder="Търси име, телефон" value="${esc(S.q)}" data-a="q" autocomplete="off"></label>${CAN_RES ? `<button class="btn w" data-a="newres" style="min-height:42px;padding:0 14px;" title="Резервация по телефон, имейл или съобщение">+ Резервация</button>` : ''}</div>
       <div class="filters">
-        ${[['todo', 'Без маса'], ['assigned', 'Разпределени'], ['seated', 'Настанени'], ['all', 'Всички']].map(([k, l]) => `<button class="${S.filter === k ? 'on' : ''}" data-a="filter" data-v="${k}">${l}<em>${cnt[k]}</em></button>`).join('')}
+        ${[['todo', 'Без маса'], ['assigned', 'Разпределени'], ['seated', 'Настанени'], ['wait', 'Чакащи'], ['all', 'Всички']].map(([k, l]) => `<button class="${S.filter === k ? 'on' : ''}" data-a="filter" data-v="${k}">${l}<em>${cnt[k]}</em></button>`).join('')}
       </div>
     </div>
     <div class="list" id="list">${html}</div>`;
@@ -984,12 +1061,12 @@ function newResSheet(o) {
 }
 function resCard(r) {
   const st = resState(r), ss = seatsOfRes(r.id).filter(s => s.status !== 'done');
-  const cls = 'rc ' + (st === 'seated' ? 'seated' : st === 'assigned' ? 'assigned' : (r.status === 'requested' ? 'req' : '')) + (S.assign === r.id ? ' sel' : '');
+  const cls = 'rc ' + (st === 'seated' ? 'seated' : st === 'assigned' ? 'assigned' : st === 'noshow' ? 'noshow' : (r.status === 'requested' ? 'req' : '')) + (S.assign === r.id ? ' sel' : '');
   const tbls = ss.map(s => `<span class="pill t">${esc(tLabel(tableById(s.table_id)))}</span>`).join('');
   return `<div class="${cls}" data-a="res" data-id="${r.id}">
     <div class="tm">${esc(r.time || '—')}<small>${plural(r.party, 'човек', 'души')}</small></div>
     <div class="bd"><div class="nm">${esc(r.name)}</div>
-      <div class="mt">${tbls}${r.status === 'requested' ? '<span class="pill a">чака одобрение</span>' : ''}${r.checked_in_at ? '<span class="pill g">пристигна</span>' : ''}${r.paid ? '<span class="pill">платен</span>' : ''}${r.membership && r.membership !== 'guest' ? `<span class="pill w">${esc(MEMNAME[r.membership] || r.membership)}</span>` : (r.user_id ? '' : '<span class="pill">гост</span>')}</div>
+      <div class="mt">${tbls}${guestBadges(r)}${r.status === 'requested' ? '<span class="pill a">чака одобрение</span>' : ''}${r.checked_in_at ? '<span class="pill g">пристигна</span>' : ''}${r.paid ? '<span class="pill">платен</span>' : ''}${r.membership && r.membership !== 'guest' ? `<span class="pill w">${esc(MEMNAME[r.membership] || r.membership)}</span>` : (r.user_id ? '' : '<span class="pill">гост</span>')}</div>
       ${r.note ? `<div class="note">${esc(r.note)}</div>` : ''}</div>
     ${st === 'todo' || st === 'assigned' ? `<div class="grip" data-drag="${r.id}" title="Влачи до маса" aria-label="Влачи до маса">${ICON.grip}</div>` : ''}
   </div>`;
@@ -1006,7 +1083,7 @@ function counterPanel(t) {
         <button class="btn g" data-a="walkin" data-id="${t.id}">Гост на място</button>
         <button class="btn w" data-a="pickres" data-id="${t.id}">Настани резервация</button>
         <button class="btn o full" data-a="block" data-id="${t.id}">Запази целия</button></div>` : ''}
-    <div class="box"><div class="row"><div><b>Места</b><div class="muted" style="font-size:12.5px;">${CAN_LAYOUT ? 'столчета на плота' : 'промяна — с право „Маси“'}</div></div>
+    <div class="box"><div class="row"><div><b>Места</b><div class="muted" style="font-size:12.5px;">${CAN_LAYOUT ? 'столчета на плота' : 'промяна — с право „Подреждане на залата“'}</div></div>
       <div class="stepper"><button data-a="seats" data-id="${t.id}" data-v="-1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Махни място">−</button><b>${t.seats}</b><button data-a="seats" data-id="${t.id}" data-v="1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Добави място">+</button></div></div>${t.shape === 'counter2' ? `<div class="row" style="margin-top:10px"><span>Горе</span><div class="stepper"><button data-a="cside" data-id="${t.id}" data-v="top-1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Махни място горе">−</button><b>${cTop(t)}</b><button data-a="cside" data-id="${t.id}" data-v="top+1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Добави място горе">+</button></div></div>
       <div class="row" style="margin-top:8px"><span>Долу</span><div class="stepper"><button data-a="cside" data-id="${t.id}" data-v="bot-1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Махни място долу">−</button><b>${t.seats - cTop(t)}</b><button data-a="cside" data-id="${t.id}" data-v="bot+1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Добави място долу">+</button></div></div>` : ''}</div>
     <div class="box"><h4>Днес</h4>
@@ -1028,7 +1105,7 @@ function tablePanel(t) {
         <button class="btn g" data-a="walkin" data-id="${t.id}">Гост на място</button>
         <button class="btn w" data-a="pickres" data-id="${t.id}">Настани резервация</button>
         <button class="btn o full" data-a="block" data-id="${t.id}">Запази масата</button></div>`}
-    <div class="box"><div class="row"><div><b>Столове</b><div class="muted" style="font-size:12.5px;">${CAN_LAYOUT ? 'постоянно за масата' : 'промяна — с право „Маси“'}</div></div>
+    <div class="box"><div class="row"><div><b>Столове</b><div class="muted" style="font-size:12.5px;">${CAN_LAYOUT ? 'постоянно за масата' : 'промяна — с право „Подреждане на залата“'}</div></div>
       <div class="stepper"><button data-a="seats" data-id="${t.id}" data-v="-1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Махни стол">−</button><b>${t.seats}</b><button data-a="seats" data-id="${t.id}" data-v="1" ${CAN_LAYOUT ? '' : 'disabled'} aria-label="Добави стол">+</button></div></div></div>
     <div class="box"><h4>Днес на тази маса</h4>
       ${list.length ? list.map(x => `<div class="sl" data-a="seat" data-id="${x.id}"><span class="dot ${x.status === 'seated' ? 'seated' : x.kind === 'block' ? 'block' : x.status === 'done' ? 'done' : ''}"></span><span class="tt">${x.start_t}–${x.end_t}</span><span class="nn">${esc(seatName(x))}${seatParty(x) ? ', ' + seatParty(x) : ''}</span><span class="muted">›</span></div>`).join('') : '<p class="muted" style="font-size:14px;">Свободна цял ден.</p>'}
@@ -1042,7 +1119,7 @@ function seatBox(s, t) {
   return `<div class="box" style="border-color:${seated ? 'var(--green)' : s.kind === 'block' ? 'var(--line2)' : 'var(--wine)'}">
     <div class="row" style="align-items:flex-start;"><div><div style="font-weight:600;font-size:17px;">${esc(seatName(s))}</div>
       <div class="muted" style="font-size:13.5px;">${s.start_t}–${s.end_t}${seatParty(s) ? ', ' + plural(seatParty(s), 'човек', 'души') : ''}${others.length ? ', + маса ' + others.map(esc).join(', ') : ''}</div>
-      ${r && r.note ? `<div style="font-size:13.5px;margin-top:4px;">${esc(r.note)}</div>` : s.note ? `<div style="font-size:13.5px;margin-top:4px;">${esc(s.note)}</div>` : ''}</div>
+      ${r && r.note ? `<div style="font-size:13.5px;margin-top:4px;">${esc(r.note)}</div>` : s.note ? `<div style="font-size:13.5px;margin-top:4px;">${esc(s.note)}</div>` : ''}${r ? guestLines(r) : ''}</div>
       <button class="btn o sm" data-a="seat" data-id="${s.id}">Промени</button></div>
     ${isCounter(t) ? '' : `<div class="row" style="margin:10px 0 4px;"><span class="muted" style="font-size:13px;">Столове само за сега</span>
       <div class="stepper"><button data-a="extra" data-id="${s.id}" data-v="-1" aria-label="Махни стол">−</button><b>${seatsCount(t, s)}</b><button data-a="extra" data-id="${s.id}" data-v="1" aria-label="Добави стол">+</button></div></div>`}
@@ -1058,16 +1135,24 @@ function resPanel(r) {
   const zone = zoneOfPlace(r.place);
   const sug = st === 'todo' ? suggest(r.party, a, b, zone ? zone.id : null) : [];
   const sugAll = st === 'todo' && !sug.length ? suggest(r.party, a, b, null) : [];
+  const cmb = st === 'todo' ? comboFits(r.party, a, b, zone ? zone.id : null).slice(0, 3) : [];
+  const gn = noteOf(r), fl = flagOf(r), nsC = flagCount(r, 'no_show'), ltC = flagCount(r, 'late');
+  const guestBox = `<div class="box"><div class="row"><h4 style="margin:0">За госта</h4><button class="btn o sm" data-a="note" data-id="${r.id}">${gn ? 'Промени' : '+ Бележка'}</button></div>
+      ${gn ? guestLines(r) : '<p class="muted" style="font-size:13px;margin-top:6px">Алергии, предпочитания, VIP — ще излизат всеки път, когато дойде.</p>'}
+      ${nsC || ltC ? `<p style="font-size:13px;margin-top:6px" class="${nsC ? 'alg' : ''}">Досега: ${[nsC ? nsC + '× не дойде' : '', ltC ? ltC + '× закъсня' : ''].filter(Boolean).join(', ')}</p>` : ''}
+      ${fl ? `<div class="row" style="margin-top:10px"><span class="pill ${fl.kind === 'no_show' ? 'w' : ''}">${fl.kind === 'no_show' ? 'Днес: не дойде' : 'Днес: закъсня' + (fl.late_min ? ' ' + fl.late_min + ' мин' : '')}</span><button class="btn o sm" data-a="unflag" data-id="${r.id}">Върни</button></div>`
+        : st !== 'seated' && st !== 'done' ? `<div class="acts" style="margin-top:10px"><button class="btn o sm" data-a="flag" data-v="late" data-id="${r.id}">Закъснява</button><button class="btn d sm" data-a="flag" data-v="no_show" data-id="${r.id}">Не дойде</button></div>` : ''}</div>`;
   const ev = r.event_id ? ALLEV.find(e => e.id === r.event_id) : null;
   return `<div class="det">
     <div class="phead"><button class="btn o sm" data-a="back">‹ Назад</button><button class="btn sm" data-a="close">Готово</button></div>
     <h2>${esc(r.name)}</h2>
     <div class="sub2">${esc(r.time || 'без час')}, ${plural(r.party, 'човек', 'души')}${r.place ? ', ' + esc(r.place) : ''}</div>
-    ${r.status === 'requested' ? `<div class="box" style="border-color:var(--amber)"><div class="row"><span>Резервацията чака одобрение.</span>${r.paid ? '' : `<button class="btn sm g" data-a="confirm" data-id="${r.id}">Потвърди</button>`}</div><div class="muted" style="font-size:12.5px;margin-top:6px;">При потвърждение гостът получава имейл${r.user_id ? ' и известие' : ''}.</div></div>` : ''}
+    ${r.status === 'requested' ? `<div class="box" style="border-color:var(--amber)"><div class="row"><span>Резервацията чака одобрение.</span>${r.paid || !CAN_RES ? '' : `<button class="btn sm g" data-a="confirm" data-id="${r.id}">Потвърди</button>`}</div><div class="muted" style="font-size:12.5px;margin-top:6px;">При потвърждение гостът получава имейл${r.user_id ? ' и известие' : ''}.</div></div>` : ''}
+    ${guestBox}
     ${ss.length ? `<div class="box"><h4>Маса</h4>${ss.map(s => `<div class="sl" data-a="seat" data-id="${s.id}"><span class="dot ${s.status === 'seated' ? 'seated' : s.status === 'done' ? 'done' : ''}"></span><span class="tt">${esc(tName(tableById(s.table_id)))}</span><span class="nn muted">${s.start_t}–${s.end_t}, ${s.status === 'seated' ? 'настанени' : s.status === 'done' ? 'тръгнаха' : 'чакаме ги'}</span><span class="muted">›</span></div>`).join('')}
       <div class="acts" style="margin-top:10px;">${st === 'assigned' ? `<button class="btn g" data-a="seatnow" data-id="${ss.find(s => s.status === 'planned').id}">Настани</button>` : ''}${st !== 'done' ? `<button class="btn o" data-a="addtable" data-id="${r.id}">+ Събери с маса</button>` : ''}</div></div>`
-    : `<div class="box"><h4>${sug.length ? 'Подходящи маси' + (zone ? ' в ' + esc(zone.name) : '') : sugAll.length ? 'Подходящи маси в други зали' : 'Няма свободна маса с толкова места'}</h4>
-      <div class="sugg">${(sug.length ? sug : sugAll).map(t => `<button data-a="sugg" data-id="${t.id}" data-r="${r.id}">${esc(tName(t))}<small>${t.seats} места${!zone || t.zone_id !== zone.id ? ', ' + esc((ZONES.find(z => z.id === t.zone_id) || {}).name || '') : ''}</small></button>`).join('')}</div>
+    : st === 'noshow' ? '' : `<div class="box"><h4>${sug.length ? 'Подходящи маси' + (zone ? ' в ' + esc(zone.name) : '') : sugAll.length ? 'Подходящи маси в други зали' : cmb.length ? 'Събрани маси' : 'Няма свободна маса с толкова места'}</h4>
+      <div class="sugg">${(sug.length ? sug : sugAll).map(t => `<button data-a="sugg" data-id="${t.id}" data-r="${r.id}">${esc(tName(t))}<small>${t.seats} места${!zone || t.zone_id !== zone.id ? ', ' + esc((ZONES.find(z => z.id === t.zone_id) || {}).name || '') : ''}</small></button>`).join('')}${cmb.map(c => `<button data-a="suggc" data-id="${c.id}" data-r="${r.id}">${esc(comboName(c))}<small>${c.seats} места, събрани</small></button>`).join('')}</div>
       <div class="acts" style="margin-top:10px;"><button class="btn w full" data-a="assign" data-id="${r.id}">Избери маса от схемата</button></div>
       <p class="muted" style="font-size:12.5px;margin-top:8px;">Или хвани ⠿ на картата в списъка и я пусни върху маса. Голяма група → дай маса и после „Събери с маса“.</p></div>`}
     <div class="box"><h4>Данни</h4><div class="kv">
@@ -1079,8 +1164,332 @@ function resPanel(r) {
       ${ev || r.evTitle ? `<span>${r.grp === 'after' ? 'След' : 'Събитие'}</span><span style="color:var(--ink)">${esc(r.evTitle)}</span>` : ''}
       ${r.code ? `<span>Билет</span><span style="color:var(--ink)">AC2-${esc(r.code.slice(0, 4))}-${esc(r.code.slice(4))}</span>` : ''}
       ${r.note ? `<span>Бележка</span><span style="color:var(--ink)">${esc(r.note)}</span>` : ''}
-    </div>${!r.checked_in_at && ['confirmed'].includes(r.status) ? `<button class="btn o sm" style="margin-top:10px;" data-a="checkin" data-id="${r.id}">Отбележи „пристигна“</button>` : ''}</div>
+    </div>${CAN_RES && !r.checked_in_at && ['confirmed'].includes(r.status) ? `<button class="btn o sm" style="margin-top:10px;" data-a="checkin" data-id="${r.id}">Отбележи „пристигна“</button>` : ''}</div>
   </div>`;
+}
+
+// =====================================================================
+//  ИНСТРУМЕНТИ ЗА ЕКИПА (09.11.2026): бележки за госта, „не дойде“/„закъсня“, предупреждения,
+//  „Разпредели всички“, чакащи, комбинации от маси, брифинг за вечерта, справки
+//  Данни: guest_notes, res_flags, floor_waitlist, floor_combos (SQL 2026-11-09-tables-team.sql)
+// =====================================================================
+let NOTES = {}, FLAGS = [], WAIT = [], COMBOS = [];
+// ключ на госта: член → 'u:<id>', иначе последните 9 цифри от телефона или имейлът
+const last9 = p => { const d = String(p || '').replace(/\D/g, ''); return d.length >= 6 ? d.slice(-9) : ''; };
+function gkeysOf(r) { const k = []; if (!r) return k; if (r.user_id) k.push('u:' + r.user_id); const p = last9(r.phone); if (p) k.push('p:' + p); if (r.email) k.push('e:' + String(r.email).trim().toLowerCase()); return k; }
+function noteOf(r) { for (const k of gkeysOf(r)) if (NOTES[k]) return NOTES[k]; return null; }
+const flagOf = r => r && FLAGS.find(f => f.reservation_id === r.id);
+function flagCount(r, kind) { const ks = gkeysOf(r); if (!ks.length) return 0; return FLAGS.filter(f => f.kind === kind && f.reservation_id !== r.id && (f.gkeys || []).some(k => ks.includes(k))).length; }
+function algOf(s) { const r = s && s.reservation_id ? resById(s.reservation_id) : null; const n = r && noteOf(r); return !!(n && n.allergies); }
+function guestBadges(r) {
+  const n = noteOf(r), out = [];
+  if (n && n.vip) out.push('<span class="pill w">VIP</span>');
+  if (n && n.allergies) out.push('<span class="pill a">⚠ алергия</span>');
+  const ns = flagCount(r, 'no_show'), lt = flagCount(r, 'late');
+  if (ns) out.push(`<span class="pill a">${ns}× не дойде</span>`);
+  if (lt >= 2) out.push(`<span class="pill">${lt}× закъсня</span>`);
+  const f = flagOf(r); if (f) out.push(f.kind === 'no_show' ? '<span class="pill w">не дойде</span>' : `<span class="pill">закъсня${f.late_min ? ' ' + f.late_min + ' мин' : ''}</span>`);
+  return out.join('');
+}
+function guestLines(r) {
+  const n = noteOf(r); if (!n) return '';
+  return (n.vip ? '<div class="gl"><b>VIP</b></div>' : '') + (n.allergies ? `<div class="gl alg">⚠ Алергии: ${esc(n.allergies)}</div>` : '') + (n.prefs ? `<div class="gl">${esc(n.prefs)}</div>` : '');
+}
+function noteSheet(rid) {
+  const r = resById(rid); if (!r) return; const ks = gkeysOf(r);
+  if (!ks.length) { toast('Няма телефон или имейл, по които да познаем госта следващия път', true); return; }
+  const n = noteOf(r) || { gkey: ks[0], allergies: '', prefs: '', vip: false };
+  let vip = !!n.vip;
+  sheet(`<h3>Бележки за госта</h3><p class="lead">${esc(r.name)}. Вижда ги само екипът — излизат всеки път, когато дойде.</p>
+    <div class="tog"><span>VIP гост</span><button class="sw ${vip ? 'on' : ''}" data-x="vip" aria-label="VIP"></button></div>
+    <label class="fld"><span>Алергии и непоносимости</span><input class="inp" id="gn_a" maxlength="300" value="${esc(n.allergies || '')}" placeholder="напр. ядки, глутен, лактоза"></label>
+    <label class="fld"><span>Предпочитания</span><textarea class="inp" id="gn_p" maxlength="500" placeholder="любима маса, вино, повод, деца…">${esc(n.prefs || '')}</textarea></label>
+    <div class="foot"><button class="btn o" data-x="close">Отказ</button><button class="btn" data-x="ok">Запази</button></div>`, el => {
+    el.addEventListener('click', async e => {
+      const b = e.target.closest('[data-x]'); if (!b) return; const x = b.dataset.x;
+      if (x === 'vip') { vip = !vip; b.classList.toggle('on', vip); return; }
+      if (x === 'close') return closeSheet();
+      if (x !== 'ok') return;
+      const row = { gkey: n.gkey, name: r.name, allergies: el.querySelector('#gn_a').value.trim(), prefs: el.querySelector('#gn_p').value.trim(), vip };
+      NOTES[row.gkey] = row; closeSheet(); render();
+      try { if (!DEMO) { const { error } = await sb.from('guest_notes').upsert(row); if (error) throw error; } toast('Бележките са запазени'); } catch (er) { err(missingSql(er)); }
+    });
+  });
+}
+const missingSql = e => (/does not exist|guest_notes|res_flags|floor_waitlist|floor_combos|schema cache/i.test((e && e.message) || '') ? { message: 'Пусни SQL 2026-11-09-tables-team.sql' } : e);
+
+// ---------- „не дойде“ / „закъсня“ ----------
+async function saveFlag(row) { try { if (!DEMO) { const { error } = await sb.from('res_flags').upsert(row); if (error) throw error; } } catch (e) { err(missingSql(e)); } }
+async function markFlag(rid, kind) {
+  const r = resById(rid); if (!r) return;
+  if (kind === 'no_show' && !confirm(r.name + ' не дойде? Масата се освобождава, а при следваща резервация екипът ще го вижда.')) return;
+  let late = null; if (kind === 'late' && S.date === todayIso() && tm(r.time) != null) late = Math.max(0, nowMin() - tm(r.time)) || null;
+  const row = { reservation_id: r.id, kind, late_min: late, gkeys: gkeysOf(r), at: new Date().toISOString() };
+  FLAGS = FLAGS.filter(f => f.reservation_id !== r.id).concat(row);
+  if (kind === 'no_show') for (const s of seatsOfRes(r.id).filter(s => s.status === 'planned')) await removeSeat(s.id);
+  render(); await saveFlag(row); toast(kind === 'no_show' ? 'Отбелязано: не дойде' : 'Отбелязано: закъснява');
+}
+async function unflag(rid) { FLAGS = FLAGS.filter(f => f.reservation_id !== rid); render(); try { if (!DEMO) await sb.from('res_flags').delete().eq('reservation_id', rid); } catch (e) {} }
+// при настаняване 15+ мин след часа — „закъсня“ се записва само
+async function autoLate(r) {
+  if (!r || S.date !== todayIso() || tm(r.time) == null || flagOf(r)) return;
+  const m = nowMin() - tm(r.time); if (m < 15 || m > 240) return;
+  const row = { reservation_id: r.id, kind: 'late', late_min: m, gkeys: gkeysOf(r), at: new Date().toISOString() };
+  FLAGS.push(row); await saveFlag(row);
+}
+
+// ---------- предупреждения ----------
+function alerts() {
+  if (S.date !== todayIso()) return [];
+  const N = nowMin(), out = [];
+  visibleRes().filter(r => ['rest', 'after'].includes(grpOf(r)) && ['confirmed', 'requested'].includes(r.status)).forEach(r => {
+    const st = resState(r), t = tm(r.time); if (st === 'seated' || st === 'done' || st === 'noshow') return;
+    if (t != null && N - t >= 15 && N - t < 150 && !r.checked_in_at) out.push({ k: 'late', r, m: N - t });
+    else if (st === 'todo' && r.party >= 9) out.push({ k: 'big', r });
+    else if (st === 'todo' && t != null && t - N <= 60 && t - N > -15) out.push({ k: 'todo', r, m: t - N });
+  });
+  SEATS.filter(s => s.status === 'seated' && s.kind !== 'block' && N >= tm(s.end_t) - 5).forEach(s => {
+    const t = tableById(s.table_id); if (!t || isCounter(t)) return;
+    const nx = SEATS.filter(x => x.table_id === s.table_id && x.id !== s.id && x.status === 'planned' && x.kind !== 'block' && tm(x.start_t) >= tm(s.start_t) && tm(x.start_t) - N <= 30)
+      .sort((a, b) => tm(a.start_t) - tm(b.start_t))[0];
+    if (nx) out.push({ k: 'over', s, nx, t });
+  });
+  TABLES.filter(t => t.kind === 'table' && !isCounter(t)).forEach(t => {
+    const L = SEATS.filter(s => s.table_id === t.id && s.status !== 'done' && s.kind !== 'block').sort((a, b) => tm(a.start_t) - tm(b.start_t));
+    for (let i = 1; i < L.length; i++) if (tm(L[i].start_t) < tm(L[i - 1].end_t) && tm(L[i - 1].end_t) > N && !(L[i].reservation_id && L[i].reservation_id === L[i - 1].reservation_id)) { out.push({ k: 'clash', t, a: L[i - 1], b: L[i] }); break; }
+  });
+  WAIT.filter(w => w.status === 'waiting').forEach(w => { const f = suggest(w.party, N, N + dur(w.party), null).filter(t => !isCounter(t) || w.party <= 2)[0]; if (f) out.push({ k: 'wait', w, t: f }); });
+  return out;
+}
+function alertsHtml() {
+  const A = alerts(); if (!A.length) return '';
+  const open = S.alOpen !== false;
+  const row = (txt, btns) => `<div class="mi"><div style="font-size:14px">${txt}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">${btns}</div></div>`;
+  const more = A.length > 5 && !S.alAll;
+  const items = (more ? A.slice(0, 5) : A).map(a => {
+    if (a.k === 'late') { const s = seatsOfRes(a.r.id).find(x => x.status === 'planned');
+      return row(`<b>${esc(a.r.name)}</b> закъснява ${a.m} мин (${esc(a.r.time)}, ${plural(a.r.party, 'човек', 'души')})`,
+        `${s ? `<button class="btn sm g" data-a="seatnow" data-id="${s.id}">Дойдоха</button>` : `<button class="btn sm w" data-a="res" data-id="${a.r.id}">Дай маса</button>`}<button class="btn sm o" data-a="flag" data-v="no_show" data-id="${a.r.id}">Не дойде</button>`); }
+    if (a.k === 'todo') return row(`<b>${esc(a.r.name)}</b> идва ${a.m > 0 ? 'след ' + a.m + ' мин' : 'сега'} и още няма маса`, `<button class="btn sm w" data-a="res" data-id="${a.r.id}">Дай маса</button>`);
+    if (a.k === 'big') return row(`Група <b>${esc(a.r.name)}</b> (${a.r.party} души${a.r.time ? ', ' + esc(a.r.time) : ''}) още няма маса`, `<button class="btn sm w" data-a="res" data-id="${a.r.id}">Дай маса</button>`);
+    if (a.k === 'over') return row(`<b>${esc(tName(a.t))}</b> е над времето, а в ${a.nx.start_t} идва <b>${esc(seatName(a.nx))}</b>`, `<button class="btn sm o" data-a="move" data-id="${a.nx.id}">Премести ги</button><button class="btn sm o" data-a="table" data-id="${a.t.id}">Виж масата</button>`);
+    if (a.k === 'clash') return row(`<b>${esc(tName(a.t))}</b>: ${esc(seatName(a.a))} и ${esc(seatName(a.b))} се застъпват`, `<button class="btn sm o" data-a="table" data-id="${a.t.id}">Виж масата</button>`);
+    if (a.k === 'wait') return row(`<b>${esc(tName(a.t))}</b> е свободна за чакащите <b>${esc(a.w.name || 'гости')}</b> (${a.w.party})`, `<button class="btn sm g" data-a="waitseat" data-id="${a.w.id}" data-t="${a.t.id}">Настани</button>`);
+    return '';
+  }).join('');
+  return `<div class="msgs al"><div class="row" data-a="altoggle" style="cursor:pointer"><b>Внимание</b><span class="pill w">${A.length} ${open ? '▾' : '▸'}</span></div>${open ? items + (more ? `<button class="btn o sm full" style="margin-top:6px" data-a="alall">Покажи всички (${A.length})</button>` : '') : ''}</div>`;
+}
+
+// ---------- „Разпредели всички“ ----------
+async function autoAssign() {
+  const todo = visibleRes().filter(r => ['rest', 'after'].includes(grpOf(r)) && ['confirmed', 'requested'].includes(r.status) && resState(r) === 'todo')
+    .sort((a, b) => b.party - a.party || (tm(a.time) ?? 0) - (tm(b.time) ?? 0));
+  if (!todo.length) { toast('Няма неразпределени резервации'); return; }
+  if (!confirm('Да разпределя ли ' + plural(todo.length, 'резервация', 'резервации') + ' по най-подходящите маси?\nПосле можеш да местиш с влачене.')) return;
+  const rows = [], miss = [];
+  for (const r of todo) {
+    const a = tm(r.time) ?? Math.max(OPEN(), snap15(S.at)), b = Math.min(1440, a + dur(r.party)), z = zoneOfPlace(r.place);
+    let tids = null;
+    const one = suggest(r.party, a, b, z ? z.id : null).filter(t => !isCounter(t) || r.party <= 2)[0];
+    if (one) tids = [one.id];
+    if (!tids) { const c = comboFits(r.party, a, b, z ? z.id : null)[0]; if (c) tids = c.table_ids.slice(); }
+    if (!tids) { const any = suggest(r.party, a, b, null).filter(t => !isCounter(t))[0]; if (any) tids = [any.id]; }
+    if (!tids) { miss.push(r); continue; }
+    tids.forEach(tid => { const s = newSeat({ table_id: tid, start_t: fm(a), end_t: fm(b), kind: 'res', reservation_id: r.id, event_id: r.event_id || r.table_event_id || null }); SEATS.push(s); rows.push(s); });
+  }
+  render();
+  try { await api.upMany('floor_seatings', rows.map(x => clean(x, SEAT_COLS))); } catch (e) { err(e); await reloadDay(); return; }
+  toast('Разпределени: ' + (todo.length - miss.length) + (miss.length ? '. Без място: ' + miss.map(r => r.name).join(', ') : ''), !!miss.length);
+}
+
+// ---------- комбинации от маси ----------
+function comboFits(party, a, b, zid) {
+  return COMBOS.filter(c => (!zid || c.zone_id === zid) && c.seats >= party && (c.table_ids || []).length && c.table_ids.every(id => { const t = tableById(id); return t && t.active !== false && !overlaps(id, a, b, null, 1).length; }))
+    .sort((x, y) => (x.seats - party) - (y.seats - party));
+}
+const comboName = c => (c.table_ids || []).map(id => tLabel(tableById(id))).join(' + ');
+async function assignCombo(r, cid) {
+  const c = COMBOS.find(x => x.id === cid); if (!c || !r) return;
+  const a = tm(r.time) ?? Math.max(OPEN(), snap15(S.at)), b = Math.min(1440, a + dur(r.party));
+  const rows = c.table_ids.map(tid => newSeat({ table_id: tid, start_t: fm(a), end_t: fm(b), kind: 'res', reservation_id: r.id, event_id: r.event_id || r.table_event_id || null }));
+  SEATS = SEATS.concat(rows); render();
+  try { await api.upMany('floor_seatings', rows.map(x => clean(x, SEAT_COLS))); toast(r.name + ' · маси ' + comboName(c)); } catch (e) { err(e); await reloadDay(); }
+}
+function combosBox(zone) {
+  const L = COMBOS.filter(c => c.zone_id === zone.id);
+  return `<div class="box" style="margin-top:14px;"><h4>Комбинации от маси</h4>
+    ${L.length ? L.map(c => `<div class="row" style="padding:6px 0;border-top:1px solid var(--line)"><span><b>${esc(comboName(c))}</b></span>
+      <div style="display:flex;gap:6px;align-items:center"><div class="stepper"><button data-a="comboseats" data-id="${c.id}" data-v="-1" aria-label="По-малко места">−</button><b>${c.seats}</b><button data-a="comboseats" data-id="${c.id}" data-v="1" aria-label="Повече места">+</button></div>
+      <button class="btn sm d" data-a="combodel" data-id="${c.id}" aria-label="Изтрий комбинацията">✕</button></div></div>`).join('') : '<p class="muted" style="font-size:13px;margin-bottom:8px">Например 205 + 206 за 8 души. При голяма група системата я предлага сама.</p>'}
+    <button class="btn o full" style="margin-top:8px" data-a="combonew">+ Нова комбинация</button></div>`;
+}
+async function saveCombo() {
+  const ids = (S.comboPick || []).slice(); if (ids.length < 2) { toast('Избери поне 2 маси', true); return; }
+  const c = { id: uuid(), zone_id: S.zone, table_ids: ids, seats: ids.reduce((n, id) => n + ((tableById(id) || {}).seats || 0), 0), label: '' };
+  COMBOS.push(c); S.comboPick = null; render();
+  try { if (!DEMO) { const { error } = await sb.from('floor_combos').insert(c); if (error) throw error; } toast('Комбинацията е запазена: ' + comboName(c)); } catch (e) { COMBOS = COMBOS.filter(x => x !== c); render(); err(missingSql(e)); }
+}
+
+// ---------- чакащи на място ----------
+function waitHtml() {
+  const L = WAIT.filter(w => w.status === 'waiting').sort((a, b) => new Date(a.added_at) - new Date(b.added_at));
+  const now = Date.now(), N = nowMin();
+  return `<button class="btn g full" data-a="waitadd" style="margin-bottom:10px">+ Добави чакащи</button>` + (L.length ? L.map(w => {
+    const m = Math.max(0, Math.round((now - new Date(w.added_at)) / 60000));
+    const f = S.date === todayIso() ? suggest(w.party, N, N + dur(w.party), null).filter(t => !isCounter(t) || w.party <= 2)[0] : null;
+    return `<div class="rc"><div class="tm">${w.party}<small>души</small></div><div class="bd"><div class="nm">${esc(w.name || 'Гости')}</div>
+      <div class="mt"><span class="pill ${m >= 20 ? 'a' : ''}">чакат ${m} мин</span>${w.phone ? `<span class="pill">${esc(w.phone)}</span>` : ''}${f ? `<span class="pill g">свободна: ${esc(tName(f))}</span>` : ''}</div>
+      ${w.note ? `<div class="note">${esc(w.note)}</div>` : ''}
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn sm g" data-a="waitseat" data-id="${w.id}"${f ? ` data-t="${f.id}"` : ''}>${f ? 'Настани на ' + esc(tLabel(f)) : 'Настани'}</button><button class="btn sm o" data-a="waitpick" data-id="${w.id}">Друга маса</button><button class="btn sm o" data-a="waitleft" data-id="${w.id}">Тръгнаха си</button></div></div></div>`;
+  }).join('') : '<p class="muted" style="text-align:center;padding:24px 10px">Никой не чака. Когато е пълно, запиши хората тук — щом се освободи подходяща маса, ще излезе предупреждение.</p>');
+}
+async function saveWait(w) { try { if (!DEMO) { const { error } = await sb.from('floor_waitlist').upsert(clean(w, ['id', 'date', 'name', 'party', 'phone', 'note', 'status', 'table_id', 'added_at', 'done_at'])); if (error) throw error; } } catch (e) { err(missingSql(e)); } }
+function waitAddSheet() {
+  let party = 2;
+  sheet(`<h3>Чакащи</h3><p class="lead">Записваш ги сега — когато се освободи подходяща маса, ще излезе „Внимание“.</p>
+    <div class="fld"><span>Брой гости</span><div class="nums">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => `<button class="${n === party ? 'on' : ''}" data-p="${n}">${n}</button>`).join('')}</div></div>
+    <div class="two"><label class="fld"><span>Име</span><input class="inp" id="wa_n" maxlength="80" placeholder="напр. Петрови"></label><label class="fld"><span>Телефон (по желание)</span><input class="inp" id="wa_p" type="tel" maxlength="30"></label></div>
+    <label class="fld"><span>Бележка</span><input class="inp" id="wa_note" maxlength="200" placeholder="напр. искат навън, с бебе"></label>
+    <div class="foot"><button class="btn o" data-x="close">Отказ</button><button class="btn g" data-x="ok">Запиши</button></div>`, el => {
+    el.addEventListener('click', async e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.p) { party = +b.dataset.p; el.querySelectorAll('[data-p]').forEach(x => x.classList.toggle('on', x === b)); return; }
+      if (b.dataset.x === 'close') return closeSheet();
+      if (b.dataset.x !== 'ok') return;
+      const w = { id: uuid(), date: S.date, name: el.querySelector('#wa_n').value.trim(), party, phone: el.querySelector('#wa_p').value.trim(), note: el.querySelector('#wa_note').value.trim(), status: 'waiting', table_id: null, added_at: new Date().toISOString(), done_at: null };
+      WAIT.push(w); closeSheet(); S.filter = 'wait'; render(); await saveWait(w); toast('Записани в чакащи');
+    });
+  });
+}
+async function seatWait(wid, tid) {
+  const w = WAIT.find(x => x.id === wid), t = tableById(tid); if (!w || !t) return;
+  const a = S.date === todayIso() ? Math.floor(nowMin() / 15) * 15 : snap15(S.at), b = Math.min(1440, a + dur(w.party));
+  const cl = overlaps(t.id, a, b, null, w.party);
+  if (cl.length && !confirm(tName(t) + ' има ' + cl.map(c => c.start_t + ' ' + seatName(c)).join(', ') + '. Да ги настаня въпреки това?')) return;
+  w.status = 'seated'; w.table_id = t.id; w.done_at = new Date().toISOString();
+  await saveSeat(newSeat({ table_id: t.id, start_t: fm(a), end_t: fm(b), kind: 'walkin', name: w.name, party: w.party, note: w.note, status: 'seated', seated_at: new Date().toISOString(), extra_seats: isCounter(t) ? 0 : Math.max(0, w.party - t.seats) }), (w.name || 'Гостите') + ' · ' + tName(t));
+  await saveWait(w); render();
+}
+function waitPickSheet(wid) {
+  const w = WAIT.find(x => x.id === wid); if (!w) return;
+  const N = S.date === todayIso() ? nowMin() : S.at;
+  const L = TABLES.filter(t => t.kind === 'table' && t.active !== false && t.seats >= w.party && !overlaps(t.id, N, N + dur(w.party), null, w.party).length)
+    .sort((x, y) => (x.seats - w.party) - (y.seats - w.party)).slice(0, 12);
+  sheet(`<h3>Маса за ${esc(w.name || 'чакащите')}</h3><p class="lead">${plural(w.party, 'човек', 'души')}. Свободни сега, най-подходящите първо.</p>
+    ${L.length ? L.map(t => `<div class="pickrow" data-t="${t.id}"><b style="font-family:var(--serif);font-style:italic;font-size:19px;min-width:70px">${esc(tLabel(t))}</b><div style="flex:1">${t.seats} места, ${esc((ZONES.find(z => z.id === t.zone_id) || {}).name || '')}</div></div>`).join('') : '<p class="muted">Няма свободна маса с толкова места.</p>'}
+    <div class="foot"><button class="btn o" data-x="close">Затвори</button></div>`, el => {
+    el.addEventListener('click', async e => { if (e.target.closest('[data-x=close]')) return closeSheet(); const r = e.target.closest('[data-t]'); if (!r) return; closeSheet(); await seatWait(wid, r.dataset.t); });
+  });
+}
+
+// ---------- брифинг за вечерта ----------
+function briefSheet() {
+  const d = bgDate(S.date);
+  const L = visibleRes().filter(r => ['rest', 'after'].includes(grpOf(r)) && ['confirmed', 'requested'].includes(r.status) && resState(r) !== 'noshow')
+    .sort((a, b) => (tm(a.time) ?? 9999) - (tm(b.time) ?? 9999));
+  const guests = L.reduce((n, r) => n + r.party, 0);
+  const vip = L.filter(r => (noteOf(r) || {}).vip).length, alg = L.filter(r => (noteOf(r) || {}).allergies).length, big = L.filter(r => r.party >= 9).length, todo = L.filter(r => resState(r) === 'todo').length;
+  const evs = EVENTS.slice().sort((a, b) => (tm(a.time) ?? 0) - (tm(b.time) ?? 0));
+  const rows = L.map(r => {
+    const n = noteOf(r) || {}, ss = seatsOfRes(r.id).filter(s => s.status !== 'done');
+    const ns = flagCount(r, 'no_show'), lt = flagCount(r, 'late');
+    const info = [n.allergies ? `<span class="alg">⚠ ${esc(n.allergies)}</span>` : '', n.prefs ? esc(n.prefs) : '', r.note ? esc(r.note) : '', ns ? `<span class="alg">${ns}× не дойде</span>` : '', lt >= 2 ? lt + '× закъсня' : '', r.status === 'requested' ? '<i>чака одобрение</i>' : ''].filter(Boolean).join(' · ');
+    return `<tr${r.party >= 9 ? ' class="big"' : ''}><td class="t">${esc(r.time || '—')}</td><td><b>${esc(r.name)}</b>${n.vip ? ' <span class="pill w">VIP</span>' : ''}${r.membership && r.membership !== 'guest' ? ` <span class="pill">${esc(MEMNAME[r.membership] || r.membership)}</span>` : ''}${r.grp === 'after' ? ' <span class="pill">след събитие</span>' : ''}</td>
+      <td class="n">${r.party}</td><td>${ss.length ? ss.map(s => esc(tLabel(tableById(s.table_id)))).join(' + ') : '<span class="alg">без маса</span>'}</td><td class="i">${info}</td></tr>`;
+  }).join('');
+  sheet(`<div class="brief"><div class="row noprint" style="margin-bottom:6px"><span class="muted">Брифинг за вечерта</span><div style="display:flex;gap:8px"><button class="btn o sm" data-x="print">Печат</button><button class="btn sm" data-x="close">Затвори</button></div></div>
+    <h3>${esc(d.day[0].toUpperCase() + d.day.slice(1))}, ${esc(d.date)}</h3>
+    <p class="lead">${plural(L.length, 'резервация', 'резервации')}, ${plural(guests, 'гост', 'гости')}${vip ? ', VIP: ' + vip : ''}${alg ? ', с алергии: ' + alg : ''}${big ? ', групи 9+: ' + big : ''}${todo ? ', <b class="alg">без маса: ' + todo + '</b>' : ''}</p>
+    ${evs.length ? `<h4>Събития</h4><ul class="bev">${evs.map(e => { const c = RES.filter(r => r.event_id === e.id && ['confirmed', 'requested'].includes(r.status)).reduce((n, r) => n + r.party, 0); return `<li><b>${esc(e.time || '')}${e.ends ? '–' + esc(e.ends) : ''}</b> ${esc(e.title)} <span class="muted">· ${esc(e.place || '')} · ${plural(c, 'гост', 'гости')}</span></li>`; }).join('')}</ul>` : ''}
+    <h4>Резервации</h4>
+    ${L.length ? `<table class="brt"><thead><tr><th>Час</th><th>Гост</th><th>Души</th><th>Маса</th><th>За кухнята и сервиза</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="muted">Няма резервации за деня.</p>'}
+    </div>`, el => {
+    el.classList.add('wide');
+    el.addEventListener('click', e => { const x = (e.target.closest('[data-x]') || {}).dataset?.x; if (x === 'close') closeSheet(); if (x === 'print') window.print(); });
+  });
+}
+
+// ---------- справки за управителя ----------
+async function reportSheet(period) {
+  period = period || S.repP || '30'; S.repP = period;
+  const today = todayIso(); let from, to = today;
+  if (period === '7') from = addDays(today, -6);
+  else if (period === '30') from = addDays(today, -29);
+  else if (period === 'm') from = today.slice(0, 8) + '01';
+  else { const d = new Date(today + 'T12:00:00'); d.setDate(1); d.setMonth(d.getMonth() - 1); from = iso(d); const e = new Date(d); e.setMonth(e.getMonth() + 1); e.setDate(0); to = iso(e); }
+  let res = [], seats = [];
+  try {
+    if (DEMO) ({ res, seats } = demoReport(from, to));
+    else {
+      const r = await sb.from('reservations').select('id,date,time,party_size,status,kind,event_id,place').gte('date', from).lte('date', to).is('event_id', null).limit(5000); if (r.error) throw r.error;
+      const s = await sb.from('floor_seatings').select('date,table_id,start_t,end_t,kind,status,party,reservation_id,seated_at,left_at').gte('date', from).lte('date', to).limit(10000); if (s.error) throw s.error;
+      res = r.data || []; seats = s.data || [];
+    }
+  } catch (e) { err(e); return; }
+  const here = placesHere();
+  const R = res.filter(r => (r.kind || 'physical') === 'physical' && r.status === 'confirmed' && (!r.place || here.has(r.place) || seats.some(s => s.reservation_id === r.id)));
+  const rp = Object.fromEntries(R.map(r => [r.id, r.party_size || 1]));
+  const W = seats.filter(s => s.kind === 'walkin');
+  const past = R.filter(r => r.date < today || r.date === today);
+  const ns = FLAGS.filter(f => f.kind === 'no_show' && past.some(r => r.id === f.reservation_id)).length;
+  const lt = FLAGS.filter(f => f.kind === 'late' && past.some(r => r.id === f.reservation_id)).length;
+  const gR = R.reduce((n, r) => n + (r.party_size || 1), 0), gW = W.reduce((n, s) => n + (s.party || 1), 0);
+  // по ден от седмицата и по час на пристигане (гости)
+  const wd = [0, 0, 0, 0, 0, 0, 0], hr = {};
+  const add = (date, time, n) => { const d = new Date(date + 'T12:00:00').getDay(); wd[(d + 6) % 7] += n; const h = tm(time); if (h != null) { const k = Math.floor(h / 60); hr[k] = (hr[k] || 0) + n; } };
+  R.forEach(r => add(r.date, r.time, r.party_size || 1)); W.forEach(s => add(s.date, s.start_t, s.party || 1));
+  // средно стоене (само реално настанени и освободени)
+  const st = { '1–2': [], '3–4': [], '5–8': [], '9+': [] };
+  seats.filter(s => s.status === 'done' && s.seated_at && s.left_at).forEach(s => {
+    const m = (new Date(s.left_at) - new Date(s.seated_at)) / 60000; if (!(m > 10 && m < 480)) return;
+    const p = s.reservation_id ? (rp[s.reservation_id] || 2) : (s.party || 2);
+    st[p <= 2 ? '1–2' : p <= 4 ? '3–4' : p <= 8 ? '5–8' : '9+'].push(m);
+  });
+  // най-ползвани маси
+  const use = {}; seats.filter(s => s.kind !== 'block').forEach(s => { use[s.table_id] = (use[s.table_id] || 0) + 1; });
+  const top = Object.entries(use).map(([id, n]) => [tableById(id), n]).filter(x => x[0]).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const bars = (items, unit) => { const mx = Math.max(1, ...items.map(x => x[1])); return `<div class="bars">${items.map(([l, v, tip]) => `<div class="bar" title="${esc(tip || (l + ': ' + v + ' ' + unit))}"><span class="bl">${esc(l)}</span><span class="bt"><i style="width:${(v / mx * 100).toFixed(1)}%"></i></span><span class="bv">${v ? esc(String(v)) : '—'}</span></div>`).join('')}</div>`; };
+  const hours = Object.keys(hr).map(Number).sort((a, b) => a - b);
+  const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '—';
+  const P = [['7', '7 дни'], ['30', '30 дни'], ['m', 'Този месец'], ['pm', 'Миналия месец']];
+  const html = `<div class="row" style="margin-bottom:4px"><h3>Справки</h3><button class="btn sm" data-x="close">Затвори</button></div>
+    <p class="lead">${esc(from.split('-').reverse().join('.'))} – ${esc(to.split('-').reverse().join('.'))}. Само ресторантът (без билетите за събития).</p>
+    <div class="chips" style="margin-bottom:14px">${P.map(([k, l]) => `<button class="${k === period ? 'on' : ''}" data-p="${k}">${l}</button>`).join('')}</div>
+    <div class="kpis"><div><b>${gR + gW}</b><span>гости общо</span></div><div><b>${R.length}</b><span>резервации</span></div><div><b>${W.length}</b><span>гости на място (компании)</span></div><div><b>${pct(ns, past.length)}</b><span>не дойдоха (${ns})</span></div><div><b>${pct(lt, past.length)}</b><span>закъсняха (${lt})</span></div></div>
+    <div class="repgrid">
+      <div class="box"><h4>Гости по ден от седмицата</h4>${bars(['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'].map((l, i) => [l, wd[i]]), 'гости')}</div>
+      <div class="box"><h4>Гости по час на пристигане</h4>${hours.length ? bars(hours.map(h => [pad(h) + ':00', hr[h]]), 'гости') : '<p class="muted">Няма данни.</p>'}</div>
+      <div class="box"><h4>Средно колко стоят (мин)</h4>${bars(Object.entries(st).map(([k, a]) => [k + ' души', a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : 0, a.length ? k + ' души: средно ' + Math.round(a.reduce((x, y) => x + y, 0) / a.length) + ' мин от ' + a.length + ' маси' : 'няма данни']), 'мин')}
+        <p class="muted" style="font-size:12px;margin-top:6px">От „Настани“ до „Освободи“. Ползвай го, за да нагласиш продължителностите в Настройки.</p></div>
+      <div class="box"><h4>Най-ползвани маси</h4>${top.length ? bars(top.map(([t, n]) => [tLabel(t), n]), 'пъти') : '<p class="muted">Няма данни.</p>'}</div>
+    </div>`;
+  if (SHEET && SHEET.querySelector('.sheet.wide.rep')) { SHEET.querySelector('.sheet').innerHTML = html; return; }
+  sheet(html, el => {
+    el.classList.add('wide', 'rep');
+    el.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.x === 'close') return closeSheet(); if (b.dataset.p) reportSheet(b.dataset.p); });
+  });
+}
+function demoReport(from, to) {
+  const res = [], seats = []; let i = 0; const tt = TABLES.filter(t => t.kind === 'table' && !isCounter(t));
+  for (let d = from; d <= to; d = addDays(d, 1)) {
+    const wd = new Date(d + 'T12:00:00').getDay(), n = [3, 2, 3, 4, 6, 9, 7][wd];
+    for (let k = 0; k < n; k++) { const id = 'dr' + (++i), p = [2, 2, 2, 4, 4, 3, 6, 2, 8][(i * 7) % 9], h = [19, 20, 19, 21, 20, 13, 18][(i * 3) % 7];
+      res.push({ id, date: d, time: pad(h) + ':' + ['00', '30'][i % 2], party_size: p, status: 'confirmed', kind: 'physical', place: 'Ресторант' });
+      const t = tt[(i * 5) % tt.length]; const sa = new Date(d + 'T' + pad(h) + ':10:00'), la = new Date(sa.getTime() + (70 + p * 12 + (i % 5) * 9) * 60000);
+      seats.push({ date: d, table_id: t.id, start_t: pad(h) + ':00', end_t: pad(h + 2) + ':00', kind: 'res', status: 'done', reservation_id: id, seated_at: sa.toISOString(), left_at: la.toISOString() }); }
+    for (let k = 0; k < Math.ceil(n / 2); k++) { const t = tt[(i + k * 3) % tt.length]; seats.push({ date: d, table_id: t.id, start_t: '13:00', end_t: '14:30', kind: 'walkin', status: 'done', party: 2 + (k % 3), seated_at: d + 'T13:00:00', left_at: d + 'T14:05:00' }); }
+  }
+  if (!FLAGS.some(f => f.reservation_id === 'dr3')) FLAGS.push({ reservation_id: 'dr3', kind: 'no_show', gkeys: [] }, { reservation_id: 'dr11', kind: 'late', late_min: 20, gkeys: [] });
+  return { res, seats };
+}
+function menuSheet() {
+  sheet(`<h3>Меню</h3><p class="lead">Инструменти за екипа</p>
+    <div class="pickrow" data-x="brief"><b style="min-width:30px">📋</b><div style="flex:1"><b>Брифинг за вечерта</b><div class="muted" style="font-size:13px">Кой идва, маси, VIP, алергии — за печат</div></div></div>
+    <div class="pickrow" data-x="rep"><b style="min-width:30px">📊</b><div style="flex:1"><b>Справки</b><div class="muted" style="font-size:13px">Гости по дни и часове, неявили се, колко стоят</div></div></div>
+    <div class="pickrow" data-x="set"><b style="min-width:30px">⚙</b><div style="flex:1"><b>Настройки</b><div class="muted" style="font-size:13px">Часове, продължителност, нощен режим</div></div></div>
+    <div class="foot"><button class="btn o" data-x="close">Затвори</button></div>`, el => {
+    el.addEventListener('click', e => { const x = (e.target.closest('[data-x]') || {}).dataset?.x; if (!x) return; if (x === 'close') closeSheet(); if (x === 'brief') briefSheet(); if (x === 'rep') reportSheet(); if (x === 'set') settingsSheet(); });
+  });
 }
 
 // ---------- РЕДАКТОР НА ЗАЛАТА ----------
@@ -1133,6 +1542,7 @@ function editorHtml(zone) {
       <p class="muted" style="font-size:13px;margin-bottom:10px;">${MAIN ? 'Запазен на ' + esc(new Date(MAIN.saved_at).toLocaleString('bg-BG', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })) + (MAIN.saved_name ? ' от ' + esc(MAIN.saved_name) : '') + '. Ако нещо се размести — върни го с един бутон.' : 'Когато залите са подредени както трябва, запази ги като основен план. После винаги можеш да се върнеш към него.'}</p>
       <div class="acts"><button class="btn w" data-a="savemain">Запази като основен</button><button class="btn o" data-a="restoremain" ${MAIN ? '' : 'disabled'}>Върни основния</button></div>
       <button class="btn o sm full" style="margin-top:8px;opacity:.8" data-a="loadplan">Започни отначало от плана в PDF</button></div>
+    ${zone ? combosBox(zone) : ''}
     ${zone ? `<div class="box" style="margin-top:14px;"><h4>Зала</h4>
       <label class="fld"><span>Име</span><input class="inp" maxlength="40" value="${esc(zone.name)}" data-z="name"></label>
       <label class="fld"><span>Свързана с мястото от резервациите и събитията</span><select class="inp" data-z="place"><option value="">— няма —</option>${[...new Set(['Ресторант', 'Камерна зала', 'Галерия', 'Private room'].concat(zone.place ? [zone.place] : []))].map(p => `<option ${zone.place === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label>
@@ -1378,9 +1788,27 @@ app.addEventListener('click', async e => {
     case 'day': setDate(addDays(S.date, +v)); break;
     case 'today': setDate(todayIso()); break;
     case 'view': S.view = v; S.assign = null; try { localStorage.setItem('acac_tables_view', v); } catch (er) {} render(); break;
-    case 'edit': S.edit = !S.edit; S.sel = null; S.assign = null; if (S.edit) S.view = 'floor'; render(); break;
+    case 'edit': S.edit = !S.edit; S.sel = null; S.assign = null; S.comboPick = null; if (S.edit) S.view = 'floor'; render(); break;
     case 'settings': settingsSheet(); break;
-    case 'side': S.side = !S.side; $('.side').classList.toggle('open', S.side); break;
+    case 'menu': menuSheet(); break;
+    case 'brief': briefSheet(); break;
+    case 'note': noteSheet(id); break;
+    case 'flag': await markFlag(id, v); break;
+    case 'unflag': await unflag(id); break;
+    case 'altoggle': S.alOpen = S.alOpen === false; render(); break;
+    case 'alall': S.alAll = true; render(); break;
+    case 'autoassign': await autoAssign(); break;
+    case 'suggc': { const r = resById(el.dataset.r); await assignCombo(r, id); break; }
+    case 'waitadd': waitAddSheet(); break;
+    case 'waitpick': waitPickSheet(id); break;
+    case 'waitseat': { if (el.dataset.t) await seatWait(id, el.dataset.t); else waitPickSheet(id); break; }
+    case 'waitleft': { const w = WAIT.find(x => x.id === id); if (!w) break; w.status = 'left'; w.done_at = new Date().toISOString(); render(); await saveWait(w); toast('Махнати от чакащи'); break; }
+    case 'combonew': S.comboPick = []; S.sel = null; render(); toast('Докосни масите, които се събират'); break;
+    case 'combocancel': S.comboPick = null; render(); break;
+    case 'combosave': await saveCombo(); break;
+    case 'comboseats': { const c = COMBOS.find(x => x.id === id); if (!c) break; c.seats = Math.max(1, Math.min(200, c.seats + (+v))); render(); try { if (!DEMO) await sb.from('floor_combos').update({ seats: c.seats }).eq('id', c.id); } catch (er) {} break; }
+    case 'combodel': { const c = COMBOS.find(x => x.id === id); if (!c || !confirm('Да изтрия ли комбинацията ' + comboName(c) + '?')) break; COMBOS = COMBOS.filter(x => x !== c); render(); try { if (!DEMO) await sb.from('floor_combos').delete().eq('id', c.id); } catch (er) {} break; }
+    case 'side': setSide(!S.side); break;
     case 'zone': S.zone = id; if (S.edit) S.sel = null; render(); break;
     case 'now': S.follow = true; S.at = S.date === todayIso() ? nowMin() : 19 * 60; render(); break;
     case 'zoom': { const st = $('#scroller'); const ratio = st ? { x: (st.scrollLeft + st.clientWidth / 2) / Math.max(1, st.scrollWidth), y: (st.scrollTop + st.clientHeight / 2) / Math.max(1, st.scrollHeight) } : null;
@@ -1440,7 +1868,7 @@ app.addEventListener('click', async e => {
       if (!confirm((used ? 'На тази маса има записи за днес — ще изчезнат. ' : '') + 'Да изтрия ли ' + (t.kind === 'table' ? 'маса ' + t.label : 'елемента') + '?\n(За временно — изключи „Ползва се“.)')) break;
       UNDO.push({ k: 'del', t: Object.assign({}, t) }); TABLES = TABLES.filter(x => x.id !== t.id); SEATS = SEATS.filter(s => s.table_id !== t.id); S.sel = null; render(); await track(api.del('floor_tables', t.id)); break; }
     case 'undo': await undo(); break;
-    case 'close': S.sel = null; S.assign = null; render(); break;
+    case 'close': S.sel = null; S.assign = null; if (innerWidth <= 860) S.side = false; render(); break;
     case 'addzone': { const z = { id: uuid(), name: 'Нова зала', place: null, w: 1000, h: 700, sort: ZONES.length + 1, active: true }; ZONES.push(z); S.zone = z.id; S.sel = null; render(); await saveZone(z); break; }
     case 'ztog': { const z = curZone(); if (!z) break; z.active = z.active === false; render(); await saveZone(z); break; }
     case 'zmove': { const z = curZone(); if (!z) break; const i = ZONES.indexOf(z), j = i + (+v); if (j < 0 || j >= ZONES.length) break; [ZONES[i], ZONES[j]] = [ZONES[j], ZONES[i]]; ZONES.forEach((x, k) => x.sort = k + 1); render(); try { await api.upMany('floor_zones', ZONES.map(x => clean(x, ZONE_COLS))); savedHint(); } catch (er) { err(er); } break; }
@@ -1465,7 +1893,7 @@ let _thp = 0; function throttlePartial() { if (_thp) return; _thp = requestAnima
 function renderPartial() {
   const zone = curZone(); const st = $('#stage');
   if (st) { const sc = $('#scroller'), k = sc ? [sc.scrollLeft, sc.scrollTop] : [0, 0]; const tmp = document.createElement('div'); tmp.innerHTML = stageHtml(zone); st.replaceWith(tmp.firstElementChild); const n = $('#scroller'); if (n) { n.scrollLeft = k[0]; n.scrollTop = k[1]; } }
-  const side = $('.side'); if (side) side.innerHTML = '<div class="sidetoggle" data-a="side"><i></i></div>' + sideHtml(zone);
+  const side = $('.side'); if (side) side.innerHTML = gripHtml() + sideHtml(zone);
   const zb = $('.zones'); if (zb) { const tmp = document.createElement('div'); tmp.innerHTML = subBar(zone); const nz = tmp.querySelector('.zones'); if (nz) zb.innerHTML = nz.innerHTML; }
 }
 let _thr = 0; function throttleRender() { if (_thr) return; _thr = requestAnimationFrame(() => { _thr = 0; render(); }); }
@@ -1486,6 +1914,7 @@ function addElement(k) {
 }
 function tableClick(tid) {
   const t = tableById(tid); if (!t) return;
+  if (S.edit && S.comboPick) { if (t.kind === 'table') { const i = S.comboPick.indexOf(tid); if (i >= 0) S.comboPick.splice(i, 1); else S.comboPick.push(tid); } render(); return; }
   if (S.edit) { S.sel = { t: 'table', id: tid }; render(); return; }
   if (t.kind !== 'table') return;
   if (S.assign) {
@@ -1685,6 +2114,8 @@ document.addEventListener('keydown', e => {
 // ---------- ИКОНИ ----------
 const ICON = {
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><circle cx="17.5" cy="6.5" r="3.5"/><rect x="3" y="14" width="18" height="7" rx="1.5"/></svg>',
+  brief: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg>',
+  menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   cog: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>',
   search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted);flex:0 0 auto"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',
   star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.9-6.3 3.9 1.7-7L2 9.5l7.1-.6z"/></svg>',
@@ -1702,7 +2133,7 @@ function savedHint() { saveState(); }
 // =====================================================================
 function gateHtml(msg) {
   app.innerHTML = `<header class="top"><a class="brand" href="admin.html"><b>AC²</b><span>Маси</span></a></header>
-  <div class="gate"><div class="card"><h1>Маси</h1><p>${msg ? esc(msg) : 'Вход със служебния акаунт (право „Маси“ или „Резервации“).'}</p>
+  <div class="gate"><div class="card"><h1>Маси</h1><p>${msg ? esc(msg) : 'Вход със служебния акаунт (право „Маси“).'}</p>
     <form id="lg"><input class="inp" id="lg_e" type="email" placeholder="Имейл" autocomplete="username" required><input class="inp" id="lg_p" type="password" placeholder="Парола" autocomplete="current-password" required>
     <button class="btn w full" type="submit">Вход</button></form>
     <p style="margin:14px 0 0;font-size:13px;"><a href="tables.html?demo=1" style="color:var(--wine)">Разгледай с примерни данни</a></p></div></div>`;
@@ -1714,15 +2145,15 @@ function gateHtml(msg) {
   });
 }
 async function boot() {
-  if (DEMO) { ME = { role: 'admin', perms: [] }; CAN_LAYOUT = true; }
+  if (DEMO) { ME = { role: 'admin', perms: [] }; CAN_LAYOUT = true; CAN_RES = true; }
   else {
     if (!sb) { gateHtml('Нужна е новата версия на db.js (DB.client).'); return; }
     const u = await DB.getUser().catch(() => null);
     if (!u) { gateHtml(); return; }
     const live = !u.perms_until || u.perms_until >= todayIso();
     const perms = live ? (u.perms || []) : [];
-    if (u.role !== 'admin' && !perms.includes('tables') && !perms.includes('reservations')) { gateHtml('Акаунтът няма право „Маси“. Помоли админа: Админ → Екип.'); return; }
-    ME = u; CAN_LAYOUT = u.role === 'admin' || perms.includes('tables');
+    if (u.role !== 'admin' && !perms.includes('tables') && !perms.includes('tables_layout')) { gateHtml('Акаунтът няма право „Маси“. Помоли админа: Админ → Екип.'); return; }
+    ME = u; CAN_LAYOUT = u.role === 'admin' || perms.includes('tables_layout'); CAN_RES = u.role === 'admin' || perms.includes('reservations');
   }
   app.innerHTML = '<div class="gate"><p class="muted">Зареждане…</p></div>';
   try { await api.load(); await api.loadDay(); } catch (e) { err(e); }
@@ -1744,6 +2175,9 @@ function subscribe() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'floor_zones' }, () => { if (!S.edit) softReload(true); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, () => softReload(false))
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contact_messages' }, () => softReload(false))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'floor_waitlist' }, () => softReload(false))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'guest_notes' }, () => softReload(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'res_flags' }, () => softReload(true))
       .subscribe();
   } catch (e) {}
   // резервно: на всяка минута + при връщане в прозореца
@@ -1780,7 +2214,7 @@ function demoInit() {
 }
 function demoDay() {
   if (window.__demoDay[S.date]) { ({ SEATS, RES } = window.__demoDay[S.date]); return; }
-  const mk = (id, name, party, time, status, extra) => Object.assign({ id, user_id: null, name, party, date: S.date, time, status, event_id: null, table_event_id: null, paid: false, checked_in_at: '', note: '', phone: '+359 88 123 4567', email: '', membership: 'guest', place: 'Ресторант', fmt: 'table', code: '', grp: 'rest', evTitle: '' }, extra || {});
+  const mk = (id, name, party, time, status, extra) => Object.assign({ id, user_id: null, name, party, date: S.date, time, status, event_id: null, table_event_id: null, paid: false, checked_in_at: '', note: '', phone: '+359 88 100 00' + String(id).replace(/\D/g, '').padStart(2, '0'), email: '', membership: 'guest', place: 'Ресторант', fmt: 'table', code: '', grp: 'rest', evTitle: '' }, extra || {});
   RES = [
     mk('r1', 'Мария Петрова', 2, '18:30', 'confirmed', { membership: 'founding', user_id: 'u1', checked_in_at: new Date().toISOString() }),
     mk('r2', 'Георги Иванов', 4, '19:00', 'confirmed', { note: 'Рожден ден — торта в 21:00', membership: 'club', user_id: 'u2' }),
@@ -1808,6 +2242,14 @@ function demoDay() {
   ];
   MSGS = [{ id: 'm1', name: 'Виктория Маринова', phone: '+359 87 765 4321', email: 'v@example.com', subject: 'Резервация', message: 'Здравейте, бихме искали маса за 5 души в петък около 20:00. Имате ли място до прозореца?', is_read: false, created_at: new Date().toISOString() },
     { id: 'm2', name: 'Стефан', email: 's@example.com', subject: 'Членство', message: 'Как мога да кандидатствам за членство?', is_read: false, created_at: new Date().toISOString() }];
+  const k = id => 'p:' + last9('+359 88 100 00' + id.replace(/\D/g, '').padStart(2, '0'));
+  NOTES = { [k('r2')]: { gkey: k('r2'), allergies: 'ядки', prefs: 'Обича маса до прозореца; рожден ден на съпругата', vip: false },
+            [k('r5')]: { gkey: k('r5'), allergies: '', prefs: 'Червено вино — Мавруд', vip: true },
+            [k('r3')]: { gkey: k('r3'), allergies: 'глутен (детето)', prefs: 'Детско столче', vip: false } };
+  FLAGS = [{ reservation_id: 'old1', kind: 'no_show', gkeys: [k('r7')] }, { reservation_id: 'old2', kind: 'no_show', gkeys: [k('r7')] }];
+  WAIT = [{ id: 'w1', date: S.date, name: 'Петрови', party: 3, phone: '', note: 'искат до прозореца', status: 'waiting', table_id: null, added_at: new Date(Date.now() - 14 * 60000).toISOString() }];
+  const byL2 = l => (TABLES.find(t => t.kind === 'table' && t.label === l) || {}).id;
+  COMBOS = [{ id: 'c1', zone_id: 'z1', table_ids: [byL2('205'), byL2('206')], seats: 8 }, { id: 'c2', zone_id: 'z1', table_ids: [byL2('109'), byL2('110')], seats: 16 }, { id: 'c3', zone_id: 'z1', table_ids: [byL2('104'), byL2('105'), byL2('106'), byL2('107')], seats: 14 }];
   window.__demoDay[S.date] = { SEATS, RES };
 }
 if (DEMO && !/[?&]demo=1/.test(location.search)) console.info('AC² Маси: демо режим (няма връзка с базата)');
