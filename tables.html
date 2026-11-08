@@ -77,6 +77,21 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .zbtn i{font-style:normal;font-size:12px;color:var(--muted);}
 .zbtn.on{background:var(--ink);color:var(--bg);border-color:var(--ink);}
 .zbtn.on i{color:var(--bg);opacity:.65;}
+.evchip{display:flex;align-items:center;gap:6px;max-width:260px;padding:7px 12px;border-radius:20px;border:1.5px solid var(--wine);color:var(--wine);font-size:13px;white-space:nowrap;flex:0 1 auto;min-width:0;}
+.evchip em{font-style:normal;overflow:hidden;text-overflow:ellipsis;color:var(--mid);}
+.evchip.on{background:var(--wine);color:#F7F7EE;} .evchip.on em{color:#F7F7EE;opacity:.85;}
+.evchip svg{width:14px;height:14px;flex:0 0 auto;}
+.msgs{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--amber);border-radius:14px;padding:10px 12px;margin-bottom:10px;}
+.msgs .mi{padding:9px 0;border-top:1px solid var(--line);}
+.msgs .mi:first-of-type{border-top:0;}
+.msgs .mi p{font-size:13px;color:var(--mid);margin:3px 0 8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.newres{display:flex;gap:8px;}
+.newres .search{min-width:0;flex:1 1 auto;}
+.newres .btn{flex:0 0 auto;}
+.savest{font-size:13.5px;color:var(--green);white-space:nowrap;}
+.savest.busy{color:var(--muted);} .savest.bad{color:var(--wine);font-weight:600;}
+.donebtn{background:var(--wine);color:#F7F7EE;border-radius:21px;padding:0 18px;height:42px;font-weight:600;white-space:nowrap;}
+.phead{position:sticky;top:-14px;z-index:3;display:flex;justify-content:space-between;align-items:center;gap:8px;margin:-14px -16px 12px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);}
 .zbtn.add{border-style:dashed;color:var(--muted);}
 .scrub{display:flex;align-items:center;gap:10px;margin-left:auto;flex:1 1 360px;max-width:520px;}
 .scrub .t{font-family:var(--serif);font-style:italic;font-weight:700;font-size:22px;min-width:64px;text-align:right;color:var(--ink);}
@@ -452,6 +467,9 @@ const api = {
     const miss = [...new Set(SEATS.map(x => x.reservation_id).filter(id => id && !rows.some(y => y.id === id)))];
     if (miss.length) { const m = await sb.from('reservations').select('*').in('id', miss); rows = rows.concat(m.data || []); }
     RES = rows.map(mapRes).filter(Boolean);
+    try { const since = new Date(Date.now() - 21 * 864e5).toISOString();
+      const m = await sb.from('contact_messages').select('id,name,email,phone,subject,message,is_read,created_at').eq('is_read', false).gte('created_at', since).order('created_at', { ascending: false }).limit(40);
+      MSGS = m.error ? [] : (m.data || []); } catch (e) { MSGS = []; }
   },
   async up(table, row) {
     if (DEMO) return { data: row };
@@ -520,6 +538,9 @@ function suggest(party, a, b, zid) {
     .sort((x, y) => (x.seats - party) - (y.seats - party) || (x.vip - y.vip) || String(x.label).localeCompare(String(y.label), 'bg', { numeric: true }))
     .slice(0, 4);
 }
+// запитване от сайта за място, което няма зала тук (напр. Камерна зала) → отделна свита група
+const placesHere = () => new Set(ZONES.map(z => z.place).filter(Boolean));
+function grpOf(r) { if (r.grp !== 'rest') return r.grp; if (!r.place || placesHere().has(r.place) || seatsOfRes(r.id).length) return 'rest'; return 'other'; }
 const visibleRes = () => RES.filter(r => ['requested', 'confirmed'].includes(r.status) || seatsOfRes(r.id).length);
 
 // =====================================================================
@@ -540,12 +561,28 @@ const SEAT_COLS = ['id','date','table_id','start_t','end_t','kind','reservation_
 const TABLE_COLS = ['id','zone_id','kind','label','shape','x','y','w','h','rot','seats','min_party','vip','active','note'];
 const ZONE_COLS = ['id','name','place','w','h','sort','active'];
 const clean = (o, cols) => { const r = {}; cols.forEach(c => { if (o[c] !== undefined) r[c] = o[c]; }); return r; };
-let _tSave = {};
-function saveTableSoon(t) {
-  clearTimeout(_tSave[t.id]);
-  _tSave[t.id] = setTimeout(async () => { try { await api.up('floor_tables', clean(t, TABLE_COLS)); savedHint(); } catch (e) { err(e); } }, 350);
+let _tSave = {}, PENDING = 0, SAVE_ERR = false;
+function saveState() {
+  const el = document.getElementById('savest'); if (!el) return;
+  el.className = 'savest' + (PENDING ? ' busy' : SAVE_ERR ? ' bad' : '');
+  el.textContent = PENDING ? 'Записвам…' : SAVE_ERR ? 'Не се записа — опитай пак' : 'Всичко е записано ✓';
 }
-async function saveZone(z) { try { await api.up('floor_zones', clean(z, ZONE_COLS)); savedHint(); } catch (e) { err(e); } }
+async function track(p) { PENDING++; saveState(); try { await p; SAVE_ERR = false; } catch (e) { SAVE_ERR = true; err(e); } finally { PENDING--; saveState(); } }
+function saveTableSoon(t) {
+  clearTimeout(_tSave[t.id]); PENDING++; saveState();
+  _tSave[t.id] = setTimeout(() => { PENDING--; track(api.up('floor_tables', clean(t, TABLE_COLS))); }, 350);
+}
+async function saveZone(z) { await track(api.up('floor_zones', clean(z, ZONE_COLS))); }
+// ---------- „Върни“ (отмяна) в редактора ----------
+const UNDO = [];
+function snap(t) { if (t) UNDO.push({ k: 'edit', t: Object.assign({}, t) }); if (UNDO.length > 60) UNDO.shift(); }
+async function undo() {
+  const u = UNDO.pop(); if (!u) { toast('Няма какво да се върне'); return; }
+  if (u.k === 'edit') { const t = tableById(u.t.id); if (t) Object.assign(t, u.t); else TABLES.push(Object.assign({}, u.t)); S.sel = { t: 'table', id: u.t.id }; render(); saveTableSoon(tableById(u.t.id)); }
+  if (u.k === 'add') { TABLES = TABLES.filter(x => x.id !== u.id); S.sel = null; render(); await track(api.del('floor_tables', u.id)); }
+  if (u.k === 'del') { TABLES.push(Object.assign({}, u.t)); S.sel = { t: 'table', id: u.t.id }; render(); saveTableSoon(tableById(u.t.id)); }
+  toast('Върнато');
+}
 function newSeat(o) {
   return Object.assign({ id: uuid(), date: S.date, kind: 'res', reservation_id: null, event_id: null, name: '', party: null,
     extra_seats: 0, note: '', status: 'planned', seated_at: null, left_at: null }, o);
@@ -621,7 +658,7 @@ function render() {
       <button class="${S.view === 'floor' ? 'on' : ''}" data-a="view" data-v="floor">Схема</button>
       <button class="${S.view === 'time' ? 'on' : ''}" data-a="view" data-v="time">По часове</button>
     </div>
-    ${CAN_LAYOUT ? `<button class="ibtn ${S.edit ? 'on' : ''}" data-a="edit" title="Подреди залата" aria-label="Подреди залата">${ICON.edit}</button>` : ''}
+    ${CAN_LAYOUT ? (S.edit ? `<button class="donebtn" data-a="edit">Готово</button>` : `<button class="ibtn" data-a="edit" title="Подреди залата" aria-label="Подреди залата">${ICON.edit}</button>`) : ''}
     <button class="ibtn" data-a="settings" title="Настройки" aria-label="Настройки">${ICON.cog}</button>
     <span class="live ${DEMO ? 'off' : ''}" title="${DEMO ? 'Демо — без база' : 'На живо: промените от другите таблети идват веднага'}"></span>
   </header>
@@ -631,6 +668,7 @@ function render() {
     <aside class="side ${S.side ? 'open' : ''}"><div class="sidetoggle" data-a="side"><i></i></div>${sideHtml(zone)}</aside>
   </div>`;
   if (S.view === 'time') afterTimeline();
+  saveState();
   const st1 = $('#scroller');
   if (st1 && S.zoom > 1) { if (S._zr) { st1.scrollLeft = S._zr.x * st1.scrollWidth - st1.clientWidth / 2; st1.scrollTop = S._zr.y * st1.scrollHeight - st1.clientHeight / 2; S._zr = null; } else if (keep) { st1.scrollLeft = keep[0]; st1.scrollTop = keep[1]; } }
 }
@@ -641,7 +679,9 @@ function subBar(zone) {
       const tt = zoneTables(z.id).filter(t => t.active !== false); const busy = tt.filter(t => tableState(t, T).st !== 'free').length;
       return `<button class="zbtn ${z.id === S.zone ? 'on' : ''}" data-a="zone" data-id="${z.id}">${esc(z.name)}<i>${busy}/${tt.length}</i></button>`; }).join('')}
       ${S.edit ? `<button class="zbtn add" data-a="addzone">+ Зала</button>` : ''}</div>
-    ${S.edit ? `<div class="scrub"><span class="muted" style="margin-left:auto;font-size:13.5px;">Влачи масите; промените се пазят сами</span></div>` : `
+    ${S.edit || !zone ? '' : EVENTS.filter(e => e.place && zone.place && e.place === zone.place).map(e => { const blocked = SEATS.some(x => x.event_id === e.id && x.kind === 'block');
+      return `<button class="evchip ${blocked ? 'on' : ''}" data-a="evinfo" data-id="${e.id}" title="${esc(e.title)}">${ICON.star}<span>${esc(e.time || '')}${e.ends ? '–' + esc(e.ends) : ''}</span><em>${esc(e.title)}</em></button>`; }).join('')}
+    ${S.edit ? `<div class="scrub" style="justify-content:flex-end;gap:12px"><span id="savest" class="savest">Всичко е записано ✓</span><button class="btn o sm" data-a="undo" ${UNDO.length ? '' : 'disabled'}>↶ Върни</button></div>` : `
     <div class="scrub">
       <span class="t">${fm(T)}</span>
       <input type="range" min="${OPEN()}" max="${CLOSE() - 15}" step="15" value="${Math.min(Math.max(T, OPEN()), CLOSE() - 15)}" data-a="scrub" aria-label="Час за схемата">
@@ -675,12 +715,6 @@ function stageHtml(zone) {
       <rect class="room" x="0" y="0" width="${zone.w}" height="${zone.h}" rx="6"/>
       ${decor}${joins}${tables}${chips}${handle}
     </svg></div>
-    <div class="overlay">
-      ${evs.map(e => { const cnt = RES.filter(r => r.event_id === e.id && ['confirmed', 'requested'].includes(r.status)).reduce((a, r) => a + r.party, 0);
-        const blocked = SEATS.some(s => s.event_id === e.id && s.kind === 'block');
-        return `<div class="evbanner"><div><b>Събитие тук: ${esc(e.title)}</b><div class="m">${esc(e.time || '')}${e.ends ? '–' + esc(e.ends) : ''}, ${plural(cnt, 'гост', 'гости')}${e.capacity ? ' от ' + e.capacity : ''}${blocked ? '. Масите са заети за събитието.' : '. Масите още се дават на гости на ресторанта.'}</div></div>
-          ${blocked ? `<button class="btn sm o" data-a="unblockevent" data-id="${e.id}">Отвори масите</button>` : `<button class="btn sm w" data-a="blockevent" data-id="${e.id}">Заеми масите за събитието</button>`}</div>`; }).join('')}
-    </div>
     <div class="zoom"><button data-a="zoom" data-v="1" aria-label="Увеличи">+</button><button class="fit" data-a="zoom" data-v="0" aria-label="Цялата зала">цяла</button><button data-a="zoom" data-v="-1" aria-label="Намали">−</button></div>
     ${assignR ? `<div class="assignbar">Избери маса за <b>${esc(assignR.name)}</b> (${assignR.party}) <button data-a="cancelassign">Отказ</button></div>` : ''}
     ${S.edit ? '' : `<div class="legend"><span><i></i>Свободна</span><span><i class="r"></i>Резервирана</span><span><i class="s"></i>Идват скоро</span><span><i class="g"></i>Настанени</span><span><i class="b"></i>Запазена</span></div>`}
@@ -792,13 +826,14 @@ function sideHtml(zone) {
 function listHtml() {
   const vis = visibleRes();
   const T = S.at;
-  const guests = vis.filter(r => r.status !== 'declined' && r.status !== 'cancelled').reduce((a, r) => a + r.party, 0);
+  const restRes = vis.filter(r => ['rest', 'after'].includes(grpOf(r)));
+  const guests = restRes.reduce((a, r) => a + r.party, 0);
   const seatedNow = SEATS.filter(s => s.status === 'seated').reduce((a, s) => { const r = s.reservation_id ? resById(s.reservation_id) : null; return a + (r ? 0 : (s.party || 0)); }, 0)
     + vis.filter(r => resState(r) === 'seated').reduce((a, r) => a + r.party, 0);
   const tt = TABLES.filter(t => t.kind === 'table' && t.active !== false);
   const free = tt.filter(t => tableState(t, T).st === 'free').length;
-  const cnt = { todo: 0, assigned: 0, seated: 0, all: vis.length };
-  vis.forEach(r => { const st = resState(r); if (st === 'todo') cnt.todo++; else if (st === 'seated') cnt.seated++; else if (st === 'assigned') cnt.assigned++; });
+  const cnt = { todo: 0, assigned: 0, seated: 0, all: vis.filter(r => grpOf(r) !== 'event').length };
+  vis.filter(r => grpOf(r) !== 'event').forEach(r => { const st = resState(r); if (st === 'todo') cnt.todo++; else if (st === 'seated') cnt.seated++; else if (st === 'assigned') cnt.assigned++; });
   const q = S.q.trim().toLowerCase();
   let rows = vis.filter(r => {
     const st = resState(r);
@@ -808,33 +843,91 @@ function listHtml() {
     if (q && !(r.name.toLowerCase().includes(q) || (r.phone || '').includes(q) || (r.code || '').toLowerCase().includes(q))) return false;
     return true;
   }).sort((a, b) => (tm(a.time) ?? 9999) - (tm(b.time) ?? 9999));
-  const groups = [['rest', 'Ресторант и маси'], ['after', 'Маса след събитие'], ['event', 'Билети за събития']];
+  const groups = [['rest', 'Ресторант и маси'], ['after', 'Маса след събитие'], ['other', 'Запитвания за други зали'], ['event', 'Билети за събития']];
   let html = '';
   groups.forEach(([g, title]) => {
-    const gr = rows.filter(r => r.grp === g); if (!gr.length) return;
+    const gr = rows.filter(r => grpOf(r) === g); if (!gr.length) return;
+    if (g === 'other') { const open = !!S.openGroups.__other; html += `<div class="grp" data-a="grp" data-id="__other"><span>${title}</span><span>${gr.length} ${open ? '▾' : '▸'}</span></div>` + (open ? gr.map(resCard).join('') : ''); return; }
     if (g === 'event') {
       const byEv = {}; gr.forEach(r => (byEv[r.event_id] = byEv[r.event_id] || []).push(r));
       Object.entries(byEv).forEach(([eid, list]) => {
-        const ev = ALLEV.find(e => e.id === eid); const open = S.openGroups[eid] ?? (ev && ev.format === 'table');
+        const ev = ALLEV.find(e => e.id === eid); const open = !!S.openGroups[eid];
         html += `<div class="grp" data-a="grp" data-id="${esc(eid)}"><span>${esc(ev ? ev.title : 'Събитие')}, ${plural(list.reduce((a, r) => a + r.party, 0), 'гост', 'гости')}</span><span>${open ? '▾' : '▸'}</span></div>`;
         if (open) html += list.map(resCard).join('');
       });
     } else { html += `<div class="grp"><span>${title}</span><span>${gr.length}</span></div>` + gr.map(resCard).join(''); }
   });
+  html = msgsHtml() + html;
   if (!html) html = `<div class="empty" style="position:static;padding:40px 10px;"><div><h3 style="font-size:20px;">${S.filter === 'todo' && vis.length ? 'Всички са разпределени' : 'Няма резервации'}</h3><p style="font-size:14px;">${S.filter === 'todo' && vis.length ? 'Виж „Всички“, за да прегледаш деня.' : 'Гост без резервация: докосни свободна маса → „Гост на място“.'}</p></div></div>`;
   return `<div class="sidehead">
       <div class="stats">
-        <div class="stat"><b>${vis.length}</b><span>резервации</span></div>
+        <div class="stat"><b>${restRes.length}</b><span>резервации</span></div>
         <div class="stat"><b>${guests}</b><span>гости</span></div>
         <div class="stat"><b>${seatedNow}</b><span>на маса</span></div>
         <div class="stat"><b>${free}<small style="font-size:14px;opacity:.5">/${tt.length}</small></b><span>свободни</span></div>
       </div>
-      <label class="search">${ICON.search}<input type="search" placeholder="Име, телефон или код" value="${esc(S.q)}" data-a="q" autocomplete="off"></label>
+      <div class="newres"><label class="search" style="flex:1">${ICON.search}<input type="search" placeholder="Име, телефон или код" value="${esc(S.q)}" data-a="q" autocomplete="off"></label><button class="btn w" data-a="newres" style="min-height:42px;padding:0 14px;" title="Резервация по телефон, имейл или съобщение">+ Резервация</button></div>
       <div class="filters">
         ${[['todo', 'Без маса'], ['assigned', 'Разпределени'], ['seated', 'Настанени'], ['all', 'Всички']].map(([k, l]) => `<button class="${S.filter === k ? 'on' : ''}" data-a="filter" data-v="${k}">${l}<em>${cnt[k]}</em></button>`).join('')}
       </div>
     </div>
     <div class="list" id="list">${html}</div>`;
+}
+// ---------- запитвания от „Контакти“ на сайта, които приличат на резервация за маса ----------
+let MSGS = [];
+const RESTO_RX = /\bмас[аи]\b|резерв|ресторант|вечер|обяд|брънч|дегустац|рожден|меню|\btable|book|reserv|dinner|lunch|brunch|restaurant/i;
+const msgHidden = () => { try { return JSON.parse(localStorage.getItem('acac_tables_msg_hidden') || '[]'); } catch (e) { return []; } };
+function hideMsg(id) { const h = msgHidden(); h.push(id); try { localStorage.setItem('acac_tables_msg_hidden', JSON.stringify(h.slice(-300))); } catch (e) {} }
+function restoMsgs() { const h = msgHidden(); return MSGS.filter(m => !m.is_read && !h.includes(m.id) && RESTO_RX.test((m.subject || '') + ' ' + (m.message || ''))); }
+function msgsHtml() {
+  const list = restoMsgs(); if (!list.length) return '';
+  const open = S.msgOpen !== false;
+  return `<div class="msgs"><div class="row" data-a="msgtoggle" style="cursor:pointer"><b>Запитвания от съобщенията</b><span class="pill a">${list.length} ${open ? '▾' : '▸'}</span></div>
+    ${open ? list.slice(0, 6).map(m => `<div class="mi"><div class="row"><b style="font-size:14px">${esc(m.name)}</b><span class="muted" style="font-size:12px">${esc(new Date(m.created_at).toLocaleDateString('bg-BG', { day: 'numeric', month: 'short' }))}</span></div>
+      <p>${esc(m.subject ? m.subject + ': ' : '')}${esc(m.message)}</p>
+      <div style="display:flex;gap:6px"><button class="btn sm w" data-a="msgres" data-id="${m.id}">Направи резервация</button><button class="btn sm o" data-a="msghide" data-id="${m.id}">Не е за маса</button>${m.phone ? `<a class="btn sm o" href="tel:${esc(String(m.phone).replace(/[^\d+]/g, ''))}" style="text-decoration:none">Обади се</a>` : ''}</div></div>`).join('') : ''}</div>`;
+}
+function newResSheet(o) {
+  const placeOpts = [...new Set(ZONES.map(z => z.place).filter(Boolean).concat(['Ресторант']))];
+  const zone = curZone(); const defPlace = (zone && zone.place) || 'Ресторант';
+  let party = 2;
+  sheet(`<h3>Нова резервация</h3><p class="lead">${o.msgId ? 'От съобщение на сайта.' : 'По телефон, имейл или на място.'} Записва се в резервациите (вижда се и в админа).</p>
+    <div class="two"><label class="fld"><span>Име *</span><input class="inp" id="nr_n" maxlength="100" value="${esc(o.name || '')}" autofocus></label><label class="fld"><span>Телефон</span><input class="inp" id="nr_p" type="tel" maxlength="40" value="${esc(o.phone || '')}"></label></div>
+    <label class="fld"><span>Имейл (по желание — за потвърждение)</span><input class="inp" id="nr_e" type="email" maxlength="120" value="${esc(o.email || '')}"></label>
+    <div class="two"><label class="fld"><span>Дата</span><input class="inp" id="nr_d" type="date" value="${S.date}"></label><label class="fld"><span>Час</span><select class="inp" id="nr_t">${timeOpts(fm(Math.max(OPEN(), snap15(S.at))), OPEN(), CLOSE() - 30)}</select></label></div>
+    <div class="fld"><span>Брой гости</span><div class="nums">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => `<button class="${n === party ? 'on' : ''}" data-p="${n}">${n}</button>`).join('')}</div>
+      <input class="inp" id="nr_big" type="number" min="13" max="200" placeholder="или повече — напиши броя" style="margin-top:6px"></div>
+    <label class="fld"><span>Място</span><select class="inp" id="nr_pl">${placeOpts.map(p => `<option ${p === defPlace ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label>
+    <label class="fld"><span>Бележка</span><textarea class="inp" id="nr_note" maxlength="1000">${esc(o.note || '')}</textarea></label>
+    <div class="foot"><button class="btn o" data-x="close">Отказ</button><button class="btn w" data-x="ok">Запиши</button></div>`, el => {
+    el.addEventListener('click', async ev => {
+      const b = ev.target.closest('button'); if (!b) return;
+      if (b.dataset.p) { party = +b.dataset.p; el.querySelectorAll('[data-p]').forEach(x => x.classList.toggle('on', x === b)); el.querySelector('#nr_big').value = ''; return; }
+      if (b.dataset.x === 'close') return closeSheet();
+      if (b.dataset.x !== 'ok') return;
+      const name = el.querySelector('#nr_n').value.trim(); if (!name) { toast('Напиши име', true); return; }
+      const big = +el.querySelector('#nr_big').value; if (big >= 13) party = Math.min(200, big);
+      const row = { user_id: null, event_id: null, who: name, res_name: name, guest_name: name, membership: 'guest', kind: 'physical', format: 'table',
+        guest_phone: el.querySelector('#nr_p').value.trim() || null, guest_email: el.querySelector('#nr_e').value.trim() || null,
+        place: el.querySelector('#nr_pl').value, date: el.querySelector('#nr_d').value || S.date, time: el.querySelector('#nr_t').value,
+        party_size: party, note: el.querySelector('#nr_note').value.trim() || null, status: 'confirmed', paid: false, seen_at: new Date().toISOString() };
+      b.disabled = true;
+      let id = uuid();
+      if (DEMO) { RES.push(mapRes(Object.assign({ id }, row))); }
+      else {
+        const { data, error } = await sb.from('reservations').insert(row).select('id').single();
+        if (error) { b.disabled = false; err(/Не е позволено|policy|row-level/i.test(error.message) ? { message: 'Нужни са право „Резервации“ и SQL 2026-11-08-tables-reservations.sql' } : error); return; }
+        id = data.id;
+        if (o.msgId) { try { await sb.from('contact_messages').update({ is_read: true }).eq('id', o.msgId); } catch (e) {} }
+        if (row.guest_email) { try { await DB.notifyReservation(id, 'confirmed'); } catch (e) {} }
+      }
+      if (o.msgId) { hideMsg(o.msgId); MSGS = MSGS.filter(m => m.id !== o.msgId); }
+      closeSheet();
+      if (row.date !== S.date) { toast('Записана за ' + row.date); setDate(row.date); return; }
+      if (!DEMO) await reloadDay();
+      S.sel = { t: 'res', id }; S.side = true; render(); toast('Резервацията е записана — избери маса');
+    });
+  });
 }
 function resCard(r) {
   const st = resState(r), ss = seatsOfRes(r.id).filter(s => s.status !== 'done');
@@ -855,7 +948,7 @@ function tablePanel(t) {
   const stTxt = { free: 'Свободна', reserved: 'Резервирана', soon: 'Идват скоро', seated: 'Настанени', over: 'Настанени, над времето', block: 'Запазена' }[st];
   const cur = s && st !== 'free' ? s : null;
   return `<div class="det">
-    <button class="back" data-a="back">‹ Резервации</button>
+    <div class="phead"><button class="btn o sm" data-a="back">‹ Назад</button><button class="btn sm" data-a="close">Готово</button></div>
     <h2>Маса ${esc(t.label)}</h2>
     <div class="sub2">${esc(zone ? zone.name : '')}, ${plural(t.seats, 'място', 'места')}${t.vip ? ', VIP' : ''} · <b style="color:var(--ink)">${stTxt}</b> в ${fm(T)}</div>
     ${cur ? seatBox(cur, t) : `<div class="acts" style="margin-bottom:12px;">
@@ -894,7 +987,7 @@ function resPanel(r) {
   const sugAll = st === 'todo' && !sug.length ? suggest(r.party, a, b, null) : [];
   const ev = r.event_id ? ALLEV.find(e => e.id === r.event_id) : null;
   return `<div class="det">
-    <button class="back" data-a="back">‹ Резервации</button>
+    <div class="phead"><button class="btn o sm" data-a="back">‹ Назад</button><button class="btn sm" data-a="close">Готово</button></div>
     <h2>${esc(r.name)}</h2>
     <div class="sub2">${esc(r.time || 'без час')}, ${plural(r.party, 'човек', 'души')}${r.place ? ', ' + esc(r.place) : ''}</div>
     ${r.status === 'requested' ? `<div class="box" style="border-color:var(--amber)"><div class="row"><span>Резервацията чака одобрение.</span>${r.paid ? '' : `<button class="btn sm g" data-a="confirm" data-id="${r.id}">Потвърди</button>`}</div><div class="muted" style="font-size:12.5px;margin-top:6px;">При потвърждение гостът получава имейл${r.user_id ? ' и известие' : ''}.</div></div>` : ''}
@@ -946,7 +1039,7 @@ function editorHtml(zone) {
     const isT = t.kind === 'table';
     const shapes = isT ? [['round', 'Кръгла / овал'], ['square', 'Квадрат'], ['soft', 'Мек квадрат'], ['rect', 'Правоъгълна'], ['booth', 'Сепаре'], ['stool', 'Място на бар']] : [['text', 'Надпис'], ['line', 'Линия'], ['bar', 'Бар'], ['stage', 'Сцена'], ['wall', 'Стена'], ['window', 'Прозорец'], ['door', 'Врата'], ['plant', 'Растение']];
     return `<div class="det">
-      <button class="back" data-a="back">‹ Зала ${esc(zone ? zone.name : '')}</button>
+      <div class="phead"><button class="btn o sm" data-a="back">‹ Към залата</button><button class="btn sm" data-a="back">Готово</button></div>
       <h2>${isT ? 'Маса ' + esc(t.label) : esc(t.label || 'Елемент')}</h2><div class="sub2">Влачи на схемата, кръгчето в ъгъла променя размера.</div>
       <label class="fld"><span>${isT ? 'Номер / име' : 'Надпис'}</span><input class="inp" maxlength="20" value="${esc(t.label)}" data-f="label"></label>
       <div class="fld"><span>Форма</span><div class="shapes">${shapes.map(([k, l]) => `<button class="${t.shape === k ? 'on' : ''}" data-a="shape" data-v="${k}">${l}</button>`).join('')}</div></div>
@@ -1198,7 +1291,7 @@ app.addEventListener('click', async e => {
   const el = e.target.closest('[data-a]');
   const tg = e.target.closest('[data-tid]');
   if (!el && tg && $('#floor') && $('#floor').contains(tg)) return tableClick(tg.dataset.tid);
-  if (!el) { const blk = e.target.closest('[data-blk]'); if (blk) return; return; }
+  if (!el) { if (e.target.closest('#floor') && (S.sel || S.assign) && !S.assign) { S.sel = null; render(); } return; }
   const a = el.dataset.a, id = el.dataset.id, v = el.dataset.v;
   switch (a) {
     case 'day': setDate(addDays(S.date, +v)); break;
@@ -1229,10 +1322,15 @@ app.addEventListener('click', async e => {
     case 'block2walk': { const s = seatById(id); if (!s) break; s.kind = 'walkin'; s.status = 'seated'; s.seated_at = new Date().toISOString(); await saveSeat(s, 'Настанени'); break; }
     case 'move': { const s = seatById(id); if (!s) break; if (s.reservation_id) { S.assign = s.reservation_id; S.sel = null; S._moveSeat = s.id; render(); toast('Докосни новата маса'); } else seatSheet(id); break; }
     case 'extra': { const s = seatById(id); if (!s) break; const t = tableById(s.table_id); s.extra_seats = Math.max(-(t.seats || 0), (s.extra_seats || 0) + (+v)); await saveSeat(s); break; }
-    case 'seats': { if (!CAN_LAYOUT) break; const t = tableById(id); if (!t) break; t.seats = Math.max(0, Math.min(40, (t.seats || 0) + (+v))); render(); saveTableSoon(t); break; }
+    case 'seats': { if (!CAN_LAYOUT) break; const t = tableById(id); if (!t) break; snap(t); t.seats = Math.max(0, Math.min(40, (t.seats || 0) + (+v))); render(); saveTableSoon(t); break; }
     case 'addtable': addTableSheet(id); break;
     case 'confirm': await confirmRes(id); break;
     case 'checkin': { const r = resById(id); await checkIn(r); render(); toast('Отбелязано: пристигна'); break; }
+    case 'evinfo': eventSheet(id); break;
+    case 'newres': newResSheet({}); break;
+    case 'msgres': { const m = MSGS.find(x => x.id === id); if (m) newResSheet({ name: m.name, phone: m.phone || '', email: m.email || '', note: (m.subject ? m.subject + ': ' : '') + (m.message || ''), msgId: m.id }); break; }
+    case 'msghide': hideMsg(id); render(); break;
+    case 'msgtoggle': S.msgOpen = !S.msgOpen; render(); break;
     case 'blockevent': await blockEvent(id); break;
     case 'unblockevent': await unblockEvent(id); break;
     case 'loadplan': await loadPlan(); break;
@@ -1240,18 +1338,20 @@ app.addEventListener('click', async e => {
     case 'addel': addElement(v); break;
     case 'shape': { const t = selT(); if (!t) break;
       const DEF = { round: [90, 90, 4], square: [80, 80, 4], soft: [92, 90, 4], rect: [200, 100, 6], booth: [180, 110, 4], stool: [22, 22, 1] };
-      const cx = t.x + t.w / 2, cy0 = t.y + t.h / 2, wasTiny = t.shape === 'stool' || Math.min(t.w, t.h) < 40;
+      snap(t); const cx = t.x + t.w / 2, cy0 = t.y + t.h / 2, wasTiny = t.shape === 'stool' || Math.min(t.w, t.h) < 40;
       t.shape = v;
       if (t.kind === 'table' && DEF[v] && (v === 'stool' || wasTiny)) { t.w = DEF[v][0]; t.h = DEF[v][1]; if (v === 'stool' || t.seats < 2) t.seats = DEF[v][2]; }
       else if (v === 'square') t.h = t.w;
       t.x = Math.round(cx - t.w / 2); t.y = Math.round(cy0 - t.h / 2);
       render(); saveTableSoon(t); break; }
-    case 'tog': { const t = selT(); if (!t) break; const f = el.dataset.f; t[f] = f === 'active' ? t.active === false : !t[f]; render(); saveTableSoon(t); break; }
-    case 'rot': { const t = selT(); if (!t) break; t.rot = v === '+15' ? ((t.rot || 0) + 15) % 360 : +v; render(); saveTableSoon(t); break; }
-    case 'dup': { const t = selT(); if (!t) break; const n = Object.assign({}, t, { id: uuid(), x: t.x + 30, y: t.y + 30, label: t.kind === 'table' ? nextLabel(t.zone_id) : t.label }); TABLES.push(n); S.sel = { t: 'table', id: n.id }; render(); saveTableSoon(n); break; }
+    case 'tog': { const t = selT(); if (!t) break; snap(t); const f = el.dataset.f; t[f] = f === 'active' ? t.active === false : !t[f]; render(); saveTableSoon(t); break; }
+    case 'rot': { const t = selT(); if (!t) break; snap(t); t.rot = v === '+15' ? ((t.rot || 0) + 15) % 360 : +v; render(); saveTableSoon(t); break; }
+    case 'dup': { const t = selT(); if (!t) break; const n = Object.assign({}, t, { id: uuid(), x: t.x + 30, y: t.y + 30, label: t.kind === 'table' ? nextLabel(t.zone_id) : t.label }); TABLES.push(n); UNDO.push({ k: 'add', id: n.id }); S.sel = { t: 'table', id: n.id }; render(); saveTableSoon(n); break; }
     case 'deltable': { const t = selT(); if (!t) break; const used = SEATS.some(s => s.table_id === t.id && s.status !== 'done');
       if (!confirm((used ? 'На тази маса има записи за днес — ще изчезнат. ' : '') + 'Да изтрия ли ' + (t.kind === 'table' ? 'маса ' + t.label : 'елемента') + '?\n(За временно — изключи „Ползва се“.)')) break;
-      TABLES = TABLES.filter(x => x.id !== t.id); SEATS = SEATS.filter(s => s.table_id !== t.id); S.sel = null; render(); try { await api.del('floor_tables', t.id); savedHint(); } catch (er) { err(er); } break; }
+      UNDO.push({ k: 'del', t: Object.assign({}, t) }); TABLES = TABLES.filter(x => x.id !== t.id); SEATS = SEATS.filter(s => s.table_id !== t.id); S.sel = null; render(); await track(api.del('floor_tables', t.id)); break; }
+    case 'undo': await undo(); break;
+    case 'close': S.sel = null; S.assign = null; render(); break;
     case 'addzone': { const z = { id: uuid(), name: 'Нова зала', place: null, w: 1000, h: 700, sort: ZONES.length + 1, active: true }; ZONES.push(z); S.zone = z.id; S.sel = null; render(); await saveZone(z); break; }
     case 'ztog': { const z = curZone(); if (!z) break; z.active = z.active === false; render(); await saveZone(z); break; }
     case 'zmove': { const z = curZone(); if (!z) break; const i = ZONES.indexOf(z), j = i + (+v); if (j < 0 || j >= ZONES.length) break; [ZONES[i], ZONES[j]] = [ZONES[j], ZONES[i]]; ZONES.forEach((x, k) => x.sort = k + 1); render(); try { await api.upMany('floor_zones', ZONES.map(x => clean(x, ZONE_COLS))); savedHint(); } catch (er) { err(er); } break; }
@@ -1268,7 +1368,7 @@ app.addEventListener('input', e => {
 app.addEventListener('change', async e => {
   const el = e.target;
   if (el.dataset.a === 'pickdate' && el.value) { setDate(el.value); return; }
-  if (el.dataset.f) { const t = selT(); if (!t) return; const f = el.dataset.f; t[f] = (f === 'w' || f === 'h') ? Math.max(2, Math.min(2000, +el.value || 10)) : el.value.trim(); render(); saveTableSoon(t); return; }
+  if (el.dataset.f) { const t = selT(); if (!t) return; snap(t); const f = el.dataset.f; t[f] = (f === 'w' || f === 'h') ? Math.max(2, Math.min(2000, +el.value || 10)) : el.value.trim(); render(); saveTableSoon(t); return; }
   if (el.dataset.z) { const z = curZone(); if (!z) return; const f = el.dataset.z; z[f] = (f === 'w' || f === 'h') ? Math.max(200, Math.min(5000, +el.value || 1000)) : (el.value.trim() || null); if (f === 'name' && !z.name) z.name = 'Зала'; render(); await saveZone(z); }
 });
 let _thp = 0; function throttlePartial() { if (_thp) return; _thp = requestAnimationFrame(() => { _thp = 0; renderPartial(); }); }
@@ -1293,7 +1393,7 @@ function addElement(k) {
   const o = Object.assign({ kind: 'table', label: '', rot: 0, vip: false, active: true, min_party: 1 }, p[2]);
   const t = Object.assign(o, { id: uuid(), zone_id: z.id, x: Math.round((z.w - o.w) / 2 / 10) * 10, y: Math.round((z.h - o.h) / 2 / 10) * 10 });
   if (t.kind === 'table') t.label = nextLabel(z.id);
-  TABLES.push(t); S.sel = { t: 'table', id: t.id }; render(); saveTableSoon(t);
+  TABLES.push(t); UNDO.push({ k: 'add', id: t.id }); S.sel = { t: 'table', id: t.id }; render(); saveTableSoon(t);
 }
 function tableClick(tid) {
   const t = tableById(tid); if (!t) return;
@@ -1330,6 +1430,19 @@ async function loadPlan() {
     ZONES = nz; TABLES = nt; SEATS = []; S.zone = nz[0].id; S.sel = null; render(); toast('Планът е зареден: ' + nt.filter(t => t.kind === 'table').length + ' маси');
   } catch (e) { err(e); try { await api.load(); await api.loadDay(); } catch (x) {} render(); }
 }
+function eventSheet(eid) {
+  const e = ALLEV.find(x => x.id === eid); if (!e) return;
+  const z = zoneOfPlace(e.place); const blocked = SEATS.some(x => x.event_id === eid && x.kind === 'block');
+  const cnt = RES.filter(r => r.event_id === e.id && ['confirmed', 'requested'].includes(r.status)).reduce((a, r) => a + r.party, 0);
+  sheet(`<h3>${esc(e.title)}</h3><p class="lead">${esc(e.time || '')}${e.ends ? '–' + esc(e.ends) : ''} в „${esc(z ? z.name : e.place)}“, ${plural(cnt, 'гост', 'гости')}${e.capacity ? ' от ' + e.capacity : ''}</p>
+    <div class="box">${blocked
+      ? '<b>Масите в залата са заети за събитието.</b><p class="muted" style="font-size:13.5px;margin-top:4px;">На схемата са на черти. Рецепцията не може да ги даде на гост на ресторанта по това време.</p>'
+      : '<b>Масите в залата още са свободни за ресторанта.</b><p class="muted" style="font-size:13.5px;margin-top:4px;">Ако събитието ползва цялата зала, заеми масите — така никой няма да даде маса там на случаен гост. Гостите на събитието после се слагат по масите с влачене.</p>'}</div>
+    <div class="foot"><button class="btn o" data-x="close">Затвори</button>${blocked ? `<button class="btn d" data-x="un">Отвори масите</button>` : `<button class="btn w" data-x="bl">Заеми масите за събитието</button>`}</div>`, el => {
+    el.addEventListener('click', async ev => { const x = (ev.target.closest('[data-x]') || {}).dataset?.x; if (!x) return;
+      if (x === 'close') closeSheet(); if (x === 'bl') await blockEvent(eid); if (x === 'un') { closeSheet(); await unblockEvent(eid); } });
+  });
+}
 async function unblockEvent(eid) {
   const rows = SEATS.filter(s => s.event_id === eid && s.kind === 'block');
   if (!confirm('Да отворя ли пак масите (' + rows.length + ') за гости на ресторанта?')) return;
@@ -1343,6 +1456,7 @@ async function blockEvent(eid) {
   if (!confirm('Всички ' + tt.length + ' маси в „' + z.name + '“ стават заети за „' + e.title + '“ от ' + fm(Math.max(OPEN(), a - 30)) + ' до ' + fm(b) + '.\nТака никой от рецепцията няма да даде маса там на гост на ресторанта.\n\nГостите на събитието после се слагат по масите с влачене. Продължаваме ли?')) return;
   const rows = tt.map(t => newSeat({ table_id: t.id, start_t: fm(Math.max(OPEN(), a - 30)), end_t: fm(b), kind: 'block', event_id: eid, name: e.title }));
   SEATS = SEATS.concat(rows); render();
+  closeSheet();
   try { await api.upMany('floor_seatings', rows.map(r => clean(r, SEAT_COLS))); toast('Масите са заети за събитието'); } catch (er) { err(er); await reloadDay(); }
 }
 
@@ -1422,7 +1536,7 @@ window.addEventListener('pointerup', async e => {
     if (lane && r) { const rect = lane.getBoundingClientRect(); const m = snap15(OPEN() + (e.clientX - rect.left) / PPM()); await assignRes(r, lane.dataset.lane, { start: tm(r.time) ?? m }); return; }
     return;
   }
-  if (d.k === 'move' || d.k === 'resize') { if (d.moved) { render(); saveTableSoon(d.t); } return; }
+  if (d.k === 'move' || d.k === 'resize') { if (d.moved) UNDO.push({ k: 'edit', t: Object.assign({}, d.t, { x: d.x0, y: d.y0, w: d.w0, h: d.h0 }) }); if (d.moved) { render(); saveTableSoon(d.t); } return; }
   if (d.k === 'blk' && d.moved) {
     const s = seatById(d.id); if (!s) return render();
     const ppm = PPM(), shift = snap15((e.clientX - d.x0) / ppm), len = tm(s.end_t) - tm(s.start_t);
@@ -1442,6 +1556,7 @@ function throttleStage() { if (_stRaf) return; _stRaf = requestAnimationFrame(()
 document.addEventListener('keydown', e => {
   if (SHEET && e.key === 'Escape') return closeSheet();
   if (e.target.matches('input,select,textarea')) return;
+  if (S.edit && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
   if (e.key === 'Escape') { if (S.assign) { S.assign = null; render(); } else if (S.sel) { S.sel = null; render(); } }
   if (S.edit && selT() && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
     const t = selT(), st = e.shiftKey ? 50 : 10; if (e.key === 'ArrowLeft') t.x -= st; if (e.key === 'ArrowRight') t.x += st; if (e.key === 'ArrowUp') t.y -= st; if (e.key === 'ArrowDown') t.y += st; e.preventDefault(); render(); saveTableSoon(t);
@@ -1453,6 +1568,7 @@ const ICON = {
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><circle cx="17.5" cy="6.5" r="3.5"/><rect x="3" y="14" width="18" height="7" rx="1.5"/></svg>',
   cog: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>',
   search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted);flex:0 0 auto"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.9-6.3 3.9 1.7-7L2 9.5l7.1-.6z"/></svg>',
   grip: '<svg width="14" height="22" viewBox="0 0 14 22" fill="currentColor"><circle cx="4" cy="4" r="1.8"/><circle cx="10" cy="4" r="1.8"/><circle cx="4" cy="11" r="1.8"/><circle cx="10" cy="11" r="1.8"/><circle cx="4" cy="18" r="1.8"/><circle cx="10" cy="18" r="1.8"/></svg>'
 };
 
@@ -1460,7 +1576,7 @@ const ICON = {
 let _toastT = 0;
 function toast(msg, bad) { let t = $('.toast'); if (!t) { t = document.createElement('div'); document.body.appendChild(t); } t.className = 'toast' + (bad ? ' err' : ''); t.textContent = msg; clearTimeout(_toastT); _toastT = setTimeout(() => t.remove(), bad ? 5000 : 2600); }
 function err(e) { const m = (e && (e.message || e.error_description)) || String(e); console.error(e); toast(/permission|policy|row-level/i.test(m) ? 'Нямате право за това действие' : /relation .* does not exist/i.test(m) ? 'Липсват таблиците — пусни SQL 2026-11-08-tables.sql' : 'Грешка: ' + m, true); }
-let _svT = 0; function savedHint() { clearTimeout(_svT); _svT = setTimeout(() => toast('Запазено'), 250); }
+function savedHint() { saveState(); }
 
 // =====================================================================
 //  ВХОД И СТАРТ
@@ -1508,6 +1624,7 @@ function subscribe() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'floor_tables' }, () => { if (!S.edit) softReload(true); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'floor_zones' }, () => { if (!S.edit) softReload(true); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, () => softReload(false))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contact_messages' }, () => softReload(false))
       .subscribe();
   } catch (e) {}
   // резервно: на всяка минута + при връщане в прозореца
@@ -1561,6 +1678,8 @@ function demoDay() {
     sd('104', '20:00', '22:00', { reservation_id: 'r5' }),
     sd('202', '12:30', '14:00', { kind: 'walkin', name: 'Обяд', party: 2, status: 'done' })
   ];
+  MSGS = [{ id: 'm1', name: 'Виктория Маринова', phone: '+359 87 765 4321', email: 'v@example.com', subject: 'Резервация', message: 'Здравейте, бихме искали маса за 5 души в петък около 20:00. Имате ли място до прозореца?', is_read: false, created_at: new Date().toISOString() },
+    { id: 'm2', name: 'Стефан', email: 's@example.com', subject: 'Членство', message: 'Как мога да кандидатствам за членство?', is_read: false, created_at: new Date().toISOString() }];
   window.__demoDay[S.date] = { SEATS, RES };
 }
 if (DEMO && !/[?&]demo=1/.test(location.search)) console.info('AC² Маси: демо режим (няма връзка с базата)');
