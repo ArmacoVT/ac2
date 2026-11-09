@@ -682,6 +682,17 @@ function newSeat(o) {
   return Object.assign({ id: uuid(), date: S.date, kind: 'res', reservation_id: null, event_id: null, name: '', party: null,
     extra_seats: 0, note: '', status: 'planned', seated_at: null, left_at: null }, o);
 }
+async function notArrived(s) {
+  const r = s && s.reservation_id ? resById(s.reservation_id) : null;
+  if (!confirm((r ? r.name : 'Гостите') + ' всъщност още не са дошли?\nМасата остава запазена за тях, а „пристигна“ се маха.')) return;
+  const group = r ? seatsOfRes(r.id).filter(x => x.status !== 'planned') : [s];
+  for (const x of group) { x.status = 'planned'; x.seated_at = null; x.left_at = null; await saveSeat(x); }
+  if (r) {
+    if (r.checked_in_at) { if (DEMO) r.checked_in_at = ''; else { try { const x = await DB.doorCheckIn(r.id, true); if (!x.error) r.checked_in_at = ''; else toast('Масата е върната, но „пристигна“ не се махна: ' + x.error.message, true); } catch (e) {} } }
+    const f = flagOf(r); if (f && f.kind === 'late') await unflag(r.id);
+  }
+  render(); toast('Върнато: още не са дошли');
+}
 async function checkIn(r) {
   if (!r || r.checked_in_at || DEMO) { if (r && DEMO) r.checked_in_at = new Date().toISOString(); return; }
   try { const x = await DB.doorCheckIn(r.id); if (!x.error) r.checked_in_at = new Date().toISOString(); } catch (e) {}
@@ -1163,7 +1174,7 @@ function seatBox(s, t) {
       <div class="stepper"><button data-a="extra" data-id="${s.id}" data-v="-1" aria-label="Махни стол">−</button><b>${seatsCount(t, s)}</b><button data-a="extra" data-id="${s.id}" data-v="1" aria-label="Добави стол">+</button></div></div>`}
     <div class="acts" style="margin-top:10px;">
       ${s.kind === 'block' ? `<button class="btn g" data-a="block2walk" data-id="${s.id}">Настани гост</button><button class="btn d" data-a="unseat" data-id="${s.id}">Освободи</button>`
-        : seated ? `<button class="btn o" data-a="move" data-id="${s.id}">Премести</button><button class="btn d" data-a="free" data-id="${s.id}">${isCounter(t) ? 'Тръгнаха си' : 'Освободи масата'}</button>`
+        : seated ? `<button class="btn o" data-a="move" data-id="${s.id}">Премести</button><button class="btn d" data-a="free" data-id="${s.id}">${isCounter(t) ? 'Тръгнаха си' : 'Освободи масата'}</button>${s.reservation_id ? `<button class="btn o sm full" data-a="notarrived" data-id="${s.id}">Грешка — още не са дошли</button>` : ''}`
         : `<button class="btn g" data-a="seatnow" data-id="${s.id}">Настани</button><button class="btn o" data-a="move" data-id="${s.id}">Друга маса</button><button class="btn d full" data-a="unseat" data-id="${s.id}">Махни от масата</button>`}
     </div></div>`;
 }
@@ -1197,7 +1208,7 @@ function resPanel(r) {
       ${r.phone ? `<span>Телефон</span><a href="tel:${esc(r.phone.replace(/[^\d+]/g, ''))}">${esc(r.phone)}</a>` : ''}
       ${r.email ? `<span>Имейл</span><span style="color:var(--ink)">${esc(r.email)}</span>` : ''}
       <span>Статус</span><span style="color:var(--ink)">${{ requested: 'Чака одобрение', confirmed: 'Потвърдена', declined: 'Отказана', cancelled: 'Отменена' }[r.status] || esc(r.status)}${r.paid ? ', платена' : ''}</span>
-      <span>Вход</span><span style="color:var(--ink)">${r.checked_in_at ? 'пристигна в ' + new Date(r.checked_in_at).toTimeString().slice(0, 5) : 'още не е минал'}</span>
+      <span>Вход</span><span style="color:var(--ink)">${r.checked_in_at ? 'пристигна в ' + new Date(r.checked_in_at).toTimeString().slice(0, 5) + (CAN_RES ? ` <button class="btn o sm" style="margin-left:6px;min-height:28px;padding:2px 8px" data-a="uncheckin" data-id="${r.id}">Не е дошъл</button>` : '') : 'още не е минал'}</span>
       ${r.membership ? `<span>Членство</span><span style="color:var(--ink)">${esc(MEMNAME[r.membership] || r.membership)}</span>` : ''}
       ${ev || r.evTitle ? `<span>${r.grp === 'after' ? 'След' : 'Събитие'}</span><span style="color:var(--ink)">${esc(r.evTitle)}</span>` : ''}
       ${r.code ? `<span>Билет</span><span style="color:var(--ink)">AC2-${esc(r.code.slice(0, 4))}-${esc(r.code.slice(4))}</span>` : ''}
@@ -1729,13 +1740,14 @@ function seatSheet(id) {
     ${r ? '' : `<div class="two"><label class="fld"><span>Име</span><input class="inp" id="ss_n" maxlength="80" value="${esc(s.name)}"></label><label class="fld"><span>Гости</span><input class="inp" id="ss_p" type="number" min="1" max="60" value="${s.party || 1}"></label></div>`}
     <label class="fld"><span>Бележка за сервиза</span><input class="inp" id="ss_note" maxlength="200" value="${esc(s.note)}" placeholder="напр. рожден ден, детско столче"></label>
     <div class="foot">
-      ${s.status === 'planned' ? '<button class="btn g" data-x="seat">Настани</button>' : s.status === 'seated' ? '<button class="btn o" data-x="free">Освободи</button>' : '<button class="btn o" data-x="reopen">Върни на масата</button>'}
+      ${s.status === 'planned' ? '<button class="btn g" data-x="seat">Настани</button>' : s.status === 'seated' ? '<button class="btn o" data-x="free">Освободи</button><button class="btn o" data-x="notarr">Още не са дошли</button>' : '<button class="btn o" data-x="reopen">Върни на масата</button><button class="btn o" data-x="notarr">Още не са дошли</button>'}
       <button class="btn d" data-x="del">${r ? 'Махни от масата' : 'Изтрий'}</button><button class="btn" data-x="ok">Запази</button></div>`, el => {
     el.addEventListener('click', async e => {
       const b = e.target.closest('button'); if (!b) return; const x = b.dataset.x; if (!x) return;
       if (x === 'del') { if (!r && !confirm('Да изтрия ли записа?')) return; closeSheet(); await removeSeat(s.id, r ? r.name + ' е без маса' : 'Изтрито'); return; }
       if (x === 'seat') { closeSheet(); await seatNow(s); return; }
       if (x === 'free') { closeSheet(); await freeSeat(s); return; }
+      if (x === 'notarr') { closeSheet(); await notArrived(s); return; }
       if (x === 'reopen') { s.status = 'seated'; s.left_at = null; closeSheet(); await saveSeat(s, 'Отново на масата'); return; }
       const a = el.querySelector('#ss_a').value, bb = el.querySelector('#ss_b').value, nt = el.querySelector('#ss_t').value;
       if (tm(bb) <= tm(a)) { toast('Краят трябва да е след началото', true); return; }
@@ -1835,6 +1847,12 @@ app.addEventListener('click', async e => {
     case 'note': noteSheet(id); break;
     case 'flag': await markFlag(id, v); break;
     case 'unflag': await unflag(id); break;
+    case 'notarrived': { const s = seatById(id); if (s) await notArrived(s); break; }
+    case 'uncheckin': { const r = resById(id); if (!r) break; const ss = seatsOfRes(id).find(x => x.status !== 'planned');
+      if (ss) { await notArrived(ss); break; }
+      if (!confirm('Да махна ли „пристигна“ за ' + r.name + '?')) break;
+      if (DEMO) r.checked_in_at = ''; else { const x = await DB.doorCheckIn(r.id, true); if (x.error) { toast('Не се махна: ' + x.error.message, true); break; } r.checked_in_at = ''; }
+      render(); toast('„Пристигна“ е махнато'); break; }
     case 'legend': S.legend = !S.legend; try { localStorage.setItem('acac_tables_legend', S.legend ? '1' : ''); } catch (er) {} render(); break;
     case 'timetoggle': S.scrubOpen = !S.scrubOpen; render(); break;
     case 'altoggle': S.alOpen = S.alOpen === false; render(); break;
