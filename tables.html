@@ -192,6 +192,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .scroller{position:absolute;inset:0;overflow:hidden;}
 .stage.zoomed .scroller{overflow:auto;-webkit-overflow-scrolling:touch;}
 .stage.zoomed .floor{touch-action:pan-x pan-y;}
+.floor{transition:none;will-change:auto;}
 .stage.zoomed .legend{display:none;}
 .stage.zoomed.edit .floor{touch-action:none;}
 .dec .txt{fill:var(--ink);font-family:var(--sans);text-anchor:middle;dominant-baseline:central;opacity:.82;}
@@ -404,6 +405,42 @@ textarea.inp{height:70px;padding:10px 12px;resize:vertical;}
   .datenav{margin-left:0;}
   .today{display:none;}
 }
+/* ---------- ТЕЛЕФОН: списъкът с резервации — по-голям, по-ясен, листът се разпъва почти до горе ---------- */
+.rtel{display:none;}
+@media (max-width:860px){
+  .side{height:calc(100% - 6px);}
+  .side.open{box-shadow:0 -14px 40px rgba(0,0,0,.28);}
+  .sidetoggle{min-height:54px;padding:8px 16px 6px;}
+  .sidetoggle .peek{font-size:15px;}
+  .sidehead{padding:8px 12px 8px;}
+  /* броячите — един тънък ред */
+  .stats{display:flex;gap:14px;margin-bottom:8px;overflow-x:auto;scrollbar-width:none;}
+  .stats::-webkit-scrollbar{display:none;}
+  .stat{display:flex;align-items:baseline;gap:5px;padding:2px 0;white-space:nowrap;}
+  .stat b{display:inline;font-size:18px;}
+  .stat b small{font-size:12px!important;}
+  .stat span{font-size:12px;}
+  /* търсене: 16px — iPhone не увеличава страницата; „+ Резервация“ — плаващ бутон долу вдясно */
+  .search{height:44px;}
+  .search input{font-size:16px;}
+  .newres .btn[data-a="newres"]{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:25;min-height:52px!important;padding:0 20px!important;border-radius:26px;box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:15px;}
+  /* филтрите — един ред с плъзгане */
+  .filters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:8px -12px 0;padding:0 12px 2px;}
+  .filters::-webkit-scrollbar{display:none;}
+  .filters button{padding:8px 13px;font-size:14px;flex:0 0 auto;}
+  [data-a="autoassign"]{min-height:40px!important;font-size:14px;background:transparent!important;color:var(--wine)!important;border:1.5px solid var(--wine);}
+  /* картите на резервациите */
+  .list{padding:10px 10px calc(110px + env(safe-area-inset-bottom));}
+  .rc{padding:12px 10px 12px 12px;border-radius:16px;gap:12px;align-items:center;}
+  .rc .tm{font-size:22px;min-width:58px;}
+  .rc .tm small{font-size:12.5px;}
+  .rc .nm{font-size:16.5px;white-space:normal;line-height:1.25;}
+  .rc .mt{font-size:13px;margin-top:4px;}
+  .rc .note{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:13.5px;}
+  .rtel{display:grid;place-items:center;flex:0 0 auto;width:42px;height:42px;border-radius:21px;border:1px solid var(--line2);color:var(--green);text-decoration:none;font-size:19px;background:var(--bg);}
+  .grip{width:36px;}
+  .grp{font-size:13.5px;margin:16px 4px 8px;}
+}
 @media print{.top,.sub,.side,.legend{display:none;}
   #app{display:none!important;} body{overflow:visible;background:#fff;color:#000;}
   .scrim{position:static!important;background:none!important;display:block!important;animation:none;}
@@ -490,7 +527,7 @@ const S = { zoom: 1, date: todayIso(), view: 'floor', zone: null, at: nowMin(), 
   sel: null,            // {t:'table'|'res'|'seat'|'zone', id}
   assign: null,         // id на резервация, която чака избор на маса
   filter: 'todo', q: '', side: false, openGroups: {} };
-try { const v = localStorage.getItem('acac_tables_view'); if (v === 'time' || v === 'floor') S.view = v; S.zoom = Math.max(1, Math.min(3, +localStorage.getItem('acac_tables_zoom') || 1)); } catch (e) {}
+try { const v = localStorage.getItem('acac_tables_view'); if (v === 'time' || v === 'floor') S.view = v; S.zoom = Math.max(1, Math.min(4, +localStorage.getItem('acac_tables_zoom') || 1)); } catch (e) {}
 
 // =====================================================================
 //  ДАННИ
@@ -1078,6 +1115,7 @@ function resCard(r) {
     <div class="bd"><div class="nm">${esc(r.name)}</div>
       <div class="mt">${tbls}${guestBadges(r)}${r.status === 'requested' ? '<span class="pill a">чака одобрение</span>' : ''}${r.checked_in_at ? '<span class="pill g">пристигна</span>' : ''}${r.paid ? '<span class="pill">платен</span>' : ''}${r.membership && r.membership !== 'guest' ? `<span class="pill w">${esc(MEMNAME[r.membership] || r.membership)}</span>` : (r.user_id ? '' : '<span class="pill">гост</span>')}</div>
       ${r.note ? `<div class="note">${esc(r.note)}</div>` : ''}</div>
+    ${r.phone ? `<a class="rtel" href="tel:${esc(String(r.phone).replace(/[^\d+]/g, ''))}" onclick="event.stopPropagation()" aria-label="Обади се на ${esc(r.name)}">☎</a>` : ''}
     ${st === 'todo' || st === 'assigned' ? `<div class="grip" data-drag="${r.id}" title="Влачи до маса" aria-label="Влачи до маса">${ICON.grip}</div>` : ''}
   </div>`;
 }
@@ -1824,7 +1862,7 @@ app.addEventListener('click', async e => {
     case 'zone': S.zone = id; if (S.edit) S.sel = null; render(); break;
     case 'now': S.follow = true; S.at = S.date === todayIso() ? nowMin() : 19 * 60; render(); break;
     case 'zoom': { const st = $('#scroller'); const ratio = st ? { x: (st.scrollLeft + st.clientWidth / 2) / Math.max(1, st.scrollWidth), y: (st.scrollTop + st.clientHeight / 2) / Math.max(1, st.scrollHeight) } : null;
-      S.zoom = +v === 0 ? 1 : Math.max(1, Math.min(3, (S.zoom || 1) + (+v) * .5)); try { localStorage.setItem('acac_tables_zoom', S.zoom); } catch (er) {} S._zr = ratio; render(); break; }
+      S.zoom = +v === 0 ? 1 : Math.max(1, Math.min(4, (S.zoom || 1) + (+v) * .5)); try { localStorage.setItem('acac_tables_zoom', S.zoom); } catch (er) {} S._zr = ratio; render(); break; }
     case 'filter': S.filter = v; render(); break;
     case 'grp': S.openGroups[id] = !(S.openGroups[id] ?? false); render(); break;
     case 'back': S.sel = null; render(); break;
@@ -2019,6 +2057,54 @@ async function blockEvent(eid) {
   closeSheet();
   try { await api.upMany('floor_seatings', rows.map(r => clean(r, SEAT_COLS))); toast('Масите са заети за събитието'); } catch (er) { err(er); await reloadDay(); }
 }
+
+// ---------- УВЕЛИЧАВАНЕ С ДВА ПРЪСТА (pinch) И ДВОЕН ТАП върху схемата ----------
+// По време на жеста схемата се мащабира веднага (CSS), а при пускане се записва новият мащаб (1×–4×) около точката между пръстите.
+let PINCH = null, _lastTap = 0, _noClickUntil = 0;
+const ZMIN = 1, ZMAX = 4;
+function zoomAt(newZ, cx, cy) {
+  const st = $('#scroller'); if (!st) return;
+  const r = st.getBoundingClientRect();
+  const ratio = { x: (st.scrollLeft + (cx - r.left)) / Math.max(1, st.scrollWidth), y: (st.scrollTop + (cy - r.top)) / Math.max(1, st.scrollHeight) };
+  S.zoom = Math.round(Math.max(ZMIN, Math.min(ZMAX, newZ)) * 100) / 100;
+  try { localStorage.setItem('acac_tables_zoom', S.zoom); } catch (er) {}
+  // центрираме точката, която е била под пръстите
+  S._zr = ratio; render();
+}
+document.addEventListener('touchstart', e => {
+  if (S.view !== 'floor' || e.touches.length !== 2 || !e.target.closest('#scroller')) return;
+  const [a, b] = e.touches, svg = $('#floor'); if (!svg) return;
+  PINCH = { d0: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1, z0: S.zoom || 1, k: 1, mx: (a.clientX + b.clientX) / 2, my: (a.clientY + b.clientY) / 2, svg };
+  const sr = svg.getBoundingClientRect(); svg.style.transformOrigin = (PINCH.mx - sr.left) + 'px ' + (PINCH.my - sr.top) + 'px';
+  if (DRAG) { if (DRAG.ghost) DRAG.ghost.remove(); DRAG = null; }
+  e.preventDefault();
+}, { passive: false });
+document.addEventListener('touchmove', e => {
+  if (!PINCH || e.touches.length !== 2) return;
+  const [a, b] = e.touches; const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  const z = Math.max(ZMIN, Math.min(ZMAX, PINCH.z0 * d / PINCH.d0)); PINCH.k = z / PINCH.z0;
+  PINCH.svg.style.transform = 'scale(' + PINCH.k + ')';
+  e.preventDefault();
+}, { passive: false });
+const pinchEnd = e => {
+  if (!PINCH) return; if (e.touches && e.touches.length >= 2) return;
+  const p = PINCH; PINCH = null; _noClickUntil = Date.now() + 400;
+  p.svg.style.transform = ''; p.svg.style.transformOrigin = '';
+  const nz = p.z0 * p.k; if (Math.abs(nz - p.z0) < 0.05) return;
+  zoomAt(nz, p.mx, p.my);
+};
+document.addEventListener('touchend', pinchEnd); document.addEventListener('touchcancel', pinchEnd);
+// двоен тап върху празно място на схемата → увеличи ×1.6 там; при максимум → обратно цялата зала
+document.addEventListener('touchend', e => {
+  if (S.view !== 'floor' || S.edit || e.touches.length || e.changedTouches.length !== 1) return;
+  const t = e.changedTouches[0]; const el = document.elementFromPoint(t.clientX, t.clientY);
+  if (!el || !el.closest('#scroller') || el.closest('[data-tid]') || el.closest('[data-a]')) { _lastTap = 0; return; }
+  const now = Date.now();
+  if (now - _lastTap < 320) { _lastTap = 0; e.preventDefault(); zoomAt((S.zoom || 1) >= ZMAX - 0.01 ? 1 : (S.zoom || 1) * 1.6, t.clientX, t.clientY); }
+  else _lastTap = now;
+}, { passive: false });
+// след щипване не отваряме маса по погрешка
+document.addEventListener('click', e => { if (Date.now() < _noClickUntil && e.target.closest('#scroller')) { e.stopPropagation(); e.preventDefault(); } }, true);
 
 // ---------- ВЛАЧЕНЕ: маси (редактор), резервации към маса, блокове в „По часове“ ----------
 let DRAG = null;
