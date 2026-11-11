@@ -1062,7 +1062,7 @@ function feesView(){
       <div style="display:flex;gap:6px;flex-wrap:wrap;">${btn('💶 Платено на място',`codeOnsite('${esc(c.code)}')`,'ok')}${btn('Копирай линка',`codeCopy('${esc(c.code)}')`)}${btn('Нов код',`codeResend('${esc(c.code)}')`)}${btn('Изтрий',`codeDelete('${esc(c.code)}')`,'no')}</div></div></div>`;
   const sec=(key,title,n,body)=>{ const open=feesOpen[key]!==false; return `<h2 style="margin-top:22px;cursor:pointer;" onclick="feesToggle('${key}')">${title}${n?' ('+n+')':''} <span class="muted" style="font-size:14px;">${open?'▴':'▾'}</span></h2>${open?body:''}`; };
   return `<h2>Членства и цени</h2><p class="muted" style="margin-top:-4px;">Цените важат за новите покани; вече издадените кодове пазят цената от момента на издаване. Членството се плаща само на сайта (ac2.bg/#/join) с код — не в приложението.</p>
-    <div style="margin:10px 0 16px;"><button class="btn ok" onclick="mInviteOpen({})">💳 Нова покана за плащане</button> <button class="btn ghost" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button> <a class="btn ghost" href="#" onclick="event.preventDefault();setTab('public')">IBAN за банков превод → Публичен сайт → Общи</a></div>
+    <div style="margin:10px 0 16px;"><button class="btn ok" onclick="mInviteOpen({})">💳 Нова покана за плащане</button> <button class="btn ghost" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button> <button class="btn ghost" onclick="exportMembersReport()" title="Кои членове са платили, кои са с изтекло членство и кои още не са платили по изпратен код">⬇ Отчет: платили / неплатили (Excel)</button> <a class="btn ghost" href="#" onclick="event.preventDefault();setTab('public')">IBAN за банков превод → Публичен сайт → Общи</a></div>
     ${rows}
     <div style="margin-top:18px;"><input placeholder="Търси по имейл, име или код…" value="${esc(feesQ||'')}" oninput="feesQ=this.value;clearTimeout(window._fqT);window._fqT=setTimeout(()=>{render();const el=document.getElementById('feesq');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},250)" id="feesq" style="max-width:380px;"/></div>
     ${sec('pend','Чакащи плащания',pend.length,pend.length?pend.map(fmtP).join(''):'<p class="empty">Няма чакащи.</p>')}
@@ -1115,7 +1115,7 @@ function feesReadOnly(){
   const pr=order.map(id=>{const p=(MPRICES||[]).find(x=>x.membership===id)||{}; return `<tr><td>${esc(memName(id))}</td><td style="text-align:right;">${(Number(p.price_year)||0).toFixed(2)} €</td><td style="text-align:right;">${p.price_half!=null?Number(p.price_half).toFixed(2)+' €':'½'}</td><td>${p.active===false?'не':'да'}</td></tr>`;}).join('');
   const pay=(MPAY||[]).slice(0,100).map(x=>`<tr><td>${new Date(x.paid_at||x.created_at).toLocaleDateString('bg-BG')}</td><td>${esc(x.email||'')}</td><td>${esc(memName(x.membership))}</td><td>${PLAN_LABEL[x.plan]||esc(x.plan||'')}</td><td style="text-align:right;">${(x.amount_cents/100).toFixed(2)} €</td><td>${(x.method==='bank'?'банков превод':x.method==='cash'?'в брой (на място)':x.method==='pos'?'ПОС (на място)':'карта')}</td><td>${x.status==='paid'?'платено':x.status==='pending'?'чака':esc(x.status||'')}</td></tr>`).join('');
   const tbl='style="width:100%;border-collapse:collapse;font-size:13px;"';
-  return `<div style="float:right;"><button class="btn ghost sm" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button></div>
+  return `<div style="float:right;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;"><button class="btn ghost sm" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button><button class="btn ghost sm" onclick="exportMembersReport()">⬇ Отчет: платили / неплатили (Excel)</button></div>
     <h2>Членства и цени <span class="pill">само преглед</span></h2>
     <table ${tbl}><tr class="muted"><td>Членство</td><td style="text-align:right;">Годишно</td><td style="text-align:right;">6 месеца</td><td>Активно</td></tr>${pr}</table>
     <h2 style="margin-top:22px;">Плащания за членства</h2>
@@ -1239,6 +1239,37 @@ async function exportEvents(ids){
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
   try{ await DB.logAudit('export_events',(ids&&ids.length===1)?evs[0].title:'всички събития',evs.length+' събития'); }catch(e){}
   toast('Готово: '+evs.length+' '+(evs.length===1?'събитие':'събития')+(single?'':' · '+enq.length+' запитвания'+(can('messages')?' · '+(msgs||[]).length+' съобщения':'')));
+}
+// ---------- ОТЧЕТ ЗА ЧЛЕНСТВАТА: кой е платил, кой е с изтекло членство, кой още не е платил по изпратен код ----------
+async function exportMembersReport(){
+  toast('Подготвяне на отчета…');
+  let people=[]; try{ people=await DB.listMembers()||[]; }catch(e){}
+  if(!people.length){ alert('Списъкът с членове не се зареди. Опитай пак.'); return; }
+  let pays=[], codes=[]; try{ pays=await DB.listMembershipPayments(5000)||[]; }catch(e){} try{ codes=await DB.listMembershipCodes(2000)||[]; }catch(e){}
+  const n=new Date(), today=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+  const in14=new Date(n.getTime()+14*864e5).toISOString().slice(0,10);
+  const dt=ts=>ts?isoToBg(String(ts).slice(0,10)):'';
+  const PL={year:'12 месеца',half:'2 × 6 месеца',quarter:'4 × 3 месеца',month:'месечно'};
+  const MT={card:'карта',bank:'банков превод',cash:'в брой',pos:'ПОС'};
+  const mem=people.filter(p=>(p.membership||'guest')!=='guest'&&p.role!=='admin');
+  const paidBy={}; pays.filter(x=>x.status==='paid').forEach(x=>{ const k=x.user_id||('e:'+String(x.email||'').toLowerCase()); const c=paidBy[k]; if(!c||String(x.paid_at||x.created_at)>String(c.paid_at||c.created_at))paidBy[k]=x; });
+  const stOf=p=>{ const u=p.membership_until||''; if(!u)return 'без срок — не е плащал през системата'; if(u<today)return 'изтекло — не е подновено'; if(u<=in14)return 'платено — изтича до 14 дни'; return 'платено (активно)'; };
+  const order={'изтекло — не е подновено':0,'платено — изтича до 14 дни':1,'без срок — не е плащал през системата':2,'платено (активно)':3};
+  const rows=mem.map(p=>{ const last=paidBy[p.id]||paidBy['e:'+String(p.email||'').toLowerCase()]; const st=stOf(p);
+    return {st,r:[p.full_name||p.username||'',p.email||'',p.phone||'',memName(p.membership),p.membership_until?isoToBg(p.membership_until):'',st,last?dt(last.paid_at||last.created_at):'',last?(last.amount_cents||0)/100:'',last?(MT[last.method]||last.method||''):'',last?(PL[last.plan]||last.plan||''):'',p.auto_renew?'да':'']}; })
+    .sort((a,b)=>(order[a.st]??9)-(order[b.st]??9)||(a.r[0]<b.r[0]?-1:1)).map(x=>x.r);
+  const pend=codes.filter(c=>!c.used_at&&new Date(c.expires_at)>n).sort((a,b)=>String(a.created_at)<String(b.created_at)?-1:1)
+    .map(c=>[c.full_name||'',c.email||'',memName(c.membership),c.purpose==='new'?'нов член':c.purpose==='renew'?'подновяване':'втора вноска',dt(c.created_at),dt(c.expires_at)]);
+  const cnt={}; rows.forEach(r=>{ cnt[r[5]]=(cnt[r[5]]||0)+1; });
+  const byMem={}; mem.forEach(p=>{ const k=memName(p.membership); byMem[k]=byMem[k]||{a:0,x:0}; if((p.membership_until||'')>=today)byMem[k].a++; else byMem[k].x++; });
+  const sum=[['Статус','Брой членове']].slice(1).concat(Object.keys(order).map(k=>[k,cnt[k]||0])).concat([['Поканени, които още не са платили (активни кодове)',pend.length],['ОБЩО членове',rows.length],['',''],['По вид членство','активни / изтекли или без срок']]).concat(Object.entries(byMem).map(([k,v])=>[k,v.a+' / '+v.x]));
+  const blob=xlsxBlob([
+    {name:'Обобщение',head:['Статус','Брой'],rows:sum},
+    {name:'Членове',head:['Име','Имейл','Телефон','Членство','Валидно до','Статус','Последно плащане','Сума (€)','Начин','План','Авто-подновяване'],rows},
+    {name:'Чакат плащане',head:['Име','Имейл','Членство','Вид','Кодът е изпратен','Важи до'],rows:pend}]);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='AC2-chlenstva-'+today+'.xlsx'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+  try{await DB.logAudit('export_members_report',today,rows.length+' членове · '+pend.length+' чакат плащане');}catch(e){}
+  toast('Отчет: '+rows.length+' членове · '+pend.length+' чакат плащане');
 }
 // ---------- ОДИТЕН ФАЙЛ ЗА НАП (XML, Наредба Н-18, Прил. 38) ----------
 // Включва онлайн продажбите: билети и членства, платени с карта през Stripe (paym 4 — доставчик на платежни услуги,
