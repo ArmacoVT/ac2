@@ -606,7 +606,13 @@ const placeName = p => (p && PLACE_RENAME[p]) || p;
     // ---------- РЕЗЕРВАЦИИ ----------
     async listReservations() {
       if (!LIVE) return jget(K.res, []);
-      const { data, error } = await sb.from('reservations').select('*').order('created_at', { ascending: false });
+      // базата връща най-много 1000 реда наведнъж → четем на страници, за да не изпадат по-старите месеци
+      let data = [], error = null;
+      for (let from = 0; from < 50000; from += 1000) {
+        const q = await sb.from('reservations').select('*').order('created_at', { ascending: false }).order('id').range(from, from + 999);
+        if (q.error) { error = q.error; break; }
+        data = data.concat(q.data || []); if (!q.data || q.data.length < 1000) break;
+      }
       authErr(error);
       return (data || []).map(r => ({ id: r.id, user_id: r.user_id || null, event_id: r.event_id || null, table_event_id: r.table_event_id || null,
         who: r.who || '', membership: r.membership || '', fmt: r.format,

@@ -1125,14 +1125,20 @@ function feesReadOnly(){
 function exportMonthOpen(){
   const d=new Date();   // по подразбиране — текущият месец
   const def=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-  const m=prompt('Месец за експорт (ГГГГ-ММ), напр. '+def+':',def); if(!m)return;
-  if(!/^\d{4}-\d{2}$/.test(m.trim())){alert('Формат: 2026-11');return;}
-  exportMonth(m.trim());
+  const m=prompt('Месец за експорт — напр. '+def+' (може и 10.2026, 10/2026 или само 10 за текуща година):',def); if(!m)return;
+  // приемаме и „10.2026“, „10/2026“, „2026.10“, „10“
+  let v=m.trim().replace(/[\s/.]+/g,'-'), mm, yy;
+  let x=/^(\d{4})-(\d{1,2})$/.exec(v); if(x){yy=x[1];mm=x[2];}
+  else if((x=/^(\d{1,2})-(\d{4})$/.exec(v))){mm=x[1];yy=x[2];}
+  else if((x=/^(\d{1,2})$/.exec(v))){mm=x[1];yy=String(d.getFullYear());}
+  if(!mm||+mm<1||+mm>12){alert('Не разпознах месеца. Напиши напр. 2026-10 или 10.2026');return;}
+  exportMonth(yy+'-'+String(+mm).padStart(2,'0'));
 }
 async function exportMonth(ym){
   toast('Подготвяне на файла…');
   try{ RES=await DB.listReservations(); }catch(e){}
-  if(!MPAY){ try{ MPAY=await DB.listMembershipPayments(2000); }catch(e){ MPAY=[]; } }
+  // плащанията за членства — винаги наново и всички (в „Членства и цени“ се зареждат само последните 300)
+  try{ MPAY=await DB.listMembershipPayments(5000); }catch(e){ MPAY=MPAY||[]; }
   const inM=ts=>{ if(!ts)return false; const d=new Date(ts); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')===ym; };   // по местно (българско) време
   const evT=id=>{const e=EVENTS.find(x=>x.id===id);return e?e.title:'';};
   const meth=r=>r.pay_method==='cash'?'в брой':r.pay_method==='pos'?'ПОС':r.pay_method==='free'?'безплатно на място':(r.stripe_pi?'онлайн карта (Stripe)':'');
