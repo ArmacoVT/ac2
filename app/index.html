@@ -1773,9 +1773,14 @@ function membership(){
       <div><h3>${m.t}${m.id===mine?` <span style="font-size:10px;letter-spacing:1px;color:var(--gold);border:1px solid var(--gold);border-radius:12px;padding:2px 8px;vertical-align:middle;white-space:nowrap;">${tr('memb')}</span>`:''}</h3><div class="tg">${tx(m.tag)}</div></div>
       <span class="cv" id="cv${i}">${i===0?'−':'+'}</span></div>
     <div class="mbody" id="mb${i}" style="display:${i===0?'block':'none'}">
-      <p>${tx(m.d)}</p><div class="bl">${tr('benefits')}</div>
-      ${tx(m.bn).map(b=>`<div class="bul"><span class="d">◆</span><span class="x" style="font-size:14px;">${b}</span></div>`).join('')}</div></div>`).join('');
-  return topbar(tr('membership'))+`<div class="page"><p style="color:var(--mid);font-size:14px;line-height:1.5;margin-bottom:14px;">${tr('memIntro')}</p>${list}</div>`;
+      ${(()=>{ // текстовете от админа (Публичен сайт → Нива на членство) имат предимство; иначе — вградените
+        const dA=sT('memberships.items.'+m.id+'.desc'), bA=sT('memberships.items.'+m.id+'.benefits'), hA=sT('memberships.items.'+m.id+'.hook');
+        const ben=bA?bA.split('\n').map(x=>x.trim()).filter(Boolean).map(esc):tx(m.bn);
+        return `${hA?`<p style="font-style:italic;color:var(--gold);margin-bottom:6px;">${esc(hA)}</p>`:''}<p>${dA?esc(dA):tx(m.d)}</p><div class="bl">${tr('benefits')}</div>
+      ${ben.map(b=>`<div class="bul"><span class="d">◆</span><span class="x" style="font-size:14px;">${b}</span></div>`).join('')}`; })()}</div></div>`).join('');
+  // уводът — само ако е записан от админа (вграденият увод на сайта е за кандидати, не за членове)
+  const introA=(()=>{ const v=SITE&&SITE.memberships&&SITE.memberships.intro; const x=v&&typeof v==='object'?(v[lang]||v.bg||''):(v||''); return String(x||'').trim(); })();
+  return topbar(tr('membership'))+`<div class="page"><p style="color:var(--mid);font-size:14px;line-height:1.5;margin-bottom:14px;">${introA?esc(introA):tr('memIntro')}</p>${list}</div>`;
 }
 function toggleMem(i){const b=document.getElementById('mb'+i),c=document.getElementById('cv'+i);
   const open=b.style.display==='block';b.style.display=open?'none':'block';c.textContent=open?'+':'−';}
