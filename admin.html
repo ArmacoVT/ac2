@@ -2109,7 +2109,7 @@ const PUB_SCHEMA=[
   ]},
   {id:'levels',title:'Нива на членство',help:'Заглавие, „за вас е, ако…“, резюме, цена, описание и ползи за всяко ниво. Club / Alumni / Corporate се показват на сайта и в приложението; Founder и Founding Member — само в приложението, за founder/founding членове.',fields:[]},
   {id:'membership',title:'Членство — страница',help:'Текстовете около нивата: защо да стана член, как се кандидатства, въпроси и отговори.',fields:[
-    F('membership.why_title','bi','„Защо да стана член?" — заглавие'),F('membership.why_body','bit','„Защо да стана член?" — текст',{rows:4}),
+    F('membership.why_title','bi','„Защо да стана член?" — заглавие'),F('membership.why_body','bit','„Защо да стана член?" — текст',{rows:4}),F('membership.image','img','Снимка до „Защо да стана член?" (вертикална, напр. 1200×1600; на телефон се показва под заглавието)'),
     F('membership.how_title','bi','Как се кандидатства — заглавие'),F('membership.how_body','bit','Как се кандидатства — стъпки',{rows:5}),
     F('membership.terms_url','url','Линк към пълните условия (празно = правилникът на клуба)'),
     F('membership.faq','list','Често задавани въпроси',{fields:[F('q','bi','Въпрос'),F('a','bit','Отговор',{rows:2})]})
