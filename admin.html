@@ -272,7 +272,7 @@ function attItems(){
   const out=[];
   if(can('reservations'))RES.forEach(r=>{const a=resAttention(r);if(a)out.push({k:'res',a,r});});
   if(can('applications'))(APPS||[]).forEach(x=>{if((x.status||'new')==='new'||!x.seen_at)out.push({k:'app',a:'new',r:x});});
-  if(can('messages'))(MSGS||[]).forEach(m=>{if(!m.is_read)out.push({k:'msg',a:'new',r:m});});
+  if(can('messages'))(MSGS||[]).forEach(m=>{if(!m.is_read&&!m.archived_at)out.push({k:'msg',a:'new',r:m});});
   if(can('fees'))(MPAY||[]).forEach(x=>{if(x.status==='pending'&&x.method==='bank')out.push({k:'mpay',a:'bank',r:x});});
   return out;
 }
@@ -397,7 +397,7 @@ function tabsHtml(){
       ${tabAllowed('apps')?`<button class="tab ${tab==='apps'?'on':''}" onclick="setTab('apps')">Кандидатури${tabBadge(attCount('app'))}</button>`:''}
       ${tabAllowed('ann')?`<button class="tab ${tab==='ann'?'on':''}" onclick="setTab('ann')">Новини</button>`:''}
       ${tabAllowed('public')?`<button class="tab ${tab==='public'?'on':''}" onclick="setTab('public')">Публичен сайт</button>`:''}
-      ${tabAllowed('messages')?`<button class="tab ${tab==='messages'?'on':''}" onclick="setTab('messages')">Съобщения${tabBadge((MSGS||[]).filter(m=>!m.is_read).length)}</button>`:''}
+      ${tabAllowed('messages')?`<button class="tab ${tab==='messages'?'on':''}" onclick="setTab('messages')">Съобщения${tabBadge((MSGS||[]).filter(m=>!m.is_read&&!m.archived_at).length)}</button>`:''}
       ${tabAllowed('archive')?`<button class="tab ${tab==='archive'?'on':''}" onclick="setTab('archive')">Архив</button>`:''}
       ${tabAllowed('members')?`<button class="tab ${tab==='members'?'on':''}" onclick="setTab('members')">Видимост по членство</button>`:''}
       ${tabAllowed('stats')?`<button class="tab ${tab==='stats'?'on':''}" onclick="setTab('stats')">Статистика</button>`:''}
@@ -2247,17 +2247,20 @@ let MSGS=null, SUBS=null;
 function messagesView(){
   if(MSGS===null)return `<h2>Съобщения</h2><p class="empty">Зареждане…</p>`;
   const fmt=d=>d?new Date(d).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
-  const rows=MSGS.map(m=>`<div class="card" style="${m.is_read?'opacity:.75;':'border-color:var(--gold-soft);'}">
+  const arch=MSGS.filter(m=>m.archived_at), act=MSGS.filter(m=>!m.archived_at), showA=!!window._msgArch;
+  const rows=(showA?arch:act).map(m=>`<div class="card" style="${m.is_read?'opacity:.75;':'border-color:var(--gold-soft);'}">
     <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
       <div><b>${esc(m.name)}</b> · <a href="mailto:${esc(m.email)}">${esc(m.email)}</a>${m.phone?' · '+esc(m.phone):''}
         <div class="muted" style="font-size:12px;">${fmt(m.created_at)} · ${m.lang||'bg'} ${m.mailed?'· ✉ изпратено до пощата':'· <span style="color:#82303d">✉ НЕ е стигнало до пощата (SMTP?)</span>'}</div></div>
-      <div style="display:flex;gap:6px;"><button class="btn ghost sm" onclick="msgRead('${m.id}',${m.is_read?'false':'true'})">${m.is_read?'Непрочетено':'Прочетено'}</button><button class="btn no sm" onclick="msgDel('${m.id}')">Изтрий</button></div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">${m.archived_at?`<button class="btn ghost sm" onclick="msgArch('${m.id}',false)">↩ Върни от архива</button>`:`<button class="btn ghost sm" onclick="msgRead('${m.id}',${m.is_read?'false':'true'})">${m.is_read?'Непрочетено':'Прочетено'}</button><button class="btn ghost sm" onclick="msgArch('${m.id}',true)">🗄 Архивирай</button>`}<button class="btn no sm" onclick="msgDel('${m.id}')">Изтрий</button></div></div>
+    ${m.archived_at?`<div class="muted" style="font-size:12px;margin-top:4px;">В архива от ${fmt(m.archived_at)}</div>`:''}
     ${m.subject?`<div style="margin-top:8px;"><b>${esc(m.subject)}</b></div>`:''}
     <div style="margin-top:6px;white-space:pre-line;">${esc(m.message)}</div></div>`).join('');
   const subs=(SUBS||[]);
-  return `<h2>Съобщения от сайта${tabBadge(MSGS.filter(m=>!m.is_read).length)}</h2>
+  return `<h2>Съобщения от сайта${tabBadge(act.filter(m=>!m.is_read).length)}</h2>
     <p class="muted" style="margin-top:-6px;">Контактната форма на ac2.bg. Копие отива и на имейла за контакт (Secrets → CONTACT_TO, по подразбиране welcome@ac2.bg).</p>
-    ${rows||'<p class="empty">Няма съобщения.</p>'}
+    <div style="display:flex;gap:6px;margin:8px 0 12px;flex-wrap:wrap;"><button class="btn ${showA?'ghost':''} sm" onclick="window._msgArch=false;render()">Входящи (${act.length})</button><button class="btn ${showA?'':'ghost'} sm" onclick="window._msgArch=true;render()">🗄 Архив (${arch.length})</button></div>
+    ${rows||`<p class="empty">${showA?'Архивът е празен.':'Няма съобщения.'}</p>`}
     <h2 style="margin-top:28px;">Абонати за нюзлетъра (${subs.length})</h2>
     <p class="muted" style="margin-top:-6px;">Записват се от сайта със съгласие. Експортът е CSV за Mailchimp или друг инструмент.</p>
     <div style="display:flex;gap:10px;margin:8px 0 12px;"><button class="btn ghost sm" onclick="subsCsv()">⬇ Експорт CSV</button></div>
@@ -2265,6 +2268,7 @@ function messagesView(){
 }
 async function loadMessages(){ MSGS=await DB.listContactMessages(); SUBS=await DB.listSubscribers(); render(); }
 async function msgRead(id,r){ await DB.setMessageRead(id,r); await loadMessages(); }
+async function msgArch(id,on){ const r=await DB.setMessageArchived(id,on); if(r&&r.error){ alert(/archived_at/.test(r.error.message||'')?'Архивът още не е включен в базата — пусни в Supabase → SQL Editor файла 2026-11-11-messages-archive.sql.':'Грешка: '+r.error.message); return; } toast(on?'Преместено в архива':'Върнато във входящи'); await loadMessages(); }
 async function msgDel(id){ if(!confirm('Да изтрия ли съобщението?'))return; await DB.deleteMessage(id); await loadMessages(); }
 // по индекс — имейлът идва от публичната форма и не се вгражда в onclick
 function subDelAt(i){ const s=(SUBS||[])[i]; if(s)subDel(s.email); }

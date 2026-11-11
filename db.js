@@ -372,6 +372,12 @@ const placeName = p => (p && PLACE_RENAME[p]) || p;
       const { error } = await sb.from('contact_messages').update({ is_read: !!read }).eq('id', id);
       return { error };
     },
+    async setMessageArchived(id, on) {   // архив: изисква 2026-11-11-messages-archive.sql
+      if (!LIVE) return { error: null };
+      const patch = on ? { archived_at: new Date().toISOString(), is_read: true } : { archived_at: null };
+      const { error } = await sb.from('contact_messages').update(patch).eq('id', id);
+      return { error };
+    },
     async deleteMessage(id) {
       if (!LIVE) return { error: null };
       const { error } = await sb.from('contact_messages').delete().eq('id', id);
