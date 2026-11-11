@@ -1122,6 +1122,15 @@ function feesReadOnly(){
     ${pay?`<table ${tbl}><tr class="muted"><td>Дата</td><td>Имейл</td><td>Членство</td><td>План</td><td style="text-align:right;">Сума</td><td>Метод</td><td>Статус</td></tr>${pay}</table>`:'<p class="empty">Още няма плащания.</p>'}`;
 }
 // ---------- Експорт за месеца (Excel) — за счетоводството ----------
+function askMonth(title,defPrev){
+  const d=new Date(); const dd=defPrev?new Date(d.getFullYear(),d.getMonth()-1,1):d;
+  const def=dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0');
+  const m=prompt(title+' — напр. '+def+' (може и 10.2026, 10/2026 или само 10 за текуща година):',def); if(!m)return null;
+  let v=m.trim().replace(/[\s/.]+/g,'-'), mm, yy, x=/^(\d{4})-(\d{1,2})$/.exec(v);
+  if(x){yy=x[1];mm=x[2];} else if((x=/^(\d{1,2})-(\d{4})$/.exec(v))){mm=x[1];yy=x[2];} else if((x=/^(\d{1,2})$/.exec(v))){mm=x[1];yy=String(d.getFullYear());}
+  if(!mm||+mm<1||+mm>12){alert('Не разпознах месеца. Напиши напр. 2026-10 или 10.2026');return null;}
+  return yy+'-'+String(+mm).padStart(2,'0');
+}
 function exportMonthOpen(){
   const d=new Date();   // по подразбиране — текущият месец
   const def=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
@@ -1230,6 +1239,70 @@ async function exportEvents(ids){
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
   try{ await DB.logAudit('export_events',(ids&&ids.length===1)?evs[0].title:'всички събития',evs.length+' събития'); }catch(e){}
   toast('Готово: '+evs.length+' '+(evs.length===1?'събитие':'събития')+(single?'':' · '+enq.length+' запитвания'+(can('messages')?' · '+(msgs||[]).length+' съобщения':'')));
+}
+// ---------- ОДИТЕН ФАЙЛ ЗА НАП (XML, Наредба Н-18, Прил. 38) ----------
+// Включва онлайн продажбите: билети и членства, платени с карта през Stripe (paym 4 — доставчик на платежни услуги,
+// proc_id = ДДС № на Stripe Payments Europe) и членства по банков превод (paym 1). Плащанията в брой/ПОС на място НЕ влизат —
+// те минават през касовия апарат. Връщанията на суми през месеца → <rorder>. Цените са с ДДС 20% (art_price е без ДДС).
+// ВАЖНО: doc_n е номерът на поръчката (кода) — ако бележките се издават от друга система, счетоводителят сменя номерата.
+const NAP_PROC_ID='IE3206488LH';   // Stripe Payments Europe Ltd
+function napExportOpen(){
+  let eik=''; try{eik=localStorage.getItem('acac_nap_eik')||'';}catch(e){}
+  if(!/^\d{9,13}$/.test(eik)){ eik=(prompt('ЕИК на „Американски Колеж Аркус“ АД (за файла; запомня се):','')||'').trim(); if(!/^\d{9,13}$/.test(eik)){ if(eik)alert('ЕИК трябва да е 9 или 13 цифри.'); return; } try{localStorage.setItem('acac_nap_eik',eik);}catch(e){} }
+  const ym=askMonth('Месец за файла за НАП',true); if(!ym)return;
+  napExport(ym,eik);
+}
+async function napExport(ym,eik){
+  toast('Подготвяне на файла за НАП…');
+  try{ RES=await DB.listReservations(); }catch(e){}
+  try{ MPAY=await DB.listMembershipPayments(5000); }catch(e){ MPAY=MPAY||[]; }
+  const loc=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+  const inM=ts=>!!ts&&loc(ts).slice(0,7)===ym;
+  const f2=n=>(Math.round(n*100)/100).toFixed(2);
+  const xe=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const evT=id=>{const e=EVENTS.find(x=>x.id===id);return e?e.title:'';};
+  // артикул: брутната сума е точна; цена без ДДС и ДДС — закръглени така, че сборът да излиза точно
+  const art=(name,qty,gross)=>{ const net=Math.round(gross/1.2*100)/100, vat=Math.round((gross-net)*100)/100; let q=qty, unit=Math.round(net/qty*100)/100;
+    if(Math.abs(unit*qty-net)>0.004){ q=1; unit=net; name=name+(qty>1?' ('+qty+' места)':''); }
+    return {name,q,unit,net,vat,gross}; };
+  const orders=[], refunds=[];
+  // билети, платени онлайн с карта
+  RES.filter(r=>r.stripe_pi&&(r.paid_cents||0)>0&&r.pay_method!=='cash'&&r.pay_method!=='pos'&&inM(r.sold_at||r.created_at)).forEach(r=>{
+    const code=r.ticket_code||String(r.id).slice(0,8).toUpperCase(), d=loc(r.sold_at||r.created_at);
+    const kindTxt=r.kind==='online'?' — онлайн достъп':r.kind==='archive'?' — запис':'';
+    orders.push({ord:code,date:d,items:[art('Билет: '+(evT(r.event_id)||r.place||'събитие')+kindTxt,Number(r.party)||1,(r.paid_cents||0)/100)],paym:4,trans:r.stripe_pi});
+  });
+  RES.filter(r=>r.stripe_pi&&(r.refund_cents||0)>0&&inM(r.refunded_at)).forEach(r=>{
+    refunds.push({ord:r.ticket_code||String(r.id).slice(0,8).toUpperCase(),amount:(r.refund_cents||0)/100,date:loc(r.refunded_at),paym:2});
+  });
+  // членства: карта (Stripe) и банков превод; в брой/ПОС — не
+  (MPAY||[]).filter(x=>x.status==='paid'&&(x.method==='card'||x.method==='bank')&&inM(x.paid_at||x.created_at)).forEach(x=>{
+    const d=loc(x.paid_at||x.created_at);
+    orders.push({ord:x.code||String(x.id).slice(0,8),date:d,items:[art('Членство '+memName(x.membership)+' — '+(PLAN_LABEL[x.plan]||x.plan||''),1,(x.amount_cents||0)/100)],paym:x.method==='bank'?1:4,trans:x.method==='card'?(x.stripe_pi||''):''});
+  });
+  if(!orders.length&&!refunds.length){ alert('За '+ym+' няма онлайн плащания (с карта или банков превод) и връщания.'); return; }
+  orders.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  const today=loc(Date.now()), [god,mon]=ym.split('-');
+  let x='<?xml version="1.0" encoding="WINDOWS-1251"?>\n<audit>\n';
+  x+=`  <eik>${xe(eik)}</eik>\n  <e_shop_n>RF0008020</e_shop_n>\n  <domain_name>ac2.bg</domain_name>\n  <creation_date>${today}</creation_date>\n  <mon>${mon}</mon>\n  <god>${god}</god>\n  <e_shop_type>1</e_shop_type>\n  <order>\n`;
+  for(const o of orders){
+    const t1=o.items.reduce((a,i)=>a+i.net,0), tv=o.items.reduce((a,i)=>a+i.vat,0), t2=o.items.reduce((a,i)=>a+i.gross,0);
+    x+=`    <orderenum>\n      <ord_n>${xe(o.ord)}</ord_n>\n      <ord_d>${o.date}</ord_d>\n      <doc_n>${xe(o.ord)}</doc_n>\n      <doc_date>${o.date}</doc_date>\n      <art>\n`;
+    for(const i of o.items) x+=`        <artenum>\n          <art_name>${xe(i.name)}</art_name>\n          <art_quant>${i.q}</art_quant>\n          <art_price>${f2(i.unit)}</art_price>\n          <art_vat_rate>20</art_vat_rate>\n          <art_vat>${f2(i.vat)}</art_vat>\n          <art_sum>${f2(i.gross)}</art_sum>\n        </artenum>\n`;
+    x+=`      </art>\n      <ord_total1>${f2(t1)}</ord_total1>\n      <ord_disc>0.00</ord_disc>\n      <ord_vat>${f2(tv)}</ord_vat>\n      <ord_total2>${f2(t2)}</ord_total2>\n      <paym>${o.paym}</paym>\n`;
+    if(o.paym===4){ if(o.trans)x+=`      <trans_n>${xe(o.trans)}</trans_n>\n`; x+=`      <proc_id>${NAP_PROC_ID}</proc_id>\n`; }
+    x+=`    </orderenum>\n`;
+  }
+  x+=`  </order>\n  <r_ord>${refunds.length}</r_ord>\n  <r_total>${f2(refunds.reduce((a,r)=>a+r.amount,0))}</r_total>\n`;
+  if(refunds.length){ x+='  <rorder>\n'; for(const r of refunds) x+=`    <rorderenum>\n      <r_ord_n>${xe(r.ord)}</r_ord_n>\n      <r_amount>${f2(r.amount)}</r_amount>\n      <r_date>${r.date}</r_date>\n      <r_paym>${r.paym}</r_paym>\n    </rorderenum>\n`; x+='  </rorder>\n'; }
+  x+='</audit>\n';
+  // кодиране WINDOWS-1251 (НАП изисква тази кодировка)
+  const bytes=new Uint8Array(x.length); for(let i=0;i<x.length;i++){ const c=x.charCodeAt(i);
+    bytes[i]=c<128?c:(c>=0x410&&c<=0x44F)?c-0x350:c===0x401?0xA8:c===0x451?0xB8:c===0x2116?0xB9:c===0x201E?0x84:c===0x201C?0x93:c===0x201D?0x94:c===0x2013?0x96:c===0x2014?0x97:c===0xAB?0xAB:c===0xBB?0xBB:c===0xB0?0xB0:c===0x20AC?0x88:c===0xB2?0x32:0x3F; }
+  const blob=new Blob([bytes],{type:'application/xml'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='AC2-NAP-audit-'+ym+'.xml'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+  try{await DB.logAudit('export_nap_xml',ym,orders.length+' поръчки · '+refunds.length+' връщания');}catch(e){}
+  toast('Файл за НАП '+ym+': '+orders.length+' поръчки, '+refunds.length+' връщания');
 }
 // Минимален .xlsx (без външни библиотеки — CSP ги спира): ZIP без компресия + SpreadsheetML
 function xlsxBlob(sheets){
@@ -1660,7 +1733,7 @@ function statsView(){
   // формати по места (за периода)
   const byFmt={}; conf.forEach(r=>{const e=EVENTS.find(x=>x.id===r.event_id);const f=(e&&(FMT_LABEL[e.format]||e.format))||'—';byFmt[f]=(byFmt[f]||0)+P(r);});
   const fmtRows=Object.entries(byFmt).sort((a,b)=>b[1]-a[1]).map(([f,n])=>`<tr><td>${esc(f)}</td><td style="text-align:right;">${n} места</td></tr>`).join('')||'<tr><td class="muted">—</td><td></td></tr>';
-  return `${canMoney()?'<div style="float:right;"><button class="btn ghost sm" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button></div>':''}<h2>Статистика</h2>
+  return `${canMoney()?'<div style="float:right;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;"><button class="btn ghost sm" onclick="exportMonthOpen()">⬇ Експорт за месеца (Excel)</button><button class="btn ghost sm" onclick="napExportOpen()" title="Стандартизиран одиторски файл (XML) по Наредба Н-18, Прил. 38 — онлайн плащания с карта и банкови преводи; за сверка от счетоводителя">⬇ Файл за НАП (XML)</button></div>':''}<h2>Статистика</h2>
     <div class="tabs" style="margin:6px 0 12px;">${tabs}</div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;">
       ${stat('Събития',evs.length)}
