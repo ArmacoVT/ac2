@@ -1315,8 +1315,17 @@ function kidsBlock(id,onch,paid){
     <div class="kidsages" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
     <div style="font-size:12px;color:var(--muted);margin-top:4px;">${paid?(bg?'Децата заемат място, но не се таксуват. Ако има детско меню — плаща се на място.':'Children take a seat but are not charged. A children\'s menu, if any, is paid on site.'):(bg?'Децата влизат в общия брой гости.':'Children are included in the total number of guests.')}</div></div>`;
 }
+// най-много деца = общ брой − 1 (поне един възрастен); при „9+“ — до 8
+function kidsMax(id){
+  let pv='1';
+  if(id==='r_kids')pv=document.getElementById('r_party')?.value||'1';
+  else{ const eid=id.replace(/^bkids_/,''); pv=document.getElementById('bigp_'+eid)?.checked?'9+':(document.getElementById('bp_'+eid)?.value||'1'); }
+  return pv==='9+'?8:Math.min(8,Math.max(0,(parseInt(pv,10)||1)-1));
+}
+function kidsClamp(id){ const box=document.getElementById(id); if(!box)return; const n=parseInt(box.querySelector('.kv').value,10)||0; const mx=kidsMax(id); if(n>mx)kidsQty(id,mx-n); }
 function kidsQty(id,d){
-  const box=document.getElementById(id); if(!box)return; const v=box.querySelector('.kv'); let n=(parseInt(v.value,10)||0)+d; if(n<0)n=0; if(n>8)n=8;
+  const box=document.getElementById(id); if(!box)return; const v=box.querySelector('.kv'); let n=(parseInt(v.value,10)||0)+d; if(n<0)n=0;
+  const mx=kidsMax(id); if(n>mx){ n=mx; if(d>0)toast(lang==='bg'?'Децата са част от общия брой — първо увеличете броя (напр. 1 възрастен + 1 дете = 2).':'Children are part of the total — increase the number first (e.g. 1 adult + 1 child = 2).'); }
   v.value=n; box.querySelector('.kn').textContent=n; try{hap('medium');}catch(e){}
   const wrap=box.querySelector('.kidsages'); const old=[...wrap.querySelectorAll('select')].map(x=>x.value); const bg=lang==='bg';
   wrap.innerHTML=Array.from({length:n},(_,i)=>`<div style="flex:1;min-width:104px;"><div style="font-size:11.5px;color:var(--muted);margin-bottom:3px;">${bg?'Дете':'Child'} ${i+1} — ${bg?'възраст':'age'}</div><select data-kage style="width:100%;">${KID_AGES.map(a=>`<option value="${a}" ${old[i]===a?'selected':''}>${a} ${bg?'г.':'y'}</option>`).join('')}</select></div>`).join('');
@@ -1352,6 +1361,7 @@ function bookQty(id,delta,maxN){
   try{hap('medium');}catch(e){}
   inp.value=n;
   const lbl=document.getElementById('bp_lbl_'+id); if(lbl){lbl.textContent=n;lbl.classList.remove('qbump');void lbl.offsetWidth;lbl.classList.add('qbump');}
+  kidsClamp('bkids_'+id);
   updateBuy(id);
 }
 function tblQty(id,delta){
@@ -2078,7 +2088,7 @@ function drawResCal(){
 }
 function resCalOutside(ev){const p=document.getElementById('res-cal');if(p&&!p.contains(ev.target)&&ev.target.id!=='r_date')closeResCal();}
 function closeResCal(){const p=document.getElementById('res-cal');if(p){p.remove();document.removeEventListener('mousedown',resCalOutside);}}
-function pickParty(b){ document.querySelectorAll('#partysel .chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); const v=b.dataset.n; document.getElementById('r_party').value=v; const big=document.getElementById('r_big'); if(big)big.style.display=v==='9+'?'block':'none'; }
+function pickParty(b){ document.querySelectorAll('#partysel .chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); const v=b.dataset.n; document.getElementById('r_party').value=v; const big=document.getElementById('r_big'); if(big)big.style.display=v==='9+'?'block':'none'; kidsClamp('r_kids'); }
 function pickResDate(iso){const inp=document.getElementById('r_date');if(inp){inp.dataset.iso=iso;inp.value=iso?isoToEu(iso):'';}closeResCal();}
 async function sendRes(seats){
   if(!user){needLogin();return;}
