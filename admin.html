@@ -377,6 +377,7 @@ async function goRes(id){ const r=RES.find(x=>x.id===id); resArchive=false; resF
 function tabBadge(n){return n?` <span style="background:#82303d;color:#f7f7ee;border-radius:10px;font-size:10px;font-weight:700;padding:2px 6px;vertical-align:middle;">${n}</span>`:'';}
 function render(){
   if(!admin){gate();return;}
+  evdSave();   // черновата на събитието — преди формата да се начертае наново
   // стилът на „Зареждане…“ (центриран текст + 40px отстъп) оставаше върху целия админ → махаме го
   if(root.getAttribute('style'))root.removeAttribute('style');
   const badge=DB.live?`<span class="badge live">Свързан Supabase</span>`:`<span class="badge">Демо режим</span>`;
@@ -406,6 +407,7 @@ function render(){
   root.innerHTML=h;
   setTitleCount();
   renderAfter();
+  evdAfterRender();
 }
 function tabsHtml(){
   return `<div class="tabs">
@@ -573,7 +575,7 @@ async function recClear(id){
   await refresh();render();
 }
 async function reloadPeople(){ window.__membersErr=''; PEOPLE=null; render(); PEOPLE=await DB.listMembers(); render(); }
-async function setTab(t){tab=t;editId=null;await refresh();render();
+async function setTab(t){evdSave();_evFormKey=null;if(editId){draftAud=['all'];draftPubGal=[];draftSlots=[];draftGuests=false;}tab=t;editId=null;await refresh();render();
   if(t==='people'){await reloadPeople();}
   if(t==='team'){if(!PEOPLE)PEOPLE=await DB.listMembers();render();}
   if(t==='fees'){await loadFees();render();}
@@ -817,6 +819,73 @@ function bwSection(e){
     <p class="muted" style="margin:2px 0 4px;font-size:12px;">Така напр. Founder записват веднага, Founding след седмица, Club още по-късно, гостите най-накрая. Всички виждат събитието; само записването е на вълни.</p>${rows}${guestRow}`;
 }
 // запазва/връща въведеното във формата (за да не се губи при преначертаване)
+// ================= ЧЕРНОВА НА СЪБИТИЕ (автоматично, само в този браузър) =================
+// Всичко въведено във формата за събитие се пази само̀ — при презареждане, затворен таб или изгаснал лаптоп
+// формата се връща попълнена. Трие се при успешен запис, „Откажи“/„Изчисти“ и сама след 48 часа.
+const EVD_PREFIX='acac_evdraft_', EVD_TTL=48*3600*1000;
+let _evFormKey=null, _evBase='', _evBusy=false;
+const evdKey=()=>EVD_PREFIX+(_evFormKey||'');
+function evdDefaults(key){
+  if(key==='new')return {aud:['all'],gal:[],slots:[],guests:false};
+  const e=EVENTS.find(x=>x.id===key)||{};
+  return {aud:e.aud==='all'||!e.aud?['all']:e.aud.slice(),gal:(e.pub&&Array.isArray(e.pub.gallery))?e.pub.gallery.slice():[],
+    slots:(e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.map(x=>({time:x.time||'',cap:Number(x.cap)||0})):[],guests:!!(e.pub&&e.pub.guests)};
+}
+const evdVars=()=>({aud:draftAud,gal:draftPubGal,slots:draftSlots,guests:draftGuests});
+function evdLoad(key){
+  try{ const d=JSON.parse(localStorage.getItem(EVD_PREFIX+key)||'null'); if(!d)return null;
+    if(!d.at||Date.now()-d.at>EVD_TTL){localStorage.removeItem(EVD_PREFIX+key);return null;} return d; }catch(e){return null;}
+}
+function evdSweep(){ try{ for(let i=localStorage.length-1;i>=0;i--){ const k=localStorage.key(i); if(k&&k.indexOf(EVD_PREFIX)===0)evdLoad(k.slice(EVD_PREFIX.length)); } }catch(e){} }
+// записва черновата, ако формата е на екрана и има нещо различно от „чистото“ ѝ състояние
+function evdSave(){
+  if(_evBusy||!_evFormKey||!document.getElementById('f_title'))return;
+  try{
+    const v=grabForm(), vars=evdVars();
+    const dirty=JSON.stringify(v)!==_evBase||JSON.stringify(vars)!==JSON.stringify(evdDefaults(_evFormKey));
+    if(!dirty)return;
+    const prev=localStorage.getItem(evdKey()); const body=JSON.stringify({v,vars});
+    if(prev){ try{ const p=JSON.parse(prev); if(JSON.stringify({v:p.v,vars:p.vars})===body)return; }catch(e){} }   // без промяна → не пипаме часа
+    localStorage.setItem(evdKey(),JSON.stringify({at:Date.now(),v,vars}));
+    evdNote();
+  }catch(e){}
+}
+function evdDrop(key){ try{localStorage.removeItem(EVD_PREFIX+(key||'new'));}catch(e){} _evFormKey=null; }
+// след всяко начертаване: помним „чистото“ състояние и връщаме черновата (ако има)
+function evdAfterRender(){
+  if(_evBusy)return;
+  if(tab!=='events'||!document.getElementById('f_title')){_evFormKey=null;return;}
+  const key=editId||'new'; _evFormKey=key;
+  try{ _evBase=JSON.stringify(grabForm()); }catch(e){ _evBase=''; }
+  const d=evdLoad(key); if(!d||!d.v)return;
+  _evBusy=true;
+  try{
+    const dv=d.vars||{}; const cur=JSON.stringify(evdVars());
+    draftAud=Array.isArray(dv.aud)&&dv.aud.length?dv.aud:draftAud; draftPubGal=Array.isArray(dv.gal)?dv.gal:draftPubGal;
+    draftSlots=Array.isArray(dv.slots)?dv.slots:draftSlots; draftGuests=!!dv.guests;
+    if(JSON.stringify(evdVars())!==cur)render();   // „за кого е“, часове, галерия — част от самото начертаване
+    putForm(d.v);
+  }catch(e){} finally{ _evBusy=false; }
+  evdNote();
+}
+function evdNote(){
+  const t=document.getElementById('f_title'); if(!t)return; const d=evdLoad(_evFormKey||'new'); let n=document.getElementById('evdNote');
+  if(!d){ if(n)n.remove(); return; }
+  const card=t.closest('.card'); if(!card)return;
+  if(!n){ n=document.createElement('div'); n.id='evdNote'; n.style.cssText='margin:0 0 10px;padding:8px 12px;border-radius:10px;background:#EEF3E6;border:1px solid #c9d6b8;font-size:12.5px;color:#3d5a2e;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;'; card.insertBefore(n,card.firstChild); }
+  const dt=new Date(d.at); const hm=dt.toLocaleTimeString('bg-BG',{hour:'2-digit',minute:'2-digit'}); const day=dt.toDateString()===new Date().toDateString()?'':' на '+dt.toLocaleDateString('bg-BG',{day:'2-digit',month:'2-digit'});
+  n.innerHTML=`<span>✓ Чернова — въведеното се пази автоматично на това устройство (последно в ${hm}${day}). Още не е записано като събитие.</span><a href="#" onclick="evdClear();return false;" style="color:#82303d;white-space:nowrap;">Изчисти черновата</a>`;
+}
+function evdClear(){
+  if(!confirm('Да изчистя ли черновата? Въведеното във формата ще се изтрие.'))return;
+  const key=_evFormKey||'new'; evdDrop(key);
+  if(key==='new'){ draftAud=['all'];draftPubGal=[];draftSlots=[];draftGuests=false; render(); } else editEvent(key);
+}
+setInterval(evdSave,4000);
+addEventListener('pagehide',evdSave); addEventListener('beforeunload',evdSave);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden)evdSave(); });
+try{evdSweep();}catch(e){}
+
 function grabForm(){
   const g=id=>{const el=document.getElementById(id);return el?el.value:null;};
   const live=document.getElementById('f_live');
@@ -949,8 +1018,8 @@ function pickDate(iso){
   if(inp){inp.dataset.iso=iso;inp.value=iso?isoToBg(iso):'';}
   closeCal();
 }
-function editEvent(id){editId=id;tab='events';const e=EVENTS.find(x=>x.id===id);draftAud=e.aud==='all'?['all']:e.aud.slice();draftPubGal=(e.pub&&Array.isArray(e.pub.gallery))?e.pub.gallery.slice():[];draftSlots=(e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.map(x=>({time:x.time||'',cap:Number(x.cap)||0})):[];draftGuests=!!(e.pub&&e.pub.guests);render();window.scrollTo(0,0);}
-function cancelEdit(){editId=null;draftAud=['all'];draftPubGal=[];draftSlots=[];draftGuests=false;render();}
+function editEvent(id){evdSave();_evFormKey=null;editId=id;tab='events';const e=EVENTS.find(x=>x.id===id);draftAud=e.aud==='all'?['all']:e.aud.slice();draftPubGal=(e.pub&&Array.isArray(e.pub.gallery))?e.pub.gallery.slice():[];draftSlots=(e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.map(x=>({time:x.time||'',cap:Number(x.cap)||0})):[];draftGuests=!!(e.pub&&e.pub.guests);render();window.scrollTo(0,0);}
+function cancelEdit(){evdDrop(editId||'new');editId=null;draftAud=['all'];draftPubGal=[];draftSlots=[];draftGuests=false;render();}
 async function delEvent(id){if(!confirm('Да изтрия ли събитието?'))return;const ev=EVENTS.find(x=>x.id===id);await DB.deleteEvent(id);DB.logAudit('event_deleted',(ev&&ev.title)||'','');await refresh();render();}
 async function toggleLive(id,on){await DB.setLive(id,on);await refresh();render();}
 function clearMedia(which){
@@ -1000,6 +1069,7 @@ async function saveEvent(){
     pub:grabPub()||{}};
   const r=eid?await DB.updateEvent(eid,obj):await DB.addEvent(obj);
   if(r&&r.error){alert('Събитието не се записа: '+r.error.message);return;}
+  evdDrop(eid||'new');   // записано → черновата вече не трябва
   editId=null;draftAud=['all'];draftPubGal=[];draftSlots=[];draftGuests=false;await refresh();render();window.scrollTo(0,0);
   } finally { _savingEvent=false; }
 }
