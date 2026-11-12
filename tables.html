@@ -413,6 +413,22 @@ textarea.inp{height:70px;padding:10px 12px;resize:vertical;}
   .datenav{margin-left:0;}
   .today{display:none;}
 }
+.tb .mb rect{fill:var(--amber);stroke:var(--floor);stroke-width:1.5;} .tb .mb text{font-weight:700;fill:#1c1c1b;text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+.tip{position:fixed;z-index:60;pointer-events:none;max-width:290px;background:var(--card);color:var(--ink);border:1px solid var(--line2);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:13.5px;line-height:1.35;display:none;}
+.tip b{font-size:15px;} .tip .m{color:var(--muted);} .tip .mem{display:inline-block;background:var(--amberT);color:var(--amber);border-radius:8px;padding:1px 7px;font-weight:700;font-size:12px;margin-left:7px;vertical-align:1px;}
+.tip .it+.it{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);}
+#printArea{display:none;}
+.zoom button.prt{font-size:12px;margin-bottom:8px;}
+@media (max-width:760px){.zoom button.prt{display:none;}}
+@media print{
+  body.printplan .scrim{display:none!important;}
+  body.printplan #printArea{display:block;color:#000;font-family:var(--sans);}
+  #printArea,#printArea *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  #printArea svg.floor{position:static;width:100%;height:auto;max-height:160mm;display:block;touch-action:auto;}
+  #printArea h1{font-family:var(--serif);font-size:20px;font-weight:700;margin:0 0 2px;} #printArea .pm{font-size:12px;color:#444;margin-bottom:8px;}
+  #printArea table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;} #printArea th,#printArea td{border-bottom:1px solid #bbb;padding:4px 6px;text-align:left;vertical-align:top;}
+  #printArea th{font-size:11px;color:#444;font-weight:600;} #printArea tr{break-inside:avoid;} #printArea h2{font-size:14px;margin-top:14px;break-after:avoid;}
+}
 @media print{.top,.sub,.side,.legend{display:none;}
   #app{display:none!important;} body{overflow:visible;background:#fff;color:#000;}
   .scrim{position:static!important;background:none!important;display:block!important;animation:none;}
@@ -539,6 +555,7 @@ const api = {
     const miss = [...new Set(SEATS.map(x => x.reservation_id).filter(id => id && !rows.some(y => y.id === id)))];
     if (miss.length) { const m = await sb.from('reservations').select('*').in('id', miss); rows = rows.concat(m.data || []); }
     RES = rows.map(mapRes).filter(Boolean);
+    await liveMembers();
     try { const w = await sb.from('floor_waitlist').select('*').eq('date', S.date); WAIT = w.error ? [] : (w.data || []); } catch (e) { WAIT = []; }
     if (canMsgs()) try { const since = new Date(Date.now() - 21 * 864e5).toISOString();
       const m = await sb.from('contact_messages').select('id,name,email,phone,subject,message,is_read,created_at').eq('is_read', false).gte('created_at', since).order('created_at', { ascending: false }).limit(40);
@@ -573,6 +590,26 @@ function mapRes(r) {
     evTitle: ev ? ev.title : (after ? after.title : '') };
 }
 const MEMNAME = { founder: 'Founder', founding: 'Founding', club: 'Club', alumni: 'Alumni', corporate: 'Corporate', guest: 'Гост' };
+
+// членството се взима „на живо“ от профила (не каквото е било при записването): ако гост стане член — излиза като член
+const memOf = r => (r && r.membership && r.membership !== 'guest' ? r.membership : '');
+async function liveMembers() {
+  if (DEMO || !RES.length) return;
+  const uids = [...new Set(RES.map(r => r.user_id).filter(Boolean))];
+  const phones = [...new Set(RES.map(r => last9(r.phone)).filter(Boolean))];
+  const emails = [...new Set(RES.map(r => String(r.email || '').trim().toLowerCase()).filter(Boolean))];
+  let rows = null, seen = null;
+  try { const q = await sb.rpc('floor_member_match', { uids, phones, emails }); if (!q.error) rows = q.data || []; } catch (e) {}
+  if (!rows) {   // функцията още я няма в базата → само по профила на резервацията (ако правата позволяват четене)
+    if (!uids.length) return;
+    try { const q = await sb.from('profiles').select('id,membership').in('id', uids); if (q.error || !(q.data || []).length) return;
+      rows = q.data.map(p => ({ user_id: p.id, membership: p.membership })); seen = new Set(q.data.map(p => p.id)); } catch (e) { return; }
+  }
+  const M = {};
+  rows.forEach(x => { if (!x.membership || x.membership === 'guest') return; if (x.user_id) M['u:' + x.user_id] = x.membership; if (x.phone9) M['p:' + x.phone9] = x.membership; if (x.email) M['e:' + x.email] = x.membership; });
+  RES.forEach(r => { let m = ''; for (const k of gkeysOf(r)) if (M[k]) { m = M[k]; break; }
+    if (m) r.membership = m; else if (r.user_id && (!seen || seen.has(r.user_id))) r.membership = ''; });
+}
 
 // ---------- изчисления ----------
 const zoneTables = (zid, all) => TABLES.filter(t => t.zone_id === zid && (all || t.kind === 'table'));
@@ -826,7 +863,7 @@ function stageHtml(zone) {
       <rect class="room" x="0" y="0" width="${zone.w}" height="${zone.h}" rx="6"/>
       ${decor}${joins}${tables}${chips}${handle}
     </svg></div>
-    <div class="zoom"><button data-a="zoom" data-v="1" aria-label="Увеличи">+</button><button class="fit" data-a="zoom" data-v="0" aria-label="Цялата зала">цяла</button><button data-a="zoom" data-v="-1" aria-label="Намали">−</button></div>
+    <div class="zoom">${S.edit ? '' : '<button class="fit prt" data-a="print" aria-label="Печат на схемата" title="Печат на схемата">печат</button>'}<button data-a="zoom" data-v="1" aria-label="Увеличи">+</button><button class="fit" data-a="zoom" data-v="0" aria-label="Цялата зала">цяла</button><button data-a="zoom" data-v="-1" aria-label="Намали">−</button></div>
     ${S.comboPick ? `<div class="assignbar">Докосни масите: <b>${S.comboPick.length ? esc(S.comboPick.map(id => tLabel(tableById(id))).join(' + ')) + ' · ' + S.comboPick.reduce((n, id) => n + ((tableById(id) || {}).seats || 0), 0) + ' места' : 'нищо избрано'}</b> <button data-a="combosave">Запази</button><button data-a="combocancel">Отказ</button></div>` : ''}
     ${assignR ? `<div class="assignbar">Избери маса за <b>${esc(assignR.name)}</b> (${assignR.party}) <button data-a="cancelassign">Отказ</button></div>` : ''}
     ${S.edit ? '' : (S.legend ? `<div class="legend" data-a="legend" title="Скрий"><span><i></i>Свободна</span><span><i class="r"></i>Резервирана</span><span><i class="s"></i>Идват скоро</span><span><i class="g"></i>Настанени</span><span><i class="b"></i>Запазена</span><span style="opacity:.6">✕</span></div>` : `<button class="legq" data-a="legend" aria-label="Какво значат цветовете">?</button>`)}
@@ -920,7 +957,15 @@ function tableSvg(t, T, assignR) {
     inner = `<text class="num" x="${t.w / 2}" y="${small ? cy : cy - 6}" style="font-size:${fs.toFixed(1)}px"${rt}>${esc(t.label)}</text>${small ? '' : `<text class="cap" x="${t.w / 2}" y="${cy + 14}"${rt}>${esc(capTxt)}</text>`}`;
   }
   return `<g class="${cls}" data-tid="${t.id}" transform="translate(${t.x} ${t.y}) rotate(${t.rot || 0} ${t.w / 2} ${t.h / 2})">
-    ${ch}${body}${inner}</g>`;
+    ${ch}${body}${inner}${memPill(t, s, busy, rt)}</g>`;
+}
+// етикет „Club / Founder …“ върху масата, когато резервацията е на член
+function memPill(t, s, busy, rt) {
+  if (!busy || !s || !s.reservation_id) return '';
+  const m = memOf(resById(s.reservation_id)); if (!m) return '';
+  const txt = MEMNAME[m] || m, k = S.compact ? 1.7 : 1, w = (txt.length * 6.3 + 14) * k, h = 17 * k;
+  const cx = t.shape === 'round' ? t.w * .85 : t.w - w * .12, cy = t.shape === 'round' ? t.h * .13 : 0;
+  return `<g class="mb"${rt}><rect x="${(cx - w / 2).toFixed(1)}" y="${(cy - h / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="${(h / 2).toFixed(1)}"/><text x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" style="font-size:${(10.5 * k).toFixed(1)}px">${esc(txt)}</text></g>`;
 }
 // кратко име: „Мария П.“ — да се събира върху масата и етикетите да не се застъпват
 function shortName(x) { const p = String(seatName(x)).trim().split(/\s+/); return p.length > 1 && p[0].length > 2 && !/^(Семейство|Фирма|Гост|Бизнес)$/i.test(p[0]) ? p[0] + ' ' + p[1][0] + '.' : String(seatName(x)); }
@@ -929,7 +974,7 @@ function chipSvg(t, T) {
   const { st, s, next } = tableState(t, T);
   if (st !== 'free' && Math.min(t.w, t.h) >= 56) return '';   // голяма маса — всичко е написано върху нея
   let txt = '', cls = '';
-  const nm = shortName;
+  const nm = x => (x.reservation_id && memOf(resById(x.reservation_id)) ? '★ ' : '') + shortName(x);
   if (st === 'seated') { txt = 'до ' + s.end_t + ' · ' + nm(s); cls = 'seated'; }
   else if (st === 'over') { txt = 'над времето · ' + nm(s); cls = 'seated'; }
   else if (st === 'reserved') { txt = s.start_t + ' · ' + nm(s); cls = 'res'; }
@@ -1166,7 +1211,7 @@ function seatBox(s, t) {
   const others = r ? seatsOfRes(r.id).filter(x => x.id !== s.id && x.status !== 'done').map(x => tLabel(tableById(x.table_id))) : [];
   const seated = s.status === 'seated';
   return `<div class="box" style="border-color:${seated ? 'var(--green)' : s.kind === 'block' ? 'var(--line2)' : 'var(--wine)'}">
-    <div class="row" style="align-items:flex-start;"><div><div style="font-weight:600;font-size:17px;">${esc(seatName(s))}</div>
+    <div class="row" style="align-items:flex-start;"><div><div style="font-weight:600;font-size:17px;">${esc(seatName(s))}${r && memOf(r) ? ` <span class="pill a" style="vertical-align:2px">${esc(MEMNAME[memOf(r)] || memOf(r))}</span>` : r ? ' <span class="pill" style="vertical-align:2px">гост</span>' : ''}</div>
       <div class="muted" style="font-size:13.5px;">${s.start_t}–${s.end_t}${seatParty(s) ? ', ' + plural(seatParty(s), 'човек', 'души') : ''}${others.length ? ', + маса ' + others.map(esc).join(', ') : ''}</div>
       ${r && r.note ? `<div style="font-size:13.5px;margin-top:4px;">${esc(r.note)}</div>` : s.note ? `<div style="font-size:13.5px;margin-top:4px;">${esc(s.note)}</div>` : ''}${r ? guestLines(r) : ''}</div>
       <button class="btn o sm" data-a="seat" data-id="${s.id}">Промени</button></div>
@@ -1535,11 +1580,12 @@ function menuSheet() {
   sheet(`<h3>Меню</h3><p class="lead">Инструменти за екипа</p>
     <div class="pickrow" data-x="admin"><b style="min-width:30px">‹</b><div style="flex:1"><b>Към админ панела</b><div class="muted" style="font-size:13px">Резервации, събития, членове</div></div></div>
     ${CAN_LAYOUT ? `<div class="pickrow" data-x="edit"><b style="min-width:30px">▦</b><div style="flex:1"><b>${S.edit ? 'Излез от подреждането' : 'Подреди залата'}</b><div class="muted" style="font-size:13px">Маси, столове, комбинации, основен план</div></div></div>` : ''}
+    <div class="pickrow" data-x="print"><b style="min-width:30px">🖨</b><div style="flex:1"><b>Печат на схемата</b><div class="muted" style="font-size:13px">Залата с масите и имената за избрания час + списък</div></div></div>
     <div class="pickrow" data-x="brief"><b style="min-width:30px">📋</b><div style="flex:1"><b>Брифинг за вечерта</b><div class="muted" style="font-size:13px">Кой идва, маси, VIP, алергии — за печат</div></div></div>
     <div class="pickrow" data-x="rep"><b style="min-width:30px">📊</b><div style="flex:1"><b>Справки</b><div class="muted" style="font-size:13px">Гости по дни и часове, неявили се, колко стоят</div></div></div>
     <div class="pickrow" data-x="set"><b style="min-width:30px">⚙</b><div style="flex:1"><b>Настройки</b><div class="muted" style="font-size:13px">Часове, продължителност, нощен режим</div></div></div>
     <div class="foot"><button class="btn o" data-x="close">Затвори</button></div>`, el => {
-    el.addEventListener('click', e => { const x = (e.target.closest('[data-x]') || {}).dataset?.x; if (!x) return; if (x === 'close') closeSheet(); if (x === 'brief') briefSheet(); if (x === 'rep') reportSheet(); if (x === 'set') settingsSheet(); if (x === 'admin') location.href = 'admin.html'; if (x === 'edit') { closeSheet(); S.edit = !S.edit; S.sel = null; S.assign = null; S.comboPick = null; if (S.edit) S.view = 'floor'; render(); } });
+    el.addEventListener('click', e => { const x = (e.target.closest('[data-x]') || {}).dataset?.x; if (!x) return; if (x === 'close') closeSheet(); if (x === 'brief') briefSheet(); if (x === 'print') { closeSheet(); printPlan(); } if (x === 'rep') reportSheet(); if (x === 'set') settingsSheet(); if (x === 'admin') location.href = 'admin.html'; if (x === 'edit') { closeSheet(); S.edit = !S.edit; S.sel = null; S.assign = null; S.comboPick = null; if (S.edit) S.view = 'floor'; render(); } });
   });
 }
 
@@ -1843,6 +1889,7 @@ app.addEventListener('click', async e => {
     case 'edit': S.edit = !S.edit; S.sel = null; S.assign = null; S.comboPick = null; if (S.edit) S.view = 'floor'; render(); break;
     case 'settings': settingsSheet(); break;
     case 'menu': menuSheet(); break;
+    case 'print': printPlan(); break;
     case 'brief': briefSheet(); break;
     case 'note': noteSheet(id); break;
     case 'flag': await markFlag(id, v); break;
@@ -2194,6 +2241,55 @@ app.addEventListener('touchend', pinchEnd); app.addEventListener('touchcancel', 
 app.addEventListener('click', e => { if (Date.now() - PINCH_END < 350 && e.target.closest('#stage')) { e.stopPropagation(); e.preventDefault(); } }, true);
 // iOS: да не увеличава цялата страница вместо схемата
 document.addEventListener('gesturestart', e => { if (e.target.closest && e.target.closest('#stage')) e.preventDefault(); });
+
+// ---------- ПОДСКАЗКА ПРИ ПОСОЧВАНЕ С МИШКА: на чие име е масата ----------
+const TIP = document.createElement('div'); TIP.className = 'tip'; document.body.appendChild(TIP);
+function tipHtml(t) {
+  const T = S.at; let items = [];
+  if (isCounter(t)) items = SEATS.filter(s => s.table_id === t.id && s.status !== 'done' && tm(s.start_t) <= T + 45 && T < tm(s.end_t));
+  else { const { st, s } = tableState(t, T); if (s && st !== 'free') items = [s]; }
+  return items.map(s => { const r = s.reservation_id ? resById(s.reservation_id) : null, mem = memOf(r), n = r ? noteOf(r) : null, note = (r && r.note) || s.note || '';
+    return `<div class="it"><b>${esc(seatName(s))}</b>${mem ? `<span class="mem">${esc(MEMNAME[mem] || mem)}</span>` : r ? '<span class="m"> · гост</span>' : ''}
+      <div class="m">${esc(tName(t))} · ${s.start_t}–${s.end_t}${seatParty(s) ? ' · ' + plural(seatParty(s), 'човек', 'души') : ''}${s.status === 'seated' ? ' · настанени' : ''}</div>
+      ${n && n.vip ? '<div>VIP гост</div>' : ''}${n && n.allergies ? `<div>⚠ Алергии: ${esc(n.allergies)}</div>` : ''}${note ? `<div class="m">${esc(note)}</div>` : ''}</div>`; }).join('');
+}
+function tipHide() { if (TIP.style.display !== 'none') TIP.style.display = 'none'; TIP._id = null; }
+app.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' || DRAG || S.edit || S.view !== 'floor') return tipHide();
+  const g = e.target.closest ? e.target.closest('#floor .tb[data-tid]') : null; if (!g) return tipHide();
+  if (TIP._id !== g.dataset.tid) { const t = tableById(g.dataset.tid), h = t ? tipHtml(t) : ''; if (!h) return tipHide(); TIP.innerHTML = h; TIP._id = g.dataset.tid; TIP.style.display = 'block'; }
+  const w = TIP.offsetWidth, hh = TIP.offsetHeight; let x = e.clientX + 16, y = e.clientY + 18;
+  if (x + w > innerWidth - 8) x = e.clientX - w - 12; if (y + hh > innerHeight - 8) y = e.clientY - hh - 12;
+  TIP.style.left = Math.max(8, x) + 'px'; TIP.style.top = Math.max(8, y) + 'px';
+});
+app.addEventListener('pointerdown', tipHide, true); app.addEventListener('pointerleave', tipHide); window.addEventListener('blur', tipHide);
+
+// ---------- ПЕЧАТ НА СХЕМАТА: залата за избрания час + списък на резервациите по маси ----------
+let PRINT_THEME = null;
+function printPlan() {
+  const zone = ZONES.find(z => z.id === S.zone) || ZONES[0]; if (!zone) return toast('Няма зала за печат', true);
+  const keep = { compact: S.compact, sel: S.sel, edit: S.edit, zoom: S.zoom, comboPick: S.comboPick, assign: S.assign };
+  let svg = '';
+  try { Object.assign(S, { compact: false, sel: null, edit: false, zoom: 1, comboPick: null, assign: null }); svg = (stageHtml(zone).match(/<svg[\s\S]*?<\/svg>/) || [''])[0].replace(' id="floor"', ''); }
+  finally { Object.assign(S, keep); }
+  const ids = new Set(zoneTables(zone.id).map(t => t.id));
+  const list = SEATS.filter(s => ids.has(s.table_id) && s.status !== 'done').sort((a, b) => tm(a.start_t) - tm(b.start_t) || String(tLabel(tableById(a.table_id))).localeCompare(String(tLabel(tableById(b.table_id))), 'bg', { numeric: true }));
+  const rows = list.map(s => { const r = s.reservation_id ? resById(s.reservation_id) : null, n = r ? noteOf(r) : null, mem = memOf(r);
+    const note = [n && n.vip ? 'VIP' : '', n && n.allergies ? 'Алергии: ' + n.allergies : '', (r && r.note) || s.note || ''].filter(Boolean).join(' · ');
+    return `<tr><td>${s.start_t}–${s.end_t}</td><td><b>${esc(tName(tableById(s.table_id)))}</b></td><td>${esc(seatName(s))}</td><td>${seatParty(s) || ''}</td><td>${mem ? esc(MEMNAME[mem] || mem) : r ? 'гост' : ''}</td><td>${esc(note)}</td></tr>`; }).join('');
+  const d = String(S.date).split('-').reverse().join('.');
+  let pa = document.getElementById('printArea'); if (!pa) { pa = document.createElement('div'); pa.id = 'printArea'; document.body.appendChild(pa); }
+  pa.innerHTML = `<h1>${esc(zone.name)} — ${d}</h1><div class="pm">Схема към ${fm(S.at)} ч. Върху масите са резервациите за този час; всички за деня са в списъка отдолу.</div>${svg}
+    <h2>Резервации по маси — ${esc(zone.name)}, ${d}</h2>${rows ? `<table><thead><tr><th>Час</th><th>Маса</th><th>Име</th><th>Души</th><th>Членство</th><th>Бележка</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="pm">Няма маси с резервации за този ден.</p>'}`;
+  closeSheet(); tipHide();
+  PRINT_THEME = document.documentElement.getAttribute('data-theme'); document.documentElement.setAttribute('data-theme', 'light');
+  document.body.classList.add('printplan');
+  // лист според формата на залата: висока зала → изправен, широка → легнал
+  const port = zone.h > zone.w; let ps = document.getElementById('printPg'); if (!ps) { ps = document.createElement('style'); ps.id = 'printPg'; document.head.appendChild(ps); }
+  ps.textContent = `@media print{@page{size:A4 ${port ? 'portrait' : 'landscape'};margin:10mm;} #printArea svg.floor{max-height:${port ? 228 : 160}mm;}}`;
+  setTimeout(() => window.print(), 80);
+}
+window.addEventListener('afterprint', () => { if (!document.body.classList.contains('printplan')) return; document.body.classList.remove('printplan'); const ps = document.getElementById('printPg'); if (ps) ps.remove(); if (PRINT_THEME) document.documentElement.setAttribute('data-theme', PRINT_THEME); PRINT_THEME = null; });
 let _stRaf = 0;
 function throttleStage() { if (_stRaf) return; _stRaf = requestAnimationFrame(() => { _stRaf = 0; const st = $('#stage'); if (!st) return; const sc = $('#scroller'), k = sc ? [sc.scrollLeft, sc.scrollTop] : [0, 0]; const tmp = document.createElement('div'); tmp.innerHTML = stageHtml(curZone()); st.replaceWith(tmp.firstElementChild); const n = $('#scroller'); if (n) { n.scrollLeft = k[0]; n.scrollTop = k[1]; } }); }
 document.addEventListener('keydown', e => {
