@@ -1902,7 +1902,7 @@ async function delAnn(id){
 function auditView(){
   if(AUDIT===null)return `<h2>Журнал</h2><p class="empty">Зареждане…</p>`;
   if(!AUDIT.length)return `<h2>Журнал на действията</h2><p class="empty">Все още няма записи.</p>`;
-  const AL={reservation_confirmed:'потвърди резервация',reservation_declined:'отказа резервация',application_approved:'одобри кандидатура',application_declined:'отказа кандидатура',member_deleted:'изтри член',company_member_added:'добави профил към фирма',company_member_removed:'откачи профил от фирма',member_renewed:'поднови членство',membership_changed:'смени членство',phone_set:'смени телефон',phone_requested:'поиска нов телефон',member_invited:'покани член',announcement_posted:'публикува новина',event_deleted:'изтри събитие'};
+  const AL={reservation_confirmed:'потвърди резервация',reservation_declined:'отказа резервация',application_approved:'одобри кандидатура',application_declined:'отказа кандидатура',member_deleted:'изтри член',company_member_added:'добави профил към фирма',company_member_removed:'откачи профил от фирма',member_renewed:'поднови членство',membership_changed:'смени членство',phone_set:'смени телефон',phone_requested:'поиска нов телефон',member_invited:'покани член',member_reinvited:'изпрати поканата пак',announcement_posted:'публикува новина',event_deleted:'изтри събитие'};
   // групиране по седмица (понеделник–неделя) или по месец; последният период е отворен, останалите — сгънати
   const MON=['януари','февруари','март','април','май','юни','юли','август','септември','октомври','ноември','декември'];
   const d2=n=>String(n).padStart(2,'0');
@@ -2520,7 +2520,17 @@ function memLoginBlock(){
   if(!list.length)return '';
   return fold('mem_invited',`<b style="color:#b5531e;">Поканени, които още не са влизали (${list.length})</b>`,`
     <div class="muted" style="font-size:12px;margin:2px 0 4px;">Не са си задали парола от поканата. Ако не са получили имейла: да проверят „Спам“ или да натиснат „Забравена парола?“ в приложението.</div>
-    ${list.sort((a,b)=>(a.invited_at||a.created_at||'')<(b.invited_at||b.created_at||'')?-1:1).map(p=>`<div style="margin-top:3px;"><b>${esc(p.full_name||p.username||p.email)}</b> <span class="muted">· ${esc(p.email)} · ${esc(memName(p.membership||'guest'))}${(p.invited_at||p.created_at)?' · поканен на '+_d(p.invited_at||p.created_at):''}</span></div>`).join('')}`,{card:1,style:'margin-top:8px;border-color:#b5531e;'});
+    ${list.sort((a,b)=>(a.invited_at||a.created_at||'')<(b.invited_at||b.created_at||'')?-1:1).map(p=>`<div style="margin-top:5px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><div><b>${esc(p.full_name||p.username||p.email)}</b> <span class="muted">· ${esc(p.email)} · ${esc(memName(p.membership||'guest'))}${(p.invited_at||p.created_at)?' · поканен на '+_d(p.invited_at||p.created_at):''}</span></div>${can('members_edit')?`<button class="btn ghost sm" onclick="reinvite('${p.id}',this)">✉ Изпрати поканата пак</button>`:''}</div>`).join('')}`,{card:1,style:'margin-top:8px;border-color:#b5531e;'});
+}
+async function reinvite(id,btn){
+  const p=byId(PEOPLE,id); const nm=p.full_name||p.username||p.email||'члена';
+  if(!confirm('Да изпратя ли поканата отново на '+nm+' ('+(p.email||'')+')?'))return;
+  if(btn){btn.disabled=true;btn.textContent='Изпращане…';}
+  const {error,data}=await DB.reinviteMember(id);
+  if(error){ if(btn){btn.disabled=false;btn.textContent='✉ Изпрати поканата пак';} alert('Не тръгна: '+error.message); return; }
+  DB.logAudit('member_reinvited',p.email||nm,data&&data.mode==='recovery'?'имейл за парола':'покана');
+  if(btn){btn.textContent='✓ Изпратено';}
+  toast(data&&data.mode==='recovery'?'Изпратен е имейл за задаване на парола':'Поканата е изпратена отново');
 }
 // ----- изтичащи / подновени членства (данни от „Членства и цени“: плащания и кодове) -----
 function memDaysLeft(until,today){ return Math.round((new Date(until+'T00:00:00Z')-new Date(today+'T00:00:00Z'))/86400000); }
