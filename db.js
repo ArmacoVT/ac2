@@ -806,6 +806,18 @@ const placeName = p => (p && PLACE_RENAME[p]) || p;
       return { error: null };
     },
     // смяна на членска категория (само админ)
+    async companyAdd(companyId, email, fullName, force) {   // админ: добавя профил към фирма (invite-member v3.8)
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'company_add', company_id: companyId, email: (email || '').trim(), full_name: (fullName || '').trim(), force: !!force } });
+      if (error) { let msg = error.message, cnt = 0; try { const b = await error.context.json(); if (b && b.error) { msg = b.error; cnt = b.count || 0; } } catch (e) {} return { error: { message: msg, count: cnt } }; }
+      return { error: null, data };
+    },
+    async companyRemove(id) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'company_remove', id } });
+      if (error) { let msg = error.message; try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {} return { error: { message: msg } }; }
+      return { error: null, data };
+    },
     async setMembership(email, membership) {
       if (!LIVE) return { error: { message: 'demo' } };
       const { data, error } = await invokeFn('invite-member',

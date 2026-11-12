@@ -1903,7 +1903,7 @@ async function delAnn(id){
 function auditView(){
   if(AUDIT===null)return `<h2>Журнал</h2><p class="empty">Зареждане…</p>`;
   if(!AUDIT.length)return `<h2>Журнал на действията</h2><p class="empty">Все още няма записи.</p>`;
-  const AL={reservation_confirmed:'потвърди резервация',reservation_declined:'отказа резервация',application_approved:'одобри кандидатура',application_declined:'отказа кандидатура',member_deleted:'изтри член',member_renewed:'поднови членство',membership_changed:'смени членство',phone_set:'смени телефон',phone_requested:'поиска нов телефон',member_invited:'покани член',announcement_posted:'публикува новина',event_deleted:'изтри събитие'};
+  const AL={reservation_confirmed:'потвърди резервация',reservation_declined:'отказа резервация',application_approved:'одобри кандидатура',application_declined:'отказа кандидатура',member_deleted:'изтри член',company_member_added:'добави профил към фирма',company_member_removed:'откачи профил от фирма',member_renewed:'поднови членство',membership_changed:'смени членство',phone_set:'смени телефон',phone_requested:'поиска нов телефон',member_invited:'покани член',announcement_posted:'публикува новина',event_deleted:'изтри събитие'};
   // групиране по седмица (понеделник–неделя) или по месец; последният период е отворен, останалите — сгънати
   const MON=['януари','февруари','март','април','май','юни','юли','август','септември','октомври','ноември','декември'];
   const d2=n=>String(n).padStart(2,'0');
@@ -2462,6 +2462,7 @@ function peopleView(){
         <div style="display:flex;flex-direction:column;gap:6px;"><button class="btn ghost sm" onclick="savePhone('${p.id}')">Запази телефона</button>
           <button class="btn ghost sm" onclick="requestPhone('${p.id}')">Поискай нов телефон</button></div>
       </div>
+      ${(p.company_id&&p.company_id!==p.id&&can('members_edit'))?`<button class="btn ghost sm" style="margin-top:8px;margin-right:6px;" onclick="coRemove('${p.id}')">Откачи от фирмата</button>`:''}
       ${p.role==='admin'?'':`<button class="btn no sm" style="margin-top:8px;" onclick="deletePerson('${p.id}',${(p.company_id&&p.company_id===p.id)?PEOPLE.filter(x=>x.company_id===p.id&&x.id!==p.id).length:0})">Изтрий члена</button>`}</div>`;
   };
   // за корпоративните: основен профил + вложени под-профили
@@ -2473,10 +2474,11 @@ function peopleView(){
       const subs=subsBy[o.id]||[];
       const sid='co_'+o.id;
       h+=personRow(o);
+      const addBtn=can('members_edit')?`<button class="btn ghost sm" style="margin:0 0 6px 14px;" onclick="coAddOpen('${o.id}')">+ Добави профил към фирмата</button>`:'';
       if(subs.length){
-        h+=`<button class="btn ghost sm" style="margin:0 0 6px 14px;" onclick="toggleCo('${sid}',this)">Профили към фирмата (${subs.length}) ▾</button>
+        h+=`<button class="btn ghost sm" style="margin:0 0 6px 14px;" onclick="toggleCo('${sid}',this)">Профили към фирмата (${subs.length+1}/6) ▾</button>${addBtn}
           <div id="${sid}" style="display:none;padding-left:14px;border-left:2px solid var(--gold-soft);margin-bottom:6px;">${subs.map(personRow).join('')}</div>`;
-      }
+      } else h+=addBtn;
     });
     // под-профили без намерен собственик (за всеки случай)
     const ownerIds=owners.map(o=>o.id);
@@ -2574,6 +2576,52 @@ async function renewPerson(id,fieldId){
   if(error){alert('Грешка: '+error.message);return;}
   DB.logAudit('member_renewed',email,until?isoToBg(until):'');
   toast('Членството е подновено до '+(until?isoToBg(until):'—'));
+  PEOPLE=await DB.listMembers();render();
+}
+// ----- фирми: добавяне / откачане на профили към фирмен (корпоративен) профил -----
+function coAddOpen(cid){
+  const o=byId(PEOPLE,cid)||{}; const co=o.full_name||o.username||o.email||'фирмата';
+  const n=PEOPLE.filter(x=>x.company_id===cid).length||1;
+  const ov=document.createElement('div'); ov.className='modal-ov'; ov.id='coAddOv';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  ov.innerHTML=`<div class="card" style="max-width:440px;width:100%;margin:0;">
+    <h3>Добави профил към „${esc(co)}“</h3>
+    <p class="muted" style="margin:6px 0 10px;font-size:13px;">Сега: ${n} от 6 профила. Ако имейлът вече има акаунт — профилът се прикачва към фирмата. Ако няма — получава покана по имейл и сам си задава парола. И в двата случая става Corporate със срока на фирмата${o.membership_until?' (до '+isoToBg(o.membership_until)+')':''}.</p>
+    <label>Имейл</label><input id="coa_em" type="email" placeholder="name@company.com"/>
+    <label>Име и фамилия (по желание, само за нов акаунт)</label><input id="coa_nm" placeholder="Име Фамилия"/>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap;"><button class="btn ghost sm" onclick="document.getElementById('coAddOv').remove()">Отказ</button><button class="btn sm" id="coa_go" onclick="coAdd('${cid}')">Добави</button></div></div>`;
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov); setTimeout(()=>{const f=document.getElementById('coa_em');if(f)f.focus();},50);
+}
+async function coAdd(cid,force){
+  const em=(document.getElementById('coa_em')||{}).value||'', nm=(document.getElementById('coa_nm')||{}).value||'';
+  if(!/^\S+@\S+\.\S+$/.test(em.trim())){alert('Въведи валиден имейл');return;}
+  const ex=PEOPLE.find(x=>(x.email||'').toLowerCase()===em.trim().toLowerCase());
+  if(!force&&ex){
+    if(ex.company_id===cid){alert('Този човек вече е към тази фирма.');return;}
+    const cur=(MEMBERS.find(m=>m.id===ex.membership)||{t:ex.membership||'Guest'}).t;
+    if(!confirm('„'+(ex.full_name||ex.username||ex.email)+'“ вече е член ('+cur+(ex.membership_until?', до '+isoToBg(ex.membership_until):'')+'). Да го прехвърля ли към фирмата като Corporate със срока на фирмата?'))return;
+  }
+  const b=document.getElementById('coa_go'); if(b){b.disabled=true;b.textContent='…';}
+  const {error,data}=await DB.companyAdd(cid,em,nm,force);
+  if(b){b.disabled=false;b.textContent='Добави';}
+  if(error){
+    if(error.message==='limit'){ if(confirm('Фирмата вече има '+(error.count||6)+' профила (лимитът е 6). Да добавя ли въпреки това?'))return coAdd(cid,true); return; }
+    alert('Грешка: '+error.message);return;
+  }
+  const co=byId(PEOPLE,cid)||{};
+  DB.logAudit('company_member_added',em.trim(),co.full_name||co.username||co.email||'');
+  const ov=document.getElementById('coAddOv'); if(ov)ov.remove();
+  toast(data&&data.existing?'Профилът е прикачен към фирмата':'Изпратена е покана и профилът е към фирмата');
+  PEOPLE=await DB.listMembers();render();
+}
+async function coRemove(id){
+  const pp=byId(PEOPLE,id)||{}; const name=pp.full_name||pp.username||pp.email||'профила';
+  if(!confirm('Да откача ли „'+name+'“ от фирмата? Акаунтът остава (може да влиза), но става Guest без членство. Резервациите му не се пипат.'))return;
+  const {error}=await DB.companyRemove(id);
+  if(error){alert('Грешка: '+error.message);return;}
+  DB.logAudit('company_member_removed',pp.email||name,'');
+  toast('Откачен от фирмата');
   PEOPLE=await DB.listMembers();render();
 }
 async function deletePerson(id,subCount){
