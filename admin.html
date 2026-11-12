@@ -43,6 +43,8 @@
   .tagn.grey{background:#5F6064;}
   .inbox{background:#F7F7EE;border:1px solid #82303D;border-radius:14px;padding:14px 16px;margin:0 0 16px;}
   .inbox h3{margin:0 0 8px;font-size:15px;}
+  [data-fold]>.fold-h h3{margin:0;}
+  [data-fold]>.fold-b{margin-top:8px;}
   .inbox .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #E3E3D3;flex-wrap:wrap;}
   .inbox .row:first-of-type{border-top:0;}
   .inbox .row .t{font-size:13.5px;line-height:1.35;}
@@ -1778,9 +1780,8 @@ function statsView(){
       ${stat('Отменени / отказани',sum(canc,P),'#82303d',canc.length+' резервации')}
       ${stat('Плащат в момента / изоставени',paying.length+' / '+aband.length,'var(--muted)','записи')}
     </div>
-    <h3 style="margin-top:22px;">По събития</h3>
-    ${cards}
-    <h3 style="margin-top:22px;">Присъствие (отбелязани на входа)</h3>
+    ${fold('st_events','По събития',cards,{style:'margin-top:22px;'})}
+    ${fold('st_att','Присъствие (отбелязани на входа)',`
     <div class="muted" style="font-size:12px;margin:-4px 0 8px;">Само минали събития от периода. „Влезли“ = отбелязани със скенера или с „Присъстват“ в приложението.</div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;">
       ${stat('Присъствие',pc(attI,attS),'#507044',attI+' от '+attS+' места')}
@@ -1788,10 +1789,9 @@ function statsView(){
       ${stat('Членове',pc(sum(memC.filter(r=>r.checked_in_at),P),sum(memC,P)),'var(--text)',sum(memC.filter(r=>r.checked_in_at),P)+' от '+sum(memC,P))}
       ${stat('Гости',pc(sum(gstC.filter(r=>r.checked_in_at),P),sum(gstC,P)),'var(--text)',sum(gstC.filter(r=>r.checked_in_at),P)+' от '+sum(gstC,P))}
     </div>
-    <div style="margin-top:10px;">${attTable}</div>
-    ${topAct.length?`<h3 style="margin-top:18px;">Най-активни членове (присъствали събития)</h3><div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px;">${topAct.map((x,i)=>`<tr style="${i?'border-top:1px solid var(--line-soft);':''}"><td>${i+1}. ${esc(x.name)}</td><td style="text-align:right;">${x.n} ${x.n===1?'събитие':'събития'}</td></tr>`).join('')}</table></div>`:''}
-    <h3 style="margin-top:18px;">Най-търсени формати (потвърдени места)</h3>
-    <div class="card"><table style="width:100%;border-collapse:collapse;">${fmtRows}</table></div>
+    <div style="margin-top:10px;">${attTable}</div>`,{style:'margin-top:22px;'})}
+    ${topAct.length?fold('st_top','Най-активни членове (присъствали събития)',`<div class="card"><table style="width:100%;border-collapse:collapse;font-size:13px;">${topAct.map((x,i)=>`<tr style="${i?'border-top:1px solid var(--line-soft);':''}"><td>${i+1}. ${esc(x.name)}</td><td style="text-align:right;">${x.n} ${x.n===1?'събитие':'събития'}</td></tr>`).join('')}</table></div>`,{style:'margin-top:18px;'}):''}
+    ${fold('st_fmt','Най-търсени формати (потвърдени места)',`<div class="card"><table style="width:100%;border-collapse:collapse;">${fmtRows}</table></div>`,{style:'margin-top:18px;'})}
     <h3 style="margin-top:22px;">Износ в Excel</h3>
     <div class="card" style="display:flex;flex-wrap:wrap;gap:10px;">
       <button class="btn sm" onclick="exportCSV('members')">Членове</button>
@@ -1867,8 +1867,7 @@ function announcementsView(){
       <label style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px;font-size:13px;cursor:pointer;"><input type="checkbox" id="annPush" style="width:16px;height:16px;margin:0;flex:none;" checked/> <span>Изпрати и като известие на телефоните<span class="muted" id="pushStat">${PUSHSTATS?` (регистрирани: ${PUSHSTATS.ios||0} iOS · ${PUSHSTATS.android||0} Android)`:''}</span></span></label>
       <button class="btn ok" style="margin-top:10px;" onclick="sendAnn()">Публикувай новината</button>
     </div>
-    <h3 style="margin-top:20px;">Публикувани новини</h3>
-    ${list}`;
+    ${fold('ann_list','Публикувани новини',list,{style:'margin-top:20px;'})}`;
 }
 async function sendAnn(){
   const title=(document.getElementById('annTitle').value||'').trim();
@@ -2507,12 +2506,21 @@ function memLoginTag(p){
   const since=p.invited_at||p.created_at; const days=since?Math.floor((Date.now()-new Date(since).getTime())/86400000):null;
   return `<div style="margin-top:3px;font-size:12px;color:#b5531e;">⏳ Още не е влизал${since?' · поканен на '+_d(since)+(days>=2?' ('+days+' дни)':''):''}<span class="muted"> — ако не е получил имейла: да провери „Спам“ или да натисне „Забравена парола?“ в приложението; или „Нова парола на член“ (Видимост по членство)</span></div>`;
 }
+// ----- общо „свий / разпъни“ за списъци и секции (помни се в този браузър) -----
+const _foldSt=(()=>{try{return JSON.parse(localStorage.getItem('acac_folds')||'{}');}catch(e){return {};}})();
+const foldOpen=(k,def=true)=>_foldSt[k]===undefined?def:!!_foldSt[k];
+function foldT(k,el){ const box=el&&el.closest('[data-fold]'); const now=!foldOpen(k); _foldSt[k]=now; try{localStorage.setItem('acac_folds',JSON.stringify(_foldSt));}catch(e){}
+  if(box){ const b=box.querySelector(':scope>.fold-b'); if(b)b.style.display=now?'':'none'; const a=box.querySelector(':scope>.fold-h .fold-a'); if(a)a.textContent=now?'свий ▴':'разпъни ▾'; } else render(); }
+// head = заглавие (HTML), body = съдържание; tag='card' → рамка, иначе само заглавие h3
+function fold(k,head,body,o={}){ const op=foldOpen(k,o.open!==false);
+  const h=`<div class="fold-h" onclick="foldT('${k}',this)" style="display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;user-select:none;${o.hstyle||''}">${o.card?head:`<h3 style="margin:0;">${head}</h3>`}<span class="fold-a muted" style="font-size:12.5px;white-space:nowrap;flex:none;">${op?'свий ▴':'разпъни ▾'}</span></div>`;
+  return `<div data-fold="${k}" ${o.card?`class="card" style="${o.style||''}"`:`style="${o.style||''}"`}>${h}<div class="fold-b" style="${op?'':'display:none;'}">${body}</div></div>`; }
 function memLoginBlock(){
   const list=(PEOPLE||[]).filter(p=>p.last_sign_in_at!==undefined&&memNeverIn(p));
   if(!list.length)return '';
-  return `<div class="card" style="margin-top:8px;border-color:#b5531e;"><b style="color:#b5531e;">Поканени, които още не са влизали (${list.length})</b>
+  return fold('mem_invited',`<b style="color:#b5531e;">Поканени, които още не са влизали (${list.length})</b>`,`
     <div class="muted" style="font-size:12px;margin:2px 0 4px;">Не са си задали парола от поканата. Ако не са получили имейла: да проверят „Спам“ или да натиснат „Забравена парола?“ в приложението.</div>
-    ${list.sort((a,b)=>(a.invited_at||a.created_at||'')<(b.invited_at||b.created_at||'')?-1:1).map(p=>`<div style="margin-top:3px;"><b>${esc(p.full_name||p.username||p.email)}</b> <span class="muted">· ${esc(p.email)} · ${esc(memName(p.membership||'guest'))}${(p.invited_at||p.created_at)?' · поканен на '+_d(p.invited_at||p.created_at):''}</span></div>`).join('')}</div>`;
+    ${list.sort((a,b)=>(a.invited_at||a.created_at||'')<(b.invited_at||b.created_at||'')?-1:1).map(p=>`<div style="margin-top:3px;"><b>${esc(p.full_name||p.username||p.email)}</b> <span class="muted">· ${esc(p.email)} · ${esc(memName(p.membership||'guest'))}${(p.invited_at||p.created_at)?' · поканен на '+_d(p.invited_at||p.created_at):''}</span></div>`).join('')}`,{card:1,style:'margin-top:8px;border-color:#b5531e;'});
 }
 // ----- изтичащи / подновени членства (данни от „Членства и цени“: плащания и кодове) -----
 function memDaysLeft(until,today){ return Math.round((new Date(until+'T00:00:00Z')-new Date(today+'T00:00:00Z'))/86400000); }
@@ -2542,10 +2550,8 @@ function memSoonBlock(today){
   const ren=(PEOPLE||[]).filter(p=>memRenewInfo(p,today).renewed);
   if(!soon.length&&!ren.length)return '';
   const line=p=>`<div style="margin-top:4px;"><b>${esc(p.full_name||p.username||p.email||'член')}</b> <span class="muted">· ${esc(memName(p.membership||'guest'))} · до ${isoToBg(p.membership_until)}</span>${memRenewTag(p,today)}</div>`;
-  return `<div class="card" style="margin-top:8px;border-color:${soon.length?'#b5531e':'var(--line)'};">
-    ${soon.length?`<b style="color:#b5531e;">Изтичат до 14 дни (${soon.length})</b>${soon.map(line).join('')}`:''}
-    ${ren.length?`<div style="${soon.length?'margin-top:10px;':''}"><b style="color:#507044;">Подновени през последните 30 дни (${ren.length})</b>${ren.map(line).join('')}</div>`:''}
-  </div>`;
+  return (soon.length?fold('mem_soon',`<b style="color:#b5531e;">Изтичат до 14 дни (${soon.length})</b>`,soon.map(line).join(''),{card:1,style:'margin-top:8px;border-color:#b5531e;'}):'')
+    +(ren.length?fold('mem_renewed',`<b style="color:#507044;">Подновени през последните 30 дни (${ren.length})</b>`,ren.map(line).join(''),{card:1,style:'margin-top:8px;'}):'');
 }
 function togglePG(id){
   const d=document.getElementById(id),a=document.getElementById('pa_'+id);
