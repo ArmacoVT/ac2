@@ -59,10 +59,21 @@
       if (e.target === ov || e.target.closest('[data-x]')) { close(); return; }
       const n = e.target.closest('[data-n]'); if (n) { m += +n.dataset.n; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } draw(); return; }
       const t = e.target.closest('[data-today]'); if (t) { const d = new Date(); y = d.getFullYear(); m = d.getMonth(); draw(); return; }
-      const b = e.target.closest('button[data-v]'); if (b && !b.disabled) { set(input, b.dataset.v); close(); if (after) after(); }
+      const b = e.target.closest('button[data-v]'); if (b && !b.disabled) { set(live(input), b.dataset.v); close(); if (after) after(); }
     });
     document.addEventListener('keydown', esc);
     draw(); document.body.appendChild(ov);
+  }
+  // страницата може да се е преначертала, докато календарът е отворен (напр. „Маси“ се опреснява всяка минута) —
+  // тогава старото поле вече не е на екрана и намираме новото на негово място
+  function live(input) {
+    if (input.isConnected) return input;
+    let alt = null;
+    if (input.id) alt = document.getElementById(input.id);
+    else if (input.dataset && input.dataset.a) alt = document.querySelector('input[data-a="' + input.dataset.a + '"]');
+    else if (input.name) alt = document.querySelector('input[name="' + input.name + '"]');
+    if (alt && !alt._mdp) upgrade(alt);
+    return alt || input;
   }
   function set(input, v) {
     input.value = v;

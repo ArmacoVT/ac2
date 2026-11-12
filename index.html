@@ -363,7 +363,8 @@
   .pagehead{padding:64px 0 28px;}
   .mh-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,34%);gap:48px;align-items:stretch;}
   .mh-img{display:block;width:100%;object-fit:cover;border-radius:20px;}
-  .mh-web{height:100%;min-height:420px;}
+  .mh-web{position:relative;min-height:420px;}
+  .mh-web .mh-img{position:absolute;inset:0;height:100%;}
   .mh-mob{display:none;}
   @media (max-width:820px){ .mh-grid{grid-template-columns:1fr;gap:0;} .mh-web{display:none;} .mh-mob{display:block;aspect-ratio:4/3;margin:6px 0 22px;} }
   .pagehead h1{font-size:clamp(34px,4.6vw,56px);margin-bottom:12px;}
@@ -928,7 +929,7 @@ function pageMembership(){
         <img class="mh-img mh-mob" src="${esc(mimg)}" alt="" loading="lazy"/>
         ${pT('membership.why_body')?`<div class="lead">${esc(pT('membership.why_body'))}</div>`:''}
         <div class="kicker" style="margin-top:34px;">${t('levels')}</div><div class="body">${esc(lT('memberships.intro'))}</div></div>
-      <img class="mh-img mh-web" src="${esc(mimg)}" alt=""/>
+      <div class="mh-web"><img class="mh-img" src="${esc(mimg)}" alt=""/></div>
     </div></div></div>`
     :pageHead(t('membership'),pT('membership.why_title'),pT('membership.why_body'))+`<div class="wrap"><div class="kicker" style="margin-top:20px;">${t('levels')}</div><div class="body">${esc(lT('memberships.intro'))}</div></div>`;
   return top+`
@@ -1527,6 +1528,6 @@ function toast(m){const el=document.getElementById('toast');el.textContent=m;el.
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_had)_swPending=true; });
   window.addEventListener('hashchange',()=>{ if(_swPending)setTimeout(_tryReload,50); });
 }</script>
-<script src="datepicker.js?v=1" defer></script>
+<script src="datepicker.js?v=2" defer></script>
 </body>
 </html>
