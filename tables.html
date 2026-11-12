@@ -2159,6 +2159,41 @@ window.addEventListener('pointerup', async e => {
   }
 });
 window.addEventListener('pointercancel', () => { if (DRAG) { if (DRAG.ghost) DRAG.ghost.remove(); if (DRAG.el) { DRAG.el.classList.remove('drag'); DRAG.el.style.transform = ''; } DRAG = null; } });
+
+// ---------- ЩИПВАНЕ С ДВА ПРЪСТА: увеличаване / намаляване на схемата (телефон, таблет) ----------
+let PINCH = null, PINCH_END = 0;
+function pinchInfo(e, sc) { const a = e.touches[0], b = e.touches[1], r = sc.getBoundingClientRect(); return { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), x: (a.clientX + b.clientX) / 2 - r.left, y: (a.clientY + b.clientY) / 2 - r.top }; }
+app.addEventListener('touchstart', e => {
+  if (e.touches.length !== 2 || S.view !== 'floor') return;
+  const st = $('#stage'), sc = $('#scroller'); if (!st || !sc || !st.contains(e.touches[0].target) || !st.contains(e.touches[1].target)) return;
+  if (DRAG) { if (DRAG.ghost) DRAG.ghost.remove(); if (DRAG.el) { DRAG.el.classList.remove('drag'); DRAG.el.style.transform = ''; } DRAG = null; }
+  const i = pinchInfo(e, sc), z = S.zoom || 1; if (i.d < 10) return;
+  PINCH = { d0: i.d, z0: z, z, fx: (sc.scrollLeft + i.x) / Math.max(1, sc.clientWidth * z), fy: (sc.scrollTop + i.y) / Math.max(1, sc.clientHeight * z) };
+  sc.style.overflow = 'hidden'; if (e.cancelable) e.preventDefault();
+}, { passive: false });
+app.addEventListener('touchmove', e => {
+  if (!PINCH || e.touches.length < 2) return;
+  if (e.cancelable) e.preventDefault();
+  const st = $('#stage'), sc = $('#scroller'), fl = $('#floor'); if (!st || !sc || !fl) return;
+  const i = pinchInfo(e, sc), z = Math.max(1, Math.min(3, PINCH.z0 * i.d / PINCH.d0));
+  PINCH.z = z; st.classList.toggle('zoomed', z > 1); sc.style.overflow = 'hidden';
+  fl.style.width = fl.style.height = (z * 100) + '%';
+  sc.scrollLeft = PINCH.fx * sc.clientWidth * z - i.x; sc.scrollTop = PINCH.fy * sc.clientHeight * z - i.y;
+}, { passive: false });
+function pinchEnd(e) {
+  if (!PINCH || (e.touches && e.touches.length >= 2)) return;
+  const z = PINCH.z < 1.08 ? 1 : Math.round(PINCH.z * 100) / 100, changed = Math.abs(z - PINCH.z0) > .01; PINCH = null; PINCH_END = Date.now();
+  const sc = $('#scroller'); if (sc) sc.style.overflow = '';
+  if (!changed) return;
+  S._zr = sc ? { x: (sc.scrollLeft + sc.clientWidth / 2) / Math.max(1, sc.scrollWidth), y: (sc.scrollTop + sc.clientHeight / 2) / Math.max(1, sc.scrollHeight) } : null;
+  S.zoom = z; try { localStorage.setItem('acac_tables_zoom', S.zoom); } catch (er) {}
+  render();
+}
+app.addEventListener('touchend', pinchEnd); app.addEventListener('touchcancel', pinchEnd);
+// след щипване — да не се брои за докосване на маса
+app.addEventListener('click', e => { if (Date.now() - PINCH_END < 350 && e.target.closest('#stage')) { e.stopPropagation(); e.preventDefault(); } }, true);
+// iOS: да не увеличава цялата страница вместо схемата
+document.addEventListener('gesturestart', e => { if (e.target.closest && e.target.closest('#stage')) e.preventDefault(); });
 let _stRaf = 0;
 function throttleStage() { if (_stRaf) return; _stRaf = requestAnimationFrame(() => { _stRaf = 0; const st = $('#stage'); if (!st) return; const sc = $('#scroller'), k = sc ? [sc.scrollLeft, sc.scrollTop] : [0, 0]; const tmp = document.createElement('div'); tmp.innerHTML = stageHtml(curZone()); st.replaceWith(tmp.firstElementChild); const n = $('#scroller'); if (n) { n.scrollLeft = k[0]; n.scrollTop = k[1]; } }); }
 document.addEventListener('keydown', e => {
