@@ -2911,14 +2911,22 @@ let _permSig='';
 async function recheckPerms(){
   if(!DB.live||!admin||_loggingOut)return;
   try{
-    const u=await DB.getUser(); if(!u)return;
-    const sig=JSON.stringify([u.role,(u.perms||[]).slice().sort(),u.perms_until||'']);
+    let u=await DB.getUser(); if(!u||u._profErr)return;   // профилът не се прочете (мрежа/токен) → НЕ е „без права“, пробваме пак след минута
+    const sigOf=x=>JSON.stringify([x.role,(x.perms||[]).slice().sort(),x.perms_until||'']);
+    let sig=sigOf(u);
     if(!_permSig){_permSig=sig;return;}
+    if(sig===_permSig)return;
+    // промяна? — потвърждаваме с второ четене след малко, преди да пипаме екрана (еднократен грешен отговор да не изхвърля човека)
+    await new Promise(r=>setTimeout(r,4000));
+    u=await DB.getUser(); if(!u||u._profErr)return; sig=sigOf(u);
     if(sig===_permSig)return; _permSig=sig;
     role=u.role; PERMS=u.perms||[]; PERMS_UNTIL=u.perms_until||''; if(role==='editor'&&!PERMS.length)PERMS=['events','news','site','messages'];
     const still=role==='admin'||(PERMS.length&&permsLive());
     if(!still){ alert('Правата ви в админ панела бяха премахнати.'); location.reload(); return; }
-    if(!tabAllowed(tab))tab=firstTab(); await refresh(); render(); toast('Правата ви бяха променени');
+    if(!tabAllowed(tab)){ tab=firstTab(); await refresh(); render(); toast('Правата ви бяха променени'); return; }
+    // има започнато попълване → не преначертаваме (написаното се пази); новите права важат след запис/обновяване
+    if(editId||formDirty()){ window._newData=true; const b=document.getElementById('newdataBtn'); if(b)b.style.display='inline-block'; toast('Правата ви бяха променени — ще се приложат след като запишете'); return; }
+    await refresh(); render(); toast('Правата ви бяха променени');
   }catch(e){}
 }
 setInterval(recheckPerms,60000);

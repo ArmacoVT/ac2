@@ -2284,7 +2284,8 @@ function subscribe() {
 let _pSig = '';
 async function recheckPerms() {
   if (DEMO || !ME) return;
-  try { const u = await DB.getUser(); if (!u) return; const sig = JSON.stringify([u.role, (u.perms || []).slice().sort(), u.perms_until || '']);
+  try { const u = await DB.getUser(); if (!u || u._profErr) return;   // профилът не се прочете (мрежа/токен) → не презареждаме
+    const sig = JSON.stringify([u.role, (u.perms || []).slice().sort(), u.perms_until || '']);
     if (!_pSig) { _pSig = sig; return; } if (sig !== _pSig) location.reload(); } catch (e) {}
 }
 setInterval(recheckPerms, 60000); setTimeout(recheckPerms, 3000);

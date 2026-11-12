@@ -257,9 +257,10 @@ const placeName = p => (p && PLACE_RENAME[p]) || p;
       if (!LIVE) return jget(K.user, null);
       const { data } = await sb.auth.getSession();
       const s = data.session; if (!s) return null;
-      let prof = null;
-      try { const r = await sb.from('profiles').select('*').eq('id', s.user.id).single(); prof = r.data; } catch (e) {}
-      return { id: s.user.id, email: s.user.email, username: prof ? prof.username : s.user.email,
+      let prof = null, profErr = false;
+      try { const r = await sb.from('profiles').select('*').eq('id', s.user.id).single(); prof = r.data; if (!prof) profErr = true; } catch (e) { profErr = true; }
+      // _profErr: профилът НЕ се прочете (мрежа / изтекъл токен) — ролята и правата по-долу са само „по подразбиране“ и не бива да се приемат за истински
+      return { _profErr: profErr, id: s.user.id, email: s.user.email, username: prof ? prof.username : s.user.email,
         full_name: prof ? (prof.full_name || '') : '',
         name_changed_at: prof ? (prof.name_changed_at || '') : '',
         phone: prof ? (prof.phone || '') : '',
