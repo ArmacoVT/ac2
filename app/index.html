@@ -1274,7 +1274,8 @@ function openBook(id,onlyKind){
   const slotRow=slots.length?`<div class="qrow" style="flex-direction:column;align-items:flex-start;gap:8px;"><span>${lang==='bg'?'Час':'Time'}</span><div class="selrow" id="slotsel_${e.id}" style="margin:0;">${(()=>{ const f0=slots.findIndex(x=>!slotClosed(e,x.time)); return slots.map((s,i)=>slotClosed(e,s.time)?`<span class="chip locked" style="opacity:.45;">${esc(s.time)} · ${lang==='bg'?'приключи':'closed'}</span>`:`<button type="button" class="chip ${i===f0?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on');try{hap('select')}catch(e){}">${esc(s.time)}</button>`).join(''); })()}</div></div>`:'';
   // безплатно събитие: „9+ души“ → заявка за обаждане от екипа (без автоматично потвърждение)
   const bigOpt=(_bookTopup!==e.id&&isDin&&tierPrice(e,'physical')<=0)?`<div class="tableopt"><label class="tcheck" onclick="event.stopPropagation();"><input type="checkbox" id="bigp_${e.id}" onchange="const on=this.checked;const q=document.getElementById('qstep_${e.id}');if(q)q.style.opacity=on?'.35':'1';updateBuy('${e.id}')"/><span>${lang==='bg'?'Група 9+ души':'Group of 9+ people'} <small>· ${lang==='bg'?'екипът ще се свърже с вас за детайлите':'the team will call you to arrange details'}</small></span></label></div>`:'';
-  const partyInner=`${slotRow}<div class="qrow"><span>${tr('party')}</span><div class="qstep" id="qstep_${e.id}"><button onclick="bookQty('${e.id}',-1,${maxN})">−</button><b id="bp_lbl_${e.id}">1</b><button onclick="bookQty('${e.id}',1,${maxN})">+</button></div></div>${bigOpt}${tableOpt}`;
+  const partyInner=`${slotRow}<div class="qrow"><span>${tr('party')}</span><div class="qstep" id="qstep_${e.id}"><button onclick="bookQty('${e.id}',-1,${maxN})">−</button><b id="bp_lbl_${e.id}">1</b><button onclick="bookQty('${e.id}',1,${maxN})">+</button></div></div>${isDin?kidsBlock('bkids_'+e.id,'_kidsUpd',tierPrice(e,'physical')>0):''}${bigOpt}${tableOpt}`;
+  window._kidsUpd=()=>updateBuy(e.id);
   const bd=document.createElement('div'); bd.className='sheetbd'; bd.id='sheetbd'; bd.onclick=closeBook;
   const sh=document.createElement('div'); sh.className='sheet'; sh.id='booksheet';
   sh.innerHTML=`<div class="handle"></div>
@@ -1303,10 +1304,38 @@ function selectTier(id,kind){
   const pr=document.getElementById('partyrow_'+id); if(pr)pr.style.display=(kind==='physical')?'':'none';
   updateBuy(id);
 }
+// ---------- ДЕЦА (само ресторант): „от тях деца“ + възраст на всяко дете ----------
+// Децата заемат място (влизат в общия брой), но при платена вечеря не се таксуват (детско меню — на място).
+const KID_AGES=['0','1','2','3','4','5','6','7','8','9','10','11','12+'];
+function kidsBlock(id,onch,paid){
+  const bg=lang==='bg';
+  return `<div id="${id}" class="kidsbox" data-onch="${onch||''}" style="margin:6px 0 12px;">
+    <div class="qrow" style="padding:8px 0;"><span>${bg?'От тях деца':'Of which children'}</span><div class="qstep"><button type="button" onclick="kidsQty('${id}',-1)">−</button><b class="kn">0</b><button type="button" onclick="kidsQty('${id}',1)">+</button></div></div>
+    <input type="hidden" class="kv" value="0"/>
+    <div class="kidsages" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;">${paid?(bg?'Децата заемат място, но не се таксуват. Ако има детско меню — плаща се на място.':'Children take a seat but are not charged. A children\'s menu, if any, is paid on site.'):(bg?'Децата влизат в общия брой гости.':'Children are included in the total number of guests.')}</div></div>`;
+}
+function kidsQty(id,d){
+  const box=document.getElementById(id); if(!box)return; const v=box.querySelector('.kv'); let n=(parseInt(v.value,10)||0)+d; if(n<0)n=0; if(n>8)n=8;
+  v.value=n; box.querySelector('.kn').textContent=n; try{hap('medium');}catch(e){}
+  const wrap=box.querySelector('.kidsages'); const old=[...wrap.querySelectorAll('select')].map(x=>x.value); const bg=lang==='bg';
+  wrap.innerHTML=Array.from({length:n},(_,i)=>`<div style="flex:1;min-width:104px;"><div style="font-size:11.5px;color:var(--muted);margin-bottom:3px;">${bg?'Дете':'Child'} ${i+1} — ${bg?'възраст':'age'}</div><select data-kage style="width:100%;">${KID_AGES.map(a=>`<option value="${a}" ${old[i]===a?'selected':''}>${a} ${bg?'г.':'y'}</option>`).join('')}</select></div>`).join('');
+  const f=box.dataset.onch; if(f&&typeof window[f]==='function')window[f]();
+}
+function kidsCount(id){ const box=document.getElementById(id); if(!box)return 0; return parseInt(box.querySelector('.kv').value,10)||0; }
+// {kids, kid_ages, tag} или {err} — трябва да остане поне един възрастен
+function kidsRead(id,total,big){
+  const box=document.getElementById(id); if(!box||box.style.display==='none')return {kids:0,kid_ages:[],tag:''};
+  const n=parseInt(box.querySelector('.kv').value,10)||0; if(!n)return {kids:0,kid_ages:[],tag:''};
+  if(!big&&n>=total)return {err:lang==='bg'?'Децата са част от общия брой — трябва да има поне един възрастен. Увеличете броя.':'Children are part of the total — there must be at least one adult.'};
+  const ages=[...box.querySelectorAll('[data-kage]')].map(x=>x.value);
+  return {kids:n,kid_ages:ages,tag:'['+(big?'':(total-n)+(total-n===1?' възрастен + ':' възрастни + '))+n+' '+(n===1?'дете':'деца')+': '+ages.map(a=>a+' г.').join(', ')+'] '};
+}
 function updateBuy(id){
   const e=EVENTS.find(x=>x.id===id); if(!e)return;
   const party=(bookTier==='physical')?(parseInt(document.getElementById('bp_'+id)?.value||'1',10)||1):1;
-  const total=tierPrice(e,bookTier)*party;
+  const kidsN=(bookTier==='physical'&&e.format==='table')?Math.min(kidsCount('bkids_'+id),party-1):0;   // деца (ресторант) — без такса
+  const total=tierPrice(e,bookTier)*(party-kidsN);
   const bt=document.getElementById('bt_'+id); if(bt)bt.textContent=total>0?fmtPrice(total):(lang==='bg'?'Безплатно':'Free');
   const btn=document.getElementById('buybtn_'+id); if(btn){btn.disabled=false;btn.onclick=()=>confirmBuy(id);btn.textContent=total>0?(lang==='bg'?'Купи билет · '+fmtPrice(total):'Buy · '+fmtPrice(total)):(lang==='bg'?'Запази':'Book');}
 }
@@ -1373,7 +1402,9 @@ async function confirmBuy(id){
     await finishBooking(id,bname,true); return;
   }
   const unote=(document.getElementById('bnote_'+id)?.value||'').trim().slice(0,500);
-  const r=await DB.createPayment(e.id,kind,party,slot,big,unote);
+  const kd=(kind==='physical'&&e.format==='table')?kidsRead('bkids_'+id,party,big):{kids:0,kid_ages:[]};
+  if(kd.err){fail(kd.err);if(btn)updateBuy(id);return;}
+  const r=await DB.createPayment(e.id,kind,party,slot,big,unote,kd.kids,kd.kid_ages);
   if(r&&r.error){fail(r.error.message);if(btn)updateBuy(id);return;}
   // предишният опит всъщност е минал (webhook-ът е закъснял) — не плащаме втори път
   if(r&&r.already_paid){ fail(lang==='bg'?'Плащането вече е получено. Билетът е потвърден.':'Payment already received. Your ticket is confirmed.'); await finishBooking(id,bname,false); return; }
@@ -1979,6 +2010,7 @@ function reserve(q){
     <div class="selrow" id="partysel">${Array.from({length:8},(_,i)=>`<button type="button" class="chip ${i===0?'on':''}" data-n="${i+1}" onclick="pickParty(this)">${i+1}</button>`).join('')}<button type="button" class="chip" data-n="9+" onclick="pickParty(this)">9+</button></div>
     <input id="r_party" type="hidden" value="1"/>
     <div id="r_big" style="display:none;margin:-6px 0 14px;padding:10px 12px;border-radius:12px;background:rgba(201,168,106,.14);color:var(--cream);font-size:13px;">${lang==='bg'?'За групи над 8 души екипът на ресторанта ще се свърже с вас по телефона, за да уточните детайлите.':'For groups of more than 8 the restaurant team will call you to arrange the details.'}</div>
+    <div id="rkidswrap" style="display:${preV==='restaurant'?'':'none'};">${kidsBlock('r_kids')}</div>
     <label>${tr('contactEmail')} *</label><input id="r_email" type="email" autocapitalize="none" value="${user?esc(user.email||''):''}"/>
     <label>${tr('contactPhone')} *</label><input id="r_phone" type="tel" value="${user?esc(user.phone||''):''}" placeholder="${lang==='bg'?'Въведете телефонен номер':'Enter phone number'}"/>
     <div id="streamwrap" style="display:${preV==='chamber'?'':'none'};margin:8px 0 4px;">
@@ -1994,6 +2026,7 @@ function reserve(q){
 let pickedVenue=null;
 function selVenue(b){document.querySelectorAll('#vensel .chip').forEach(c=>c.classList.remove('on'));b.classList.add('on');pickedVenue=b.dataset.v;
   const aw=document.getElementById('algwrap');if(aw)aw.style.display=(pickedVenue==='restaurant')?'':'none';
+  const kw=document.getElementById('rkidswrap');if(kw)kw.style.display=(pickedVenue==='restaurant')?'':'none';
   const sw=document.getElementById('streamwrap');if(sw)sw.style.display=(pickedVenue==='chamber')?'':'none';}
 function toggleAlg(btn){
   try{hap('select');}catch(e){}
@@ -2076,6 +2109,7 @@ async function sendRes(seats){
     fullNote=algLine+(note?' · '+note:'');
   }
   if(venue==='chamber'&&document.getElementById('r_stream')?.checked){fullNote=(lang==='bg'?'[+ онлайн излъчване] ':'[+ online stream] ')+fullNote;}
+  if(venue==='restaurant'){ const kd=kidsRead('r_kids',n,big); if(kd.err){toast(kd.err);return;} if(kd.kids)fullNote=kd.tag+fullNote; }
   if(big)fullNote=(lang==='bg'?'[ГРУПА 9+ — за обаждане] ':'[GROUP 9+ — call to arrange] ')+fullNote;
   const rr=await DB.addReservation({fmt:venue,place:venueLabel(venue),date:rdate,time:rtime,party:n,note:fullNote,res_name:name,email,phone});
   if(rr&&rr.error){toast(rr.error.message||(lang==='bg'?'Заявката не се записа':'Request failed'));return;}   // преди грешката се губеше тихо

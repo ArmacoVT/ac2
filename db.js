@@ -661,18 +661,18 @@ const placeName = p => (p && PLACE_RENAME[p]) || p;
         return s;
       } catch (e) { return null; }
     },
-    async createPayment(event_id, kind, party, slot, big, note) {
+    async createPayment(event_id, kind, party, slot, big, note, kids, kid_ages) {
       if (!LIVE) return { error: { message: 'Налично след свързване на Supabase' } };
       const sess = await this.freshSession();
       if (!sess) return { error: { message: 'Сесията е изтекла — влезте отново.' } };
-      let { data, error } = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '', big: !!big, note: note || '' } });
+      let { data, error } = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '', big: !!big, note: note || '', kids: kids || 0, kid_ages: kid_ages || [] } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
         // изтекъл токен точно в момента → подновяваме и опитваме още веднъж
         if (/not signed in|jwt|401/i.test(msg)) {
           try { await sb.auth.refreshSession(); } catch (e) {}
-          const again = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '', big: !!big, note: note || '' } });
+          const again = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '', big: !!big, note: note || '', kids: kids || 0, kid_ages: kid_ages || [] } });
           if (!again.error) { data = again.data; error = null; }
           else { try { const b = await again.error.context.json(); if (b && b.error) msg = b.error; } catch (e) {} }
         }
