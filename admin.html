@@ -162,7 +162,7 @@ const PERM_DEFS=[
   {id:'tables_layout',t:'⚠ Подреждане на залата',d:'добавя/мести/трие маси, брой столове, основен план',danger:true},
   {id:'fees',t:'⚠ Членства и цени',d:'цени на членствата, покани за плащане, банкови преводи',danger:true},
   {id:'team',t:'⚠ Екип и права',d:'добавя/маха служители и права (дава се само от собственика)',danger:true,ownerOnly:true},
-  {id:'money',t:'Суми и приходи (преглед)',d:'вижда приходите в Статистика и сумите в Excel експорта на събития + месечния отчет'},
+  {id:'money',t:'Суми и приходи (преглед)',d:'ЕДИНСТВЕНАТА отметка, която показва приходите в Статистика; + сумите в Excel експорта на събития и месечния отчет'},
   {id:'accounting',t:'Счетоводство (само преглед)',d:'вижда резервации с платени суми, плащания за членства, цени; експорт за месеца — без никакви действия'}];
 const PERM_PRESETS=[
   {id:'deputy',t:'Заместник-админ',p:['events','reservations','tables','tables_layout','members_view','members_edit','applications','news','site','messages','stats','audit','res_delete','refunds','walkin','events_delete']},
@@ -179,6 +179,9 @@ const TAB_PERM={events:'events',archive:'events',members:'events',res:'reservati
 const TAB_ALT={res:'accounting',fees:'accounting'};   // счетоводство вижда тези раздели само за преглед
 const tabAllowed=t=>TAB_PERM[t]?(can(TAB_PERM[t])||(TAB_ALT[t]&&can(TAB_ALT[t]))):role==='admin';
 const canExport=()=>role==='admin'||can('accounting')||can('fees')||can('stats');
+// приходите в „Статистика“ (карта „Приход (нето)“ + сумата под всяко събитие): само админ или изричната отметка „Суми и приходи“ —
+// „Членства и цени“ и „Счетоводство“ вече НЕ ги отключват (за да може човек да работи с тях, без да вижда оборота)
+const canStatsMoney=()=>role==='admin'||can('money');
 const canMoney=()=>role==='admin'||can('money')||can('accounting')||can('fees');   // суми/приходи — отметка „Суми и приходи“ (или админ, счетоводство, членства и цени)
 function firstTab(){ for(const t of ['events','res','people','apps','ann','public','messages','stats','audit','team']) if(tabAllowed(t)) return t; return 'events'; }
 let EVENTS=[], RES=[];
@@ -1834,7 +1837,7 @@ function statsView(){
     const slotTxt=slots.length?slots.map(x=>{const t=sum(C.filter(r=>(r.time||'')===x.time),P);return `<span class="pill">${esc(x.time)} · ${t}${x.cap?'/'+x.cap:''}</span>`;}).join(' '):'';
     return `<div class="card" style="margin-top:8px;">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;"><div><b>${esc(e.title)}</b><div class="muted" style="font-size:12px;">${isoToBg(e.date||'')} ${esc(slots.length?slots.map(x=>x.time).join(', '):(e.time||''))} · ${esc(e.place||'')}</div></div>
-        <div style="text-align:right;"><b>${seats}${cap?'/'+cap:''}</b> <span class="muted" style="font-size:12px;">места</span>${pd&&canMoney()?`<div style="font-size:12px;">${eur(pd-rf)}${rf?` <span class="muted">(върнати ${eur(rf)})</span>`:''}</div>`:''}</div></div>
+        <div style="text-align:right;"><b>${seats}${cap?'/'+cap:''}</b> <span class="muted" style="font-size:12px;">места</span>${pd&&canStatsMoney()?`<div style="font-size:12px;">${eur(pd-rf)}${rf?` <span class="muted">(върнати ${eur(rf)})</span>`:''}</div>`:''}</div></div>
       ${cap?`<div style="height:8px;border-radius:5px;background:var(--surface2);margin-top:8px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${col};"></div></div>`:''}
       <div class="muted" style="font-size:12px;margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${slotTxt}
         ${seats?`<span>членове ${mem} · гости ${gst}</span>`:''}${pend?` <span style="color:#6b6b63;">· чакащи ${pend}</span>`:''}${inn||(admIsPast(e)&&seats)?` <span style="color:#507044;">· влезли ${inn}${seats?' от '+seats+' ('+Math.round(inn/seats*100)+'%)':''}</span>`:''}</div></div>`;
@@ -1859,7 +1862,7 @@ function statsView(){
       ${stat('Събития',evs.length)}
       ${stat('Потвърдени места',sum(conf,P),'#507044',conf.length+' резервации')}
       ${stat('Чакащи одобрение',sum(req,P),'#6b6b63',req.length+' заявки')}
-      ${canMoney()?stat('Приход (нето)',eur(paid-refd),'var(--text)',refd?'платено '+eur(paid)+' · върнато '+eur(refd):''):''}
+      ${canStatsMoney()?stat('Приход (нето)',eur(paid-refd),'var(--text)',refd?'платено '+eur(paid)+' · върнато '+eur(refd):''):''}
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">
       ${stat('Гости / членове',sum(conf.filter(r=>r.guest),P)+' / '+sum(conf.filter(r=>!r.guest),P),'var(--text)','места')}

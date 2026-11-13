@@ -508,6 +508,15 @@ const placeName = p => (p && PLACE_RENAME[p]) || p;
       authErr(error);
       return data || [];
     },
+    // брояч за екрана „Вход“: днешните потвърдени резервации (места и колко от тях са отбелязани)
+    async doorCounts() {
+      if (!LIVE) return [];
+      const d = new Date(), today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const { data, error } = await sb.from('reservations').select('event_id,table_event_id,party_size,kind,checked_in_at,time,place,format')
+        .eq('date', today).eq('status', 'confirmed').limit(2000);
+      authErr(error);
+      return (data || []).filter(r => (r.kind || 'physical') === 'physical');
+    },
     async doorCheckIn(resId, undo) {
       if (!LIVE) return { error: { message: 'demo' } };
       const { error } = await sb.from('reservations').update({ checked_in_at: undo ? null : new Date().toISOString() }).eq('id', resId);

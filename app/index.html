@@ -3000,6 +3000,7 @@ let _doorStream=null,_doorRaf=0,_doorLast='',_doorBusy=false;
 function doorView(){
   if(!canDoor())return topbar(lang==='bg'?'Вход':'Door')+`<div class="page"><div class="ev">${lang==='bg'?'Нямате право за този екран.':'No permission.'}</div></div>`;
   return topbar(lang==='bg'?'Вход · скенер':'Door · scanner')+`<div class="page">
+    <div id="doorcnt" style="max-width:420px;margin:0 auto 12px;"></div>
     <div style="position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:1/1;max-width:420px;margin:0 auto;">
       <video id="doorvid" playsinline muted autoplay style="width:100%;height:100%;object-fit:cover;display:block;"></video>
       <div style="position:absolute;inset:14%;border:2px solid rgba(235,235,214,.8);border-radius:14px;pointer-events:none;"></div>
@@ -3010,7 +3011,28 @@ function doorView(){
     <div id="doorlist"></div>
   </div>`;
 }
+// ---- брояч „Влезли X / Y“ за днешните събития (обновява се след всяко отбелязване и на всеки 20 сек. — и от други устройства)
+let _doorCntT=null;
+async function doorCount(){
+  const box=document.getElementById('doorcnt'); if(!box)return;
+  let rows=[]; try{rows=await DB.doorCounts();}catch(e){return;}
+  if(!document.getElementById('doorcnt'))return;
+  const bg=lang==='bg', g={};
+  rows.forEach(r=>{ const k=r.event_id||('x:'+(r.place||r.format||'')); const n=Number(r.party_size)||1;
+    if(!g[k]){ const ev=r.event_id?EVENTS.find(e=>e.id===r.event_id):null; g[k]={title:ev?ev.title:(r.place||r.format||(bg?'Резервации':'Reservations')),time:ev?(ev.time||''):'',all:0,inn:0}; }
+    g[k].all+=n; if(r.checked_in_at)g[k].inn+=n; });
+  const list=Object.values(g).sort((a,b)=>(a.time||'99')<(b.time||'99')?-1:1);
+  if(!list.length){ box.innerHTML=`<div style="text-align:center;font-size:12.5px;color:var(--muted);">${bg?'Няма потвърдени резервации за днес.':'No confirmed reservations for today.'}</div>`; return; }
+  box.innerHTML=list.map(x=>{ const pct=x.all?Math.round(x.inn/x.all*100):0, left=x.all-x.inn;
+    return `<div class="ev" style="padding:10px 14px;margin:0 0 8px;">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;"><div style="font-size:13px;color:var(--mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(x.title)}${x.time?' · '+esc(x.time):''}</div>
+        <div style="white-space:nowrap;"><b style="font-size:20px;color:#507044;">${x.inn}</b><span style="color:var(--muted);"> / ${x.all}</span></div></div>
+      <div style="height:6px;border-radius:4px;background:var(--surface2);margin-top:6px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:#507044;"></div></div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">${bg?('Влезли '+x.inn+' · остават '+left+' · '+pct+'%'):('In '+x.inn+' · remaining '+left+' · '+pct+'%')}</div></div>`; }).join('');
+}
+function doorCountLoop(){ clearInterval(_doorCntT); doorCount(); _doorCntT=setInterval(()=>{ if(!document.getElementById('doorcnt')){clearInterval(_doorCntT);return;} if(!document.hidden)doorCount(); },20000); }
 async function doorStart(){
+  doorCountLoop();
   const v=document.getElementById('doorvid'); if(!v)return;
   try{
     _doorStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:1280}}});
@@ -3058,7 +3080,7 @@ async function doorTicket(code){
 }
 async function doorCheckT(resId,code,undo){
   const r=await DB.doorCheckIn(resId,undo); if(r.error){toast((lang==='bg'?'Грешка: ':'Error: ')+r.error.message);return;}
-  hap('success'); toast(undo?(lang==='bg'?'Отменено':'Undone'):(lang==='bg'?'Присъствието е отбелязано':'Checked in')); doorTicket(code);
+  hap('success'); toast(undo?(lang==='bg'?'Отменено':'Undone'):(lang==='bg'?'Присъствието е отбелязано':'Checked in')); doorTicket(code); doorCount();
 }
 // Търсене: резервации за днес (членове и гости — по име, телефон, имейл, код) + членове (по име/телефон)
 let _doorQ=0, _doorFound={};
@@ -3087,7 +3109,7 @@ async function doorSearch(q){
 async function doorCheckFound(resId,undo){
   const r=await DB.doorCheckIn(resId,undo); if(r.error){toast((lang==='bg'?'Грешка: ':'Error: ')+r.error.message);return;}
   hap('success'); toast(undo?(lang==='bg'?'Отменено':'Undone'):(lang==='bg'?'Присъствието е отбелязано':'Checked in'));
-  const q=document.getElementById('doorq'); if(q)doorSearch(q.value);
+  const q=document.getElementById('doorq'); if(q)doorSearch(q.value); doorCount();
 }
 async function doorShow(id){
   _doorBusy=true; const box=document.getElementById('doorres'); if(box)box.innerHTML=`<div class="ev">${lang==='bg'?'Проверка…':'Checking…'}</div>`;
@@ -3115,7 +3137,7 @@ async function doorShow(id){
 }
 async function doorCheck(resId,userId,undo){
   const r=await DB.doorCheckIn(resId,undo); if(r.error){toast((lang==='bg'?'Грешка: ':'Error: ')+r.error.message);return;}
-  hap('success'); toast(undo?(lang==='bg'?'Отменено':'Undone'):(lang==='bg'?'Присъствието е отбелязано':'Checked in')); doorShow(userId);
+  hap('success'); toast(undo?(lang==='bg'?'Отменено':'Undone'):(lang==='bg'?'Присъствието е отбелязано':'Checked in')); doorShow(userId); doorCount();
 }
 function tabbar(active){
   _activeTab=active;
