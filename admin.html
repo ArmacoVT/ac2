@@ -436,6 +436,7 @@ function renderAfter(){
     root.querySelectorAll('button').forEach(b=>{ if(/changeName|savePhone|requestPhone|deletePerson|renewPerson|changeMembership|doInvite|doRenew|doReset|approveApp/.test(b.getAttribute('onclick')||''))b.remove(); });
     root.querySelectorAll('input[id^="phf_"],input[id^="nmf_"]').forEach(i=>i.disabled=true);
   }
+  if(tab==='people'&&peopleQ){ try{pplDedup();}catch(e){} }
   if(tab==='stats')setTimeout(animateCounts,30);
 }
 function animateCounts(){
@@ -2493,6 +2494,25 @@ async function delApp(id){
   const c=document.getElementById('appcard_'+id);if(c)c.remove();
   toast('Изтрита');
 }
+// ----- търсене на член (по име, имейл, телефон) — във всички нива, вкл. гости и профили към фирми -----
+let peopleQ='';
+function pplResults(){
+  const q=(peopleQ||'').trim().toLowerCase(); if(q.length<2||!window._pplRow)return '';
+  const dig=q.replace(/\D/g,'');
+  const hit=(PEOPLE||[]).filter(p=>[p.full_name,p.username,p.email].some(v=>(v||'').toLowerCase().includes(q))||(dig.length>=3&&String(p.phone||'').replace(/\D/g,'').includes(dig)));
+  if(!hit.length)return `<p class="empty" style="margin:0 0 12px;">Няма член с „${esc(peopleQ.trim())}“.</p>`;
+  const MAX=30;
+  return `<div class="muted" style="font-size:12.5px;margin-bottom:2px;">Намерени: ${hit.length}${hit.length>MAX?' — показани са първите '+MAX+', уточни търсенето':''}</div>${hit.slice(0,MAX).map(window._pplRow).join('')}<div style="height:14px;"></div>`;
+}
+// същият член стои и в списъка по нива отдолу → полетата му там временно губят id-тата си, за да работят бутоните в резултата
+function pplDedup(){
+  const box=document.getElementById('pplRes'); if(!box)return;
+  const ids=new Set([...box.querySelectorAll('[id]')].map(el=>el.id));
+  document.querySelectorAll('[data-xid]').forEach(el=>{ if(!ids.has(el.dataset.xid)){ el.id=el.dataset.xid; el.removeAttribute('data-xid'); } });   // вече не е в резултата → връщаме id-то
+  if(!ids.size)return;
+  root.querySelectorAll('[id]').forEach(d=>{ if(ids.has(d.id)&&!box.contains(d)){ d.dataset.xid=d.id; d.removeAttribute('id'); } });
+}
+function pplSearch(){ const box=document.getElementById('pplRes'); if(!box)return; box.innerHTML=pplResults(); pplDedup(); try{renderAfter();}catch(e){} }
 function peopleView(){
   // NULL = зареждаме или сме гръмнали. Различаваме ги по __membersErr.
   if(PEOPLE===null){
@@ -2575,7 +2595,10 @@ function peopleView(){
     h+=orphans.map(personRow).join('');
     return h;
   };
-  let html='<h2>Членове</h2>'+memLoginBlock()+memSoonBlock(today);
+  window._pplRow=personRow;   // за търсачката (резултатите се чертаят без да се преначертава целият раздел)
+  let html='<h2>Членове</h2>'
+    +`<div style="display:flex;gap:8px;align-items:center;margin:0 0 10px;"><input id="pplQ" placeholder="Търси член по име, имейл или телефон…" value="${esc(peopleQ)}" oninput="peopleQ=this.value;clearTimeout(window._pqT);window._pqT=setTimeout(pplSearch,200)" style="flex:1;" autocomplete="off"/>${peopleQ?`<button class="btn ghost sm" onclick="peopleQ='';render()">Изчисти</button>`:''}</div><div id="pplRes">${pplResults()}</div>`
+    +memLoginBlock()+memSoonBlock(today);
   cats.forEach((c,ci)=>{
     const list=PEOPLE.filter(p=>p.membership===c.id);
     if(!list.length)return;
