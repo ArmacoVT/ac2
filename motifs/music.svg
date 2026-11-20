@@ -1,0 +1,9 @@
+<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="музикални ноти">
+<g stroke="#f3e6cf" stroke-width="3.4" fill="none" stroke-linecap="round">
+<path d="M34 52 V20 l18 -5 V44"/>
+<path d="M34 20 l18 -5"/>
+</g>
+<g fill="#f3e6cf">
+<ellipse cx="28" cy="53" rx="7.5" ry="6" transform="rotate(-18 28 53)"/>
+<ellipse cx="46" cy="48" rx="7.5" ry="6" transform="rotate(-18 46 48)"/>
+</g></svg>

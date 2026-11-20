@@ -1,0 +1,39 @@
+// ============================================================
+//  НАСТРОЙКА НА БЕКЕНДА (Supabase)
+//  Постави тук двете стойности от Supabase → Project Settings → API.
+//  Докато стоят "PASTE_…", приложението работи в демо режим (данни в браузъра).
+//  Щом ги попълниш, всичко минава през общата база и се вижда при всички.
+// ============================================================
+window.ACAC_CONFIG = {
+  SUPABASE_URL: "https://twcxfqgknhqicxqghcrx.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_rE--I_P0IobbEwZweCMbsw_6ERycjQv",
+  // Stripe публичен ключ (безопасен за клиента). Live от 15.10.2026. (лайв акаунт = pk_live_…).
+  STRIPE_PK: "pk_live_51UN9m52SexX6y6ZWt0Xdp3Oy2AG22ZI2n6eJIAoBTuT84hM6pvfblmQpoISUzn3g7SIZZdG8Hn6vqUPSJHPm8zrQ00kkXb43uJ",
+  // Cloudflare Turnstile — ПУБЛИЧНИЯТ ключ (Site Key). Безопасен е за клиента.
+  // Тайният (Secret Key) отива САМО в Supabase → Edge Functions → Secrets, като TURNSTILE_SECRET_KEY.
+  // Докато този ред е празен, captcha-та не се показва и формата работи както преди.
+  TURNSTILE_SITE_KEY: "0x4AAAAAADzBXlrVTbWnEJn9",
+  // „Очаквайте скоро": true = целият публичен сайт е скрит и ac2.bg показва само landing.html (нюзлетър).
+  // Приложението (/app/) и админът работят нормално. Преглед на пълния сайт: https://ac2.bg/?site=1
+  // Когато сайтът е готов за публика — смени на false (и вдигни версията в sw.js).
+  COMING_SOON: false,
+  // Платени събития в ресторанта: "manual" = без карта (заявка + плащане на място / банков превод); "card" = с карта (когато има виртуален ПОС).
+  // Сървърът решава окончателно (secret RESTAURANT_CARD=on) — това само казва на екрана какво да покаже.
+  RESTAURANT_PAY: "manual",
+  // Публичният адрес на сайта (със завършваща наклонена черта). Ползва се за споделяне на събития.
+  SITE_URL: "https://ac2.bg/",
+  // Адресът на членското приложение (уеб версията). iOS приложението отваря същия адрес.
+  APP_URL: "https://ac2.bg/app/",
+  // Аналитика на публичния сайт — зарежда се САМО след съгласие с бисквитките.
+  // Празно = изключено. GA4: "G-XXXXXXXXXX" (Google Analytics → Admin → Data streams). Meta Pixel: само цифри.
+  GA_ID: "G-YQHKNZ3PGG",   // Google Analytics 4 — директно от сайта (затова в GTM НЕ се добавя GA4 таг, иначе ще се брои двойно)
+  // Google Tag Manager (контейнер): "GTM-XXXXXXX". Зарежда се също само след съгласие. В GTM се настройва GA4 тагът.
+  GTM_ID: "GTM-KBLBM28L",
+  META_PIXEL_ID: "",
+  // Apple Pay в iOS приложението: Merchant ID от developer.apple.com (Identifiers → Merchant IDs).
+  APPLE_MERCHANT_ID: "merchant.bg.arcusclub.app",
+  // Държава на търговеца за Apple Pay / Google Pay
+  MERCHANT_COUNTRY: "BG",
+  // Google Pay в тестова среда само за админи — беше за снимките към заявката. Одобрено на 30.10.2026 → изключено.
+  GPAY_TEST_ADMIN: false
+};

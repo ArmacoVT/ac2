@@ -1,0 +1,1189 @@
+// ---------- ПУБЛИЧНА ВИТРИНА: съдържание по подразбиране ----------
+// Общо за приложението (index.html) и админ панела (admin.html). Всеки текст е {bg,en}.
+// Админът вижда тези текстове в таб „Сайт" и ги редактира; записаното в базата има предимство.
+window.SITE_DEFAULTS={
+  hero:{
+    // НАЧАЛЕН ЕКРАН („Само за членове")
+    gate_title:{bg:'Само за членове.',en:'Members only.'},
+    bg_color:'#000000',        // цвят на фона, когато няма картина/видео (и зад тях)
+    show_frieze:true,          // анимираната лента с човечета
+    show_beam:true,            // лъчът по логото
+    show_fx:true,              // топла светлина + зърнеж върху фона
+    // СТРАНИЦА „ЗА КЛУБА"
+    title:{bg:'American College Arcus Club',en:'American College Arcus Club'},
+    video:'',   // MP4/WebM фон на началния екран (по избор)
+    subtitle:{bg:'Частен клуб за култура, гастрономия и смислено общуване — създаден около общността на Американски колеж Аркус.',en:'A private club for culture, gastronomy and meaningful company — built around the American College Arcus community.'},
+    image:''
+  },
+  about:{
+    title:{bg:'Кои сме ние',en:'Who we are'},
+    body:{bg:'AC² е място, в което културата, добрата храна и разговорът се срещат в спокойна и лична среда. Клубът е по покана и обединява хора, свързани с Американски колеж Аркус — възпитаници, родители, преподаватели и приятели на училището.\n\nВярваме, че най-ценните неща се случват в малък кръг: една прожекция, една вечеря, един разговор с човек, когото иначе не бихте срещнали.',en:'AC² is a place where culture, good food and conversation meet in a calm, personal setting. Membership is by invitation and brings together people connected to the American College Arcus — alumni, parents, teachers and friends of the school.\n\nWe believe the most valuable things happen in a small circle: one screening, one dinner, one conversation with someone you would not otherwise have met.'},
+    image:''
+  },
+  offer:{
+    title:{bg:'Какво предлагаме',en:'What we offer'},
+    body:{bg:'Програмата на клуба е организирана в пет формата. Всеки от тях е малък по мащаб и подбран по съдържание.',en:'The club programme is organised in five formats. Each is small in scale and carefully curated.'},
+    // по един запис на формат: абзац (BG/EN) + снимка. Празно = кратко описание от приложението.
+    items:{
+      culture:{body:{bg:'Музика, изложби, литература, кино и камерен театър. Вечери в малка зала, където разговорът след събитието е част от програмата.',en:'Music, exhibitions, literature, film and chamber theatre. Evenings in a small hall, where the conversation afterwards is part of the programme.'},image:''},
+      table:{body:{bg:'Тематични вечери с гост-готвач, брънч и ресторантът на клуба — с членска преференция и среда, в която не бързате.',en:'Themed dinners with a guest chef, brunch and the club restaurant — with a member preference and a setting where nobody hurries you.'},image:''},
+      conversation:{body:{bg:'Разговори с интересни хора — на маса, без сцена и микрофон. Теми от науката до всекидневието.',en:'Conversations with interesting people — at a table, without a stage or microphone. Topics from science to everyday life.'},image:''},
+      community:{body:{bg:'Общността на Американски колеж Аркус: семейни поводи, срещи на възпитаници, училищни формати и участието на учениците в живота на клуба.',en:'The American College Arcus community: family occasions, alumni gatherings, school formats and the students taking part in club life.'},image:''},
+      online:{body:{bg:'Живи предавания и видео архив за членовете, които не могат да присъстват на място.',en:'Live streams and a video archive for members who cannot attend in person.'},image:''}
+    }
+  },
+  memberships:{
+    title:{bg:'Членство',en:'Membership'},
+    intro:{bg:'Клубът е по покана. Можете да кандидатствате за една от трите категории по-долу — всяка кандидатура се разглежда лично.',en:'The club is by invitation. You may apply for one of the three categories below — every application is reviewed personally.'},
+    items:{
+      club:{hook:{bg:'За вас е, ако искате клубът да е част от седмицата ви.',en:'For you if you want the club to be part of your week.'},summary:{bg:'Цялата програма, приоритет при резервации, 5% в AC² Table.',en:'The full programme, priority for reservations, 5% at AC² Table.'},price:{bg:'',en:''},desc:{bg:'Основната членска категория — за хората, които желаят да бъдат активна част от клубния живот, неговата програма и общност.',en:'The core membership category — for those who wish to be an active part of club life, its programme and community.'},benefits:{bg:'Достъп до клубната програма и събития\nПокани за културни и гастрономически формати\nПриоритет при резервации\n5% членска преференция в AC² Table\nПерсонализирана Club Member карта',en:'Access to the programme and events\nInvitations to cultural and gastronomic formats\nPriority for reservations\n5% member preference at AC² Table\nA personalised Club Member card'}},
+      alumni:{hook:{bg:'За вас е, ако сте свързани с Американския колеж Аркус.',en:'For you if you are connected to the American College Arcus.'},summary:{bg:'Избрани събития, училищни формати, кино и култура.',en:'Selected events, school-related formats, cinema and culture.'},price:{bg:'',en:''},desc:{bg:'Специална категория за хората с лична връзка към общността на Американски Колеж Аркус — възпитаници, родители, учители.',en:'A special category for those with a personal connection to the American College Arcus community.'},benefits:{bg:'Достъп до избрани клубни събития\nПокани за училищно-свързани събития\nУчастие в AC² Culture и AC² Conversation\nПокани за общностни вечери\nПерсонализирана Alumni карта',en:'Access to selected club events\nInvitations to school-related events\nParticipation in AC² Culture and Conversation\nInvitations to community evenings\nA personalised Alumni card'}},
+      corporate:{hook:{bg:'За вас е, ако представлявате компания или организация.',en:'For you if you represent a company or organisation.'},summary:{bg:'До 5 представители, професионални формати, 7% в AC² Table.',en:'Up to 5 representatives, professional formats, 7% at AC² Table.'},price:{bg:'',en:''},desc:{bg:'Категория за компании и организации, които споделят ценностите на клуба — култура, образование, качество и смислено общуване.',en:'A category for companies and organisations that share the club values.'},benefits:{bg:'Членство за компании и организации\nДостъп за до 6 представители\nПокани за професионални формати\n7% членска преференция в AC² Table\nДискретни срещи в уединена зона\nПерсонализирана Corporate карта',en:'Membership for companies and organisations\nAccess for up to 6 representatives\nInvitations to professional formats\n7% member preference at AC² Table\nDiscreet meetings in a secluded area\nA personalised Corporate card'}}
+    }
+  },
+  gallery:{title:{bg:'Моменти от клуба',en:'Moments from the club'},images:[]},
+  contact:{
+    title:{bg:'Свържете се с нас',en:'Get in touch'},
+    body:{bg:'За въпроси относно членство и събития.',en:'For questions about membership and events.'},
+    email:'welcome@ac2.bg',phone:'+359 876 156 006',address:{bg:'Велико Търново, ул. Христо Ботев №3',en:'Veliko Tarnovo, 3 Hristo Botev St.'}
+  }
+};
+
+// ---------- ПУБЛИЧЕН САЙТ (ac2.bg): съдържание по подразбиране ----------
+// Редактира се от админ панела → таб „Публичен сайт". Всеки текст е {bg,en}.
+// Записаното в базата (site_content, ред 'public') има предимство пред тези стойности.
+const _b=(bg,en)=>({bg:bg,en:en});
+window.PUB_DEFAULTS={
+  general:{
+    site_name:'AC² — American College Arcus Club',
+    tagline:_b('Културен център, ресторант и клуб във Велико Търново','Cultural centre, restaurant and club in Veliko Tarnovo'),
+    facebook:'https://www.facebook.com/ac2.bg', instagram:'https://www.instagram.com/ac2.bg',
+    appstore_url:'', playstore_url:'',
+    show_intro:true,                 // кратката анимация с логото преди сайта
+    email:'welcome@ac2.bg', phone:'+359 876 156 006',
+    address:_b('Велико Търново, ул. Христо Ботев №3','Veliko Tarnovo, 3 Hristo Botev St.'),
+    hours:_b('Вторник – неделя: 10:00 – 23:00\nПонеделник: почивен ден','Tuesday – Sunday: 10:00 – 23:00\nMonday: closed'),
+    table_cutoff:'22:30',            // маса след събитие се предлага, ако събитието свършва до този час (сменя се лятно/зимно)
+    auto_refund:false,               // автоматично връщане на сумата при отказ от член (в срок) — през Stripe
+    nav:{restaurant:false,membership:false,about:false,college:false,login:false},   // login = бутонът „Вход за членове“ (хедър, меню, футър)   // кои менюта се показват (Админ → Общи); 'app' е премахнат — секцията „Инсталирай приложението“ е на началната
+    iban:'', bank:'',                // банков превод за членства (страницата /join показва опцията само ако има IBAN)
+    parking:_b('','' ), access:_b('',''),
+    maps_embed:'',                   // адрес от Google Maps → Share → Embed a map → само src="…"
+    maps_link:''                     // линк „Отвори в Google Maps"
+  },
+  home:{
+    slides:[
+      {image:'',video:'',title:_b('Място за култура, разговор и добра храна','A place for culture, conversation and good food'),sub:_b('Културен център, ресторант и клуб в сърцето на Велико Търново.','A cultural centre, restaurant and club in the heart of Veliko Tarnovo.'),cta:_b('Виж програмата','See the programme'),link:'#/program'}
+    ],
+    manifesto:{title:_b('Какво е AC²','What is AC²'),body:_b('AC² е културен център, ресторант и клуб, създаден около общността на Американски колеж Аркус. Сцена, галерия и кино под един покрив — и маса, на която разговорът продължава.','AC² is a cultural centre, restaurant and club built around the American College Arcus community. A stage, a gallery and a cinema under one roof — and a table where the conversation continues.')},
+    season:{title:_b('Сезон есен–зима: ИНТЕРТЕКСТ','Autumn–winter season: INTERTEXT'),body:_b('Тема на сезона — как текстовете, образите и хората си говорят през времето.','The theme of the season — how texts, images and people speak to each other across time.')},
+    restaurant:{title:_b('Ресторант','Restaurant'),body:_b('Сезонна кухня, тематични вечери и брънч в неделя. Маса за след събитието — или просто за вечерта.','Seasonal cooking, themed dinners and Sunday brunch. A table for after the show — or just for the evening.'),image:''},
+    app:{title:_b('AC² в джоба ти','AC² in your pocket'),body:_b('Билети, резервации и членска карта — в приложението.','Tickets, reservations and your membership card — in the app.'),image:''},
+    membership:{title:_b('Членство','Membership'),body:_b('Клубът е по покана. Членовете получават приоритет за резервации, покани за затворени формати и преференции в ресторанта.','The club is by invitation. Members get priority reservations, invitations to closed formats and restaurant benefits.')},
+    college:{title:_b('Arcus College','Arcus College'),body:_b('Младите хора са активна част от AC². Учениците на Американски колеж Аркус участват в програмата — на сцената, в галерията и зад кулисите.','Young people are an active part of AC². Students of the American College Arcus take part in the programme — on stage, in the gallery and behind the scenes.'),images:[],url:''},
+    newsletter:{title:_b('Нюзлетър','Newsletter'),body:_b('Програмата за месеца, тематичните вечери и новините — веднъж месечно, без спам.','The monthly programme, themed dinners and news — once a month, no spam.')},
+    show:{manifesto:true,season:true,restaurant:false,app:false,membership:false,college:false,newsletter:true}   // скрити до старта (Админ → Начало → „Показвай секция …“)
+  },
+  program:{intro:_b('Всички предстоящи събития на AC². Изберете формат, за да филтрирате.','All upcoming events at AC². Pick a format to filter.')},
+  restaurant:{
+    title:_b('Ресторант','Restaurant'),
+    body:_b('Ресторантът на AC² е продължение на сцената — място, където вечерта продължава на масата. Сезонни продукти, кратко меню и вино от региона.','The AC² restaurant is an extension of the stage — the place where the evening continues at the table. Seasonal produce, a short menu and wine from the region.'),
+    images:[],
+    chef:{name:'',body:_b('',''),image:''},
+    dinners_intro:_b('Тематични вечери — една тема, едно меню, една маса.','Themed dinners — one theme, one menu, one table.'),
+    brunch:{title:_b('Брънч','Brunch'),body:_b('Всяка неделя от 11:00 — бавна сутрин с кафе, печива и семейна маса.','Every Sunday from 11:00 — a slow morning with coffee, pastries and a family table.'),images:[]},
+    hours:_b('Вторник – неделя: 12:00 – 23:00','Tuesday – Sunday: 12:00 – 23:00'),
+    reserve_url:'',                 // външна система за резервации (ако има); празно = форма за контакт
+    reserve_phone:''
+  },
+  menu:{
+    intro:_b('Менюто се сменя със сезона. Попитайте за дневното предложение.','The menu changes with the season. Ask about the daily special.'),
+    pdf_url:'',
+    sections:[]                     // [{title:{bg,en}, image:'', items:[{name:{bg,en}, desc:{bg,en}, price:''}]}]
+  },
+  membership:{
+    why_title:_b('Защо да стана член?','Why become a member?'),
+    why_body:_b('Защото най-ценните неща се случват в малък кръг: една прожекция, една вечеря, един разговор с човек, когото иначе не бихте срещнали. Членството дава приоритет за резервации, покани за затворени формати и преференции в ресторанта.','Because the most valuable things happen in a small circle: one screening, one dinner, one conversation with someone you would not otherwise have met. Membership gives priority reservations, invitations to closed formats and restaurant benefits.'),
+    how_title:_b('Как се кандидатства','How to apply'),
+    how_body:_b('1. Прочетете правилника на клуба.\n2. Попълнете формуляра за кандидатстване.\n3. Ще се свържем с вас за кратък разговор.\n4. След одобрение получавате покана и достъп до приложението.','1. Read the club rules.\n2. Fill in the application form.\n3. We will contact you for a short conversation.\n4. Once approved you receive an invitation and access to the app.'),
+    terms_url:'',
+    faq:[
+      {q:_b('Колко време отнема разглеждането на кандидатурата?','How long does an application take?'),a:_b('Обикновено до две седмици.','Usually up to two weeks.')},
+      {q:_b('Мога ли да водя гости?','Can I bring guests?'),a:_b('Да — до 4 места на резервация за повечето събития.','Yes — up to 4 seats per reservation for most events.')}
+    ]
+  },
+  about:{title:_b('За AC²','About AC²'),body:_b('Историята на AC² започва с Американски колеж Аркус и идеята, че едно училище може да бъде център на общността и след часовете. Днес AC² е културен център с ресторант, галерия, сцена и кино — и клуб от хора, които ги пълнят.','The story of AC² begins with the American College Arcus and the idea that a school can be the centre of its community after hours. Today AC² is a cultural centre with a restaurant, gallery, stage and cinema — and a club of people who fill them.'),images:[]},
+  team:{intro:_b('Хората зад AC².','The people behind AC².'),members:[]},   // [{name, role:{bg,en}, bio:{bg,en}, image}]
+  rent:{
+    title:_b('Наеми AC² за своето събитие','Hire AC² for your event'),
+    body:_b('Залата за сценични изкуства, галерията и ресторантът могат да бъдат наети за частни и фирмени събития, презентации и празници.','The performing-arts hall, the gallery and the restaurant can be hired for private and corporate events, presentations and celebrations.'),
+    images:[],
+    specs:[{label:_b('Места (сцена)','Seats (stage)'),value:_b('','')},{label:_b('Площ','Area'),value:_b('','')},{label:_b('Височина','Height'),value:_b('','')},{label:_b('Техника','Equipment'),value:_b('','')}],
+    terms:_b('Условията за наемане се уточняват според събитието. Пишете ни.','Hire terms depend on the event. Write to us.')
+  },
+  college:{title:_b('Arcus College','Arcus College'),body:_b('AC² и Американски колеж Аркус са една екосистема: учениците участват в програмата, стажуват в ресторанта и галерията, а сцената е тяхна за училищните продукции.','AC² and the American College Arcus are one ecosystem: students take part in the programme, intern in the restaurant and gallery, and the stage is theirs for school productions.'),images:[],url:''},
+  app:{title:_b('Приложението AC²','The AC² app'),body:_b('Програмата, билетите, резервациите и членската карта — на едно място. За членове на клуба.','The programme, tickets, reservations and your membership card — in one place. For club members.'),images:[],
+    features:_b('Програма и билети\nРезервации на маса\nЧленска карта с QR\nИзвестия за нови събития','Programme and tickets\nTable reservations\nMembership card with QR\nNotifications for new events')},
+  contacts:{intro:_b('Пишете ни — за събития, резервации, наеми или партньорства.','Write to us — about events, reservations, hire or partnerships.')},
+  legal:{
+    terms:_b('',''), privacy:_b('',''),
+    cookies:_b('Сайтът използва бисквитки за статистика (Google Analytics) и реклама (Meta Pixel) само след вашето съгласие.','This site uses cookies for statistics (Google Analytics) and advertising (Meta Pixel) only with your consent.')
+  }
+};
+
+// ============================================================
+//  Единен слой за данни. Ако config.js е попълнен → Supabase (общо за всички).
+//  Иначе → демо режим (localStorage, само на това устройство).
+//  И двата файла (index.html, admin.html) ползват този слой.
+// ============================================================
+(function () {
+  // запомняме типа на линка (invite/recovery) преди Supabase да изчисти адреса
+  const URLTYPE = (location.hash.match(/[#&]type=(\w+)/) || [])[1] || '';
+  const CFG = window.ACAC_CONFIG || {};
+  const LIVE = !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY &&
+    !/PASTE/.test(CFG.SUPABASE_URL) && !/PASTE/.test(CFG.SUPABASE_ANON_KEY));
+  // Снимките се смаляват преди качване: макс. 1800 px по дългата страна, JPEG ~82 %.
+  // 2400 px / 300 KB от телефона на слаба мрежа спираше по средата; 1800 px е достатъчно и за десктоп (hero е до 760 px високо).
+  // GIF (анимация), SVG и видео — без промяна. При грешка (напр. HEIC без поддръжка) — качва се оригиналът.
+  async function shrinkImage(file, maxPx) {
+    maxPx = maxPx || 1800;
+    try {
+      if (!file || !/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type)) return file;
+      const bmp = await createImageBitmap(file);
+      const w = bmp.width, h = bmp.height;
+      const k = Math.min(1, maxPx / Math.max(w, h));
+      if (k === 1 && file.size < 400 * 1024) { bmp.close && bmp.close(); return file; }   // вече е малка
+      const cw = Math.round(w * k), ch = Math.round(h * k);
+      const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      const x = c.getContext('2d'); x.drawImage(bmp, 0, 0, cw, ch); bmp.close && bmp.close();
+      // PNG с прозрачност остава PNG (лога); всичко друго → JPEG
+      const keepPng = file.type === 'image/png' && hasAlpha(x, cw, ch);
+      const type = keepPng ? 'image/png' : 'image/jpeg';
+      const blob = await new Promise(r => c.toBlob(r, type, 0.82));
+      if (!blob || blob.size >= file.size) return file;
+      const name = file.name.replace(/\.[^.]+$/, '') + (keepPng ? '.png' : '.jpg');
+      return new File([blob], name, { type });
+    } catch (e) { return file; }
+  }
+  function hasAlpha(x, w, h) {
+    try { const d = x.getImageData(0, 0, w, h).data; for (let i = 3; i < d.length; i += 4 * 97) if (d[i] < 250) return true; } catch (e) {}
+    return false;
+  }
+  let sb = null;
+  if (LIVE && window.supabase) {
+    sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY,
+      { auth: { persistSession: true, autoRefreshToken: true } });
+  }
+
+  const MEM = ['founder', 'founding', 'club', 'alumni', 'corporate'];
+  // старите формати cinema/music/theater вече са част от Culture
+  const FMT_ALIAS = { cinema: 'culture', music: 'culture', theater: 'culture' };
+  // преименувани зали (14.10.2026): старите стойности в базата се показват с новите имена
+  const PLACE_RENAME = { 'VIP зала': 'Private room', 'VIP hall': 'Private room', 'VIP room': 'Private room', 'Изложбено фоайе': 'Галерия', 'Exhibition foyer': 'Gallery' };
+  // Сигурност: кодът на билета е само A-Z0-9; часът — без HTML символи (защита, ако в базата попадне нещо чуждо)
+const safeCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+const safeTime = t => (t == null ? t : String(t).replace(/[<>"'`&\\]/g, ''));
+const safeRes = r => (r ? { ...r, time: safeTime(r.time), ticket_code: r.ticket_code == null ? r.ticket_code : safeCode(r.ticket_code) } : r);
+const placeName = p => (p && PLACE_RENAME[p]) || p;
+// ред от таблицата reservations → вида, в който го ползва админът (един и същ за пълното зареждане и за реалтайм промените)
+const mapResRow = r => ({ id: r.id, user_id: r.user_id || null, event_id: r.event_id || null, table_event_id: r.table_event_id || null,
+  who: r.who || '', membership: r.membership || '', fmt: r.format,
+  place: placeName(r.place), date: r.date, time: safeTime(r.time), party: r.party_size, note: r.note, status: r.status,
+  kind: r.kind || '', paid: !!r.paid,
+  name: r.res_name || r.guest_name || '', email: r.contact_email || r.guest_email || '', phone: r.contact_phone || r.guest_phone || '',
+  guest: !r.user_id && !!r.guest_email, refunded_at: r.refunded_at || '', refund_cents: r.refund_cents || 0, checked_in_at: r.checked_in_at || '', ticket_code: safeCode(r.ticket_code),
+  seen_at: r.seen_at || '', created_at: r.created_at || '', pay_method: r.pay_method || '', sold_at: r.sold_at || '', paid_cents: r.paid_cents || 0, stripe_pi: r.stripe_pi || '' });
+  window.placeName = placeName;
+  const fmtId = (f) => FMT_ALIAS[f] || f;
+  const SEED = [
+    { id: 'e1', title: 'Разговор за съвременната българска проза', format: 'conversation', place: 'Клубна зала', date: '2026-06-12', time: '19:00', ends: '21:00', capacity: 30, aud: 'all' },
+    { id: 'e2', title: 'Гастрономическа вечер', format: 'table', place: 'Trapezna', date: '2026-06-19', time: '20:00', ends: '', capacity: 20, aud: ['club', 'corporate', 'founding', 'founder'] },
+    { id: 'e3', title: 'Вечер на европейския авторски филм', format: 'cinema', place: 'Кино салон', date: '2026-06-26', time: '19:30', ends: '21:30', capacity: 40, aud: 'all' },
+    { id: 'e4', title: 'Основателска вечер', format: 'community', place: 'Частен салон', date: '2026-07-03', time: '19:00', ends: '22:00', capacity: 16, aud: ['founder', 'founding'] }
+  ];
+  const K = { ev: 'acac_events', res: 'acac_res', saved: 'acac_saved', user: 'acac_user' };
+  const jget = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+  const jset = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+  // audience <-> aud
+  const toAud = (audience) => {
+    if (!audience || (Array.isArray(audience) && (audience.includes('all') || audience.length >= MEM.length))) return 'all';
+    return Array.isArray(audience) ? audience : 'all';
+  };
+  const toAudience = (aud) => (aud === 'all' || !Array.isArray(aud)) ? ['all'] : aud;
+
+  function seedDemo() { let e = jget(K.ev, null); if (!e) { e = SEED.slice(); jset(K.ev, e); } return e; }
+
+  // Всяко повикване на Edge Function минава първо през подновяване на изтичащ токен.
+  // Нищо тук не може да „виси" вечно: подновяването на токена има 6 сек., самата функция — 25 сек.
+  const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error((what || 'Заявката') + ' не отговори навреме')), ms))]);
+  // Edge Function със смислена грешка (тялото на non-2xx отговора носи { error })
+  async function fnCall(name, body) {
+    if (!LIVE) return { error: { message: 'demo' } };
+    const { data, error } = await invokeFn(name, { body });
+    if (error) { let msg = error.message; try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {} return { error: { message: msg } }; }
+    if (data && data.error) return { error: { message: data.error } };
+    return { data };
+  }
+  async function invokeFn(name, opts) {
+    try { if (DB.freshSession) await withTimeout(DB.freshSession(), 6000, 'Сесията'); } catch (e) {}
+    return withTimeout(sb.functions.invoke(name, opts), 25000, 'Сървърът');
+  }
+  // При отговор „JWT expired / invalid" от базата известяваме страницата (тя показва „Влез отново").
+  let _lostFired = false;
+  function authErr(error) {
+    if (!error) return false;
+    const m = String(error.message || '') + ' ' + String(error.code || '');
+    if (/jwt|PGRST301|invalid claim|not authenticated|401/i.test(m)) {
+      if (!_lostFired) { _lostFired = true; try { window.dispatchEvent(new Event('acac-session-lost')); } catch (e) {} }
+      return true;
+    }
+    return false;
+  }
+  const DB = {
+    live: LIVE,
+    resetSessionLost() { _lostFired = false; },
+    urlType: URLTYPE,
+
+    // Известява, когато сесията изчезне (изтекла или отнета).
+    // Без това администраторът просто вижда как бутоните спират да работят.
+    onSessionLost(cb) {
+      if (!LIVE) return;
+      sb.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT' || (!session && event !== 'INITIAL_SESSION')) cb();
+      });
+    },
+    // Активна проверка — auth събитието понякога не идва, ако табът е бил заспал.
+    async sessionAlive() {
+      if (!LIVE) return true;
+      try { const { data } = await sb.auth.getSession(); return !!(data && data.session); }
+      catch (e) { return true; }   // мрежов проблем ≠ изтекла сесия
+    },
+
+    // ---------- AUTH (член) ----------
+    async getUser() {
+      if (!LIVE) return jget(K.user, null);
+      const { data } = await sb.auth.getSession();
+      const s = data.session; if (!s) return null;
+      let prof = null, profErr = false;
+      try { const r = await sb.from('profiles').select('*').eq('id', s.user.id).single(); prof = r.data; if (!prof) profErr = true; } catch (e) { profErr = true; }
+      // _profErr: профилът НЕ се прочете (мрежа / изтекъл токен) — ролята и правата по-долу са само „по подразбиране“ и не бива да се приемат за истински
+      return { _profErr: profErr, id: s.user.id, email: s.user.email, username: prof ? prof.username : s.user.email,
+        full_name: prof ? (prof.full_name || '') : '',
+        name_changed_at: prof ? (prof.name_changed_at || '') : '',
+        phone: prof ? (prof.phone || '') : '',
+        phone_recheck: prof ? !!prof.phone_recheck : false,
+        fav_formats: prof && Array.isArray(prof.fav_formats) ? prof.fav_formats : [],
+        membership_until: prof ? (prof.membership_until || '') : '',
+        company_id: prof ? (prof.company_id || '') : '',
+        membership: prof ? prof.membership : 'guest', role: prof ? prof.role : 'member',
+        perms: prof && Array.isArray(prof.perms) ? prof.perms : [], perms_until: prof ? (prof.perms_until || '') : '', is_owner: !!(prof && prof.is_owner),
+        terms_version: prof ? (prof.terms_version || '') : '', terms_accepted_at: prof ? (prof.terms_accepted_at || '') : '',
+        media_consent: prof ? !!prof.media_consent : false };
+    },
+    // приемане на условията (версия от legal.js) + съгласие за снимки/видео
+    async acceptTerms(version, media) {
+      if (!LIVE) { const u = jget(K.user, null) || {}; u.terms_version = version; u.media_consent = !!media; jset(K.user, u); return { error: null }; }
+      const { error } = await sb.rpc('accept_terms', { p_version: version, p_media: !!media });
+      return { error };
+    },
+    async updateFavFormats(list) {
+      if (!LIVE) { const u = jget(K.user, null) || {}; u.fav_formats = list; jset(K.user, u); return { error: null }; }
+      const { data } = await sb.auth.getSession();
+      const s = data.session; if (!s) return { error: { message: 'no session' } };
+      const { error } = await sb.from('profiles').update({ fav_formats: list }).eq('id', s.user.id);
+      return { error };
+    },
+    // запазване на име на потребителя в профила
+    async updateProfileName(name, initial) {
+      if (!LIVE) { const u = jget(K.user, null) || {}; u.full_name = name; jset(K.user, u); return { error: null }; }
+      const { data } = await sb.auth.getSession();
+      const s = data.session; if (!s) return { error: { message: 'no session' } };
+      const upd = { full_name: (name || '').trim() };
+      if (!initial) upd.name_changed_at = new Date().toISOString(); // първоначалното задаване не пуска 3-месечния период
+      const { error } = await sb.from('profiles').update(upd).eq('id', s.user.id);
+      return { error };
+    },
+    // запазване на телефон за контакт
+    async updateProfilePhone(phone) {
+      if (!LIVE) { const u = jget(K.user, null) || {}; u.phone = phone; jset(K.user, u); return { error: null }; }
+      const { data } = await sb.auth.getSession();
+      const s = data.session; if (!s) return { error: { message: 'no session' } };
+      const { error } = await sb.from('profiles').update({ phone: (phone || '').trim(), phone_recheck: false }).eq('id', s.user.id);
+      return { error };
+    },
+    // качване на снимка/видео за събитие в Supabase Storage (bucket: event-media)
+    async uploadMedia(file, folder) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      file = await shrinkImage(file);
+      const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+      const path = (folder ? folder.replace(/\/+$/, '') + '/' : '') + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+      // cacheControl 1 година: файлът има уникално име, така че браузърът/CDN го пазят дълго (по подразбиране 1 час → трафикът от Supabase растеше)
+      const up = await sb.storage.from('event-media').upload(path, file, { upsert: true, contentType: file.type, cacheControl: '31536000' });
+      if (up.error) return { error: up.error };
+      const { data } = sb.storage.from('event-media').getPublicUrl(path);
+      return { url: data.publicUrl };
+    },
+
+    // ---------- ПУБЛИЧНА ВИТРИНА (landing) ----------
+    // Един JSON ред; чете се и без вход. Празен обект = вградените текстове по подразбиране.
+    // id: 'landing' (началният екран на приложението) или 'public' (публичният сайт)
+    async getSiteContent(id) {
+      if (!LIVE) return {};
+      try {
+        const { data } = await sb.from('site_content').select('data').eq('id', id || 'landing').maybeSingle();
+        return (data && data.data) || {};
+      } catch (e) { return {}; }
+    },
+    async saveSiteContent(obj, id) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.from('site_content').upsert({ id: id || 'landing', data: obj || {} });
+      return { error };
+    },
+
+    // ---------- ПУБЛИЧЕН САЙТ ----------
+    // Всички събития освен „само за членове" и архивните; само публичните колони (RLS + column grants за anon).
+    async listPublicEvents() {
+      if (!LIVE) return seedDemo().map(e => Object.assign({ pub: {} }, e));
+      const { data } = await sb.from('events')
+        .select('id,title,format,place,date,end_date,time,ends,capacity,price,image_url,description,tags,pub,archive_only')
+        .or('pub->>members_only.is.null,pub->>members_only.neq.true')
+        .or('archive_only.is.null,archive_only.eq.false')
+        .order('date', { ascending: true }).order('time', { ascending: true, nullsFirst: true });
+      return (data || []).map(e => ({ id: e.id, title: e.title, format: fmtId(e.format), place: placeName(e.place) || '',
+        date: e.date || '', end_date: e.end_date || '', time: e.time || '', ends: e.ends || '',
+        capacity: e.capacity || 0, price: e.price || 0, image_url: e.image_url || '',
+        description: e.description || '', tags: Array.isArray(e.tags) ? e.tags : [],
+        archive_only: !!e.archive_only, pub: e.pub || {} }));
+    },
+    // Форми от сайта (контакт / нюзлетър) → Edge Function public-forms (Turnstile + имейл)
+    async publicForm(kind, o) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('public-forms', { body: Object.assign({ kind }, o || {}) });
+      if (error) {
+        let reason = '', extra = {};
+        try { extra = await error.context.json(); reason = extra.error || ''; } catch (e) {}
+        if (reason === 'captcha') return { error: { captcha: true } };
+        if (reason === 'cooldown') return { error: { cooldown: true } };
+        // допълнителни полета от сървъра (напр. have / left_for_email при лимита по имейл) — минават към формата
+        return { error: Object.assign({}, extra, { message: reason || error.message }) };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, data };
+    },
+    async listContactMessages() {
+      if (!LIVE) return [];
+      const { data } = await sb.from('contact_messages').select('*').order('created_at', { ascending: false }).limit(300);
+      return data || [];
+    },
+    async setMessageRead(id, read) {
+      if (!LIVE) return { error: null };
+      const { error } = await sb.from('contact_messages').update({ is_read: !!read }).eq('id', id);
+      return { error };
+    },
+    async setMessageArchived(id, on) {   // архив: изисква 2026-11-11-messages-archive.sql
+      if (!LIVE) return { error: null };
+      const patch = on ? { archived_at: new Date().toISOString(), is_read: true } : { archived_at: null };
+      const { error } = await sb.from('contact_messages').update(patch).eq('id', id);
+      return { error };
+    },
+    async deleteMessage(id) {
+      if (!LIVE) return { error: null };
+      const { error } = await sb.from('contact_messages').delete().eq('id', id);
+      return { error };
+    },
+    async listSubscribers() {
+      if (!LIVE) return [];
+      const { data } = await sb.from('newsletter_subscribers').select('*').order('consent_at', { ascending: false });
+      return data || [];
+    },
+    async deleteSubscriber(email) {
+      if (!LIVE) return { error: null };
+      const { error } = await sb.from('newsletter_subscribers').delete().eq('email', email);
+      return { error };
+    },
+    async signIn(email, password) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
+      return { error };
+    },
+    async signUp(email, password, username, membership) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.auth.signUp({ email: email.trim(), password,
+        options: { data: { username: (username || '').trim(), membership: membership || 'guest' } } });
+      return { error };
+    },
+    async signOut() {
+      if (LIVE) { await sb.auth.signOut(); } else { localStorage.removeItem(K.user); }
+    },
+    // демо вход за член (admin/admin → пълен достъп)
+    demoLogin(u, p) {
+      if ((u || '').trim().toLowerCase() !== 'admin' || (p || '').trim() !== 'admin') return false;
+      jset(K.user, { id: 'demo', username: 'admin', membership: 'founder', role: 'member' });
+      return true;
+    },
+
+    // ---------- СЪБИТИЯ ----------
+    // ---- Push известия ----
+    async savePushToken(token, platform) {
+      if (!LIVE || !token) return { error: null };
+      const { data: { session } } = await sb.auth.getSession(); if (!session) return { error: null };
+      const { error } = await sb.from('push_tokens').upsert({ token, user_id: session.user.id, platform, updated_at: new Date().toISOString() });
+      return { error };
+    },
+    async removePushToken(token) {
+      if (!LIVE || !token) return { error: null };
+      const { error } = await sb.from('push_tokens').delete().eq('token', token);
+      return { error };
+    },
+    async sendPush(o) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('send-push', { body: o });
+      if (error) { let m = error.message; try { const b = await error.context.json(); if (b && b.error) m = b.error; } catch (e) {} return { error: { message: m } }; }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, data };
+    },
+    async pushStats() {
+      if (!LIVE) return { ios: 0, android: 0 };
+      const s = { ios: 0, android: 0 };
+      const [i, a] = await Promise.all(['ios', 'android'].map(pl => sb.from('push_tokens').select('token', { count: 'exact', head: true }).eq('platform', pl)));
+      s.ios = i.count || 0; s.android = a.count || 0; return s;
+    },
+    // ---- Режим „Вход“ (скенер на вратата; служител с право reservations или админ) ----
+    // при слаб Wi-Fi заявка може да „увисне“ за минути → скенерът изглежда замръзнал; прекъсваме след 8 сек.
+    _doorTimed(promise) { return Promise.race([promise, new Promise(res => setTimeout(() => res({ error: { message: 'timeout' } }), 8000))]).catch(e => ({ error: { message: String((e && e.message) || e) } })); },
+    async doorLookup(id) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data: p, error } = await sb.from('profiles').select('id,full_name,username,membership,membership_until').eq('id', id).maybeSingle();
+      authErr(error);
+      if (error) return { error };
+      if (!p) return { error: { message: 'not_found' } };
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: rs } = await sb.from('reservations').select('id,event_id,table_event_id,date,time,party_size,status,paid,kind,place,format,checked_in_at')
+        .eq('user_id', id).eq('date', today).in('status', ['confirmed', 'requested']);
+      return { error: null, profile: p, today: (rs || []).map(safeRes) };
+    },
+    async doorTicket(code) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data: r, error } = await sb.from('reservations').select('id,user_id,event_id,table_event_id,date,time,party_size,status,paid,kind,place,format,checked_in_at,ticket_code,res_name,guest_name,guest_email').eq('ticket_code', code).maybeSingle();
+      authErr(error);
+      if (error) return { error };
+      if (!r) return { error: { message: 'not_found' } };
+      let profile = null;
+      if (r.user_id) { const { data: p } = await sb.from('profiles').select('id,full_name,username,membership,membership_until').eq('id', r.user_id).maybeSingle(); profile = p; }
+      return { error: null, ticket: safeRes(r), profile };
+    },
+    // Скенер: търсене по име / телефон / имейл / код на билета — сред резервациите за днес И ПРЕДСТОЯЩИТЕ (членове и гости)
+    // и сред членовете (по име или телефон). Телефоните се сравняват само по цифрите.
+    async doorFind(q) {
+      if (!LIVE) return { tickets: [], members: [] };
+      const raw = String(q || '').trim(); if (raw.length < 2) return { tickets: [], members: [] };
+      const low = raw.toLowerCase(), digits = raw.replace(/\D/g, ''), code = raw.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^AC2T?(?=[A-Z0-9]{8}$)/, '');
+      const d = new Date(), today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const { data: rs, error } = await sb.from('reservations')
+        .select('id,user_id,event_id,table_event_id,date,time,party_size,status,paid,place,format,checked_in_at,ticket_code,res_name,guest_name,guest_email,guest_phone,contact_email,contact_phone,who')
+        .gte('date', today).in('status', ['confirmed', 'requested']).order('date', { ascending: true }).limit(2000);   // днес и предстоящи
+      authErr(error);
+      const list = rs || [];
+      const uids = [...new Set(list.map(r => r.user_id).filter(Boolean))];
+      let profs = {};
+      if (uids.length) { const { data: ps } = await sb.from('profiles').select('id,full_name,username,phone,membership,membership_until').in('id', uids); (ps || []).forEach(p => { profs[p.id] = p; }); }
+      const dg = s => String(s || '').replace(/\D/g, '');
+      const phoneHit = ph => digits.length >= 4 && dg(ph).includes(digits.replace(/^00/, '').replace(/^359/, '').replace(/^0/, ''));
+      const tickets = list.filter(r => {
+        const p = r.user_id ? profs[r.user_id] : null;
+        const names = [r.res_name, r.guest_name, r.who, p && p.full_name, p && p.username].filter(Boolean).join(' ').toLowerCase();
+        const mails = [r.guest_email, r.contact_email].filter(Boolean).join(' ').toLowerCase();
+        return names.includes(low) || mails.includes(low) || phoneHit(r.guest_phone) || phoneHit(r.contact_phone) || phoneHit(p && p.phone)
+          || (code.length >= 4 && String(r.ticket_code || '').includes(code));
+      }).sort((a, b) => (a.date === today ? 0 : 1) - (b.date === today ? 0 : 1) || (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+        .slice(0, 20).map(r => ({ ...safeRes(r), today: r.date === today, profile: r.user_id ? (profs[r.user_id] || null) : null }));
+      // членове (и без резервация днес) — по име или телефон
+      const clean = raw.replace(/[%,()]/g, '');
+      let members = [];
+      const { data: m1 } = await sb.from('profiles').select('id,full_name,username,phone,membership,membership_until')
+        .or('full_name.ilike.%' + clean + '%,username.ilike.%' + clean + '%').limit(10);
+      members = m1 || [];
+      if (digits.length >= 4) {
+        const tail = digits.slice(-6);
+        const { data: m2 } = await sb.from('profiles').select('id,full_name,username,phone,membership,membership_until').ilike('phone', '%' + tail + '%').limit(10);
+        (m2 || []).forEach(p => { if (!members.some(x => x.id === p.id)) members.push(p); });
+      }
+      return { tickets, members: members.slice(0, 10) };
+    },
+    async doorSearch(q) {
+      if (!LIVE) return [];
+      const { data, error } = await sb.from('profiles').select('id,full_name,username,membership,membership_until')
+        .or('full_name.ilike.%' + q.replace(/[%,]/g, '') + '%,username.ilike.%' + q.replace(/[%,]/g, '') + '%').limit(10);
+      authErr(error);
+      return data || [];
+    },
+    // брояч за екрана „Вход“: днешните потвърдени резервации (места и колко от тях са отбелязани)
+    async doorCounts() {
+      if (!LIVE) return [];
+      const d = new Date(), today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const { data, error } = await sb.from('reservations').select('event_id,table_event_id,party_size,kind,checked_in_at,time,place,format')
+        .eq('date', today).eq('status', 'confirmed').limit(2000);
+      authErr(error);
+      return (data || []).filter(r => (r.kind || 'physical') === 'physical');
+    },
+    async doorCheckIn(resId, undo) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.from('reservations').update({ checked_in_at: undo ? null : new Date().toISOString() }).eq('id', resId);
+      authErr(error);
+      return { error };
+    },
+    async listEvents() {
+      if (!LIVE) return seedDemo();
+      const { data, error } = await sb.from('events').select('*').order('date', { ascending: true }).order('time', { ascending: true, nullsFirst: true });
+      authErr(error);
+      return (data || []).map(e => ({ id: e.id, title: e.title, format: fmtId(e.format), place: placeName(e.place),
+        date: e.date, end_date: e.end_date || '', time: e.time, ends: e.ends || '', capacity: e.capacity,
+        price: e.price || 0, price_online: e.price_online || 0, price_archive: e.price_archive || 0,
+        offer_physical: e.offer_physical !== false, offer_online: !!e.offer_online, offer_archive: !!e.offer_archive,
+        table_capacity: e.table_capacity || 0, aud: toAud(e.audience),
+        booking_windows: e.booking_windows || null,
+        image_url: e.image_url || '', video_url: e.video_url || '',
+        stream_url: e.stream_url || '', is_live: !!e.is_live, live_auto: !!e.live_auto, live_ended: !!e.live_ended, stream_gated: !!e.stream_gated,
+        recording_url: e.recording_url || '', rec_title: e.rec_title || '', rec_gated: !!e.rec_gated, rec_price: e.rec_price || 0, archive_only: !!e.archive_only,
+        description: e.description || '', tags: Array.isArray(e.tags) ? e.tags : [], pub: e.pub || {} }));
+    },
+    // всички събития (за админ панела — без филтър по членство; в live разчита на admin RLS)
+    async listAllEvents() { return this.listEvents(); },
+    // само БРОЯ заети места на събитие (без лични данни — за наличност при членовете)
+    async listEventTaken() {
+      if (!LIVE) {
+        const r = jget(K.res, []); const m = {};
+        r.forEach(x => { if (x.event_id && (x.status === 'requested' || x.status === 'confirmed' || !x.status)) m[x.event_id] = (m[x.event_id] || 0) + (x.party || 1); });
+        return m;
+      }
+      const { data } = await sb.from('event_taken').select('event_id,taken');
+      const m = {}; (data || []).forEach(r => { m[r.event_id] = r.taken || 0; });
+      return m;
+    },
+    // Публичен сайт: заети места по събитие и час (само бройки). Ако SQL функцията още я няма — празно (сайтът работи както преди).
+    async publicEventSeats() {
+      if (!LIVE) return {};
+      try {
+        const { data, error } = await sb.rpc('public_event_seats');
+        if (error || !data) return {};
+        const m = {}; data.forEach(r => { const e = (m[r.event_id] = m[r.event_id] || { total: 0, bySlot: {} }); e.total += Number(r.taken) || 0; e.bySlot[r.slot || ''] = (e.bySlot[r.slot || ''] || 0) + (Number(r.taken) || 0); });
+        return m;
+      } catch (e) { return {}; }
+    },
+    async addEvent(o) {
+      if (!LIVE) { const e = seedDemo(); o.id = 'e' + Date.now(); e.unshift(o); jset(K.ev, e); return { error: null }; }
+      const { error } = await sb.from('events').insert({ title: o.title, format: o.format, place: o.place, date: o.date || null,
+        end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0,
+        price: o.price || 0, price_online: o.price_online || 0, price_archive: o.price_archive || 0,
+        offer_physical: o.offer_physical !== false, offer_online: !!o.offer_online, offer_archive: !!o.offer_archive,
+        table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
+        booking_windows: o.booking_windows || null,
+        image_url: o.image_url || null, video_url: o.video_url || null,
+        stream_url: o.stream_url || null, is_live: !!o.is_live, live_auto: !!o.live_auto, live_ended: false, stream_gated: !!o.stream_gated,
+        description: o.description || null, tags: o.tags || [], pub: o.pub || {} });
+      return { error };
+    },
+    async updateEvent(id, o) {
+      if (!LIVE) { let e = seedDemo().map(x => x.id === id ? { ...x, ...o } : x); jset(K.ev, e); return { error: null }; }
+      const { error } = await sb.from('events').update({ title: o.title, format: o.format, place: o.place, date: o.date || null,
+        end_date: o.end_date || null, time: o.time, ends: o.ends || null, capacity: o.capacity || 0,
+        price: o.price || 0, price_online: o.price_online || 0, price_archive: o.price_archive || 0,
+        offer_physical: o.offer_physical !== false, offer_online: !!o.offer_online, offer_archive: !!o.offer_archive,
+        table_capacity: o.table_capacity || null, audience: toAudience(o.aud),
+        booking_windows: o.booking_windows || null,
+        image_url: o.image_url || null, video_url: o.video_url || null,
+        stream_url: o.stream_url || null, is_live: !!o.is_live, live_auto: !!o.live_auto, stream_gated: !!o.stream_gated,
+        description: o.description || null, tags: o.tags || [], pub: o.pub || {} }).eq('id', id);
+      return { error };
+    },
+    // самостоятелен архивен запис (скрито „събитие", показва се само във Видео архив)
+    async addArchiveEntry(o) {
+      if (!LIVE) { const e = seedDemo(); o.id = 'a' + Date.now(); o.archive_only = true; e.unshift(o); jset(K.ev, e); return { error: null }; }
+      const { error } = await sb.from('events').insert({ title: o.title, format: o.format || 'culture', place: o.place || null,
+        date: o.date || null, capacity: 0, price: 0, audience: toAudience(o.aud), archive_only: true,
+        recording_url: (o.recording_url || '').trim() || null, rec_title: (o.rec_title || '').trim() || null,
+        rec_gated: !!o.rec_gated, rec_price: o.rec_price || 0 });
+      return { error };
+    },
+    // запис/архив на събитие (управлява се отделно, за да не се пипа събитието)
+    async setRecording(id, r) {
+      if (!LIVE) { let e = seedDemo().map(x => x.id === id ? { ...x, recording_url: r.recording_url, rec_title: r.rec_title, rec_gated: r.rec_gated, rec_price: r.rec_price } : x); jset(K.ev, e); return { error: null }; }
+      const { error } = await sb.from('events').update({ recording_url: (r.recording_url || '').trim() || null, rec_title: (r.rec_title || '').trim() || null, rec_gated: !!r.rec_gated, rec_price: r.rec_price || 0 }).eq('id', id);
+      return { error };
+    },
+    // бърз превключвател „на живо": включи → старт; изключи → ръчно спиране (важи и за авто)
+    async setLive(id, on) {
+      if (!LIVE) { let e = seedDemo().map(x => x.id === id ? { ...x, is_live: !!on, live_ended: !on } : x); jset(K.ev, e); return; }
+      await sb.from('events').update({ is_live: !!on, live_ended: !on }).eq('id', id);
+    },
+    async deleteEvent(id) {
+      if (!LIVE) {
+        jset(K.ev, seedDemo().filter(x => x.id !== id));
+        jset(K.res, jget(K.res, []).filter(r => r.event_id !== id && r.table_event_id !== id));
+        return;
+      }
+      // първо махаме резервациите (билети + маси) за това събитие, после самото събитие
+      await sb.from('reservations').delete().eq('event_id', id);
+      await sb.from('reservations').delete().eq('table_event_id', id);
+      await sb.from('events').delete().eq('id', id);
+    },
+
+    // ---------- РЕЗЕРВАЦИИ ----------
+    async listReservations() {
+      if (!LIVE) return jget(K.res, []);
+      // базата връща най-много 1000 реда наведнъж → четем на страници, за да не изпадат по-старите месеци
+      let data = [], error = null;
+      for (let from = 0; from < 50000; from += 1000) {
+        const q = await sb.from('reservations').select('*').order('created_at', { ascending: false }).order('id').range(from, from + 999);
+        if (q.error) { error = q.error; break; }
+        data = data.concat(q.data || []); if (!q.data || q.data.length < 1000) break;
+      }
+      authErr(error);
+      return (data || []).map(mapResRow);
+    },
+    async addReservation(o) {
+      if (!LIVE) { const r = jget(K.res, []); o.id = 'r' + Date.now(); o.status = 'requested'; r.unshift(o); jset(K.res, r); return { error: null }; }
+      const u = await this.getUser();
+      // една активна заявка на член за дадено събитие
+      if (o.event_id) {
+        const { data: ex } = await sb.from('reservations').select('id,status').eq('user_id', u.id).eq('event_id', o.event_id);
+        if ((ex || []).some(x => x.status !== 'declined' && x.status !== 'cancelled'))
+          return { error: { message: 'duplicate' } };
+      }
+      const { error } = await sb.from('reservations').insert({ user_id: u.id, event_id: o.event_id || null,
+        table_event_id: o.table_event_id || null,
+        who: u.username || u.email, membership: u.membership, format: o.fmt,
+        place: o.place, date: o.date || null, time: o.time, party_size: o.party || 1, note: o.note, status: 'requested',
+        kind: o.kind || null,
+        res_name: o.res_name || null, contact_email: o.email || null, contact_phone: o.phone || null });
+      return { error };
+    },
+    // Stripe: създава плащане за билет (тип physical|online|archive). Връща {client_secret} или {free:true}.
+    // Преди повикване на Edge Function: гарантираме жив токен. Приложението може да е стояло
+    // отворено с часове — токенът е изтекъл, а функцията отговаря „Not signed in" макар че сте влезли.
+    async freshSession() {
+      try {
+        const { data } = await sb.auth.getSession();
+        let s = data && data.session;
+        if (!s) return null;
+        const exp = (s.expires_at || 0) * 1000;
+        if (exp && exp - Date.now() < 120 * 1000) {           // изтича до 2 мин. → подновяваме сега
+          const r = await sb.auth.refreshSession();
+          if (r && r.data && r.data.session) s = r.data.session;
+        }
+        return s;
+      } catch (e) { return null; }
+    },
+    async createPayment(event_id, kind, party, slot, big, note, kids, kid_ages, pay_method) {
+      if (!LIVE) return { error: { message: 'Налично след свързване на Supabase' } };
+      const sess = await this.freshSession();
+      if (!sess) return { error: { message: 'Сесията е изтекла — влезте отново.' } };
+      let { data, error } = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '', big: !!big, note: note || '', kids: kids || 0, kid_ages: kid_ages || [], pay_method: pay_method || '' } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        // изтекъл токен точно в момента → подновяваме и опитваме още веднъж
+        if (/not signed in|jwt|401/i.test(msg)) {
+          try { await sb.auth.refreshSession(); } catch (e) {}
+          const again = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '', big: !!big, note: note || '', kids: kids || 0, kid_ages: kid_ages || [], pay_method: pay_method || '' } });
+          if (!again.error) { data = again.data; error = null; }
+          else { try { const b = await again.error.context.json(); if (b && b.error) msg = b.error; } catch (e) {} }
+        }
+        if (error) return { error: { message: /not signed in/i.test(msg) ? 'Сесията е изтекла — излезте и влезте отново.' : msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return data;
+    },
+    // група 9+: реалният брой места след разговора с клиента (само докато заявката чака одобрение)
+    async setReservationParty(id, party, note) {
+      if (!LIVE) return { error: null };
+      const { error } = await sb.from('reservations').update({ party_size: party, note }).eq('id', id).eq('status', 'requested');
+      return { error };
+    },
+    // ресторант (плащане на място / банков превод): екипът отбелязва, че сумата е получена. Нужно е право „Продажба на място“ или админ.
+    async markReservationPaid(id, cents, method) {
+      if (!LIVE) return { error: null };
+      const { data: s } = await sb.auth.getSession(); const uid = s && s.session ? s.session.user.id : null;
+      const { error } = await sb.from('reservations').update({ paid: true, paid_cents: Math.max(0, Math.round(cents || 0)), pay_method: method, sold_by: uid, sold_at: new Date().toISOString() }).eq('id', id);
+      return { error };
+    },
+    async setReservationStatus(id, status) {
+      if (!LIVE) { let r = jget(K.res, []); r = r.map(x => x.id === id ? { ...x, status } : x); jset(K.res, r); return { error: null }; }
+      const { error } = await sb.from('reservations').update({ status }).eq('id', id);
+      return { error };
+    },
+    async deleteReservation(id) {
+      if (!LIVE) { jset(K.res, jget(K.res, []).filter(x => x.id !== id)); return { error: null }; }
+      const { error } = await sb.from('reservations').delete().eq('id', id);
+      return { error };
+    },
+
+    // ---------- ЗАПАЗЕНИ СЪБИТИЯ ----------
+    async listSaved() {
+      if (!LIVE) return jget(K.saved, []);
+      const { data } = await sb.from('saved_events').select('event_id');
+      return (data || []).map(x => x.event_id);
+    },
+    async toggleSaved(eventId) {
+      if (!LIVE) {
+        let s = jget(K.saved, []);
+        if (s.includes(eventId)) s = s.filter(x => x !== eventId); else s.push(eventId);
+        jset(K.saved, s); return s.includes(eventId);
+      }
+      const u = await this.getUser();
+      const have = (await this.listSaved()).includes(eventId);
+      if (have) { await sb.from('saved_events').delete().eq('user_id', u.id).eq('event_id', eventId); return false; }
+      await sb.from('saved_events').insert({ user_id: u.id, event_id: eventId }); return true;
+    },
+
+    // ---------- ПАРОЛИ ----------
+    async resetPassword(email) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.auth.resetPasswordForEmail((email || '').trim(),
+        { redirectTo: location.href.split('#')[0] });
+      return { error };
+    },
+    async updatePassword(p) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.auth.updateUser({ password: p });
+      return { error };
+    },
+    // извиква cb(), когато потребителят дойде по линк за нова парола
+    onRecovery(cb) {
+      if (LIVE && sb) sb.auth.onAuthStateChange((ev) => { if (ev === 'PASSWORD_RECOVERY') cb(); });
+    },
+
+    // Реалтайм: известява мигновено, когато събитие се промени (вкл. тръгване/спиране на живо).
+    // Изисква в Supabase: realtime да е включен за таблица events (виж sql/realtime_events.sql).
+    onLiveChange(cb) {
+      if (!(LIVE && sb)) return null;
+      try {
+        return sb.channel('events-live')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'events' },
+            (payload) => { try { cb(payload.new || payload.old || null); } catch (e) {} })
+          .subscribe();
+      } catch (e) { return null; }
+    },
+
+    // Реалтайм за админ панела: нови/променени резервации, кандидатури, съобщения, абонати.
+    // Изисква sql/realtime_admin.sql (таблиците да са в publication supabase_realtime); RLS важи.
+    mapReservation(r) { return mapResRow(r); },
+    // втора стъпка при вход в админа (функция admin-2fa). missing = функцията още не е качена; netfail = няма връзка.
+    async admin2fa(action, o) {
+      if (!LIVE) return { required: false };
+      try {
+        const { data, error } = await invokeFn('admin-2fa', { body: Object.assign({ action }, o || {}) });
+        if (error) {
+          const st = error.context && error.context.status; let b = null;
+          try { b = await error.context.json(); } catch (e) {}
+          if (st === 404 || /not found|Function not found/i.test(String(error.message || '')) && !b) return { missing: true };
+          if (b && b.error) return Object.assign({ status: st }, b);
+          return { netfail: true, error: String(error.message || 'error') };
+        }
+        return data || {};
+      } catch (e) { return { netfail: true, error: String((e && e.message) || e) }; }
+    },
+    onAdminChange(cb) {
+      if (!(LIVE && sb)) return null;
+      try {
+        let ch = sb.channel('admin-live');
+        ['reservations', 'applications', 'contact_messages', 'newsletter_subscribers', 'events', 'membership_payments', 'membership_codes', 'profiles'].forEach(t => {
+          ch = ch.on('postgres_changes', { event: '*', schema: 'public', table: t },
+            (payload) => { try { const nw = payload.new && Object.keys(payload.new).length ? payload.new : null; cb(t, payload.eventType, nw || payload.old || null, payload.old || null); } catch (e) {} });
+        });
+        return ch.subscribe();
+      } catch (e) { return null; }
+    },
+
+    // ---------- ПОКАНИ (само админ; през Edge Function) ----------
+    // fullName и phone идват от кандидатурата — пренасяме ги в профила,
+    // за да не пита приложението за тях след първото влизане.
+    async inviteMember(email, username, membership, validFrom, fullName, phone) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member',
+        { body: { email: (email || '').trim(), username: (username || '').trim(), membership: membership || 'guest',
+                  valid_from: validFrom || null, full_name: (fullName || '').trim(), phone: (phone || '').trim() } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, password: data && data.password, until: data && data.until };
+    },
+    // корекция на телефон на член (само админ)
+    async adminSetPhone(id, phone) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'set_phone', id, phone } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null };
+    },
+    // искане за нов телефон (само админ) — членът ще бъде подканен при следващо влизане
+    // админ сменя името на член (нулира 3-месечния период)
+    async adminSetName(id, name) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.from('profiles').update({ full_name: (name || '').trim(), name_changed_at: null }).eq('id', id);
+      return { error };
+    },
+    async adminRequestPhone(id) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'request_phone', id } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null };
+    },
+    // смяна на членска категория (само админ)
+    async companyAdd(companyId, email, fullName, force) {   // админ: добавя профил към фирма (invite-member v3.8)
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'company_add', company_id: companyId, email: (email || '').trim(), full_name: (fullName || '').trim(), force: !!force } });
+      if (error) { let msg = error.message, cnt = 0; try { const b = await error.context.json(); if (b && b.error) { msg = b.error; cnt = b.count || 0; } } catch (e) {} return { error: { message: msg, count: cnt } }; }
+      return { error: null, data };
+    },
+    async reinviteMember(id) {   // поканата пак — само за невлизал член (invite-member v3.9)
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'reinvite', id, redirect: location.origin + '/app/' } });
+      if (error) { let msg = error.message; try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {} return { error: { message: msg } }; }
+      return { error: null, data };
+    },
+    async setCompanyName(id, name) {   // invite-member v3.10 + 2026-11-18-company-name.sql
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'set_company_name', id, company_name: (name || '').trim() } });
+      if (error) { let msg = error.message; try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {} return { error: { message: msg } }; }
+      return { error: null, data };
+    },
+    // вътрешно тикче „картата е изработена“ — през SQL функцията set_card_issued (2026-11-19-member-card.sql).
+    // Директен запис в profiles не е възможен: клиентите имат право да пишат само няколко безопасни колони.
+    async setCardIssued(id, on) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.rpc('set_card_issued', { p_id: id, p_on: !!on });
+      if (!error) return { error: null };
+      if (/set_card_issued|card_issued_at|schema cache|PGRST202|does not exist/i.test((error.message || '') + ' ' + (error.code || ''))) return { error: { message: 'need_sql' } };
+      return { error };
+    },
+    // датите на отметките — четат се направо от профилите (работи и със стара версия на invite-member)
+    async cardMarks() {
+      if (!LIVE) return {};
+      try { const { data, error } = await sb.from('profiles').select('id,card_issued_at').not('card_issued_at', 'is', null); if (error) return {}; const m = {}; (data || []).forEach(r => { m[r.id] = r.card_issued_at; }); return m; } catch (e) { return {}; }
+    },
+    async companyRemove(id) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'company_remove', id } });
+      if (error) { let msg = error.message; try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {} return { error: { message: msg } }; }
+      return { error: null, data };
+    },
+    async setMembership(email, membership) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member',
+        { body: { action: 'set_membership', email: (email || '').trim(), membership } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, membership: data && data.membership };
+    },
+    // ---------- ФИРМЕНИ ПРОФИЛИ (корпоративно членство) ----------
+    async companyMembers() {
+      if (!LIVE) return { members: [], max: 6 };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'company_members' } });
+      if (error || !data || data.error) return { members: [], max: 6 };
+      return { members: data.members || [], max: data.max || 6 };
+    },
+    async companyInvite(email, username) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member',
+        { body: { action: 'company_invite', email: (email || '').trim(), username: (username || '').trim() } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null };
+    },
+
+    // ---------- КАНДИДАТУРИ / ПРЕДЛОЖЕНИЯ ----------
+    // Кандидатурата вече НЕ се записва директно в базата. Минава през Edge функция,
+    // която първо проверява captcha-та при Cloudflare. Иначе всеки бот можеше да
+    // напълни таблицата с милиони записи.
+    async submitApplication(o) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('submit-application', {
+        body: {
+          captcha_token: o.captcha_token || '',
+          rules_accepted: !!o.rules_accepted, terms_version: o.terms_version || null, media_consent: !!o.media_consent,
+          nominate: !!o.nominate,
+          membership: o.membership || null,
+          name: o.name || null, email: (o.email || '').trim() || null, phone: o.phone || null,
+          profession: o.profession || null, interests: o.interests || null, about: o.about || null,
+          alumni_relation: o.alumni_relation || null,
+          corp_bulstat: o.corp_bulstat || null, corp_size: o.corp_size || null, corp_activity: o.corp_activity || null
+        }
+      });
+      if (error) {
+        // тялото на грешката носи причината
+        let reason = '';
+        try { reason = (await error.context.json()).error || ''; } catch (e) {}
+        if (reason === 'cooldown') return { error: { cooldown: true } };
+        if (reason === 'dup') return { error: { dup: true } };
+        if (reason === 'captcha') return { error: { captcha: true } };
+        return { error: { message: reason || error.message } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null };
+    },
+    async listApplications() {
+      if (!LIVE) return [];
+      const { data } = await sb.from('applications').select('*').order('created_at', { ascending: false });
+      return data || [];
+    },
+    // „прегледано“ от админ (seen_at) — резервации / кандидатури
+    async markSeen(table, ids) {
+      if (!LIVE || !ids || !ids.length) return { error: null };
+      const { error } = await sb.from(table === 'applications' ? 'applications' : 'reservations').update({ seen_at: new Date().toISOString() }).in('id', ids);
+      return { error };
+    },
+    // ---- Членства и плащания (админ) ----
+    async listMembershipPrices() { if (!LIVE) return []; const { data } = await sb.from('membership_prices').select('*').order('price_year', { ascending: false }); return data || []; },
+    async saveMembershipPrice(row) { if (!LIVE) return { error: { message: 'demo' } }; const { error } = await sb.from('membership_prices').upsert(Object.assign({ updated_at: new Date().toISOString() }, row), { onConflict: 'membership' }); return { error }; },
+    async membershipInvite(o) { return fnCall('membership-invite', o); },
+    async membershipActivate(paymentId) { return fnCall('membership-activate', { payment_id: paymentId }); },
+    // платено на място (в брой / ПОС) — membership-pay action onsite (сървърът проверява правата и смята сумата)
+    async membershipOnsite(code, plan, method) { return fnCall('membership-pay', { action: 'onsite', code, plan, method }); },
+    async membershipCodeInfo(code) { return fnCall('membership-pay', { action: 'info', code }); },
+    async listMembershipPayments(limit) { if (!LIVE) return []; const { data } = await sb.from('membership_payments').select('*').order('created_at', { ascending: false }).limit(limit || 200); return data || []; },
+    async listMembershipCodes(limit) { if (!LIVE) return []; const { data } = await sb.from('membership_codes').select('*').order('created_at', { ascending: false }).limit(limit || 200); return data || []; },
+    // изтриване на код; ако към него има записани плащания (напр. започнато и изоставено плащане), те се пазят
+    // като история → кодът не се трие, а се ДЕАКТИВИРА (изтича сега) — линкът спира да работи, изчезва от „Активни кодове“
+    async deleteMembershipCode(id) {
+      if (!LIVE) return { error: null };
+      const { error } = await sb.from('membership_codes').delete().eq('code', id);
+      if (error && /foreign key|membership_payments_code_fkey/i.test(error.message || '')) {
+        const { error: e2 } = await sb.from('membership_codes').update({ expires_at: new Date().toISOString() }).eq('code', id);
+        return { error: e2 || null, deactivated: !e2 };
+      }
+      return { error };
+    },
+    // изтриване само на НЕПЛАТЕН запис (status pending/cancelled) — платените са финансова история
+    async deleteMembershipPayment(id) { if (!LIVE) return { error: null }; const { error } = await sb.from('membership_payments').delete().eq('id', id).in('status', ['pending', 'cancelled']); return { error }; },
+    async cancelMembershipPayment(id) { if (!LIVE) return { error: null }; const { error } = await sb.from('membership_payments').update({ status: 'cancelled' }).eq('id', id); return { error }; },
+    // публична страница /join (без вход) → Edge Function membership-pay (Verify JWT OFF)
+    async membershipPay(o) {
+      const r = await fetch(CFG.SUPABASE_URL + '/functions/v1/membership-pay', { method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': CFG.SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + CFG.SUPABASE_ANON_KEY }, body: JSON.stringify(o) });
+      let j = {}; try { j = await r.json(); } catch (e) {}
+      if (!r.ok || j.error) return { error: { message: j.error || ('HTTP ' + r.status) } };
+      return { data: j };
+    },
+    // билет на място (рецепция) → Edge Function walkin-ticket
+    async walkinTicket(o) { return fnCall('walkin-ticket', o); },
+    // връщане на сумата през Stripe (Edge Function refund-payment); cents празно = цялата сума
+    // „има ли нещо ново?“ за админа — най-новите created_at на заявки/кандидатури/съобщения (3 леки заявки)
+    async latestStamps() {
+      if (!LIVE) return {};
+      const one = async (t) => { try { const { data } = await sb.from(t).select('created_at').order('created_at', { ascending: false }).limit(1); return (data && data[0] && data[0].created_at) || ''; } catch (e) { return ''; } };
+      const [r, a, m] = await Promise.all([one('reservations'), one('applications'), one('contact_messages')]);
+      return { reservations: r, applications: a, messages: m };
+    },
+    async refundReservation(id, cents) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('refund-payment', { body: { reservation_id: id, amount_cents: cents || undefined } });
+      if (error) return { error: { message: (data && data.error) || error.message } };
+      if (data && data.error) return { error: { message: data.error } };
+      return { data };
+    },
+    // ръчно отбелязване „сумата е върната“ (когато е върната извън Stripe)
+    async markRefunded(id, cents) {
+      if (!LIVE) return { error: null };
+      const { error } = await sb.from('reservations').update({ refunded_at: new Date().toISOString(), refund_cents: cents || 0 }).eq('id', id);
+      return { error };
+    },
+    async setApplicationStatus(id, status) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.from('applications').update({ status }).eq('id', id);
+      return { error };
+    },
+    async deleteApplication(id) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { error } = await sb.from('applications').delete().eq('id', id);
+      return { error };
+    },
+
+    // списък с всички членове (само админ)
+    // Връща масив при успех, или NULL при грешка. Празен масив значи "наистина няма членове".
+    // Преди връщаше [] и при двете — затова при трепване на мрежата пишеше "Все още няма членове".
+    async listMembers() {
+      if (!LIVE) return [];
+      window.__membersErr = '';
+      // Edge функциите заспиват; първото извикване понякога пада. Опитваме два пъти.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const { data, error } = await invokeFn('invite-member', { body: { action: 'members' } });
+          if (error) {
+            let msg = error.message;
+            try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+            window.__membersErr = msg;
+          } else if (!data || data.error) {
+            window.__membersErr = (data && data.error) || 'няма отговор от сървъра';
+          } else {
+            window.__membersErr = '';
+            const list = data.members || [];
+            try { const cm = await this.cardMarks(); list.forEach(p => { if (cm[p.id]) p.card_issued_at = cm[p.id]; }); } catch (e) {}
+            return list;
+          }
+        } catch (e) { window.__membersErr = String((e && e.message) || e); }
+        if (attempt === 0) await new Promise(r => setTimeout(r, 700));
+      }
+      return null;
+    },
+    // ---- Екип и права (само админ) ----
+    async setPerms(id, perms, until) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'set_perms', id, perms, perms_until: until || null } });
+      if (error) { let m = error.message; try { const b = await error.context.json(); if (b && b.error) m = b.error; } catch (e) {} return { error: { message: m } }; }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, data };
+    },
+    async setRole(id, role) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'set_role', id, perms: role } });
+      if (error) { let m = error.message; try { const b = await error.context.json(); if (b && b.error) m = b.error; } catch (e) {} return { error: { message: m } }; }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, data };
+    },
+    async inviteStaff(email, fullName, perms, until) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'invite_staff', email, full_name: fullName, perms, perms_until: until || null } });
+      if (error) { let m = error.message; try { const b = await error.context.json(); if (b && b.error) m = b.error; } catch (e) {} return { error: { message: m } }; }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, data };
+    },
+    // изтриване на член (само админ)
+    async deleteMember(id) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'delete_user', id } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null };
+    },
+    // членът изтрива собствения си акаунт (GDPR)
+    async deleteSelfAccount() {
+      if (!LIVE) { localStorage.removeItem(K.user); return { error: null }; }
+      const { data, error } = await invokeFn('invite-member', { body: { action: 'delete_self' } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      await sb.auth.signOut();
+      return { error: null };
+    },
+    // членът отказва собствена резервация
+    async cancelOwnReservation(id) {
+      if (!LIVE) { let r = jget(K.res, []); r = r.map(x => x.id === id ? { ...x, status: 'cancelled' } : x); jset(K.res, r); return { error: null }; }
+      const { error } = await sb.from('reservations').update({ status: 'cancelled' }).eq('id', id);
+      return { error };
+    },
+
+    // ---------- ОБЯВИ ----------
+    async listAnnouncements() {
+      if (!LIVE) return jget('acac_ann', []);
+      try { const { data } = await sb.from('announcements').select('*').order('created_at', { ascending: false }); return data || []; }
+      catch (e) { return []; }
+    },
+    async createAnnouncement(a) {
+      if (!LIVE) { const l = jget('acac_ann', []); l.unshift({ id: 'a' + Date.now(), created_at: new Date().toISOString(), ...a }); jset('acac_ann', l); return { error: null }; }
+      const { data: ses } = await sb.auth.getSession();
+      const row = {
+        title: a.title, body: a.body, audience: a.audience || 'all',
+        memberships: a.memberships || [], user_ids: a.user_ids || [],
+        created_by: ses && ses.session ? ses.session.user.id : null
+      };
+      const { error } = await sb.from('announcements').insert(row);
+      return { error };
+    },
+    async deleteAnnouncement(id) {
+      if (!LIVE) { jset('acac_ann', jget('acac_ann', []).filter(x => x.id !== id)); return { error: null }; }
+      const { error } = await sb.from('announcements').delete().eq('id', id);
+      return { error };
+    },
+
+    // ---------- ЖУРНАЛ ----------
+    async logAudit(action, target, details) {
+      if (!LIVE) return;
+      try {
+        const { data: ses } = await sb.auth.getSession();
+        const uid = ses && ses.session ? ses.session.user.id : null;
+        let nm = '';
+        if (uid) { try { const r = await sb.from('profiles').select('username,full_name').eq('id', uid).single(); nm = (r.data && (r.data.full_name || r.data.username)) || ''; } catch (e) {} }
+        await sb.from('audit_log').insert({ actor: uid, actor_name: nm, action, target: target || '', details: details || '' });
+      } catch (e) {}
+    },
+    async listAudit(limit) {
+      if (!LIVE) return [];
+      const { data } = await sb.from('audit_log').select('*').order('created_at', { ascending: false }).limit(limit || 300);
+      return data || [];
+    },
+    // подновяване на членство (само админ) — удължава с 1 година от дадена дата
+    async renewMembership(email, validFrom, exactUntil) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member',
+        { body: { action: 'renew', email: (email || '').trim(), valid_from: validFrom || null, exact_until: exactUntil || null } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, until: data && data.until };
+    },
+    // имейл до члена при одобрена/отказана резервация (само админ)
+    async notifyReservation(id, status) {
+      if (!LIVE) return { error: null };
+      const { data, error } = await invokeFn('reservation-status',
+        { body: { reservation_id: id, status } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null };
+    },
+    // нова временна парола за съществуващ член (само админ)
+    async adminResetPassword(email) {
+      if (!LIVE) return { error: { message: 'demo' } };
+      const { data, error } = await invokeFn('invite-member',
+        { body: { action: 'reset', email: (email || '').trim() } });
+      if (error) {
+        let msg = error.message;
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
+        return { error: { message: msg } };
+      }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, password: data && data.password };
+    },
+
+    // клиентът на Supabase за модула „Маси“ (tables.html) — същата сесия, без втори вход
+    client() { return sb; },
+
+    MEMBERSHIPS: MEM
+  };
+
+  window.DB = DB;
+})();

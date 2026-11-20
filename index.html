@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8" />
+<!-- ЗАЩИТА: Content-Security-Policy. Аналитиката (Google/Meta) и картата (Google Maps) са
+     изрично изброени; всичко друго е забранено. Ако нещо спре — виж Console за "Refused to". -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://js.stripe.com https://js-de.sentry-cdn.com https://challenges.cloudflare.com https://www.googletagmanager.com https://connect.facebook.net;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' data: https://fonts.gstatic.com;
+  img-src 'self' data: blob: https:;
+  media-src 'self' blob: https:;
+  connect-src 'self' https://twcxfqgknhqicxqghcrx.supabase.co wss://twcxfqgknhqicxqghcrx.supabase.co https://api.stripe.com https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://challenges.cloudflare.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://www.facebook.com https://connect.facebook.net;
+  frame-src https://js.stripe.com https://hooks.stripe.com https://challenges.cloudflare.com https://www.google.com https://maps.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com;
+  object-src 'none'; base-uri 'self'; form-action 'self';
+" />
+<script src="https://js-de.sentry-cdn.com/e5ac0f5176655a8ad5d8c2cf1447a7c6.min.js" crossorigin="anonymous" async></script>
+<!-- Линкове от Supabase (покана, нова парола) и стари линкове към приложението → /app/ -->
+<script>(function(){var h=location.hash||'';if(/access_token=|type=(invite|recovery|signup|magiclink)|error=|^#(event|format|login|apply|reservations|profile|archive)/.test(h)){location.replace('app/'+h);}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#000000" />
+<title>AC² — American College Arcus Club</title>
+<meta name="description" content="AC² — културен център, ресторант и клуб във Велико Търново. Сцена, галерия, кино, тематични вечери и членство." />
+<meta property="og:title" content="AC² — American College Arcus Club" />
+<meta property="og:description" content="Културен център, ресторант и клуб във Велико Търново." />
+<meta property="og:image" content="https://ac2.bg/icon-512.png?v=2" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="favicon.png?v=3" />
+<link rel="apple-touch-icon" href="icon-192.png?v=3" />
+<link rel="manifest" href="manifest.json" />
+<link rel="preconnect" href="https://twcxfqgknhqicxqghcrx.supabase.co" crossorigin />
+<link rel="stylesheet" href="fonts/fonts.css" />
+<style>
+  :root{
+    --bg:#ebebd6; --surface:#f4f4e8; --surface2:#e0e0c8; --card:#f7f7ee;
+    --gold:#82303d; --gold-soft:#652430; --gilt:#bfc0c2;
+    --wine:#82303d; --beige:#ebebd6;   /* бордото и бежовото на AC² — ползват се от бутоните-избор и плаващия бутон (липсваха → излизаха прозрачни) */
+    --cream:#000000; --text:#1c1c1b; --mid:#4b4b45; --muted:#6b6b63;
+    --dark:#000000; --dark2:#161616; --ondark:#ebebd6; --ondark-mid:#bfc0c2;
+    --line:rgba(0,0,0,0.16); --line-soft:rgba(0,0,0,0.07);
+    --serif:'Playfair Display',Georgia,serif;
+    --sans:'Google Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --wrap:1180px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+  img{display:block;max-width:100%;}
+  button{font-family:inherit;cursor:pointer;}
+  .wrap{max-width:var(--wrap);margin:0 auto;padding:0 28px;}
+  @media(max-width:640px){.wrap{padding:0 18px;}}
+  h1,h2{font-family:var(--serif);font-style:italic;font-weight:700;color:var(--cream);line-height:1.12;}
+  h3{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--cream);line-height:1.15;}
+  .kicker{color:var(--gold);font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;}
+  .lead{color:var(--mid);font-size:17px;line-height:1.65;max-width:720px;white-space:pre-line;}
+  .body{color:var(--text);font-size:16px;line-height:1.7;white-space:pre-line;max-width:760px;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--gold);background:var(--gold);color:#ebebd6;
+    padding:12px 22px;border-radius:6px;font-size:12.5px;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:background .2s,transform .15s;}
+  .btn:hover{background:#82303d;}
+  .btn:active{transform:scale(.98);}
+  .btn.ghost{background:transparent;color:var(--gold);}
+  .btn.ghost:hover{background:rgba(130,48,61,.08);}
+  .btn.dark{background:var(--dark);border-color:var(--dark);color:var(--ondark);}
+  .btn.gilt{background:transparent;border-color:var(--gilt);color:var(--gilt);}
+  .btn.gilt:hover{background:rgba(191,192,194,.12);}
+  .btn.sm{padding:9px 16px;font-size:11.5px;}
+  .btn[disabled]{opacity:.5;cursor:not-allowed;}
+  .tlink{color:var(--gold);text-decoration:none;font-size:14px;letter-spacing:.5px;}
+  .tlink:hover{text-decoration:underline;text-underline-offset:4px;}
+
+  /* ---------- Интро (кратка анимация преди сайта) ---------- */
+  .intro{position:fixed;inset:0;z-index:200;background:#EBEBD6;color:var(--text);display:flex;flex-direction:column;overflow:hidden;
+    transition:opacity .7s ease;}
+  .intro.out{opacity:0;pointer-events:none;}
+  .intro .logoarea{position:relative;flex:1;min-height:0;padding:0;}
+  /* видеото е абсолютно в областта — иначе на широк екран „width:100%" го разпъва до естествената му височина и излиза извън екрана */
+  .intro video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;background:#EBEBD6;clip-path:inset(2px);}
+  @media (max-aspect-ratio:3/4){.intro video{object-fit:cover;}}   /* телефон: запълва; десктоп: вписва (фонът е същото бежово) */
+  .intro .biglogo{width:min(44vw,460px);filter:drop-shadow(0 10px 40px rgba(0,0,0,.5));animation:introIn 1.1s cubic-bezier(.2,.7,.2,1) both;}
+  @keyframes introIn{from{opacity:0;transform:scale(.85) translateY(10px)}to{opacity:1;transform:none}}
+  .intro .skip{position:absolute;top:22px;right:26px;z-index:2;background:#1B1B1B;border:1px solid #1B1B1B;color:#EBEBD6;border-radius:24px;padding:11px 20px;font-size:14px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.2);transition:background .2s,transform .2s;}
+  .intro .skip:hover{background:#000;transform:translateY(-1px);}
+  @media(max-width:760px){.intro .skip{top:16px;right:16px;padding:10px 16px;font-size:13px;}}
+  .frieze{position:relative;width:100%;color:var(--gilt);opacity:.95;pointer-events:none;filter:drop-shadow(0 0 2.5px rgba(191,192,194,.35));margin-bottom:max(30px,5vh);}
+  .frieze svg{display:block;width:100%;height:auto;overflow:visible;}
+  .frieze svg *{stroke:currentColor;fill:none;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;}
+  .frieze svg .d{opacity:.5;}
+  .frieze svg .f{fill:currentColor;stroke:none;}
+  @keyframes f-toast{0%,100%{transform:rotate(0)}40%,60%{transform:rotate(-22deg) translateY(-2px)}}
+  @keyframes f-toast2{0%,100%{transform:rotate(0)}40%,60%{transform:rotate(22deg) translateY(-2px)}}
+  @keyframes f-pour{0%,100%{transform:rotate(0)}50%{transform:rotate(-40deg)}}
+  @keyframes f-lean{0%,100%{transform:rotate(0)}50%{transform:rotate(9deg)}}
+  @keyframes f-lean2{0%,100%{transform:rotate(0)}50%{transform:rotate(-9deg)}}
+  @keyframes f-clap{0%,100%{transform:rotate(0)}50%{transform:rotate(-30deg)}}
+  @keyframes f-clap2{0%,100%{transform:rotate(0)}50%{transform:rotate(30deg)}}
+  @keyframes f-sway{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+  @keyframes f-strum{0%,100%{transform:rotate(0)}50%{transform:rotate(-30deg)}}
+  @keyframes f-spin{0%{transform:rotate(-14deg)}25%{transform:rotate(0) translateY(-4px)}50%{transform:rotate(14deg)}75%{transform:rotate(0) translateY(-4px)}100%{transform:rotate(-14deg)}}
+  @keyframes f-up{0%,100%{transform:rotate(0)}50%{transform:rotate(-60deg)}}
+  @keyframes f-up2{0%,100%{transform:rotate(0)}50%{transform:rotate(60deg)}}
+  @keyframes f-jump{0%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}50%{transform:translateY(0)}}
+  @keyframes f-cross{0%{transform:translateX(-60px)}100%{transform:translateX(1460px)}}
+  @keyframes f-leg{0%,100%{transform:rotate(22deg)}50%{transform:rotate(-22deg)}}
+  @keyframes f-leg2{0%,100%{transform:rotate(-22deg)}50%{transform:rotate(22deg)}}
+  @keyframes f-note{0%{transform:translateY(0);opacity:0}20%{opacity:.9}100%{transform:translateY(-40px) translateX(8px);opacity:0}}
+  @keyframes f-nod{0%,100%{transform:rotate(0)}50%{transform:rotate(7deg)}}
+  @keyframes f-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+  @keyframes f-pan{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  @keyframes f-flame{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.3) translateY(-1px)}}
+  @keyframes f-keys{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+  @keyframes f-page2{0%,100%{transform:skewX(0)}50%{transform:skewX(-14deg)}}
+  .fa-flame{animation:f-flame .7s ease-in-out infinite}.fa-keys{animation:f-keys .35s ease-in-out infinite}
+  .fa-page{animation:f-page2 3.4s ease-in-out infinite}
+  .fa-toast{animation:f-toast 2.4s ease-in-out infinite}.fa-toast2{animation:f-toast2 2.4s ease-in-out infinite}
+  .fa-pour{animation:f-pour 2.8s ease-in-out infinite}.fa-lean{animation:f-lean 3s ease-in-out infinite}.fa-lean2{animation:f-lean2 3s ease-in-out infinite .4s}
+  .fa-clap{animation:f-clap .45s ease-in-out infinite}.fa-clap2{animation:f-clap2 .45s ease-in-out infinite}
+  .fa-sway{animation:f-sway 1.6s ease-in-out infinite}.fa-sway2{animation:f-sway 1.2s ease-in-out infinite .3s}.fa-strum{animation:f-strum .45s ease-in-out infinite}
+  .fa-spin{animation:f-spin 1.2s ease-in-out infinite}.fa-spin2{animation:f-spin 1.2s ease-in-out infinite .6s}
+  .fa-up{animation:f-up 1.4s ease-in-out infinite}.fa-up2{animation:f-up2 1.4s ease-in-out infinite}.fa-jump{animation:f-jump 1.4s ease-in-out infinite .2s}
+  .fa-cross{animation:f-cross 22s linear infinite}.fa-leg{animation:f-leg .5s ease-in-out infinite}.fa-leg2{animation:f-leg2 .5s ease-in-out infinite}
+  .fa-note{animation:f-note 2.2s ease-out infinite}.fa-note2{animation:f-note 2.2s ease-out infinite 1.1s}
+  .fa-nod{animation:f-nod 2.4s ease-in-out infinite}.fa-nod2{animation:f-nod 2.9s ease-in-out infinite .7s}.fa-bob{animation:f-bob 1.3s ease-in-out infinite}
+  @media(max-width:760px){.intro .biglogo{width:min(68vw,300px);}.frieze{width:200%;animation:f-pan 40s linear infinite alternate;}}
+  @media(prefers-reduced-motion:reduce){.frieze,.frieze *,.intro .biglogo{animation:none!important;}}
+
+  /* ---------- Хедър ---------- */
+  .hdr{position:sticky;top:0;z-index:50;background:rgba(0,0,0,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--ondark);border-bottom:1px solid rgba(191,192,194,.14);}
+  .hdr .wrap{display:flex;align-items:center;gap:18px;height:68px;}
+  .hdr .logo{display:flex;align-items:center;gap:10px;color:var(--gilt);text-decoration:none;flex:none;}
+  .hdr .logo .lg{width:52px;display:block;}
+  .hdr .logo .nm{font-family:var(--serif);font-style:italic;font-size:15px;letter-spacing:0;line-height:1.1;color:var(--ondark);}
+  .nav{display:flex;align-items:center;gap:2px;margin-left:8px;}
+  .nav .it{position:relative;}
+  .nav .it>a{display:block;padding:10px 12px;color:var(--ondark-mid);text-decoration:none;font-size:12.5px;letter-spacing:1.6px;text-transform:uppercase;border-radius:6px;white-space:nowrap;}
+  .nav .it>a:hover,.nav .it.on>a{color:var(--gilt);}
+  .nav .it.on>a{text-decoration:underline;text-underline-offset:8px;text-decoration-color:rgba(191,192,194,.6);}
+  .nav .sub{position:absolute;top:100%;left:0;min-width:210px;background:var(--dark2);border:1px solid rgba(191,192,194,.18);border-radius:10px;padding:8px;display:none;box-shadow:0 14px 34px rgba(0,0,0,.35);}
+  .nav .it:hover .sub,.nav .it:focus-within .sub{display:block;}
+  .nav .sub a{display:block;padding:9px 12px;color:var(--ondark);text-decoration:none;font-size:13.5px;border-radius:6px;}
+  .nav .sub a:hover{background:rgba(191,192,194,.1);color:var(--gilt);}
+  .hdr .right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+  .hdr .soc{display:flex;gap:4px;}
+  .hdr .soc a{display:flex;align-items:center;justify-content:center;width:34px;height:34px;color:var(--ondark-mid);border-radius:50%;}
+  .hdr .soc a:hover{color:var(--gilt);background:rgba(191,192,194,.1);}
+  .hdr .soc svg{width:17px;height:17px;fill:currentColor;}
+  .hdr .lang{background:none;border:1px solid rgba(191,192,194,.35);color:var(--ondark);border-radius:20px;padding:6px 12px;font-size:11.5px;letter-spacing:1.5px;}
+  .hdr .lang:hover{border-color:var(--gilt);color:var(--gilt);}
+  .hdr .login{color:var(--gilt);text-decoration:none;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 6px;white-space:nowrap;}
+  .hdr .burger{display:none;background:none;border:0;color:var(--ondark);width:40px;height:40px;align-items:center;justify-content:center;}
+  .hdr .burger svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;}
+  @media(max-width:1080px){
+    .nav,.hdr .soc,.hdr .install{display:none;}
+    .hdr .burger{display:flex;}
+    .hdr .wrap{height:62px;}
+  }
+  .mnav{position:fixed;inset:0;z-index:60;background:var(--dark);color:var(--ondark);padding:24px 26px 40px;overflow:auto;display:none;flex-direction:column;}
+  .mnav.open{display:flex;}
+  .mnav .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;}
+  .mnav .close{background:none;border:0;color:var(--ondark);font-size:30px;line-height:1;}
+  .mnav a{color:var(--ondark);text-decoration:none;}
+  .mnav .grp{border-bottom:1px solid rgba(191,192,194,.14);padding:14px 0;}
+  .mnav .grp>a{font-family:var(--serif);font-style:italic;font-size:24px;display:block;}
+  .mnav .grp .sub{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:8px;}
+  .mnav .grp .sub a{font-size:14px;color:var(--ondark-mid);}
+  .mnav .acts{margin-top:auto;display:flex;flex-direction:column;gap:12px;padding-top:22px;}
+  .mnav .soc{display:flex;gap:16px;justify-content:center;}
+  .mnav .soc svg{width:22px;height:22px;fill:var(--ondark-mid);}
+
+  /* ---------- Начало: слайдер ---------- */
+  .heroslider{position:relative;height:min(88vh,760px);min-height:460px;background:var(--dark);color:var(--ondark);overflow:hidden;}
+  .heroslider .slide{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease;}
+  .heroslider .slide.on{opacity:1;}
+  .heroslider .slide .pic{position:absolute;inset:0;background-size:cover;background-position:center;transform:scale(1);animation:kb 16s ease-in-out infinite alternate;}
+  .heroslider .slide video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  @keyframes kb{from{transform:scale(1)}to{transform:scale(1.07)}}
+  .heroslider .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25) 0%,rgba(0,0,0,.1) 40%,rgba(0,0,0,.82) 100%);}
+  .heroslider .txt{position:absolute;left:0;right:0;bottom:0;padding:0 0 64px;}
+  .heroslider .txt .wrap{max-width:var(--wrap);}
+  .heroslider .txt h1{color:#ebebd6;font-size:clamp(34px,5.4vw,66px);max-width:760px;margin-bottom:14px;font-weight:400;}
+  .heroslider .txt p{color:var(--ondark-mid);font-size:16px;max-width:560px;margin-bottom:24px;line-height:1.6;}
+  .heroslider .dots{position:absolute;right:28px;bottom:28px;display:flex;gap:8px;}
+  .heroslider .dots button{width:9px;height:9px;border-radius:50%;border:1px solid var(--gilt);background:transparent;padding:0;}
+  .heroslider .dots button.on{background:var(--gilt);}
+  .heroslider .mark{position:absolute;top:26px;left:28px;width:90px;color:var(--gilt);opacity:.9;}
+  @media(max-width:640px){.heroslider{height:78vh;min-height:520px;}.heroslider .txt{padding-bottom:54px;}.heroslider .mark{width:64px;top:18px;left:18px;}.heroslider .dots{left:18px;right:auto;bottom:22px;}}
+  @media(prefers-reduced-motion:reduce){.heroslider .slide .pic{animation:none;}}
+
+  /* ---------- Секции ---------- */
+  section.sec{padding:72px 0;}
+  section.sec.tight{padding:48px 0;}
+  section.sec.dark{background:var(--dark);color:var(--ondark);}
+  section.sec.dark h2,section.sec.dark h3{color:#ebebd6;}
+  section.sec.dark .lead,section.sec.dark .body{color:var(--ondark-mid);}
+  section.sec.dark .kicker{color:var(--gilt);}
+  section.sec.alt{background:var(--surface2);}
+  .sechead{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:28px;flex-wrap:wrap;}
+  .sechead h2{font-size:clamp(28px,3.4vw,40px);}
+  .manifesto{text-align:center;padding:84px 0;}
+  .manifesto p{font-family:var(--serif);font-style:italic;font-size:clamp(22px,2.6vw,30px);line-height:1.4;color:var(--cream);max-width:820px;margin:0 auto 26px;white-space:pre-line;}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center;}
+  .two img,.two .ph{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:18px;}
+  .two .ph{background:var(--dark2);display:flex;align-items:center;justify-content:center;color:var(--gilt);}
+  .two .ph .lg{width:34%;}
+  .two.rev>*:first-child{order:2;}
+  @media(max-width:820px){.two{grid-template-columns:1fr;gap:26px;}.two.rev>*:first-child{order:0;}}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;}
+  .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;}
+  @media(max-width:960px){.grid3,.grid4{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(max-width:600px){.grid3,.grid2,.grid4{grid-template-columns:1fr;}}
+  .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:24px;}
+  .gal img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;cursor:zoom-in;}
+  .lb{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:300;display:flex;align-items:center;justify-content:center;} .lb img{max-width:94vw;max-height:88vh;object-fit:contain;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.6);} .lb .x,.lb .p,.lb .n{position:absolute;color:#EBEBD6;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;user-select:none;} .lb .x{top:16px;right:16px;} .lb .p{left:12px;top:50%;transform:translateY(-50%);} .lb .n{right:12px;top:50%;transform:translateY(-50%);} .lb .c{position:absolute;bottom:16px;left:0;right:0;text-align:center;color:#BFC0C2;font-size:12px;letter-spacing:1px;}
+  .gal.big img{aspect-ratio:3/2;}
+
+  /* събитие — карта */
+  .ev{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line-soft);border-radius:18px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .2s,box-shadow .2s;}
+  .ev:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(0,0,0,.12);}
+  .ev .pic{aspect-ratio:3/2;background:var(--dark2) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--gilt);}
+  .ev .pic.fit{position:relative;overflow:hidden;background:#1c1c1b;} .ev .pic.fit .bg{position:absolute;inset:-6%;background:center/cover no-repeat;filter:blur(18px) brightness(.75);transform:scale(1.1);} .ev .pic.fit img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;}
+  /* снимка на събитието: от край до край, ЦЯЛА (contain) върху размазано копие; текстът е под нея */
+  .evhero.full{aspect-ratio:auto;max-height:none;display:block;height:min(70vh,640px);min-height:320px;}
+  @media(max-width:640px){.evhero.full{height:auto;aspect-ratio:3/2;min-height:0;}}
+  .evhero.full .pbg{position:absolute;inset:-6%;background:center/cover no-repeat;filter:blur(24px) brightness(.55);transform:scale(1.1);}
+  .evhero.full .pimg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;cursor:zoom-in;}
+  .evhead{background:var(--dark);color:var(--ondark);} .evhead .wrap{padding:26px 0 30px;} .evhead h1{color:#ebebd6;font-size:clamp(28px,4vw,50px);max-width:900px;margin:0;}
+  .evhead .meta{display:flex;gap:18px;flex-wrap:wrap;color:var(--ondark-mid);font-size:14px;margin-top:12px;letter-spacing:.3px;} .evhead .cat{display:inline-block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gilt);border:1px solid rgba(191,192,194,.5);border-radius:4px;padding:4px 8px;margin-bottom:12px;}
+  .evhero.fit .pic{background:none;} .evhero.fit .pbg{position:absolute;inset:-6%;background:center/cover no-repeat;filter:blur(22px) brightness(.6);transform:scale(1.1);} .evhero.fit .pimg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;cursor:zoom-in;}
+  .ev .pic .lg{width:30%;opacity:.9;}
+  .ev .bd{padding:16px 18px 18px;display:flex;flex-direction:column;gap:6px;flex:1;}
+  .ev .cat{align-self:flex-start;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);border:1px solid rgba(130,48,61,.45);border-radius:4px;padding:3px 7px;}
+  .ev .when{font-size:13px;color:var(--mid);letter-spacing:.5px;}
+  .ev h3{font-size:22px;margin-top:2px;}
+  .ev .desc{color:var(--mid);font-size:14px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .ev .ft{margin-top:auto;padding-top:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .ev .price{font-size:14px;color:var(--cream);}
+  section.sec.dark .ev{background:var(--dark2);border-color:rgba(191,192,194,.14);}
+  section.sec.dark .ev h3{color:#ebebd6;}
+  section.sec.dark .ev .desc,section.sec.dark .ev .when{color:var(--ondark-mid);}
+  section.sec.dark .ev .price{color:var(--ondark);}
+  section.sec.dark .ev .cat{color:var(--gilt);border-color:rgba(191,192,194,.45);}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 30px;}
+  .filters button{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:20px;padding:8px 16px;font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;}
+  .filters button.on{background:var(--dark);border-color:var(--dark);color:var(--ondark);}
+  .empty{color:var(--muted);padding:30px 0;font-style:italic;}
+
+  /* страница на събитие */
+  .evhero{position:relative;background:var(--dark);color:var(--ondark);aspect-ratio:3/2;max-height:620px;display:flex;align-items:flex-end;overflow:hidden;}
+  @media(min-width:900px){.evhero{aspect-ratio:21/9;}}   /* десктоп: широка лента; телефон: 3:2 — и двете center/cover */
+  .evhero .pic{position:absolute;inset:0;background:center/cover no-repeat;opacity:.55;cursor:zoom-in;}
+  .evhero .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.9));}
+  .evhero .wrap{position:relative;padding-top:60px;padding-bottom:44px;}
+  .evhero h1{color:#ebebd6;font-size:clamp(32px,4.6vw,58px);max-width:820px;}
+  .evhero .meta{display:flex;gap:18px;flex-wrap:wrap;color:var(--ondark-mid);font-size:14px;margin-top:14px;letter-spacing:.3px;}
+  .evhero .cat{display:inline-block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gilt);border:1px solid rgba(191,192,194,.5);border-radius:4px;padding:4px 8px;margin-bottom:14px;}
+  .evbody{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:48px;padding:56px 0 72px;}
+  .evbody aside .box{background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:22px;position:sticky;top:90px;}
+  .evbody aside .box .row{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:8px 0;border-bottom:1px solid var(--line-soft);}
+  .evbody aside .box .row span:first-child{color:var(--muted);}
+  .evbody aside .box .btn{width:100%;margin-top:16px;}
+  .evbody .kv{margin-top:26px;}
+  .evbody .kv .k{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px;}
+  .evbody .kv .v{white-space:pre-line;color:var(--text);line-height:1.65;}
+  .archive-note{background:var(--surface2);border-radius:12px;padding:12px 16px;font-size:14px;color:var(--mid);margin-bottom:22px;}
+  @media(max-width:900px){.evbody{grid-template-columns:1fr;gap:30px;}.evbody aside .box{position:static;}}
+
+  /* членство */
+  .mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:26px;}
+  .mcard{background:var(--card);border:1px solid var(--line-soft);border-radius:22px;padding:26px;display:flex;flex-direction:column;}
+  .mcard .tag{color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase;}
+  .mcard h3{font-size:26px;margin:6px 0 8px;}
+  .mcard .hook{font-family:var(--serif);font-style:italic;font-size:18px;line-height:1.4;color:var(--cream);margin-bottom:8px;}
+  /* бърз бутон „Запази маса“ — само на страницата „Ресторант“: плаващ долу вдясно (компютър) / лента най-долу (телефон) */
+  .rfab{position:fixed;right:22px;bottom:22px;z-index:120;display:flex;gap:8px;align-items:center;transition:opacity .2s,transform .2s;}
+  .rfab.hide{opacity:0;transform:translateY(14px);pointer-events:none;}
+  .rfab a{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-family:inherit;}
+  .rfab .go{background:var(--wine);color:var(--beige);border-radius:28px;padding:13px 22px;font-size:15px;font-weight:600;box-shadow:0 10px 28px rgba(0,0,0,.28);}
+  .rfab svg{width:19px;height:19px;flex:none;}
+  @media(max-width:820px){
+    /* на телефон — същият плаващ бутон, само по-малък и по-близо до ъгъла (без лента, без да заема ширината) */
+    .rfab{right:14px;bottom:calc(14px + env(safe-area-inset-bottom));}
+    .rfab .go{padding:11px 16px;font-size:14px;box-shadow:0 8px 22px rgba(0,0,0,.26);}
+    .rfab svg{width:17px;height:17px;}
+  }
+  .menugrid{columns:2;column-gap:44px;}
+  .menucat{break-inside:avoid;margin:0 0 34px;}
+  .menucat h3{font-family:var(--serif);font-style:italic;font-size:24px;color:var(--wine);margin:0 0 4px;padding-bottom:8px;border-bottom:1px solid var(--line-soft);}
+  .menucat .mnote{font-size:13px;color:var(--muted);margin:6px 0 4px;}
+  .mitem{padding:11px 0 0;}
+  .mrow{display:flex;align-items:baseline;gap:8px;}
+  .mname{font-weight:600;font-size:16px;line-height:1.35;}
+  .mdots{flex:1;border-bottom:1px dotted var(--line);transform:translateY(-4px);min-width:16px;}
+  .mprice{white-space:nowrap;font-family:var(--serif);font-style:italic;font-size:17px;}
+  .mdesc{font-size:13.5px;color:var(--mid);line-height:1.5;margin-top:2px;max-width:92%;}
+  @media(max-width:820px){ .menugrid{columns:1;} .mname{font-size:15.500px;} }
+  .mcard .mcimg{display:block;width:100%;max-width:440px;height:auto;margin:10px auto 8px;border-radius:14px;box-shadow:0 10px 26px rgba(0,0,0,.16);}
+  .mcard .price{font-size:24px;color:var(--cream);margin:8px 0 10px;font-family:var(--serif);font-style:italic;}
+  .mcard .price small{color:var(--muted);font-size:12px;margin-left:5px;font-family:var(--sans);}
+  .mcard p{color:var(--mid);font-size:14px;line-height:1.55;margin-bottom:8px;}
+  .mcard ul{margin:8px 0 0;padding-left:18px;color:var(--mid);font-size:13.5px;line-height:1.7;}
+  @media(max-width:900px){.mgrid{grid-template-columns:1fr;}}
+  .faq{max-width:760px;margin-top:20px;}
+  .faq details{border-bottom:1px solid var(--line-soft);padding:14px 0;}
+  .faq summary{cursor:pointer;font-family:var(--serif);font-style:italic;font-size:20px;color:var(--cream);list-style:none;display:flex;justify-content:space-between;gap:12px;}
+  .faq summary::-webkit-details-marker{display:none;}
+  .faq summary::after{content:'+';color:var(--gold);font-size:22px;line-height:1;}
+  .faq details[open] summary::after{content:'–';}
+  .faq details p{color:var(--mid);margin-top:10px;line-height:1.65;white-space:pre-line;}
+
+  /* екип / меню / наеми */
+  .person{text-align:center;}
+  .person img,.person .ph{width:100%;aspect-ratio:1;object-fit:cover;border-radius:50%;max-width:220px;margin:0 auto 14px;background:var(--dark2);}
+  .person h3{font-size:22px;}
+  .person .role{color:var(--gold);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:4px 0 8px;}
+  .person p{color:var(--mid);font-size:14px;line-height:1.6;white-space:pre-line;}
+  .menu .msec{margin-top:36px;}
+  .menu .msec h3{font-size:26px;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+  .menu .mi{display:flex;justify-content:space-between;gap:18px;padding:10px 0;border-bottom:1px dotted var(--line-soft);}
+  .menu .mi .n{font-size:16px;color:var(--cream);}
+  .menu .mi .d{color:var(--muted);font-size:13px;margin-top:2px;}
+  .menu .mi .p{white-space:nowrap;color:var(--cream);font-family:var(--serif);font-style:italic;font-size:18px;}
+  .menu .msec img{border-radius:14px;margin-bottom:14px;aspect-ratio:16/9;object-fit:cover;width:100%;}
+  .specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:26px;}
+  .specs div{background:var(--card);border:1px solid var(--line-soft);border-radius:14px;padding:16px 18px;}
+  .specs .k{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);}
+  .specs .v{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--cream);margin-top:4px;}
+  .stores{display:flex;gap:10px;flex-wrap:wrap;}
+  .stores .btn svg{width:18px;height:18px;fill:currentColor;}
+  .hint{font-size:13px;color:var(--muted);margin-top:10px;}
+
+  /* форми */
+  .form{display:grid;gap:12px;max-width:560px;}
+  .form label{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mid);display:block;margin-bottom:5px;}
+  .form .selrow{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0 14px;}
+  .form .achip{border:1px solid var(--line);border-radius:20px;padding:8px 14px;font-size:13px;color:var(--wine);background:var(--card);cursor:pointer;font-family:inherit;}
+  .form .achip.on{background:var(--wine);color:var(--beige);border-color:var(--wine);}
+  .form input,.form textarea,.nl input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:12px 14px;font:inherit;font-size:15px;color:var(--text);}
+  .form input:focus,.form textarea:focus,.nl input:focus{outline:none;border-color:var(--gold);}
+  /* iPhone увеличава страницата при докосване на поле с шрифт под 16px (и остава увеличена) → на телефон 16px */
+  @media(max-width:640px){.form input,.form textarea,.form .sel,.nl input{font-size:16px;}}
+  .form .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:560px){.form .r2{grid-template-columns:1fr;}}
+  .form .msg{font-size:14px;min-height:20px;}
+  .form .sel{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:12px 14px;font:inherit;font-size:15px;color:var(--text);}
+  .form .msg.err{color:#82303d;}
+  .form .msg.ok{color:#507044;}
+  .chk{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--mid);line-height:1.45;cursor:pointer;}
+  .chk input{width:18px;height:18px;margin-top:1px;flex:none;}
+  .nl{display:flex;gap:10px;max-width:520px;margin:18px auto 0;}
+  .nl input{flex:1;}
+  @media(max-width:520px){.nl{flex-direction:column;}}
+  .newsletter{text-align:center;}
+  .newsletter .lead{margin:0 auto;}
+  .contactgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;}
+  @media(max-width:900px){.contactgrid{grid-template-columns:1fr;}}
+  .cinfo .k{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin:18px 0 4px;}
+  .cinfo .v{white-space:pre-line;color:var(--text);line-height:1.6;}
+  .cinfo a{color:var(--gold);text-decoration:none;}
+  .map{margin-top:30px;border-radius:18px;overflow:hidden;border:1px solid var(--line-soft);background:var(--surface2);}
+  .map iframe{display:block;width:100%;height:380px;border:0;}
+  .map .noq{padding:30px;text-align:center;color:var(--muted);}
+
+  /* футър */
+  footer.ft{background:var(--dark);color:var(--ondark-mid);padding:56px 0 30px;font-size:14px;}
+  footer.ft .cols{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;gap:30px;}
+  footer.ft .flogo{width:74px;color:var(--gilt);margin-bottom:14px;}
+  footer.ft h4{color:var(--gilt);font-size:11px;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:12px;font-weight:500;}
+  footer.ft a{color:var(--ondark-mid);text-decoration:none;display:block;padding:3px 0;}
+  footer.ft a:hover{color:var(--gilt);}
+  footer.ft .v{white-space:pre-line;line-height:1.6;}
+  footer.ft .soc{display:flex;gap:10px;margin-top:10px;}
+  footer.ft .soc a{display:flex;width:36px;height:36px;align-items:center;justify-content:center;border:1px solid rgba(191,192,194,.3);border-radius:50%;padding:0;}
+  footer.ft .soc svg{width:16px;height:16px;fill:currentColor;}
+  footer.ft .stores{margin-top:12px;}
+  footer.ft .copy{margin-top:40px;padding-top:18px;border-top:1px solid rgba(191,192,194,.14);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12.5px;color:#6b6b63;}
+  footer.ft .copy a{display:inline;padding:0 8px 0 0;}
+  @media(max-width:900px){footer.ft .cols{grid-template-columns:1fr 1fr;}}
+  @media(max-width:560px){footer.ft .cols{grid-template-columns:1fr;}}
+
+  /* бисквитки */
+  .cookie{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:150;width:min(94%,720px);background:var(--dark2);color:var(--ondark);border:1px solid rgba(191,192,194,.25);border-radius:16px;padding:18px 20px;box-shadow:0 18px 50px rgba(0,0,0,.4);display:none;gap:14px;align-items:center;flex-wrap:wrap;}
+  .cookie.show{display:flex;}
+  .cookie p{flex:1 1 320px;font-size:13.5px;line-height:1.5;color:var(--ondark-mid);}
+  .cookie p a{color:var(--gilt);}
+  .cookie .acts{display:flex;gap:8px;}
+  .pagehead{padding:64px 0 28px;}
+  .mh-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,34%);gap:48px;align-items:stretch;}
+  .mh-img{display:block;width:100%;object-fit:cover;border-radius:20px;}
+  .mh-web{position:relative;min-height:420px;}
+  .mh-web .mh-img{position:absolute;inset:0;height:100%;}
+  .mh-mob{display:none;}
+  @media (max-width:820px){ .mh-grid{grid-template-columns:1fr;gap:0;} .mh-web{display:none;} .mh-mob{display:block;aspect-ratio:4/3;margin:6px 0 22px;} }
+  .pagehead h1{font-size:clamp(34px,4.6vw,56px);margin-bottom:12px;}
+  .subnav{display:flex;gap:6px;flex-wrap:wrap;margin-top:18px;}
+  /* поп-ъп с правилника */
+  .rmodal{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:18px;}
+  .rcard{background:var(--bg);color:var(--text);border-radius:20px;width:min(100%,780px);max-height:100%;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+  .rcard .rh{display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid var(--line-soft);}
+  .rcard .rh h3{margin:0;font-size:22px;}
+  .rcard .rx{background:none;border:1px solid var(--line);border-radius:50%;width:34px;height:34px;cursor:pointer;color:var(--text);font-size:16px;}
+  .rcard .rb{overflow:auto;padding:10px 22px 22px;flex:1 1 auto;min-height:0;-webkit-overflow-scrolling:touch;font-size:15px;line-height:1.6;}
+  .rcard .rb h2,.rcard .rb h3{font-size:19px;margin:20px 0 8px;} .rcard .rb p{margin:0 0 10px;} .rcard .rb .rules-note{color:var(--muted);font-size:13px;}
+  .rcard .rb h3{font-size:16px;margin:14px 0 6px;} .rcard .rb h4{font-size:14px;margin:12px 0 4px;text-transform:none;} .rcard .rb{overflow-wrap:anywhere;}
+  .rcard .rb .tblw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px 0 12px;} .rcard .rb table{border-collapse:collapse;width:100%;min-width:480px;font-size:13px;line-height:1.35;} .rcard .rb th,.rcard .rb td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;}
+  @media(max-width:640px){.rmodal{padding:0;} .rcard{border-radius:0;height:100%;} .rcard .rb{font-size:14px;padding:8px 16px 18px;} .rcard .rb h2{font-size:17px;} .rcard .rh{padding:12px 16px;} .rcard .rh h3{font-size:18px;}}
+  .subnav a{text-decoration:none;color:var(--text);border:1px solid var(--line);border-radius:20px;padding:7px 14px;font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;}
+  .subnav a.on{background:var(--dark);border-color:var(--dark);color:var(--ondark);}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--dark);color:var(--ondark);padding:12px 18px;border-radius:12px;font-size:14px;z-index:160;opacity:0;pointer-events:none;transition:opacity .25s;}
+  .toast.show{opacity:1;}
+  .legal .body{max-width:820px;}
+  .plans{display:flex;flex-direction:column;gap:8px;} .plan{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line-soft);border-radius:12px;background:var(--card);cursor:pointer;} .plan.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;} .plan input{margin-top:3px;} .lbl{display:block;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mid);margin:0 0 6px;}
+  .kv{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft);} .kv .k{width:120px;color:var(--mid);font-size:13px;flex:none;} .kv .v{font-size:15px;}
+  /* формата за билети (беше .kv → на телефон се свиваше в дясна колона) */
+  .bookbox{display:block;background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:22px;margin-top:30px;}
+  .bookbox .k{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
+  @media(max-width:640px){.bookbox{padding:18px 16px;} .bookbox #bk_btn{width:100%;}}
+  #bk_pay{scroll-margin-top:96px;}   /* да не се скрие под залепената горна лента при скрол до полето */
+  .legaldoc{white-space:normal;} .legaldoc h2{font-family:var(--serif);font-style:italic;font-size:22px;margin:26px 0 8px;} .legaldoc h3{font-size:15px;margin:16px 0 4px;color:var(--gold);} .legaldoc p{margin:0 0 10px;font-size:15px;line-height:1.65;}
+</style>
+</head>
+<body>
+<div id="intro"></div>
+<header class="hdr" id="hdr"></header>
+<div class="mnav" id="mnav"></div>
+<div class="soonback"><a href="landing.html">← Към началната страница</a></div>
+<main id="page"></main>
+<footer class="ft" id="foot"></footer>
+<div class="cookie" id="cookie"></div>
+<div class="toast" id="toast"></div>
+
+<script src="vendor/supabase.js"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+<script src="config.js"></script>
+<!-- COMING_SOON (config.js): докато е true, целият публичен сайт е скрит зад landing.html.
+     Пълният сайт се вижда само с ac2.bg/?site=1 (за преглед). Правните страници (#/legal/…) остават достъпни. -->
+<script>(function(){try{var c=window.ACAC_CONFIG||{};if(!c.COMING_SOON)return;
+if(/[?&]site=1/.test(location.search)){sessionStorage.setItem('ac2_site','1');return;}
+if(sessionStorage.getItem('ac2_site')==='1')return;
+var legal=function(){return /^#\/(legal\/|join)/.test(location.hash);};   // правни страници и плащане на членство (#/join) минават
+if(!legal()){location.replace('landing.html');return;}
+// правна страница по време на „очаквайте скоро“: без меню/футър и без излизане към останалия сайт
+document.documentElement.className+=' soon';
+window.addEventListener('hashchange',function(){ if(!legal()) location.replace('landing.html'); });
+}catch(e){}})();</script>
+<style>html.soon .hdr,html.soon .mnav,html.soon footer.ft,html.soon .cookie,html.soon #intro{display:none!important}
+html.soon body{padding-top:0} html.soon .soonback{display:block}
+.soonback{display:none;padding:18px 0 0;text-align:center;font-family:var(--sans);font-size:14px} .soonback a{color:var(--text)}</style>
+<script src="brand.js"></script>
+<script src="db.js"></script>
+<script src="legal.js"></script>
+<script>
+// ============================================================
+//  ПУБЛИЧЕН САЙТ ac2.bg — една страница, хеш адреси (#/program, #/event/…).
+//  Съдържанието идва от Supabase (site_content 'public' + 'landing', events с pub.show),
+//  а по подразбиране — от PUB_DEFAULTS / SITE_DEFAULTS в db.js.
+//  Членското приложение е отделно: /app/ (APP_URL в config.js).
+// ============================================================
+const CFG=window.ACAC_CONFIG||{};
+const SITE_URL=CFG.SITE_URL||'https://ac2.bg/';
+const APP_URL=CFG.APP_URL||(SITE_URL+'app/');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let lang=(()=>{try{return localStorage.getItem('lang')||((navigator.language||'').toLowerCase().startsWith('bg')?'bg':'bg');}catch(e){return 'bg';}})();
+if(lang!=='bg'&&lang!=='en')lang='bg';
+const L=(bg,en)=>lang==='bg'?bg:en;
+
+// ---------- Текстове на интерфейса ----------
+const UI={
+  home:['Начало','Home'],program:['Програма','Programme'],stage:['Сцена','Stage'],gallery:['Галерия','Gallery'],cinema:['Кино','Cinema'],
+  restaurant:['Ресторант','Restaurant'],menu:['Меню','Menu'],dinners:['Тематични вечери','Themed dinners'],brunch:['Брънч','Brunch'],
+  membership:['Членство','Membership'],about:['За AC²','About AC²'],team:['Екип','Team'],rent:['Наеми AC² за своето събитие','Hire AC² for your event'],
+  college:['Arcus College','Arcus College'],app:['App','App'],contacts:['Контакти','Contacts'],
+  login:['Вход за членове','Member login'],install:['Инсталирай приложението','Install the app'],
+  all:['Всички','All'],upcoming:['Предстоящо','Upcoming'],whole:['Цялата програма','Full programme'],
+  tickets:['Билети','Tickets'],reserve:['Резервация','Reserve'],details:['Подробности','Details'],table:['Резервирай маса','Book a table'],
+  free:['Вход свободен','Free entry'],lv:['€','€'],from:['от','from'],until:['до','until'],
+  apply:['Кандидатствай','Apply'],allBenefits:['Всички предимства','All benefits'],readRules:['Правилник на клуба','Club rules'],prContacts:['Контакти по теми','Contacts by topic'],
+  faq:['Често задавани въпроси','Frequently asked questions'],perYear:['/ година','/ year'],
+  subscribe:['Запиши се','Subscribe'],email:['Имейл','Email'],name:['Име','Name'],phone:['Телефон','Phone'],subject:['Тема','Subject'],message:['Съобщение','Message'],
+  send:['Изпрати','Send'],sending:['Изпращане…','Sending…'],sent:['Благодарим! Ще се свържем с вас.','Thank you! We will be in touch.'],
+  nlok:['Записахте се. Очаквайте първия бюлетин.','You are subscribed. Expect the first newsletter soon.'],
+  consentNl:['Съгласен съм да получавам бюлетина на AC² и приемам политиката за поверителност.','I agree to receive the AC² newsletter and accept the privacy policy.'],
+  consentContact:['Съгласен съм данните ми да бъдат използвани за отговор на запитването.','I agree that my details are used to answer my enquiry.'],
+  errCaptcha:['Проверката за робот не мина. Опитайте отново.','The robot check failed. Please try again.'],
+  errFields:['Попълнете всички задължителни полета.','Please fill in all required fields.'],
+  errEmail:['Невалиден имейл.','Invalid email.'],errPhone:['Невалиден телефон.','Invalid phone number.'],errConsent:['Нужно е съгласие.','Consent is required.'],
+  errGeneric:['Нещо се обърка. Опитайте пак след малко.','Something went wrong. Please try again.'],
+  address:['Адрес','Address'],hours:['Работно време','Opening hours'],parking:['Паркиране','Parking'],access:['Достъпност','Accessibility'],
+  openMaps:['Отвори в Google Maps','Open in Google Maps'],legal:['Правна информация','Legal'],privacy:['Поверителност','Privacy'],cookies:['Бисквитки','Cookies'],
+  cookieText:['Използваме бисквитки за статистика и реклама само с вашето съгласие.','We use cookies for statistics and advertising only with your consent.'],
+  acceptAll:['Приемам','Accept'],onlyNeeded:['Само необходимите','Only necessary'],more:['Научи повече','Learn more'],
+  archive:['Това събитие вече е минало. Страницата остава като архив.','This event has passed. The page remains as an archive.'],
+  date:['Дата','Date'],time:['Час','Time'],place:['Място','Venue'],price:['Цена','Price'],participants:['Участници','Participants'],
+  concept:['Концепция','Concept'],curator:['Куратор','Curator'],authors:['Представени автори','Featured artists'],visit:['Информация за посещение','Visiting information'],
+  works:['Произведения','Works'],chef:['Шеф-готвач','Chef'],skip:['Пропусни','Skip'],addHome:['На Android: отворете сайта в Chrome → меню ⋮ → „Добави на началния екран".','On Android: open the site in Chrome → menu ⋮ → "Add to Home screen".'],
+  soon:['очаквайте скоро','coming soon'],seeMenu:['Виж менюто','See the menu'],restaurantPage:['Ресторантът','The restaurant'],
+  membershipPage:['Членство','Membership'],collegeSite:['Сайтът на колежа','College website'],why:['Защо да стана член?','Why become a member?'],
+  how:['Как се кандидатства','How to apply'],terms:['Пълни условия','Full terms'],levels:['Нива на членство','Membership levels'],
+  features:['Какво има вътре','What is inside'],specs:['Техническа информация','Technical information'],rentTerms:['Условия','Terms'],
+  noEvents:['Няма предстоящи събития в това направление. Вижте цялата програма.','No upcoming events in this direction. See the full programme.'],
+  pastEvents:['Архив','Archive'],inApp:['В приложението','In the app'],season:['Тема на сезона','Season theme'],
+  membersOnlyBtn:['За членове','Members only'],bookTitle:['Резервация за гости','Guest booking'],
+  bookIntro:['Нечленове могат да резервират тук. Членовете резервират през приложението.','Non-members can book here. Members book through the app.'],
+  seats:['Брой места','Number of seats'],note:['Бележка (по избор)','Note (optional)'],pay:['Плати','Pay'],payAmount:['Плати','Pay'],
+  bookFree:['Заявката е приета. Ще получите потвърждение по имейл.','Your request is received. You will get a confirmation by email.'],
+  paid:['Плащането е получено — резервацията е потвърдена. Изпратихме ви имейл.','Payment received — your booking is confirmed. We sent you an email.'],
+  payFail:['Плащането не мина. Опитайте отново.','The payment did not go through. Please try again.'],
+  opensOn:['Записването за гости започва на','Guest booking opens on'],guestClosed:['Резервации от гости не се приемат за това събитие.','Guest bookings are not accepted for this event.'],
+  enquiryTitle:['Запитване за резервация','Reservation enquiry'],enquiryIntro:['За маса в ресторанта или частно събитие — без членство. Ще се свържем с вас за потвърждение.','For a table at the restaurant or a private event — no membership needed. We will contact you to confirm.'],
+  format:['Формат','Format'],dateLbl:['Дата','Date'],timeLbl:['Час','Time'],people:['Брой хора','Number of people'],
+  enquiryOk:['Запитването е изпратено. Ще се свържем с вас.','Your enquiry has been sent. We will be in touch.'],orWrite:['Или просто ни пишете','Or just write to us'],
+  cardHint:['Плащането е през Stripe — картата ви не минава през нашия сървър.','Payment is via Stripe — your card never touches our server.']
+};
+const t=k=>{const v=UI[k];return v?(lang==='bg'?v[0]:v[1]):k;};
+
+// ---------- Съдържание ----------
+const PD=window.PUB_DEFAULTS, SD=window.SITE_DEFAULTS;
+let PUB=null, LAND=null, EVENTS=null;
+const dig=(o,p)=>p.split('.').reduce((a,k)=>(a&&a[k]!==undefined&&a[k]!==null)?a[k]:undefined,o||{});
+const loc=v=>{ if(v&&typeof v==='object'&&!Array.isArray(v)&&('bg'in v||'en'in v)){return (lang==='bg'?(v.bg||v.en):(v.en||v.bg))||'';} return v==null?'':v; };
+// pT('home.manifesto.body') → текст на текущия език: от базата, иначе по подразбиране
+// телефоните за контакт: основен + втори, всеки с етикет по избор (Админ → Публичен сайт → Общи)
+function phoneList(){ return [[pT('general.phone'),pT('general.phone_label')],[pT('general.phone2'),pT('general.phone2_label')]].filter(x=>x[0]&&String(x[0]).trim()); }
+const telHref=p=>'tel:'+esc(String(p).replace(/[^+\d]/g,''));
+function pT(path){
+  const v=dig(PUB,path), d=dig(PD,path);
+  if(v&&typeof v==='object'&&!Array.isArray(v)){ const s=lang==='bg'?(v.bg||''):(v.en||''); if(s)return s; const s2=lang==='bg'?(v.en||''):(v.bg||''); return s2||loc(d); }
+  if(v!==undefined&&v!==''&&v!==null)return String(v);
+  return loc(d);
+}
+// pV — сурова стойност (bool/число/масив/обект) с fallback
+function pV(path){ const v=dig(PUB,path); return (v===undefined||v===null||v==='')?dig(PD,path):v; }
+function pA(path){ const v=dig(PUB,path); if(Array.isArray(v))return v; const d=dig(PD,path); return Array.isArray(d)?d:[]; }
+// масив, но празен масив в базата НЕ пада на defaults (админът може да изтрие всичко) — освен ако липсва
+function pImgs(path){ return pA(path).filter(Boolean); }
+function on(path){ const v=dig(PUB,path); return (v===undefined||v===null)?!!dig(PD,path):!!v; }
+// членства — от 'landing' (същите текстове, които вижда и приложението)
+function lT(path){ const v=dig(LAND,path), d=dig(SD,path); if(v&&typeof v==='object'){const s=lang==='bg'?(v.bg||''):(v.en||''); if(s)return s;} else if(v)return String(v); return loc(d); }
+
+async function loadAll(){
+  const [p,l,ev,st]=await Promise.all([DB.getSiteContent('public'),DB.getSiteContent('landing'),DB.listPublicEvents().catch(()=>[]),(DB.publicEventSeats?DB.publicEventSeats():Promise.resolve({})).catch(()=>({}))]);
+  PUB=p||{}; LAND=l||{}; EVENTS=ev||[]; SEATS=st||{};
+}
+// Заети места (само бройки) → „Продадено“. Без данни (SQL функцията не е пусната) → null = не знаем, нищо не се крие.
+let SEATS={};
+function slotLeft(e,slot){ const sl=evSlots(e).find(x=>x.time===slot); const cap=sl?Number(sl.cap)||0:0; if(!cap||!SEATS[e.id])return null; return Math.max(0,cap-(SEATS[e.id].bySlot[slot]||0)); }
+function seatsLeftPub(e){
+  if(!SEATS[e.id]&&!Object.keys(SEATS).length)return null;   // няма данни изобщо
+  const slots=evSlots(e);
+  if(slots.length){ if(slots.some(x=>!(Number(x.cap)>0)))return null; return slots.reduce((a,x)=>a+Math.max(0,(Number(x.cap)||0)-((SEATS[e.id]&&SEATS[e.id].bySlot[x.time])||0)),0); }
+  const cap=Number(e.capacity)||0; if(!cap)return null;
+  return Math.max(0,cap-((SEATS[e.id]&&SEATS[e.id].total)||0));
+}
+const soldOutPub=e=>{ const l=seatsLeftPub(e); return l!==null&&l<=0; };
+
+// ---------- Дати ----------
+const MONTHS={bg:['януари','февруари','март','април','май','юни','юли','август','септември','октомври','ноември','декември'],en:['January','February','March','April','May','June','July','August','September','October','November','December']};
+const MSHORT={bg:['ян','фев','март','апр','май','юни','юли','авг','септ','окт','ноем','дек'],en:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']};
+const WD={bg:['неделя','понеделник','вторник','сряда','четвъртък','петък','събота'],en:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']};
+const todayIso=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+function fmtD(iso,long){ if(!iso)return ''; const [y,m,d]=iso.split('-').map(Number); if(!y)return iso; return long?`${d} ${MONTHS[lang][m-1]} ${y}`:`${d} ${MSHORT[lang][m-1]}`; }
+function fmtWD(iso){ if(!iso)return ''; const dt=new Date(iso+'T00:00:00'); return WD[lang][dt.getDay()]; }
+function fmtTime(s){ return (s||'').slice(0,5); }
+function evWhen(e,long){
+  if(e.end_date&&e.end_date!==e.date) return `${fmtD(e.date,long)} – ${fmtD(e.end_date,long)}`;
+  return fmtD(e.date,long)+(e.time?' · '+fmtTime(e.time):'');
+}
+function isPast(e){ const td=todayIso(); const last=e.end_date||e.date; return !!last&&last<td; }
+// ПРОДАЖБИТЕ СПИРАТ 15 мин. след началото (по часа на събитието / на слота). Без час → в края на деня.
+// Многодневни → в края на последния ден. Билет на място от админа не се засяга. Сървърът проверява същото.
+const SALES_GRACE_MS=15*60*1000;
+function evStartTs(dIso,time){ if(!dIso)return null; const p=dIso.split('-').map(Number); if(p.length<3)return null; const m=/^(\d{1,2}):(\d{2})/.exec(time||''); return m?new Date(p[0],p[1]-1,p[2],+m[1],+m[2]).getTime()+SALES_GRACE_MS:new Date(p[0],p[1]-1,p[2],23,59,59).getTime(); }
+function slotClosed(e,time){ if(e.end_date&&e.end_date!==e.date){ const t=evStartTs(e.end_date,null); return t!=null&&Date.now()>t; } const t=evStartTs(e.date,time); return t!=null&&Date.now()>t; }
+function salesClosed(e){ const sl=evSlots(e); return sl.length?sl.every(x=>slotClosed(e,x.time)):slotClosed(e,e.time); }
+function isUpcoming(e){ return !isPast(e)&&!e.archive_only; }
+function fmtPrice(e){ if(e.pub&&e.pub.entry==='free')return L('Свободен вход','Free entry'); if(!(e.price>0))return t('free'); return (Math.round(e.price*100)/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv'); }
+
+// ---------- Категории / направления ----------
+const CATS={exhibition:['Изложба','Exhibition'],theatre:['Театър','Theatre'],concert:['Концерт','Concert'],dance:['Танц','Dance'],performance:['Пърформанс','Performance'],discussion:['Дискусия','Discussion'],film:['Кино','Film'],dinner:['Тематична вечеря','Themed dinner'],other:['Събитие','Event']};
+// Петте формата на клуба (същите като в приложението). 'table' = AC² Table.
+const FORMATS=[
+  {id:'culture',t:'AC² Culture',c:'#82303d'},{id:'table',t:'AC² Table',c:'#507044'},{id:'conversation',t:'AC² Conversation',c:'#000000'},
+  {id:'community',t:'AC² Arcus Community',c:'#5f6064'},{id:'online',t:'AC² Online',c:'#652430'}];
+const FMT_ALIAS={cinema:'culture',music:'culture',theater:'culture'};
+const evFmt=e=>FMT_ALIAS[e.format]||e.format||'culture';
+// всички формати на събитието: основният + допълнителните (pub.formats)
+const evFmts=e=>[evFmt(e)].concat((e.pub&&Array.isArray(e.pub.formats)?e.pub.formats:[]).map(f=>FMT_ALIAS[f]||f)).filter((f,i,a)=>a.indexOf(f)===i);
+
+const fmtObj=id=>FORMATS.find(f=>f.id===id)||FORMATS[0];
+const FMT_CAT={table:'dinner',conversation:'discussion'};
+const evCat=e=>(e.pub&&e.pub.category)||FMT_CAT[evFmt(e)]||'other';
+const isDinner=e=>evFmt(e)==='table';
+// гост (нечлен) може ли да резервира от сайта?
+const guestOpen=e=>!!(e.pub&&e.pub.guests);
+const guestFrom=e=>(e.pub&&e.pub.guest_from)||'';
+const catName=c=>{const v=CATS[c]||CATS.other;return lang==='bg'?v[0]:v[1];};
+const evTitle=e=>(lang==='en'&&e.pub&&e.pub.title_en)?e.pub.title_en:e.title;
+const evDesc=e=>(lang==='en'&&e.pub&&e.pub.desc_en)?e.pub.desc_en:(e.description||'');
+// бутонът за билет/резервация: външна система → линк; гости разрешени → формата на сайта; иначе → приложението (членове)
+// залите са записани на български в базата → показваме превод на EN
+const PLACE_EN={'Ресторант':'Restaurant','Камерна зала':'Event Hall','Галерия':'Gallery','Private room':'Private room','Онлайн':'Online','Изложбено фоайе':'Gallery','VIP зала':'Private room'};
+const placeT=p=>{ if(!p)return ''; const s=String(p).trim(); return lang==='en'?(PLACE_EN[s]||s):s; };
+const evEntry=e=>(e.pub&&e.pub.entry)||'ticket';   // ticket | rsvp | free
+function evAction(e){
+  const ext=e.pub&&e.pub.ticket_url;
+  if(!ext&&!isPast(e)&&salesClosed(e))return {href:'#/event/'+e.id,label:t('details'),ext:false,kind:'details_click'};
+  const dinner=isDinner(e);
+  if(evEntry(e)==='free'&&!ext)return {href:'#/event/'+e.id,label:t('details'),ext:false,kind:'details_click'};
+  const label=dinner?t('table'):(e.price>0?t('tickets'):(evEntry(e)==='rsvp'?L('Запази място','Reserve a seat'):(e.capacity>0?t('reserve'):t('details'))));
+  const kind=dinner?'reservation_click':'ticket_click';
+  if(ext)return {href:ext,label,ext:true,kind};
+  if(guestOpen(e))return {href:'#/event/'+e.id+'/book',label,ext:false,kind};
+  if(e.price>0||e.capacity>0||dinner)return {href:APP_URL+'#event/'+e.id,label:t('membersOnlyBtn'),ext:true,kind};
+  return {href:'#/event/'+e.id,label:t('details'),ext:false,kind:'details_click'};
+}
+function evCard(e,dark){
+  const a=evAction(e);
+  const pic=e.image_url?(imgFit(e)==='cover'?`<div class="pic" style="background-image:url('${esc(e.image_url)}')"></div>`:`<div class="pic fit"><div class="bg" style="background-image:url('${esc(e.image_url)}')"></div><img src="${esc(e.image_url)}" alt="" loading="lazy" onload="imgMeasured(this,'${esc(e.id)}')"/></div>`):`<div class="pic"><span class="lg">${LOGO_SVG}</span></div>`;
+  return `<div class="ev">
+    <a href="#/event/${esc(e.id)}" style="text-decoration:none;color:inherit;">${pic}</a>
+    <div class="bd">
+      <span class="cat" style="color:${fmtObj(evFmt(e)).c};border-color:${fmtObj(evFmt(e)).c}66">${esc(evFmts(e).map(f=>fmtObj(f).t).join(' · '))}${(e.pub&&e.pub.category)?' · '+esc(catName(evCat(e))):''}</span>
+      <div class="when">${esc(evWhen(e,true))}${e.place?' · '+esc(placeT(e.place)):''}</div>
+      <h3><a href="#/event/${esc(e.id)}" style="text-decoration:none;color:inherit;">${esc(evTitle(e))}</a></h3>
+      ${evDesc(e)?`<div class="desc">${esc(evDesc(e))}</div>`:''}
+      <div class="ft"><span class="price">${(isDinner(e)&&!(e.price>0))?'':esc(fmtPrice(e))}</span>
+        ${soldOutPub(e)&&a.kind!=='details_click'?`<span class="btn sm ghost" style="cursor:default;opacity:.75;">${L('Продадено','Sold out')}</span>`:`<a class="btn sm ${dark?'gilt':''}" href="${esc(a.href)}" ${a.ext?'target="_blank" rel="noopener"':''} onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a>`}</div>
+    </div></div>`;
+}
+// „текущата изложба остава видима през целия период": изложба = упcoming докато end_date не мине
+const evKey=e=>(e.date||'9999')+'T'+((e.time||'00:00').slice(0,5));
+function upcomingEvents(fmt){
+  return (EVENTS||[]).filter(e=>isUpcoming(e)&&(!fmt||evFmts(e).includes(fmt)))
+    .sort((a,b)=>{ // текущи изложби първи; после по дата
+      const ax=evCat(a)==='exhibition'&&a.date<=todayIso(), bx=evCat(b)==='exhibition'&&b.date<=todayIso();
+      if(ax!==bx)return ax?-1:1; return evKey(a)<evKey(b)?-1:1; });
+}
+const dinners=()=>(EVENTS||[]).filter(e=>isUpcoming(e)&&isDinner(e)).sort((a,b)=>evKey(a)<evKey(b)?-1:1);
+const pastEvents=()=>(EVENTS||[]).filter(e=>isPast(e)).sort((a,b)=>evKey(a)<evKey(b)?1:-1);
+
+// ---------- Навигация ----------
+const ICON_FB='<svg viewBox="0 0 24 24"><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.6 1.6-1.6h1.7V4.3c-.3 0-1.3-.1-2.5-.1-2.5 0-4.1 1.5-4.1 4.2v2.4H7.4V14h2.8v8h3.3z"/></svg>';
+const ICON_IG='<svg viewBox="0 0 24 24"><path d="M12 7.3a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zm0 7.7a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm6-7.9a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0zM21 8.2c-.1-1.5-.4-2.8-1.5-3.9S17.3 2.9 15.8 2.8C14.3 2.7 9.7 2.7 8.2 2.8 6.7 2.9 5.4 3.2 4.3 4.3S2.9 6.7 2.8 8.2c-.1 1.5-.1 6.1 0 7.6.1 1.5.4 2.8 1.5 3.9s2.4 1.4 3.9 1.5c1.5.1 6.1.1 7.6 0 1.5-.1 2.8-.4 3.9-1.5s1.4-2.4 1.5-3.9c.1-1.5.1-6.1 0-7.6zm-2 9.3c-.3.8-1 1.5-1.8 1.8-1.2.5-4.2.4-5.2.4s-4 .1-5.2-.4c-.8-.3-1.5-1-1.8-1.8-.5-1.2-.4-4.2-.4-5.5s-.1-4.3.4-5.5c.3-.8 1-1.5 1.8-1.8 1.2-.5 4.2-.4 5.2-.4s4-.1 5.2.4c.8.3 1.5 1 1.8 1.8.5 1.2.4 4.2.4 5.5s.1 4.3-.4 5.5z"/></svg>';
+const ICON_APPLE='<svg viewBox="0 0 24 24"><path d="M16.4 12.6c0-2.5 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.7.9-.8 0-2-.9-3.2-.9-1.7 0-3.2 1-4.1 2.5-1.8 3-.5 7.6 1.3 10.1.9 1.2 1.9 2.6 3.2 2.5 1.3-.1 1.8-.8 3.3-.8s2 .8 3.3.8c1.4 0 2.2-1.2 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-3.1-4zM14 5.4c.7-.8 1.2-2 1-3.2-1 0-2.2.7-3 1.5-.6.7-1.2 1.9-1.1 3.1 1.2.1 2.3-.6 3.1-1.4z"/></svg>';
+const ICON_PLAY='<svg viewBox="0 0 24 24"><path d="M3.6 2.3 13 12l-9.4 9.7c-.3-.2-.5-.6-.5-1.1V3.4c0-.5.2-.9.5-1.1zm11 8.2L5.2 2.2l10.9 6.3-1.5 2zm0 3L5.2 21.8l10.9-6.3-1.5-2zm5.3-3.9c.7.4 1.2 1 1.2 1.8s-.5 1.4-1.2 1.8l-2.6 1.5-2-2.2 2-2.4 2.6 1.5z"/></svg>';
+// менюто: Начало, Програма и Контакти са винаги; останалите се включват от Админ → Публичен сайт → Общи („Меню“). Страниците остават достъпни по адрес.
+const NAV=()=>[
+  {id:'',l:t('home')},
+  {id:'program',l:t('program'),sub:FORMATS.map(f=>['program/'+f.id,f.t])},
+  ...(on('general.nav.restaurant')?[{id:'restaurant',l:t('restaurant')}]:[]),
+  ...(on('general.nav.membership')?[{id:'membership',l:t('membership')}]:[]),
+  ...(on('general.nav.about')?[{id:'about',l:t('about'),sub:[['about/team',t('team')],['about/rent',t('rent')]]}]:[]),
+  ...(on('general.nav.college')?[{id:'college',l:t('college')}]:[]),
+  {id:'contacts',l:t('contacts')}
+];
+function socials(){
+  const fb=pT('general.facebook'), ig=pT('general.instagram'); let h='';
+  if(fb)h+=`<a href="${esc(fb)}" target="_blank" rel="noopener" aria-label="Facebook">${ICON_FB}</a>`;
+  if(ig)h+=`<a href="${esc(ig)}" target="_blank" rel="noopener" aria-label="Instagram">${ICON_IG}</a>`;
+  return h;
+}
+function header(cur){
+  const items=NAV().map(n=>`<div class="it ${cur===n.id?'on':''}"><a href="#/${n.id}">${esc(n.l)}</a>${n.sub?`<div class="sub">${n.sub.map(s=>`<a href="#/${s[0]}">${esc(s[1])}</a>`).join('')}</div>`:''}</div>`).join('');
+  return `<div class="wrap">
+    <a class="logo" href="#/" aria-label="AC²"><span class="lg">${LOGO_SVG}</span></a>
+    <nav class="nav">${items}</nav>
+    <div class="right">
+      <div class="soc">${socials()}</div>
+      <a class="btn gilt sm install" href="#/app">${t('install')}</a>
+      <button class="lang" onclick="toggleLang()">${lang==='bg'?'EN':'BG'}</button>
+      ${on('general.nav.login')?`<a class="login" href="${esc(APP_URL)}">${t('login')}</a>`:''}
+      <button class="burger" onclick="openMenu()" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div></div>`;
+}
+function mobileNav(){
+  const g=NAV().map(n=>`<div class="grp"><a href="#/${n.id}" onclick="closeMenu()">${esc(n.l)}</a>${n.sub?`<div class="sub">${n.sub.map(s=>`<a href="#/${s[0]}" onclick="closeMenu()">${esc(s[1])}</a>`).join('')}</div>`:''}</div>`).join('');
+  return `<div class="top"><span class="lg" style="width:56px;color:var(--gilt)">${LOGO_SVG}</span><button class="close" onclick="closeMenu()" aria-label="Close">×</button></div>
+    ${g}
+    <div class="acts">
+      ${on('general.nav.login')?`<a class="btn gilt" href="${esc(APP_URL)}">${t('login')}</a>`:''}
+      <a class="btn" href="#/app" onclick="closeMenu()">${t('install')}</a>
+      <button class="lang" style="background:none;border:1px solid rgba(191,192,194,.35);color:var(--ondark);border-radius:20px;padding:10px;" onclick="toggleLang()">${lang==='bg'?'English':'Български'}</button>
+      <div class="soc">${socials()}</div>
+    </div>`;
+}
+function openMenu(){document.getElementById('mnav').classList.add('open');document.body.style.overflow='hidden';}
+function closeMenu(){document.getElementById('mnav').classList.remove('open');document.body.style.overflow='';}
+function toggleLang(){lang=lang==='bg'?'en':'bg';try{localStorage.setItem('lang',lang);}catch(e){}document.documentElement.lang=lang;render();}
+function storeButtons(cls){
+  const as=pT('general.appstore_url'), gp=pT('general.playstore_url');
+  const b=(href,icon,label)=>href?`<a class="btn ${cls||'ghost'}" href="${esc(href)}" target="_blank" rel="noopener" onclick="track('app_store_click',{store:'${label}'})">${icon} ${label}</a>`
+    :`<span class="btn ${cls||'ghost'}" style="opacity:.55;cursor:default;">${icon} ${label} · ${t('soon')}</span>`;
+  return `<div class="stores">${b(as,ICON_APPLE,'App Store')}${b(gp,ICON_PLAY,'Google Play')}</div>`;
+}
+function footer(){
+  const email=pT('general.email'), phone=pT('general.phone');
+  return `<div class="wrap">
+    <div class="cols">
+      <div><div class="flogo">${LOGO_SVG}</div>
+        <div class="v">${esc(pT('general.address'))}</div>
+        ${phoneList().map(([p,l])=>`<a href="${telHref(p)}">${l?esc(l)+': ':''}${esc(p)}</a>`).join('')}
+        ${email?`<a href="mailto:${esc(email)}">${esc(email)}</a>`:''}
+        <div class="soc">${socials()}</div></div>
+      <div><h4>${t('hours')}</h4><div class="v">${esc(pT('general.hours'))}</div></div>
+      <div><h4>AC²</h4>${NAV().filter(n=>n.id).map(n=>`<a href="#/${n.id}">${esc(n.l)}</a>`).join('')}</div>
+      <div><h4>${t('install')}</h4><div class="v" style="font-size:13px;">${esc(pT('home.app.body'))}</div>${storeButtons('gilt sm')}</div>
+    </div>
+    <div class="copy"><div>© ${new Date().getFullYear()} American College Arcus Club</div>
+      <div><a href="#/legal/terms">${t('legal')}</a><a href="#/legal/privacy">${t('privacy')}</a><a href="#/legal/cookies">${t('cookies')}</a>${on('general.nav.login')?`<a href="${esc(APP_URL)}">${t('login')}</a>`:''}</div></div>
+  </div>`;
+}
+</script>
+<script>
+// ============================================================
+//  СТРАНИЦИ
+// ============================================================
+const ph=(cls)=>`<div class="${cls||'ph'}"><span class="lg">${LOGO_SVG}</span></div>`;
+const picOr=(url,cls,alt)=>url?`<img src="${esc(url)}" alt="${esc(alt||'')}" loading="lazy" class="${cls||''}"/>`:ph('ph');
+
+// Снимка на събитие: 'cover' (изрязва до 3:2) за хоризонтални/широки, 'poster' (цяла) за вертикални. pub.fit='cover' принуждава изрязване.
+// Пропорцията се научава при първото зареждане (кеш в localStorage по URL); дотогава се показва цяла.
+const _imgAR={}; try{Object.assign(_imgAR,JSON.parse(localStorage.getItem('ac2_imgar')||'{}'));}catch(e){}
+function imgMeasured(img,id){ try{ if(img.naturalWidth&&img.naturalHeight&&_imgAR[img.src]===undefined){ _imgAR[img.src]=img.naturalWidth/img.naturalHeight; localStorage.setItem('ac2_imgar',JSON.stringify(_imgAR)); if(_imgAR[img.src]>=1.2){ const c=img.closest('.pic.fit'); if(c){c.classList.remove('fit');c.style.backgroundImage="url('"+img.src+"')";c.innerHTML='';} } } }catch(e){} }
+function imgFit(e){ if(!e.image_url)return 'none'; if(e.pub&&e.pub.fit==='cover')return 'cover'; const ar=_imgAR[e.image_url]; if(ar===undefined)return 'poster'; return ar>=1.2?'cover':'poster'; }
+const galleryHtml=(imgs,big)=>imgs.length?`<div class="gal ${big?'big':''}">${imgs.map((u,i)=>`<img src="${esc(u)}" alt="" loading="lazy" onclick="openLb(${JSON.stringify(imgs).replace(/"/g,'&quot;')},${i})"/>`).join('')}</div>`:'';
+// лайтбокс: клик върху снимка → на цял екран, ← → / плъзгане, Esc / ✕
+let LB=null;
+function openLb(list,i){
+  closeLb(); LB={list,i};
+  const el=document.createElement('div'); el.className='lb'; el.id='lb';
+  el.innerHTML=`<img id="lbimg" src="${esc(list[i])}" alt=""/>${list.length>1?`<div class="p" onclick="event.stopPropagation();lbGo(-1)">‹</div><div class="n" onclick="event.stopPropagation();lbGo(1)">›</div><div class="c" id="lbc">${i+1} / ${list.length}</div>`:''}<div class="x" onclick="closeLb()">✕</div>`;
+  el.onclick=e=>{ if(e.target===el||e.target.id==='lbimg'&&list.length===1)closeLb(); };
+  let x0=null; el.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;},{passive:true}); el.addEventListener('touchend',e=>{ if(x0==null)return; const dx=e.changedTouches[0].clientX-x0; if(Math.abs(dx)>50)lbGo(dx<0?1:-1); x0=null; },{passive:true});
+  document.body.appendChild(el); document.body.style.overflow='hidden';
+  document.addEventListener('keydown',lbKey);
+}
+function lbGo(d){ if(!LB)return; LB.i=(LB.i+d+LB.list.length)%LB.list.length; const im=document.getElementById('lbimg'); if(im)im.src=LB.list[LB.i]; const c=document.getElementById('lbc'); if(c)c.textContent=(LB.i+1)+' / '+LB.list.length; }
+function lbKey(e){ if(e.key==='Escape')closeLb(); else if(e.key==='ArrowRight')lbGo(1); else if(e.key==='ArrowLeft')lbGo(-1); }
+function closeLb(){ const el=document.getElementById('lb'); if(el)el.remove(); document.body.style.overflow=''; document.removeEventListener('keydown',lbKey); LB=null; }
+const pageHead=(kicker,title,lead,sub)=>`<div class="pagehead"><div class="wrap">${kicker?`<div class="kicker">${esc(kicker)}</div>`:''}<h1>${esc(title)}</h1>${lead?`<div class="lead">${esc(lead)}</div>`:''}${sub||''}</div></div>`;
+const subnav=(items,cur)=>`<div class="subnav">${items.map(i=>`<a href="#/${i[0]}" class="${cur===i[0]?'on':''}">${esc(i[1])}</a>`).join('')}</div>`;
+
+// ---------- НАЧАЛО ----------
+let slideTimer=null, slideIdx=0;
+function pageHome(){
+  const slides=pA('home.slides').filter(s=>s&&(s.image||s.video||loc(s.title)));
+  const sl=slides.length?slides:PD.home.slides;
+  const reduce=(()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}})();
+  const slidesHtml=sl.map((s,i)=>`<div class="slide ${i===0?'on':''}" data-i="${i}">
+      ${s.video&&!reduce?`<video autoplay muted loop playsinline preload="metadata" ${s.image?`poster="${esc(s.image)}"`:''}><source src="${esc(s.video)}"/></video>`:(s.image?`<div class="pic" style="background-image:url('${esc(s.image)}')"></div>`:'')}
+      <div class="shade"></div>
+      <div class="txt"><div class="wrap"><h1>${esc(loc(s.title))}</h1>${loc(s.sub)?`<p>${esc(loc(s.sub))}</p>`:''}${loc(s.cta)?`<a class="btn" href="${esc(s.link||'#/program')}">${esc(loc(s.cta))}</a>`:''}</div></div>
+    </div>`).join('');
+  const up=upcomingEvents().slice(0,3);
+  const dn=dinners().slice(0,3);
+  const college=pImgs('home.college.images');
+  return `<div class="heroslider" id="slider">${slidesHtml}
+      <div class="mark">${LOGO_SVG}</div>
+      ${sl.length>1?`<div class="dots">${sl.map((s,i)=>`<button class="${i===0?'on':''}" onclick="goSlide(${i})" aria-label="${i+1}"></button>`).join('')}</div>`:''}
+    </div>
+
+    ${on('home.show.manifesto')?`<section class="sec manifesto"><div class="wrap">
+      <div class="kicker">${esc(pT('home.manifesto.title'))}</div>
+      <p>${esc(pT('home.manifesto.body'))}</p>
+      <a class="btn ghost" href="#/about">${t('about')} →</a>
+    </div></section>`:''}
+
+    ${on('home.show.season')?`<section class="sec dark"><div class="wrap">
+      <div class="sechead"><div><div class="kicker">${t('program')}</div><h2>${esc(pT('home.season.title'))}</h2><div class="lead" style="margin-top:8px;">${esc(pT('home.season.body'))}</div></div>
+        <a class="tlink" style="color:var(--gilt)" href="#/program">${t('whole')} →</a></div>
+      ${up.length?`<div class="grid3">${up.map(e=>evCard(e,true)).join('')}</div>`:`<div class="empty" style="color:var(--ondark-mid)">${t('noEvents')}</div>`}
+    </div></section>`:''}
+
+    ${on('home.show.restaurant')?`<section class="sec"><div class="wrap">
+      <div class="two">
+        ${picOr(pT('home.restaurant.image'),'', 'Restaurant')}
+        <div><div class="kicker">${t('restaurant')}</div><h2 style="font-size:clamp(28px,3.4vw,40px);margin-bottom:14px;">${esc(pT('home.restaurant.title'))}</h2>
+          <div class="lead">${esc(pT('home.restaurant.body'))}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;"><a class="btn" href="#/restaurant">${t('restaurantPage')}</a></div></div>
+      </div>
+      ${dn.length?`<div style="margin-top:56px;"><div class="sechead"><div><div class="kicker">${t('restaurant')}</div><h2>${t('dinners')}</h2></div><a class="tlink" href="#/restaurant/dinners">${t('all')} →</a></div>
+        <div class="grid3">${dn.map(e=>evCard(e,false)).join('')}</div></div>`:''}
+    </div></section>`:''}
+
+    ${on('home.show.app')?`<section class="sec alt"><div class="wrap"><div class="two rev">
+      ${picOr(pT('home.app.image'),'','App')}
+      <div><div class="kicker">${t('install')}</div><h2 style="font-size:clamp(28px,3.4vw,40px);margin-bottom:14px;">${esc(pT('home.app.title'))}</h2>
+        <div class="lead" style="margin-bottom:22px;">${esc(pT('home.app.body'))}</div>${storeButtons('dark')}
+        <div class="hint"><a class="tlink" href="#/app">${t('more')} →</a></div></div>
+    </div></div></section>`:''}
+
+    ${on('home.show.membership')?(pT('home.membership.image')?`<section class="sec"><div class="wrap"><div class="two">
+      <img src="${esc(pT('home.membership.image'))}" alt="${esc(pT('home.membership.title'))}" loading="lazy"/>
+      <div><div class="kicker">${t('membership')}</div><h2 style="font-size:clamp(28px,3.4vw,40px);margin-bottom:14px;">${esc(pT('home.membership.title'))}</h2>
+        <div class="lead">${esc(pT('home.membership.body'))}</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;"><a class="btn" href="#/membership">${t('membershipPage')}</a><a class="btn ghost" href="${esc(APP_URL)}#apply" onclick="track('apply_click',{})">${t('apply')}</a></div></div>
+    </div></div></section>`:`<section class="sec"><div class="wrap" style="text-align:center;">
+      <div class="kicker">${t('membership')}</div><h2 style="font-size:clamp(28px,3.4vw,40px);margin-bottom:14px;">${esc(pT('home.membership.title'))}</h2>
+      <div class="lead" style="margin:0 auto 24px;">${esc(pT('home.membership.body'))}</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;"><a class="btn" href="#/membership">${t('membershipPage')}</a><a class="btn ghost" href="${esc(APP_URL)}#apply" onclick="track('apply_click',{})">${t('apply')}</a></div>
+    </div></section>`):''}
+
+    ${on('home.show.college')?`<section class="sec dark"><div class="wrap"><div class="two">
+      <div>${college.length?`<img src="${esc(college[0])}" alt="" loading="lazy"/>`:ph('ph')}</div>
+      <div><div class="kicker">${t('college')}</div><h2 style="font-size:clamp(28px,3.4vw,40px);margin-bottom:14px;">${esc(pT('home.college.title'))}</h2>
+        <div class="lead" style="margin-bottom:22px;">${esc(pT('home.college.body'))}</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;"><a class="btn gilt" href="#/college">${t('more')}</a>${pT('home.college.url')?`<a class="btn gilt" href="${esc(pT('home.college.url'))}" target="_blank" rel="noopener">${t('collegeSite')} ↗</a>`:''}</div></div>
+    </div></div></section>`:''}
+
+    ${on('home.show.newsletter')?newsletterSection():''}`;
+}
+function newsletterSection(){
+  return `<section class="sec newsletter alt"><div class="wrap">
+    <div class="kicker">${L('Нюзлетър','Newsletter')}</div>
+    <h2 style="font-size:clamp(28px,3.4vw,40px);margin-bottom:12px;">${esc(pT('home.newsletter.title'))}</h2>
+    <div class="lead">${esc(pT('home.newsletter.body'))}</div>
+    <form class="form" style="max-width:520px;margin:0 auto;" onsubmit="submitNewsletter(this);return false;">
+      <div class="nl" style="margin-top:22px;"><input type="email" name="email" placeholder="${t('email')}" required autocomplete="email"/><button class="btn" type="submit">${t('subscribe')}</button></div>
+      <label class="chk" style="justify-content:center;"><input type="checkbox" name="consent"/> <span>${t('consentNl')}</span></label>
+      <div id="nl_captcha" class="cap"></div>
+      <div class="msg" id="nl_msg"></div>
+    </form>
+  </div></section>`;
+}
+// Снимките на слайдера: при слаба връзка Safari спира по средата (горе ивица, долу черно) и не опитва пак.
+// Зареждаме ги отделно и при грешка / застой над 12 s презареждаме с нов адрес (до 3 опита).
+function heroImgRetry(pic){
+  const m=/url\(["']?(.+?)["']?\)/.exec(pic.style.backgroundImage||''); if(!m)return;
+  const base=m[1]; let tries=0;
+  const load=()=>{
+    const url=tries?base+(base.indexOf('?')<0?'?':'&')+'r='+tries:base;
+    const im=new Image(); let done=false;
+    const guard=setTimeout(()=>{ if(!done){ done=true; im.src=''; retry(); } },12000);
+    im.onload=()=>{ if(done)return; done=true; clearTimeout(guard); pic.style.backgroundImage=`url('${url}')`; };
+    im.onerror=()=>{ if(done)return; done=true; clearTimeout(guard); retry(); };
+    im.src=url;
+  };
+  const retry=()=>{ if(++tries<=3)setTimeout(load,800*tries); };
+  load();
+}
+function startSlider(){
+  stopSlider(); slideIdx=0;
+  const s=document.getElementById('slider'); if(!s)return;
+  s.querySelectorAll('.slide .pic').forEach(heroImgRetry);
+  const n=s.querySelectorAll('.slide').length; if(n<2)return;
+  slideTimer=setInterval(()=>goSlide((slideIdx+1)%n),6500);
+}
+function stopSlider(){ if(slideTimer){clearInterval(slideTimer);slideTimer=null;} }
+function goSlide(i){
+  const s=document.getElementById('slider'); if(!s)return; slideIdx=i;
+  s.querySelectorAll('.slide').forEach((el,k)=>el.classList.toggle('on',k===i));
+  s.querySelectorAll('.dots button').forEach((el,k)=>el.classList.toggle('on',k===i));
+}
+
+// ---------- ПРОГРАМА ----------
+function pageProgram(dir){
+  const list=upcomingEvents(dir);
+  const past=pastEvents();
+  const btn=(id,l)=>`<button class="${(dir||'')===id?'on':''}" onclick="location.hash='#/program${id?'/'+id:''}'">${esc(l)}</button>`;
+  const fmtBtns=FORMATS.map(f=>btn(f.id,f.t)).join('');
+  return pageHead(t('program'),pT('home.season.title'),pT('home.season.body'))+`
+    <div class="wrap">
+      <div class="body" style="max-width:760px;">${esc(pT('program.intro'))}</div>
+      <div class="filters">${btn('',t('all'))}${fmtBtns}</div>
+      ${list.length?`<div class="grid3">${list.map(e=>evCard(e,false)).join('')}</div>`:`<div class="empty">${t('noEvents')}</div>`}
+      ${past.length&&!dir?`<div style="margin-top:64px;"><button class="btn ghost" type="button" onclick="const d=this.nextElementSibling;const o=d.style.display!=='none';d.style.display=o?'none':'block';this.textContent=(o?'${t('pastEvents')} (${past.length}) ▾':'${t('pastEvents')} ▴');">${t('pastEvents')} (${past.length}) ▾</button><div style="display:none;margin-top:22px;"><div class="grid3" style="opacity:.85;">${past.slice(0,12).map(e=>evCard(e,false)).join('')}</div></div></div>`:''}
+    </div><div style="height:72px;"></div>`;
+}
+
+// ---------- СЪБИТИЕ ----------
+function pageEvent(id,book){
+  const e=(EVENTS||[]).find(x=>x.id===id);
+  if(!e)return pageHead('', L('Събитието не е намерено','Event not found'), '')+`<div class="wrap" style="padding-bottom:80px;"><a class="btn ghost" href="#/program">${t('program')}</a></div>`;
+  const p=e.pub||{}; const a=evAction(e); const past=isPast(e); const ex=evCat(e)==='exhibition';
+  const g=Array.isArray(p.gallery)?p.gallery.filter(Boolean):[];
+  const kv=(k,v)=>v?`<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`:'';
+  const dirLabel=evFmts(e).map(f=>fmtObj(f).t).join(' · ');
+  const fit=imgFit(e); const lb=JSON.stringify([e.image_url||'']).replace(/"/g,'&quot;');
+  const headTxt=`<span class="cat">${esc(dirLabel)}${(p.category)?' · '+esc(catName(evCat(e))):''}</span><h1>${esc(evTitle(e))}</h1>
+        <div class="meta"><span>${(ex||e.end_date)?'':esc(fmtWD(e.date))+', '}${esc(evWhen(e,true))}${e.ends&&!ex?' – '+esc(fmtTime(e.ends)):''}</span>${e.place?`<span>${esc(placeT(e.place))}</span>`:''}<span>${esc(fmtPrice(e))}</span></div>`;
+  return (e.image_url?`<div class="evhero full"><div class="pbg" style="background-image:url('${esc(e.image_url)}')"></div><img class="pimg" src="${esc(e.image_url)}" alt="" onclick="openLb(${lb},0)" onload="imgMeasured(this,'${esc(e.id)}')"/></div><div class="evhead"><div class="wrap">${headTxt}</div></div>`
+    :`<div class="evhero"><div class="shade" style="pointer-events:none;"></div><div class="wrap">${headTxt}</div></div>`)+`
+    <div class="wrap"><div class="evbody">
+      <div>
+        ${past?`<div class="archive-note">${t('archive')}</div>`:''}
+        ${(evDesc(e)||loc(p.long))?`<div class="kicker">${ex?t('concept'):L('За събитието','About the event')}</div><div class="body">${esc(loc(p.long)||evDesc(e))}</div>`:''}
+        ${kv(t('participants'),loc(p.participants))}
+        ${kv(t('curator'),loc(p.curator))}
+        ${kv(t('authors'),loc(p.authors))}
+        ${kv(t('visit'),loc(p.visit))}
+        ${g.length?`<div class="kv"><div class="k">${ex?t('works'):L('Галерия','Gallery')}</div>${galleryHtml(g)}</div>`:''}
+        ${book&&!past?bookingBox(e):''}
+        ${!past&&salesClosed(e)&&!(e.pub&&e.pub.ticket_url)&&evEntry(e)!=='free'?`<div class="msg" style="font-size:15px;border:1px solid var(--line);margin-top:14px;">${L('Продажбата на билети за това събитие е приключила.','Ticket sales for this event have closed.')}</div>`:''}
+      </div>
+      <aside><div class="box">
+        <div class="row"><span>${t('date')}</span><span>${esc((e.end_date&&e.end_date!==e.date)?evWhen(e,true):fmtD(e.date,true))}</span></div>
+        ${evSlots(e).length&&!ex?`<div class="row"><span>${t('time')}</span><span>${evSlots(e).map(s=>esc(fmtTime(s.time))).join(' / ')}</span></div>`:(e.time&&!ex?`<div class="row"><span>${t('time')}</span><span>${esc(fmtTime(e.time))}${e.ends?' – '+esc(fmtTime(e.ends)):''}</span></div>`:'')}
+        ${e.place?`<div class="row"><span>${t('place')}</span><span>${esc(placeT(e.place))}</span></div>`:''}
+        <div class="row"><span>${t('price')}</span><span>${esc(fmtPrice(e))}</span></div>
+        ${(!past&&a.href!=='#/event/'+e.id&&soldOutPub(e))?`<span class="btn ghost" style="width:100%;cursor:default;opacity:.75;text-align:center;">${L('Продадено','Sold out')}</span>`
+          :(!past&&a.href!=='#/event/'+e.id)?(a.ext?`<a class="btn" href="${esc(a.href)}" target="_blank" rel="noopener" onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a>${!p.ticket_url?`<div class="hint" style="text-align:center;">${t('inApp')} · ${t('login')}</div>`:''}`
+          :`<a class="btn" href="${esc(a.href)}" onclick="track('${a.kind}',{event_id:'${esc(e.id)}'})">${esc(a.label)}</a>`):''}
+        ${guestOpen(e)&&!past&&on('general.nav.login')?`<div class="hint" style="text-align:center;margin-top:8px;"><a class="tlink" href="${esc(APP_URL)}#event/${esc(e.id)}">${t('login')} →</a></div>`:''}
+        <a class="btn ghost" style="width:100%;margin-top:10px;" href="#/program">${t('program')}</a>
+      </div></aside>
+    </div></div>`;
+}
+
+// ---------- РЕСТОРАНТ ----------
+// бърз бутон към формата за запитване (страница „Ресторант“); скрива се, когато формата вече е на екрана
+function rfabHtml(){
+  const cal='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.500 15.500h5"/></svg>';
+  return `<div class="rfab hide" id="rfab"><a class="go" href="#enquiry" onclick="event.preventDefault();rfabGo()">${cal}<span>${L('Направи резервация','Make a reservation')}</span></a></div>`;
+}
+function rfabGo(){ const e=document.getElementById('enquiry'); if(e)e.scrollIntoView({behavior:'smooth',block:'start'}); track('reservation_click',{where:'restaurant_fab'}); }
+let _rfabObs=null;
+function rfabInit(){
+  try{ if(_rfabObs){_rfabObs.disconnect();_rfabObs=null;} }catch(e){}
+  const fab=document.getElementById('rfab'), enq=document.getElementById('enquiry');
+  document.body.classList.toggle('has-rfab',!!fab);
+  if(!fab)return; if(!enq){fab.remove();document.body.classList.remove('has-rfab');return;}
+  if(!('IntersectionObserver' in window)){fab.classList.remove('hide');return;}
+  _rfabObs=new IntersectionObserver(es=>{ fab.classList.toggle('hide',es[0].isIntersecting); },{threshold:0.12});
+  _rfabObs.observe(enq);
+}
+function reserveBtn(){
+  const u=pT('restaurant.reserve_url'), ph=pT('restaurant.reserve_phone')||pT('general.phone');
+  if(u)return `<a class="btn" href="${esc(u)}" target="_blank" rel="noopener" onclick="track('reservation_click',{where:'restaurant'})">${t('table')}</a>`;
+  if(ph)return `<a class="btn" href="tel:${esc(ph.replace(/\s+/g,''))}" onclick="track('reservation_click',{where:'restaurant'})">${t('table')} · ${esc(ph)}</a>`;
+  return `<a class="btn" href="#/restaurant/reserve" onclick="track('reservation_click',{where:'restaurant'})">${t('table')}</a>`;
+}
+function pageRestaurant(){
+  const imgs=pImgs('restaurant.images'); const dn=dinners(); const chef=pV('restaurant.chef')||{};
+  const secs=pA('restaurant.sections').filter(x=>x&&(loc(x.title)||loc(x.body)||x.image));
+  const blocks={
+    gallery:()=>imgs.length?`<div class="wrap">${galleryHtml(imgs,true)}</div>`:'',
+    sections:()=>secs.length?`<div class="wrap">${secs.map((x,k)=>`<section class="sec tight"><div class="two${k%2?' rev':''}">${x.image?`<div><img src="${esc(x.image)}" alt="" loading="lazy"/></div>`:'<div></div>'}<div>${loc(x.title)?`<h2 style="font-size:clamp(26px,3vw,36px);margin-bottom:12px;">${esc(loc(x.title))}</h2>`:''}<div class="body" style="white-space:pre-line;">${esc(loc(x.body))}</div></div></div></section>`).join('')}</div>`:'',
+    chef:()=>(chef.name||loc(chef.body)||chef.image)?`<div class="wrap"><section class="sec tight"><div class="two">${picOr(chef.image,'',chef.name)}<div><div class="kicker">${t('chef')}</div><h2 style="font-size:32px;margin-bottom:12px;">${esc(chef.name||'')}</h2><div class="body" style="white-space:pre-line;">${esc(loc(chef.body))}</div></div></div></section></div>`:'',
+    dinners:()=>dn.length?`<section class="sec dark"><div class="wrap"><div class="sechead"><div><div class="kicker">${t('restaurant')}</div><h2>${t('dinners')}</h2><div class="lead" style="margin-top:8px;">${esc(pT('restaurant.dinners_intro'))}</div></div><a class="tlink" href="#/restaurant/dinners">${t('all')} →</a></div><div class="grid3">${dn.map(e=>evCard(e,true)).join('')}</div></div></section>`:'',
+    menu:()=>menuHtml(),
+    enquiry:()=>`<section class="sec"><div class="wrap"><div id="enquiry" style="background:var(--card);border:1px solid var(--line-soft);border-radius:18px;padding:26px;"><div class="kicker">${t('restaurant')}</div><h2 style="font-size:30px;margin-bottom:18px;">${t('enquiryTitle')}</h2>${enquiryForm()}</div></div></section>`
+  };
+  const def=['gallery','sections','menu','chef','dinners','enquiry'];
+  let order=(pT('restaurant.order')||'').split(',').map(x=>x.trim().toLowerCase()).filter(x=>blocks[x]);
+  def.forEach(k=>{if(!order.includes(k))order.push(k);});   // пропуснатите се добавят накрая
+  setTimeout(rfabInit,80);
+  return pageHead(t('restaurant'),pT('restaurant.title'),pT('restaurant.body'))+rfabHtml()+`
+    <div class="wrap"><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:8px 0 64px;">${reserveBtn()}${menuOn()?`<a class="btn ghost" href="#menu" onclick="event.preventDefault();const m=document.getElementById('menu');if(m)m.scrollIntoView({behavior:'smooth',block:'start'});">${esc(pT('menu.title')||L('Меню','Menu'))}</a>`:''}<span class="hint" style="margin:0 0 0 8px;white-space:pre-line;">${esc(pT('restaurant.hours'))}</span></div></div>
+    ${order.map(k=>blocks[k]()).join('')}`;
+}
+// ---------- МЕНЮ НА РЕСТОРАНТА (от админа: Публичен сайт → Меню на ресторанта) ----------
+// всяка категория: заглавие + ястия по едно на ред „Име | описание | цена“ (описанието е по избор)
+function menuSections(){ return pA('menu.sections').map(x=>({title:loc(x&&x.title),note:loc(x&&x.note),items:String(loc(x&&x.items)||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{ const p=l.split('|').map(z=>z.trim()); return p.length>=3?{name:p[0],desc:p.slice(1,-1).join(' | '),price:p[p.length-1]}:(p.length===2?{name:p[0],desc:'',price:p[1]}:{name:p[0],desc:'',price:''}); })})).filter(c=>c.title||c.items.length); }
+function menuOn(){ const v=pV('menu.show'); return (v===true||v==='true'||v===1)&&menuSections().length>0; }
+function menuHtml(){
+  if(!menuOn())return '';
+  const secs=menuSections(), intro=pT('menu.intro'), foot=pT('menu.footer');
+  return `<section class="sec" id="menu"><div class="wrap"><div class="kicker">${t('restaurant')}</div><h2 style="font-size:clamp(28px,3.4vw,40px);margin-bottom:${intro?'10':'22'}px;">${esc(pT('menu.title')||L('Меню','Menu'))}</h2>
+    ${intro?`<div class="lead" style="margin-bottom:24px;">${esc(intro)}</div>`:''}
+    <div class="menugrid">${secs.map(c=>`<div class="menucat">${c.title?`<h3>${esc(c.title)}</h3>`:''}${c.note?`<div class="mnote">${esc(c.note)}</div>`:''}
+      ${c.items.map(i=>`<div class="mitem"><div class="mrow"><span class="mname">${esc(i.name)}</span><span class="mdots"></span>${i.price?`<span class="mprice">${esc(i.price)}</span>`:''}</div>${i.desc?`<div class="mdesc">${esc(i.desc)}</div>`:''}</div>`).join('')}</div>`).join('')}</div>
+    ${foot?`<div class="hint" style="margin-top:22px;white-space:pre-line;">${esc(foot)}</div>`:''}</div></section>`;
+}
+function pageDinners(){
+  const dn=dinners(); const past=pastEvents().filter(isDinner);
+  return pageHead(t('restaurant'),t('dinners'),pT('restaurant.dinners_intro'),subnav([['restaurant',t('restaurant')],['restaurant/dinners',t('dinners')]],'restaurant/dinners'))+`
+    <div class="wrap" style="padding-bottom:80px;">
+      ${dn.length?`<div class="grid3">${dn.map(e=>evCard(e,false)).join('')}</div>`:`<div class="empty">${L('Няма обявени тематични вечери. Следете програмата.','No themed dinners announced yet. Watch the programme.')}</div>`}
+      ${past.length?`<div style="margin-top:56px;"><button class="btn ghost" type="button" onclick="const d=this.nextElementSibling;const o=d.style.display!=='none';d.style.display=o?'none':'block';this.textContent=(o?'${t('pastEvents')} (${past.length}) ▾':'${t('pastEvents')} ▴');">${t('pastEvents')} (${past.length}) ▾</button><div style="display:none;margin-top:18px;" class="grid3">${past.map(e=>evCard(e,false)).join('')}</div></div>`:''}
+    </div>`;
+}
+
+// ---------- ЧЛЕНСТВО ----------
+function pageMembership(){
+  const mem=['club','alumni','corporate'].map(id=>{
+    const names={club:'Club Member',alumni:'Alumni Member',corporate:'Corporate Member'};
+    const hook=lT('memberships.items.'+id+'.hook'), sum=lT('memberships.items.'+id+'.summary'), desc=lT('memberships.items.'+id+'.desc');
+    const ben=(lT('memberships.items.'+id+'.benefits')||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    const price=lT('memberships.items.'+id+'.price');
+    const cimg=pT('membership.img_'+id);   // снимка на членската карта (от админа: Членство — страница)
+    return `<div class="mcard"><div class="tag">${esc(id)}</div><h3>${names[id]}</h3><div class="hook">${esc(hook)}</div><p>${esc(sum)}</p>
+      ${cimg?`<img class="mcimg" src="${esc(cimg)}" alt="${names[id]} — ${L('членска карта','membership card')}" loading="lazy"/>`:''}
+      ${price?`<div class="price">${esc(price)}<small>${t('perYear')}</small></div>`:''}
+      <p>${esc(desc)}</p><ul>${ben.map(b=>`<li>${esc(b)}</li>`).join('')}</ul></div>`;
+  }).join('');
+  const faq=pA('membership.faq').filter(f=>f&&loc(f.q));
+  const terms=pT('membership.terms_url')||(APP_URL.replace(/app\/$/,'')+'rules.html');
+  const mimg=pT('membership.image');   // снимка вдясно от „Защо да стана член?“ (по избор, от админа)
+  const top=mimg?`<div class="pagehead mhead"><div class="wrap"><div class="mh-grid">
+      <div class="mh-txt"><div class="kicker">${esc(t('membership'))}</div><h1>${esc(pT('membership.why_title'))}</h1>
+        <img class="mh-img mh-mob" src="${esc(mimg)}" alt="" loading="lazy"/>
+        ${pT('membership.why_body')?`<div class="lead">${esc(pT('membership.why_body'))}</div>`:''}
+        <div class="kicker" style="margin-top:34px;">${t('levels')}</div><div class="body">${esc(lT('memberships.intro'))}</div></div>
+      <div class="mh-web"><img class="mh-img" src="${esc(mimg)}" alt=""/></div>
+    </div></div></div>`
+    :pageHead(t('membership'),pT('membership.why_title'),pT('membership.why_body'))+`<div class="wrap"><div class="kicker" style="margin-top:20px;">${t('levels')}</div><div class="body">${esc(lT('memberships.intro'))}</div></div>`;
+  return top+`
+    <div class="wrap">
+      <div class="mgrid">${mem}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:28px;"><a class="btn" href="${esc(APP_URL)}#apply" onclick="track('apply_click',{})">${t('apply')}</a>${pT('membership.terms_url')?`<a class="btn ghost" href="${esc(terms)}" target="_blank" rel="noopener">${t('readRules')} ↗</a>`:`<a class="btn ghost" href="#/legal/terms">${L('Условия за гости и билети','Terms for guests and tickets')}</a>`}</div>
+      <section class="sec tight"><div class="two">
+        <div><div class="kicker">${t('how')}</div><h2 style="font-size:32px;margin-bottom:12px;">${esc(pT('membership.how_title'))}</h2><div class="body">${esc(pT('membership.how_body'))}</div></div>
+        <div><div class="kicker">${t('faq')}</div><div class="faq">${faq.map(f=>`<details><summary>${esc(loc(f.q))}</summary><p>${esc(loc(f.a))}</p></details>`).join('')||`<div class="empty">—</div>`}</div></div>
+      </div></section>
+    </div>`;
+}
+
+// ---------- ЗА AC² / ЕКИП / НАЕМИ ----------
+const aboutNav=cur=>subnav([['about',t('about')],['about/team',t('team')],['about/rent',t('rent')]],cur);
+function pageAbout(){
+  const imgs=pImgs('about.images');
+  return pageHead(t('about'),pT('about.title'),'',aboutNav('about'))+`<div class="wrap" style="padding-bottom:80px;">
+    ${imgs.length?`<img src="${esc(imgs[0])}" alt="" style="width:100%;max-height:520px;object-fit:cover;border-radius:20px;margin-bottom:34px;"/>`:''}
+    <div class="body" style="font-size:17px;">${esc(pT('about.body'))}</div>
+    ${galleryHtml(imgs.slice(1))}
+    <div style="margin-top:40px;display:flex;gap:10px;flex-wrap:wrap;"><a class="btn ghost" href="#/about/team">${t('team')}</a><a class="btn ghost" href="#/about/rent">${t('rent')}</a></div></div>`;
+}
+function pageTeam(){
+  const m=pA('team.members').filter(x=>x&&x.name);
+  return pageHead(t('about'),t('team'),pT('team.intro'),aboutNav('about/team'))+`<div class="wrap" style="padding-bottom:80px;">
+    ${m.length?`<div class="grid3" style="gap:36px 22px;">${m.map(p=>`<div class="person">${p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy"/>`:'<div class="ph"></div>'}<h3>${esc(p.name)}</h3><div class="role">${esc(loc(p.role))}</div><p>${esc(loc(p.bio))}</p></div>`).join('')}</div>`:`<div class="empty">${L('Екипът се представя скоро.','The team will be introduced soon.')}</div>`}</div>`;
+}
+function pageRent(){
+  const imgs=pImgs('rent.images'); const specs=pA('rent.specs').filter(s=>s&&loc(s.label)&&loc(s.value));
+  return pageHead(t('about'),pT('rent.title'),pT('rent.body'),aboutNav('about/rent'))+`<div class="wrap" style="padding-bottom:80px;">
+    ${galleryHtml(imgs,true)}
+    ${specs.length?`<div class="kicker" style="margin-top:36px;">${t('specs')}</div><div class="specs">${specs.map(s=>`<div><div class="k">${esc(loc(s.label))}</div><div class="v">${esc(loc(s.value))}</div></div>`).join('')}</div>`:''}
+    <div class="kicker" style="margin-top:36px;">${t('rentTerms')}</div><div class="body">${esc(pT('rent.terms'))}</div>
+    <div style="margin-top:28px;"><a class="btn" href="#/contacts">${t('contacts')}</a></div></div>`;
+}
+
+// ---------- ARCUS COLLEGE / APP ----------
+function pageCollege(){
+  const imgs=pImgs('college.images'); const url=pT('college.url')||pT('home.college.url');
+  return pageHead(t('college'),pT('college.title'),'')+`<div class="wrap" style="padding-bottom:80px;">
+    ${imgs.length?`<img src="${esc(imgs[0])}" alt="" style="width:100%;max-height:520px;object-fit:cover;border-radius:20px;margin-bottom:34px;"/>`:''}
+    <div class="body" style="font-size:17px;">${esc(pT('college.body'))}</div>${galleryHtml(imgs.slice(1))}
+    ${url?`<div style="margin-top:32px;"><a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${t('collegeSite')} ↗</a></div>`:''}</div>`;
+}
+function pageApp(){
+  const imgs=pImgs('app.images'); const feats=(pT('app.features')||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  return pageHead(t('app'),pT('app.title'),pT('app.body'))+`<div class="wrap" style="padding-bottom:80px;">
+    ${storeButtons('dark')}
+    ${!pT('general.playstore_url')?`<div class="hint">${t('addHome')}</div>`:''}
+    <section class="sec tight"><div class="two">
+      <div>${imgs.length?`<img src="${esc(imgs[0])}" alt="" loading="lazy"/>`:ph('ph')}</div>
+      <div><div class="kicker">${t('features')}</div><ul style="padding-left:20px;line-height:2;font-size:17px;color:var(--text);">${feats.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
+        ${on('general.nav.login')?`<div style="margin-top:22px;"><a class="btn ghost" href="${esc(APP_URL)}">${t('login')} →</a></div>`:''}</div>
+    </div></section>${galleryHtml(imgs.slice(1))}</div>`;
+}
+
+// ---------- РЕЗЕРВАЦИЯ ОТ ГОСТ (нечлен) — на страницата на събитието ----------
+const evSlots=e=>(e&&e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(s=>s&&s.time):[];   // слотове (часове) с капацитет по слот
+// макс. места на резервация/билет: ресторант (AC² Table) 8, останалите 4; „Макс. места“ в събитието има предимство
+const maxParty=e=>{const v=parseInt(e&&e.pub&&e.pub.max_party,10);return v>0?Math.min(50,v):(isDinner(e)?50:4);};   // ресторант: без практически лимит (до 50); другите 4
+const bigAllowed=e=>isDinner(e)&&!(Number(e&&e.price)>0);   // „9+“: само безплатни събития в ресторанта
+function bookingBox(e){
+  const td=todayIso(); const from=guestFrom(e);
+  const paidBack=PAY_RESULT&&PAY_RESULT.event===e.id;
+  const unit=Number(e.price)||0;
+  let inner='';
+  if(!guestOpen(e))inner=`<p class="body">${t('guestClosed')}</p>`;
+  else if(salesClosed(e)&&!(paidBack&&PAY_RESULT.ok))inner=`<div class="msg" style="font-size:16px;border:1px solid var(--line);">${L('Продажбата на билети за това събитие е приключила.','Ticket sales for this event have closed.')}</div>`;
+  else if(soldOutPub(e)&&!(paidBack&&PAY_RESULT.ok))inner=`<div class="msg" style="font-size:16px;border:1px solid var(--line);">${L('Продадено — всички места са заети.','Sold out — all seats are taken.')}</div>`;
+  else if(from&&from>td)inner=`<p class="body">${t('opensOn')} <b>${esc(fmtD(from,true))}</b>.</p>`;
+  else if(paidBack&&PAY_RESULT.ok)inner=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`;
+  else inner=`<form class="form" id="bookForm" onsubmit="return false;" data-unit="${unit}">
+      ${paidBack&&!PAY_RESULT.ok?`<div class="msg err">${t('payFail')}</div>`:''}
+      ${evSlots(e).length?`<div><label>${L('Час','Time')} *</label><div class="selrow" id="bk_slots">${(()=>{ const firstFree=evSlots(e).findIndex(s=>{const l=slotLeft(e,s.time);return !slotClosed(e,s.time)&&(l===null||l>0);}); return evSlots(e).map((s,i)=>{ const l=slotLeft(e,s.time), full=l!==null&&l<=0; if(slotClosed(e,s.time))return `<button type="button" class="achip" disabled style="opacity:.45;cursor:default;" title="${L('Продажбата приключи','Sales closed')}">${esc(s.time)} · ${L('приключи','closed')}</button>`; return full?`<button type="button" class="achip" disabled style="opacity:.45;cursor:default;text-decoration:line-through;" title="${L('Продадено','Sold out')}">${esc(s.time)} · ${L('продадено','sold out')}</button>`:`<button type="button" class="achip ${i===firstFree?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on')">${esc(s.time)}</button>`; }).join(''); })()}</div></div>`:''}
+      <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;">${(isDinner(e)&&unit>0)?`<input name="party" type="number" inputmode="numeric" min="1" max="${maxParty(e)}" value="1" style="width:110px;" oninput="bkTotal(this.form)"/>`:`<select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form);const b=document.getElementById('bk_big');if(b)b.style.display=this.value==='9+'?'block':'none'">${Array.from({length:bigAllowed(e)?Math.min(8,maxParty(e)):maxParty(e)},(_,i)=>`<option>${i+1}</option>`).join('')}${bigAllowed(e)?`<option value="9+">9+</option>`:''}</select>`}
+        ${unit>0?`<span style="font-family:var(--serif);font-size:22px;color:var(--cream);">= <b id="bk_total">${esc(fmtPrice(e))}</b></span>`:`<span class="hint" style="margin:0">${t('free')}</span>`}</div></div>
+      ${isDinner(e)?kidsBlock('bk_kids','bkTotal(this.form)',unit>0):''}
+      ${restManual(e)?restPayBlock():''}
+      ${bigAllowed(e)?`<div id="bk_big" class="msg ok" style="display:none;">${L('За групи над 8 души екипът ще се свърже с вас по телефона, за да уточните детайлите.','For groups of more than 8 the team will call you to arrange the details.')}</div>`:''}
+      <div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div>
+      <div class="r2"><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
+      <div><label>${L('Забележки (по избор)','Notes (optional)')}</label><textarea name="note" rows="2" maxlength="500" placeholder="${L('напр. алергии, специални изисквания, с кого искате да седнете','e.g. allergies, special requests, who you would like to sit with')}"></textarea></div>
+      <label class="chk"><input type="checkbox" name="consent"/> <span>${t('consentContact')}</span></label>
+      <div id="bk_captcha" class="cap"></div>
+      <div id="bk_pay" style="display:none;margin:6px 0;"></div>
+      <div class="msg" id="bk_msg"></div>
+      <div><button class="btn" type="button" id="bk_btn" onclick="submitTicket(this.form,'${esc(e.id)}')">${restManual(e)?L('Изпрати заявка','Send request'):(unit>0?t('pay'):(evEntry(e)==='rsvp'?L('Запази място','Reserve a seat'):t('reserve')))}</button></div>
+      ${unit>0&&!restManual(e)?`<div class="hint">${t('cardHint')}</div>`:''}
+    </form>`;
+  return `<div class="bookbox" id="booking">
+    <div class="k">${t('bookTitle')}</div>${inner}</div>`;
+}
+function bkTotal(f){
+  kidsLimit('bk_kids',f.party.value);
+  const unit=Number(f.dataset.unit)||0, n0=parseInt(f.party.value,10)||1, n=Math.max(1,n0-Math.min(kidsCount('bk_kids'),n0-1)); const el=document.getElementById('bk_total');   // децата не се таксуват
+  if(el)el.textContent=(Math.round(unit*n*100)/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv');
+}
+let PAY_RESULT=null;   // резултат от връщането на Stripe (?redirect_status=…) — само при банки, които изискват пренасочване
+function readPayResult(){
+  try{
+    const q=new URLSearchParams(location.search);
+    if(!q.get('redirect_status'))return;
+    let ev=''; try{ev=sessionStorage.getItem('ac2_pay_event')||'';}catch(e){}
+    PAY_RESULT={ok:q.get('redirect_status')==='succeeded',event:ev};
+    history.replaceState(null,'',location.pathname+location.hash);
+    if(PAY_RESULT.ok)track('purchase',{event_id:ev});
+  }catch(e){}
+}
+function loadStripe(){
+  return new Promise((res,rej)=>{
+    if(window.Stripe)return res(window.Stripe);
+    const s=document.createElement('script');s.src='https://js.stripe.com/v3/';s.onload=()=>res(window.Stripe);s.onerror=()=>rej(new Error('stripe'));document.head.appendChild(s);
+  });
+}
+// Същият поток като в приложението: данни → PaymentIntent от сървъра → Stripe Payment Element на място → confirmPayment без напускане на страницата
+async function submitTicket(f,eventId){
+  const big=f.party.value==='9+';   // група над 8 (само безплатни събития) → заявка за обаждане
+  const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), party=big?9:(parseInt(f.party.value,10)||1);
+  if(!name||!email||!phone){setMsg('bk_msg',t('errFields'));return false;}
+  { const ev0=(EVENTS||[]).find(x=>x.id===eventId); const mx=ev0?maxParty(ev0):4; if(!big&&(party<1||party>mx)){setMsg('bk_msg',L('Брой места: от 1 до '+mx+'.','Seats: 1 to '+mx+'.'));return false;} }
+  if(!validEmail(email)){setMsg('bk_msg',t('errEmail'));return false;}
+  if(!validPhone(phone)){setMsg('bk_msg',t('errPhone'));return false;}
+  if(!f.consent.checked){setMsg('bk_msg',t('errConsent'));return false;}
+  const tok=captchaToken('bk_captcha'); if(CFG.TURNSTILE_SITE_KEY&&!tok){setMsg('bk_msg',t('errCaptcha'));return false;}
+  const b=document.getElementById('bk_btn'); b.disabled=true; const old=b.textContent; b.textContent=t('sending'); setMsg('bk_msg','');
+  const slotEl=document.querySelector('#bk_slots .achip.on'); const slot=slotEl?slotEl.dataset.slot:'';
+  const note=(f.note&&f.note.value||'').trim().slice(0,500);
+  const kd=kidsRead('bk_kids',party,big); if(kd.err){b.disabled=false;b.textContent=old;setMsg('bk_msg',kd.err);return false;}
+  const pmEl=document.querySelector('#bk_pm .achip.on'); const pay_method=pmEl?pmEl.dataset.pm:'';
+  const r=await DB.publicForm('ticket',{event_id:eventId,name,email,phone,party,big,kids:kd.kids,kid_ages:kd.kid_ages,slot,note,pay_method,lang,captcha_token:tok});
+  if(r.error){
+    b.disabled=false;b.textContent=old; resetCaptcha('bk_captcha');
+    // лимит по имейл (до 4 места общо за събитие, може на части): свиваме избора до оставащите и казваме колко
+    if(typeof r.error.left_for_email==='number'){
+      const left=r.error.left_for_email, have=r.error.have||0;
+      if(left>0){ if(f.party.options)[...f.party.options].forEach(o=>{o.disabled=o.value!=='9+'&&parseInt(o.value,10)>left;}); f.party.value=String(Math.min(party,left)); bkTotal(f); }
+      setMsg('bk_msg',lang==='bg'?r.error.message:(left>0?`This e-mail already has ${have} seat${have===1?'':'s'} for this event. You can add up to ${left} more.`:`This e-mail already has ${have} seats for this event — the maximum (${r.error.max||4}).`));
+      return false;
+    }
+    const full=/Няма свободни места|Остават само/.test(r.error.message||'');
+    setMsg('bk_msg',r.error.captcha?t('errCaptcha'):(r.error.message||t('errGeneric'))); if(full){ const mm=document.getElementById('bk_msg'); if(mm){mm.style.fontSize='16px';mm.style.fontWeight='600';} }
+    return false;
+  }
+  if(r.data&&r.data.manual){ f.innerHTML=restDoneHtml(r.data); track('reservation_request',{where:'restaurant_'+(r.data.pay_method||'onsite')}); try{f.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){} return false; }
+  if(r.data&&r.data.free){ const ev0=(EVENTS||[]).find(x=>x.id===eventId); const rs=ev0&&evEntry(ev0)==='rsvp'; const tc=r.data.ticket_code||''; f.innerHTML=`<div class="msg ok" style="font-size:16px;">${rs?L('Записахме ви. Билетът с QR код е изпратен на имейла ви.','You are registered. Your QR ticket has been e-mailed to you.'):t('bookFree')}</div>${rs&&tc?`<div style="margin-top:12px;"><a class="btn" href="${(CFG.SITE_URL||'https://ac2.bg/')}t.html#${tc}" target="_blank" rel="noopener">${L('Моят билет (QR код)','My ticket (QR code)')}</a></div>`:''}`; track('reservation_request',{event_id:eventId}); return false; }
+  try{
+    const Stripe=await loadStripe();
+    if(!Stripe||!CFG.STRIPE_PK)throw new Error('stripe');
+    const stripe=Stripe(CFG.STRIPE_PK);
+    const elements=stripe.elements({clientSecret:r.data.client_secret,appearance:{theme:'flat',variables:{colorPrimary:'#82303d'}}});
+    const box=document.getElementById('bk_pay'); box.style.display='block';
+    // имейлът/името/телефонът са от нашата форма — Stripe не пита пак (и не подменя с запомнен Link имейл)
+    const pe=elements.create('payment',{fields:{billingDetails:{name:'never',email:'never',phone:'never'}}}); pe.mount('#bk_pay');
+    pe.on('loaderror',ev=>{ setMsg('bk_msg',L('Платежната форма не се зареди','Payment form failed to load')+': '+((ev&&ev.error&&ev.error.message)||'')); });
+    // щом полето за карта е готово — екранът отива до него (иначе остава над него и човек трябва да скролва)
+    pe.on('ready',()=>{ try{ box.scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){} });
+    try{sessionStorage.setItem('ac2_pay_event',eventId);}catch(e){}
+    const total=(r.data.amount/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv');
+    [...f.querySelectorAll('input,select')].forEach(i=>{ if(i.name!=='consent'){i.readOnly=true; if(i.tagName==='SELECT')i.disabled=true;} });
+    const cap=document.getElementById('bk_captcha'); if(cap)cap.style.display='none';
+    b.disabled=false; b.textContent=t('pay')+' '+total;
+    b.onclick=async()=>{
+      b.disabled=true; b.textContent=L('Плащане…','Paying…'); setMsg('bk_msg','');
+      try{
+        const {error}=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{return_url:location.origin+location.pathname+'#/event/'+eventId+'/book',payment_method_data:{billing_details:{name,email,phone}}}});
+        if(error){
+          // отказ от банката (често при Google Pay — някои банки отказват токенизирани карти): насочваме към директно въвеждане на картата
+          const bank=error.type==='card_error'||/declin|not allowed|do not honor|отказ/i.test(error.message||'');
+          setMsg('bk_msg',(error.message||t('payFail'))+(bank?' '+L('Ако плащате през Google Pay или Apple Pay, опитайте с „Card“ — въведете номера на картата директно, или с друга карта.','If you are paying with Google Pay or Apple Pay, try "Card" — enter the card number directly, or use another card.'):''));
+          b.disabled=false;b.textContent=t('pay')+' '+total;return;}
+        const tc=r.data.ticket_code||''; const tl=tc?(CFG.SITE_URL||'https://ac2.bg/')+'t.html#'+tc:'';
+        f.innerHTML=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>${tc?`<div style="margin-top:14px;padding:16px;background:var(--bg);border-radius:14px;text-align:center;"><div style="font-size:11px;letter-spacing:2px;color:var(--wine);text-transform:uppercase;">${L('Код на билета','Ticket code')}</div><div style="font-size:24px;font-weight:800;letter-spacing:4px;margin:4px 0 10px;">AC2-${tc.slice(0,4)}-${tc.slice(4)}</div><a class="btn" href="${tl}" target="_blank" rel="noopener">${L('Моят билет (QR код)','My ticket (QR code)')}</a><div class="hint" style="margin-top:8px;">${L('Запазете този линк — билетът е и в имейла ви.','Save this link — the ticket is also in your email.')}</div></div>`:''}`; track('purchase',{event_id:eventId});
+      }catch(err){ setMsg('bk_msg',(err&&err.message)||t('payFail')); b.disabled=false; b.textContent=t('pay')+' '+total; }
+    };
+  }catch(e){ setMsg('bk_msg',L('Плащането не се зареди: ','Payment could not load: ')+((e&&e.message)||'')); b.disabled=false; b.textContent=old; }
+}
+
+// ---------- ПЛАТЕНО СЪБИТИЕ В РЕСТОРАНТА: без карта (засега) → заявка + плащане на място / банков превод ----------
+const restManual=e=>!!e&&isDinner(e)&&Number(e.price)>0&&(CFG.RESTAURANT_PAY||'manual')!=='card';
+const restBank=()=>({iban:String(pT('general.rest_iban')||'').trim(),bank:String(pT('general.rest_bank')||'').trim(),holder:String(pT('general.rest_holder')||'').trim()});
+const fmtTicketCode=c=>{c=String(c||'').replace(/[^A-Za-z0-9]/g,'');return c?('AC2-'+c.slice(0,4)+'-'+c.slice(4)):'';};
+function pmPick(b){ b.parentNode.querySelectorAll('.achip').forEach(x=>x.classList.toggle('on',x===b)); const h=document.getElementById('bk_pmhint'); if(h)h.textContent=b.dataset.pm==='bank'?L('След изпращане ще видите сметката и основанието за превода. Билетът идва по имейл, след като преводът постъпи и екипът потвърди.','After sending you will see the bank details and payment reference. The ticket is e-mailed once the transfer arrives and the team confirms.'):L('Екипът ще потвърди заявката и ще получите билет по имейл. Плащате в ресторанта.','The team will confirm your request and e-mail your ticket. You pay at the restaurant.'); }
+function restPayBlock(){ const b=restBank(); return `<div><label>${L('Начин на плащане','Payment method')} *</label><div class="selrow" id="bk_pm" style="margin-bottom:6px;"><button type="button" class="achip on" data-pm="onsite" onclick="pmPick(this)">${L('На място в ресторанта','At the restaurant')}</button>${b.iban?`<button type="button" class="achip" data-pm="bank" onclick="pmPick(this)">${L('Банков превод','Bank transfer')}</button>`:''}</div><div class="hint" id="bk_pmhint" style="margin:0 0 8px;">${L('Екипът ще потвърди заявката и ще получите билет по имейл. Плащате в ресторанта.','The team will confirm your request and e-mail your ticket. You pay at the restaurant.')}</div></div>`; }
+function restDoneHtml(d){
+  const amt=(d.amount/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB',{minimumFractionDigits:2})+' '+t('lv'), code=fmtTicketCode(d.ticket_code), b=restBank();
+  const row=(k,v)=>v?`<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid var(--line);"><span style="opacity:.7;">${k}</span><b style="text-align:right;word-break:break-all;">${esc(v)}</b></div>`:'';
+  if(d.pay_method==='bank'&&b.iban)return `<div class="msg ok" style="font-size:16px;">${L('Заявката е изпратена.','Your request has been sent.')}</div>
+    <p class="body" style="margin:12px 0 6px;">${L('Моля, преведете сумата по банков път. Билетът ще дойде по имейл, след като преводът постъпи и екипът потвърди резервацията.','Please pay by bank transfer. Your ticket will be e-mailed once the transfer arrives and the team confirms the reservation.')}</p>
+    <div style="padding:6px 14px;background:var(--bg);border-radius:14px;">${row(L('Сума','Amount'),amt)}${row(L('Получател','Beneficiary'),b.holder)}${row('IBAN',b.iban)}${row(L('Банка','Bank'),b.bank)}${row(L('Основание','Reference'),code)}</div>
+    <p class="hint" style="margin-top:8px;">${L('Впишете основанието точно — по него разпознаваме плащането.','Enter the reference exactly — we match the payment by it.')}</p>`;
+  return `<div class="msg ok" style="font-size:16px;">${L('Заявката е изпратена.','Your request has been sent.')}</div>
+    <p class="body" style="margin:12px 0 0;">${L('Екипът ще я потвърди и ще получите билет по имейл. Плащането е на място в ресторанта:','The team will confirm it and e-mail your ticket. Payment is at the restaurant:')} <b>${amt}</b>.${code?' '+L('Номер на заявката: ','Request number: ')+'<b>'+esc(code)+'</b>.':''}</p>`;
+}
+
+// ---------- ДЕЦА (само ресторант): „от тях деца“ + възраст на всяко дете ----------
+// Децата заемат място (влизат в общия брой), но при платена вечеря не се таксуват онлайн (детско меню — на място).
+const KID_AGES=['0','1','2','3','4','5','6','7','8','9','10','11','12+'];
+function kidsBlock(id,onch,paid){
+  return `<div id="${id}" class="kidsbox"><label>${L('От тях деца','Of which children')}</label>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;"><select class="sel" data-kids style="width:110px;" onchange="kidsDraw('${id}');${onch||''}"><option value="0">0</option></select>
+      <span class="hint" style="margin:0;flex:1;min-width:180px;">${paid?L('Децата заемат място, но не се таксуват онлайн. Ако има детско меню — плаща се на място.','Children take a seat but are not charged online. A children\'s menu, if any, is paid on site.'):L('Децата влизат в общия брой гости.','Children are included in the total number of guests.')}</span></div>
+    <div class="hint kidsone" style="margin:6px 0 0;">${L('За да добавите дете, първо увеличете общия брой — напр. 1 възрастен + 1 дете = 2.','To add a child, first increase the total — e.g. 1 adult + 1 child = 2.')}</div>
+    <div class="kidsages" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div></div>`;
+}
+function kidsDraw(id){
+  const box=document.getElementById(id); if(!box)return; const n=parseInt(box.querySelector('[data-kids]').value,10)||0; const wrap=box.querySelector('.kidsages');
+  const old=[...wrap.querySelectorAll('select')].map(x=>x.value);
+  wrap.innerHTML=Array.from({length:n},(_,i)=>`<div style="min-width:120px;"><label style="font-size:12px;">${L('Дете','Child')} ${i+1} — ${L('възраст','age')}</label><select class="sel" data-kage>${KID_AGES.map(a=>`<option value="${a}" ${old[i]===a?'selected':''}>${a} ${L('г.','y')}</option>`).join('')}</select></div>`).join('');
+}
+// връща {kids, kid_ages} или {err} — трябва да остане поне един възрастен
+function kidsRead(id,total,big){
+  const box=document.getElementById(id); if(!box||box.style.display==='none')return {kids:0,kid_ages:[]};
+  const n=parseInt(box.querySelector('[data-kids]').value,10)||0; if(!n)return {kids:0,kid_ages:[]};
+  if(!big&&n>=total)return {err:L('Децата са част от общия брой гости — трябва да има поне един възрастен. Увеличете броя гости.','Children are part of the total — there must be at least one adult. Increase the number of guests.')};
+  return {kids:n,kid_ages:[...box.querySelectorAll('[data-kage]')].map(x=>x.value)};
+}
+// при смяна на общия брой: децата могат да са най-много (общо − 1) — по-големите стойности се изключват
+function kidsLimit(id,partyVal){
+  const box=document.getElementById(id); if(!box)return; const sel=box.querySelector('[data-kids]');
+  const big=partyVal==='9+'; const max=big?8:Math.max(0,(parseInt(partyVal,10)||1)-1);
+  const cur=Math.min(+sel.value||0,max);   // показваме само възможните бройки (0 … общо−1), без сиви редове
+  sel.innerHTML=Array.from({length:max+1},(_,i)=>`<option value="${i}">${i}</option>`).join(''); sel.value=String(cur);
+  if(box.querySelectorAll('[data-kage]').length!==cur)kidsDraw(id);
+  const h=box.querySelector('.kidsone'); if(h)h.style.display=max===0?'':'none';
+}
+function kidsCount(id){ const box=document.getElementById(id); if(!box||box.style.display==='none')return 0; return parseInt(box.querySelector('[data-kids]').value,10)||0; }
+
+// ---------- ЗАПИТВАНЕ ЗА РЕЗЕРВАЦИЯ (маса / частно събитие) — както в приложението ----------
+// дата — календар на браузъра; час — падащи списъци (24-часов формат, независимо от езика на браузъра)
+function dateSelects(){
+  return `<input name="date" type="date" required min="${todayIso()}" value="${todayIso()}"/>`;
+}
+// Гости от сайта: маса в ресторанта — само от определен час нататък (по подразбиране 17:00; сменя се от админа: Ресторант → „Гости от сайта — маси от“).
+// Членовете резервират от приложението по всяко време. Другите зали (Камерна зала, Галерия, Private room) нямат това ограничение.
+function rqFrom(){ const m=/^(\d{1,2}):(\d{2})/.exec(String(pT('restaurant.guest_from')||'17:00').trim()); const h=m?Math.min(23,+m[1]):17, mi=m?+m[2]:0; return {h,mi,min:h*60+mi,txt:String(h).padStart(2,'0')+':'+String(mi).padStart(2,'0')}; }
+function rqHourOpts(rest){ const f=rqFrom(); return '<option value="">--</option>'+Array.from({length:24},(_,h)=>h).filter(h=>!rest||h>=f.h).map(h=>`<option value="${String(h).padStart(2,'0')}">${String(h).padStart(2,'0')}</option>`).join(''); }
+function rqHours(f){ if(!f||!f.hh)return; const rest=f.place.value==='Ресторант', cur=f.hh.value; f.hh.innerHTML=rqHourOpts(rest); if([...f.hh.options].some(o=>o.value===cur))f.hh.value=cur; const h=document.getElementById('rq_fromhint'); if(h)h.style.display=rest?'':'none'; const st=document.getElementById('rq_tstar'); if(st)st.style.display=rest?'':'none'; }
+function enquiryForm(){
+  const sel=(n,opts)=>`<select name="${n}" class="sel">${opts}</select>`;
+  const plBg=['Ресторант','Камерна зала','Галерия','Private room'], plEn=['Restaurant','Event Hall','Gallery','Private room'];
+  const places=lang==='bg'?plBg:plEn;
+  return `<form class="form" onsubmit="submitEnquiry(this);return false;">
+    <div class="r2"><div><label>${t('format')}</label>${sel('format',FORMATS.map(f=>`<option value="${f.id}" ${f.id==='table'?'selected':''}>${f.t}</option>`).join(''))}</div>
+      <div><label>${t('place')}</label><select name="place" class="sel" onchange="document.getElementById('rq_stream').style.display=this.value==='Камерна зала'?'':'none';document.getElementById('rq_alg').style.display=this.value==='Ресторант'?'':'none';document.getElementById('rq_kids').style.display=this.value==='Ресторант'?'':'none';rqHours(this.form)">${places.map((p,i)=>`<option value="${esc(plBg[i])}">${esc(p)}</option>`).join('')}</select></div></div>
+    <label class="chk" id="rq_stream" style="display:none;"><input type="checkbox" name="stream"/> <span>${L('Желая и <b>онлайн излъчване</b> на събитието — за публика извън залата; условията се уточняват с екипа.','I would also like the event <b>streamed online</b> — for an audience outside the hall; details agreed with the team.')}</span></label>
+    <div class="r2"><div><label>${t('dateLbl')} *</label>${dateSelects()}</div><div><label>${t('timeLbl')}<span id="rq_tstar"> *</span></label>
+      <div style="display:flex;gap:6px;align-items:center;">${sel('hh',rqHourOpts(true))}<b style="opacity:.5">:</b>${sel('mm',['00','15','30','45'].map(m=>`<option value="${m}">${m}</option>`).join(''))}</div></div></div>
+    <div class="r2"><div><label>${t('people')} *</label>${sel('party',Array.from({length:8},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')+`<option value="9+">9+</option>`).replace('<select','<select onchange="document.getElementById(\'rq_big\').style.display=this.value===\'9+\'?\'block\':\'none\';kidsLimit(\'rq_kids\',this.value)"')}</div><div><label>${t('phone')} *</label><input name="phone" type="tel" required autocomplete="tel" placeholder="+359 …"/></div></div>
+    <div class="hint" id="rq_fromhint" style="margin:-4px 0 10px;">${L('Маси в ресторанта за гости се запазват за часове от '+rqFrom().txt+' нататък. Членовете на клуба резервират от приложението по всяко време.','Restaurant tables for guests can be booked from '+rqFrom().txt+' onwards. Club members book in the app at any time.')}</div>
+    <div id="rq_big" class="msg ok" style="display:none;">${L('За групи над 8 души екипът на ресторанта ще се свърже с вас по телефона, за да уточните детайлите.','For groups of more than 8 the restaurant team will call you to arrange the details.')}</div>
+    ${kidsBlock('rq_kids')}
+    <div class="r2"><div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div></div>
+    <div id="rq_alg"><label>${L('Алергени / хранителни ограничения','Allergens / dietary')} *</label>
+      <div class="selrow" id="rq_algsel">${(lang==='bg'?['Нямам алергии','Глутен','Мляко/лактоза','Яйца','Ядки','Фъстъци','Риба','Ракообразни','Соя','Сусам','Целина','Синап','Сулфити']:['No allergies','Gluten','Milk/lactose','Eggs','Tree nuts','Peanuts','Fish','Crustaceans','Soy','Sesame','Celery','Mustard','Sulphites']).map((a,i)=>`<button type="button" class="achip" data-alg="${esc(a)}"${i===0?' data-none="1"':''} onclick="toggleAlgPub(this)">${a}</button>`).join('')}</div></div>
+    <div><label>${L('Повод / описание','Occasion / description')}</label><textarea name="note" rows="3" placeholder="${L('Опишете повода — какво събитие или среща искате да организирате.','Describe the occasion — what event or gathering you would like to hold.')}"></textarea></div>
+    <label class="chk"><input type="checkbox" name="consent"/> <span>${t('consentContact')}</span></label>
+    <div id="rq_captcha" class="cap"></div>
+    <div class="msg" id="rq_msg"></div>
+    <div><button class="btn" type="submit">${t('send')}</button></div>
+  </form>`;
+}
+function toggleAlgPub(btn){
+  if(btn.dataset.none){document.querySelectorAll('#rq_algsel .achip').forEach(c=>{if(c!==btn)c.classList.remove('on');});}
+  else{const none=document.querySelector('#rq_algsel .achip[data-none]');if(none)none.classList.remove('on');}
+  btn.classList.toggle('on');
+}
+async function submitEnquiry(f){
+  const big=f.party.value==='9+';   // група над 8 → екипът се обажда
+  const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), party=big?9:(parseInt(f.party.value,10)||1), note=f.note.value.trim();
+  const date=f.date.value; const time=f.hh.value?(f.hh.value+':'+(f.mm.value||'00')):'';
+  if(!name||!email||!phone){setMsg('rq_msg',t('errFields'));return false;}
+  if(!date||isNaN(new Date(date+'T00:00:00').getTime())){setMsg('rq_msg',L('Изберете дата.','Choose a date.'));return false;}
+  if(date<todayIso()){setMsg('rq_msg',L('Датата е минала.','The date has passed.'));return false;}
+  if(f.place.value==='Ресторант'){ const fr=rqFrom(); if(!time){setMsg('rq_msg',L('Изберете час (от '+fr.txt+' нататък).','Choose a time ('+fr.txt+' or later).'));return false;} const tm=(+f.hh.value)*60+(+(f.mm.value||0)); if(tm<fr.min){setMsg('rq_msg',L('Маси за гости се запазват от '+fr.txt+' нататък.','Guest tables can be booked from '+fr.txt+' onwards.'));return false;} }
+  if(!validEmail(email)){setMsg('rq_msg',t('errEmail'));return false;}
+  if(!validPhone(phone)){setMsg('rq_msg',t('errPhone'));return false;}
+  if(!f.consent.checked){setMsg('rq_msg',t('errConsent'));return false;}
+  const tok=captchaToken('rq_captcha'); if(CFG.TURNSTILE_SITE_KEY&&!tok){setMsg('rq_msg',t('errCaptcha'));return false;}
+  const b=f.querySelector('button[type=submit]'); b.disabled=true; const old=b.textContent; b.textContent=t('sending'); setMsg('rq_msg','');
+  let noteFull=(f.place.value==='Камерна зала'&&f.stream&&f.stream.checked)?(L('[+ онлайн излъчване] ','[+ online stream] ')+note):note;
+  if(f.place.value==='Ресторант'){
+    const algOn=[...f.querySelectorAll('#rq_algsel .achip.on')];
+    if(!algOn.length){b.disabled=false;b.textContent=old;setMsg('rq_msg',L('Изберете алергени (или „Нямам алергии“).','Select allergens (or "No allergies").'));return false;}
+    const none=algOn.some(c=>c.dataset.none);
+    noteFull=(none?L('Без алергии','No allergies'):L('Алергени: ','Allergens: ')+algOn.map(c=>c.dataset.alg).join(', '))+(noteFull?' · '+noteFull:'');
+  }
+  if(big)noteFull=L('[ГРУПА 9+ — за обаждане] ','[GROUP 9+ — call to arrange] ')+noteFull;
+  const kd=kidsRead('rq_kids',party,big); if(kd.err){b.disabled=false;b.textContent=old;setMsg('rq_msg',kd.err);return false;}
+  const r=await DB.publicForm('reservation',{name,email,phone,date,time,party,big,kids:kd.kids,kid_ages:kd.kid_ages,note:noteFull,format:f.format.value,place:f.place.value,lang,captcha_token:tok});
+  b.disabled=false; b.textContent=old;
+  if(r.error){ resetCaptcha('rq_captcha'); setMsg('rq_msg',r.error.captcha?t('errCaptcha'):(r.error.cooldown?L('Твърде много заявки. Опитайте по-късно.','Too many requests. Try later.'):(r.error.message||t('errGeneric')))); return false; }
+  f.reset(); rqHours(f); kidsLimit('rq_kids','1'); kidsDraw('rq_kids'); resetCaptcha('rq_captcha'); setMsg('rq_msg',t('enquiryOk'),true); track('reservation_request',{where:'enquiry'}); return false;
+}
+
+// ---------- КОНТАКТИ ----------
+function mapHtml(){
+  let src=pT('general.maps_embed')||'';
+  { const m=src.match(/src\s*=\s*["']([^"']+)["']/); if(m)src=m[1]; src=src.trim(); }
+  if(src&&/^https:\/\/(www\.google\.com|maps\.google\.com)\/maps/.test(src))return `<div class="map"><iframe src="${esc(src)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen title="Google Maps"></iframe></div>`;
+  return `<div class="map"><div class="noq">${L('Картата се добавя от админ панела (Google Maps → Споделяне → Вграждане).','The map is added from the admin panel (Google Maps → Share → Embed).')}</div></div>`;
+}
+function pageContacts(){
+  const email=pT('general.email'), phone=pT('general.phone'), maps=pT('general.maps_link');
+  const kv=(k,v)=>v?`<div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>`:'';
+  return pageHead(t('contacts'),t('contacts'),pT('contacts.intro'))+`<div class="wrap" style="padding-bottom:80px;">
+    <div class="contactgrid">
+      <div>
+        <div class="kicker">${t('orWrite')}</div>
+        <form class="form" onsubmit="submitContact(this);return false;">
+          <div class="r2"><div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div><div><label>${t('email')} *</label><input name="email" type="email" required autocomplete="email"/></div></div>
+          <div class="r2"><div><label>${t('phone')}</label><input name="phone" type="tel" autocomplete="tel" placeholder="+359 …"/></div><div><label>${t('subject')}</label><input name="subject"/></div></div>
+          <div><label>${t('message')} *</label><textarea name="message" rows="6" required></textarea></div>
+          <label class="chk"><input type="checkbox" name="consent"/> <span>${t('consentContact')}</span></label>
+          <div id="ct_captcha" class="cap"></div>
+          <div class="msg" id="ct_msg"></div>
+          <div><button class="btn" type="submit">${t('send')}</button></div>
+        </form>
+      </div>
+      <div class="cinfo">
+        ${kv(t('address'),pT('general.address'))}
+        ${phoneList().map(([p,l])=>`<div class="k">${esc(l||t('phone'))}</div><div class="v"><a href="${telHref(p)}">${esc(p)}</a></div>`).join('')}
+        ${email?`<div class="k">${t('email')}</div><div class="v"><a href="mailto:${esc(email)}">${esc(email)}</a></div>`:''}
+        ${kv(t('hours'),pT('general.hours'))}
+        ${kv(t('parking'),pT('general.parking'))}
+        ${kv(t('access'),pT('general.access'))}
+        ${maps?`<div style="margin-top:14px;"><a class="tlink" href="${esc(maps)}" target="_blank" rel="noopener">${t('openMaps')} ↗</a></div>`:''}
+        ${(()=>{const ppl=pA('contacts.people').filter(p=>p&&(loc(p.role)||p.name||p.phone||p.email));if(!ppl.length)return '';
+          return `<div class="k" style="margin-top:30px;">${t('prContacts')}</div>`+ppl.map(p=>`<div class="v" style="margin-bottom:10px;"><b>${esc(loc(p.role))}</b>${p.name?` · ${esc(p.name)}`:''}${p.phone?`<br><a href="tel:${esc(p.phone.replace(/\s+/g,''))}">${esc(p.phone)}</a>`:''}${p.email?`<br><a href="mailto:${esc(p.email)}">${esc(p.email)}</a>`:''}</div>`).join('');})()}
+      </div>
+    </div>
+    ${mapHtml()}
+  </div>`;
+}
+
+// ---------- ПРАВИЛНИК (поп-ъп, като в приложението) ----------
+async function openRules(){
+  document.getElementById('rulesmodal')?.remove();
+  const m=document.createElement('div'); m.id='rulesmodal'; m.className='rmodal';
+  m.innerHTML=`<div class="rcard"><div class="rh"><h3>${t('readRules')}</h3><button class="rx" type="button" aria-label="close" onclick="document.getElementById('rulesmodal').remove()">✕</button></div><div class="rb"><div class="empty">${L('Зареждане…','Loading…')}</div></div></div>`;
+  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
+  document.body.appendChild(m);
+  try{const r=await fetch('rules.html',{cache:'no-store'});const html=await r.text();m.querySelector('.rb').innerHTML=html;}
+  catch(e){m.querySelector('.rb').innerHTML=`<div class="empty">${L('Правилникът не се зареди.','Could not load the rules.')}</div>`;}
+}
+
+// ---------- ПЛАЩАНЕ НА ЧЛЕНСТВО С КОД (#/join?code=…) ----------
+// Членството се плаща само тук (не в приложението). Кодът идва по имейл от клуба (Админ → Покана за плащане).
+let JOIN={step:'code',code:'',info:null,plan:'',auto:false,method:'card',msg:''};
+function joinQS(){ const q=(location.hash.split('?')[1]||''); const o={}; q.split('&').forEach(kv=>{const [k,v]=kv.split('=');if(k)o[decodeURIComponent(k)]=decodeURIComponent(v||'');}); return o; }
+function pageJoin(){
+  const qs=joinQS(); if(qs.code&&!JOIN.code){JOIN.code=qs.code.toUpperCase();JOIN.stop=qs.stop==='1'; if(qs.paid==='1'){JOIN.step='paid';} else setTimeout(joinLookup,0);}
+  const eur=c=>(c/100).toFixed(2).replace('.',',')+' €';
+  let inner='';
+  if(JOIN.step==='code'){
+    inner=`<p style="margin-bottom:14px;">${L('Въведете кода, който получихте по имейл от клуба.','Enter the code you received by e-mail from the club.')}</p>
+      <form class="form" onsubmit="JOIN.code=this.code.value;joinLookup();return false;"><label>${L('Код','Code')}</label><input name="code" value="${esc(JOIN.code)}" placeholder="AC2-XXXX-XXXX" autocapitalize="characters" style="letter-spacing:3px;font-weight:700;font-size:18px;"/>
+      <div style="margin-top:12px;"><button class="btn" type="submit">${L('Продължи','Continue')}</button></div>${JOIN.msg?`<div class="msg" style="margin-top:10px;">${esc(JOIN.msg)}</div>`:''}</form>`;
+  } else if(JOIN.step==='stop'){
+    inner=`<div class="msg ok">${L('Автоматичното подновяване е спряно. Членството ви остава валидно до изтичането му; за подновяване ще получите код по имейл.','Automatic renewal has been stopped. Your membership remains valid until it expires; you will receive a code by e-mail to renew.')}</div>`;
+  } else if(JOIN.step==='plan'){
+    const i=JOIN.info; const plan=i.plans.find(p=>p.id===JOIN.plan)||i.plans[0];
+    const purposeTxt=i.purpose==='renew'?L('Подновяване на членство','Membership renewal'):i.purpose==='instalment'?L('Втора вноска','Second instalment'):L('Активиране на членство','Membership activation');
+    inner=`<div style="background:var(--card);border:1px solid var(--line-soft);border-radius:14px;padding:16px 18px;margin-bottom:18px;">
+        <div class="kicker">${purposeTxt}</div><h3 style="font-size:22px;margin:4px 0 2px;">${esc(i.title)}</h3><div class="hint">${esc(i.name||i.email)}${i.period_from&&i.purpose==='renew'?' · '+L('от','from')+' '+fmtD(i.period_from,true):''}${i.vat_pct?' · '+L('цените са с ДДС','prices incl. VAT'):''}</div></div>
+      <div id="join_opts">${i.purpose!=='instalment'?`<label class="lbl">${L('План на плащане','Payment plan')}</label>
+      <div class="plans">${i.plans.map(p=>`<label class="plan ${plan.id===p.id?'on':''}"><input type="radio" name="plan" value="${p.id}" ${plan.id===p.id?'checked':''} onchange="JOIN.plan='${p.id}';renderJoin()"/><div><b>${esc(p.label)}</b><div class="hint">${p.instalments>1?L('сега','now')+' '+eur(p.amount_cents)+' · '+L('общо','total')+' '+eur(p.total_cents):eur(p.total_cents)}</div></div></label>`).join('')}</div>`:`<div style="margin-bottom:12px;">${L('Дължима вноска','Instalment due')}: <b>${eur(i.plans[0].amount_cents)}</b></div>`}
+      <label class="lbl" style="margin-top:14px;">${L('Начин на плащане','Payment method')}</label>
+      <div class="plans"><label class="plan ${JOIN.method==='card'?'on':''}"><input type="radio" name="m" value="card" ${JOIN.method==='card'?'checked':''} onchange="JOIN.method='card';renderJoin()"/><div><b>${L('Карта · Apple Pay · Google Pay','Card · Apple Pay · Google Pay')}</b><div class="hint">${L('Плащането е през Stripe — картата не минава през нашия сървър.','Processed by Stripe — card data never touches our server.')}</div></div></label>
+        ${i.bank?`<label class="plan ${JOIN.method==='bank'?'on':''}"><input type="radio" name="m" value="bank" ${JOIN.method==='bank'?'checked':''} onchange="JOIN.method='bank';renderJoin()"/><div><b>${L('Банков превод','Bank transfer')}</b><div class="hint">${L('Членството се активира след получаване на превода (1–2 работни дни).','Activated after the transfer is received (1–2 working days).')}</div></div></label>`:''}</div>
+      ${JOIN.method==='card'&&i.purpose!=='instalment'?`<label class="chk" style="margin-top:12px;"><input type="checkbox" ${JOIN.auto?'checked':''} onchange="JOIN.auto=this.checked"/> <span>${L('Автоматично подновяване — картата се запазва и сумата се удържа автоматично на падежа. Ще ви уведомим 7 дни преди това; можете да го спрете по всяко време.','Automatic renewal — your card is saved and charged automatically on the due date. We notify you 7 days before; you can stop it at any time.')}</span></label>`:''}
+      </div>
+      <div id="join_payhint" style="display:none;margin-top:16px;"></div>
+      <div id="join_pay" style="display:none;margin-top:10px;"></div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap;"><button class="btn" type="button" id="joinGo" onclick="joinPay()">${JOIN.method==='bank'?L('Покажи данните за превод','Show transfer details'):L('Плати','Pay')+' '+eur(i.purpose==='instalment'?i.plans[0].amount_cents:plan.amount_cents)}</button><span class="hint">${L('С плащането приемате','By paying you accept')} <a href="#/legal/terms" target="_blank">${L('условията','the terms')}</a>.</span></div>
+      <div class="msg" id="join_msg">${JOIN.msg?esc(JOIN.msg):''}</div>`;
+  } else if(JOIN.step==='bank'){
+    const b=JOIN.bank;
+    inner=`<div class="msg ok" style="margin-bottom:14px;">${L('Регистрирахме заявката. Направете превода с данните по-долу — ВАЖНО: основанието трябва да е кодът.','Request registered. Make the transfer with the details below — IMPORTANT: the reference must be the code.')}</div>
+      <div class="kv"><div class="k">${L('Получател','Beneficiary')}</div><div class="v">${esc(b.holder)}</div></div>
+      <div class="kv"><div class="k">IBAN</div><div class="v" style="font-weight:700;letter-spacing:1px;">${esc(b.iban)}</div></div>
+      ${b.bank?`<div class="kv"><div class="k">${L('Банка','Bank')}</div><div class="v">${esc(b.bank)}</div></div>`:''}
+      <div class="kv"><div class="k">${L('Сума','Amount')}</div><div class="v" style="font-weight:700;">${eur(b.amount_cents)}</div></div>
+      <div class="kv"><div class="k">${L('Основание','Reference')}</div><div class="v" style="font-weight:700;letter-spacing:2px;">${esc(b.ref)}</div></div>
+      <p class="hint" style="margin-top:12px;">${L('След като преводът постъпи, клубът активира членството и ще получите имейл. Запазете този екран или кода.','Once the transfer arrives the club activates the membership and you will receive an e-mail. Keep this screen or the code.')}</p>`;
+  } else if(JOIN.step==='paid'){
+    inner=`<div class="msg ok" style="font-size:16px;">${L('Плащането е получено. Членството се активира — ще получите имейл с потвърждение','Payment received. Your membership is being activated — you will receive a confirmation e-mail')}${JOIN.info&&JOIN.info.purpose==='new'?L(' и отделно писмо за задаване на парола за приложението AC².',' and a separate e-mail to set your password for the AC² app.'):'.'}</div>
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;"><a class="btn ghost" href="${esc(APP_URL)}">${L('Към приложението','Open the app')}</a></div>`;
+  }
+  return pageHead('',L('Членство в AC²','AC² membership'),'')+`<div class="wrap" style="padding-bottom:80px;max-width:720px;">${inner}</div>`;
+}
+function renderJoin(){ if(parseRoute().p0==='join')render(); }
+async function joinLookup(){
+  const code=(JOIN.code||'').toUpperCase().replace(/[^A-Z0-9]/g,'').replace(/^AC2/,'');
+  if(code.length!==8){JOIN.msg=L('Кодът има 8 знака (напр. AC2-M7K4-P2QX).','The code has 8 characters (e.g. AC2-M7K4-P2QX).');renderJoin();return;}
+  JOIN.code=code; JOIN.msg=L('Проверка…','Checking…'); renderJoin();
+  const r=await DB.membershipPay({action:'info',code});
+  if(r.error){JOIN.msg=r.error.message==='not_found'?L('Кодът не е намерен. Проверете го или пишете на welcome@ac2.bg.','Code not found. Check it or write to welcome@ac2.bg.'):r.error.message;renderJoin();return;}
+  const i=r.data; JOIN.info=i; JOIN.msg='';
+  if(JOIN.stop){ const s=await DB.membershipPay({action:'cancel_renew',code}); JOIN.step=s.error?'code':'stop'; if(s.error)JOIN.msg=s.error.message; renderJoin(); return; }
+  if(i.used){JOIN.step='code';JOIN.msg=L('Този код вече е използван.','This code has already been used.');renderJoin();return;}
+  if(i.expired){JOIN.step='code';JOIN.msg=L('Кодът е изтекъл. Пишете на welcome@ac2.bg за нов.','The code has expired. Write to welcome@ac2.bg for a new one.');renderJoin();return;}
+  JOIN.plan=(i.plans[0]||{}).id||'year'; JOIN.step='plan'; renderJoin();
+}
+async function joinPay(){
+  const i=JOIN.info; const b=document.getElementById('joinGo'); const msg=document.getElementById('join_msg'); if(!i)return;
+  b.disabled=true; const old=b.textContent; b.textContent=L('Момент…','One moment…'); msg.textContent='';
+  if(JOIN.method==='bank'){
+    const r=await DB.membershipPay({action:'bank',code:JOIN.code,plan:JOIN.plan});
+    if(r.error){b.disabled=false;b.textContent=old;msg.textContent=r.error.message;return;}
+    JOIN.bank=r.data; JOIN.step='bank'; renderJoin(); track('membership_bank',{}); return;
+  }
+  const r=await DB.membershipPay({action:'pay',code:JOIN.code,plan:JOIN.plan,auto_renew:!!JOIN.auto});
+  if(r.error){b.disabled=false;b.textContent=old;msg.textContent=r.error.message;return;}
+  try{
+    const Stripe=await loadStripe(); if(!Stripe||!CFG.STRIPE_PK)throw new Error('stripe');
+    const stripe=Stripe(CFG.STRIPE_PK);
+    const elements=stripe.elements({clientSecret:r.data.client_secret,appearance:{theme:'flat',variables:{colorPrimary:'#82303d'}}});
+    const box=document.getElementById('join_pay'); box.style.display='block';
+    const pe=elements.create('payment',{fields:{billingDetails:{name:'never',email:'never'}}}); pe.mount('#join_pay');
+    // избраното (период, автоматично подновяване) вече е в плащането → заключваме го; смяна само през „Промени“
+    const opts=document.getElementById('join_opts'); if(opts){ opts.querySelectorAll('input').forEach(x=>{x.disabled=true;}); opts.style.opacity='.55'; }
+    const amt=((r.data.amount_cents||0)/100).toFixed(2).replace('.',',')+' €';
+    const hint=document.getElementById('join_payhint'); if(hint){ hint.style.display='block';
+      hint.innerHTML=`<div class="msg ok" style="margin:0;">${L('Изберете <b>Card</b> (въведете картата) или <b>Apple Pay / Google Pay</b> по-долу и натиснете <b>„Потвърди плащането“</b>.','Choose <b>Card</b> (enter your card) or <b>Apple Pay / Google Pay</b> below and press <b>“Confirm payment”</b>.')}</div>
+        <div class="hint" style="margin-top:6px;">${JOIN.auto?L('С автоматично подновяване','With automatic renewal'):L('Еднократно плащане','One-time payment')} · ${amt} · <a href="#" onclick="event.preventDefault();JOIN.msg='';renderJoin()">${L('Промени','Change')}</a></div>`; }
+    setTimeout(()=>{ try{ (hint||box).scrollIntoView({behavior:'smooth',block:'start'}); }catch(_){} },150);
+    pe.on('loaderror',ev=>{ msg.textContent=L('Платежната форма не се зареди: ','Payment form failed to load: ')+((ev&&ev.error&&ev.error.message)||''); });
+    b.disabled=false; b.textContent=L('Потвърди плащането','Confirm payment')+' · '+amt;
+    b.onclick=async()=>{
+      b.disabled=true; b.textContent=L('Плащане…','Paying…'); msg.textContent='';
+      try{
+        const {error}=await stripe.confirmPayment({elements,redirect:'if_required',confirmParams:{return_url:location.origin+location.pathname+'#/join?code='+JOIN.code+'&paid=1',payment_method_data:{billing_details:{name:i.name||'',email:i.email}}}});
+        if(error){msg.textContent=error.message||t('payFail');b.disabled=false;b.textContent=L('Потвърди плащането','Confirm payment');return;}
+        JOIN.step='paid'; renderJoin(); track('membership_paid',{plan:JOIN.plan,auto:!!JOIN.auto});
+      }catch(err){ msg.textContent=(err&&err.message)||t('payFail'); b.disabled=false; b.textContent=L('Потвърди плащането','Confirm payment'); }
+    };
+  }catch(e){ msg.textContent=L('Плащането не се зареди: ','Payment could not load: ')+((e&&e.message)||''); b.disabled=false; b.textContent=old; }
+}
+
+// ---------- ПРАВНА ИНФОРМАЦИЯ ----------
+function pageLegal(kind){
+  const map={terms:['legal.terms',t('legal')],privacy:['legal.privacy',t('privacy')],cookies:['legal.cookies',t('cookies')]};
+  const m=map[kind]||map.terms;
+  let body=pT(m[0]);
+  if(kind==='terms'&&!body&&window.AC2_LEGAL){
+    // публични общи условия: правила за гости, събития, билети и AC² Table (важат за всеки, който резервира/купува от сайта)
+    const d=AC2_LEGAL.docs.find(x=>x.id==='guests');
+    if(d)return pageHead('',L('Общи условия за гости, събития и билети','Terms for guests, events and tickets'),L('Важат за резервации и билети, направени от сайта. Пълният Вътрешен правилник и Листът с такси се предоставят на кандидатите и членовете.','Apply to reservations and tickets made on the website. The full Internal Rules and Fee Sheet are provided to applicants and members.'))+`<div class="wrap legal" style="padding-bottom:80px;"><div class="body legaldoc">${d.html}</div>
+      <div class="hint" style="margin-top:20px;">${L('Версия','Version')} ${esc(AC2_LEGAL.version)} · ${esc(AC2_LEGAL.updated)} · „Американски колеж Аркус“ АД, ЕИК 104693193, Велико Търново, ул. „Драгоман“ №16 · <a href="privacy.html">${t('privacy')}</a></div></div>`;
+  }
+  if(kind==='privacy'&&!body){ location.replace('privacy.html'+(lang==='en'?'?lang=en':'')); return ''; }   // пълната политика е статична страница (за магазините)
+  if(!body&&kind==='privacy')body=L('Политиката за поверителност се публикува тук от админ панела. Дотогава: събираме само данните, които ни изпращате чрез формите (име, имейл, телефон, съобщение), и ги ползваме единствено за отговор и за бюлетина, за който сте се абонирали. Можете да поискате изтриване на welcome@ac2.bg.','The privacy policy is published here from the admin panel. Until then: we only collect the data you send us through the forms (name, email, phone, message) and use it solely to reply and for the newsletter you subscribed to. You may request deletion at welcome@ac2.bg.');
+  if(!body)body=L('Текстът се публикува скоро.','The text will be published soon.');
+  return pageHead('',m[1],'')+`<div class="wrap legal" style="padding-bottom:80px;"><div class="body">${esc(body)}</div>
+    ${kind==='cookies'?`<div style="margin-top:24px;"><button class="btn ghost" onclick="resetConsent()">${L('Промени избора за бисквитки','Change cookie choice')}</button></div>`:''}</div>`;
+}
+</script>
+<script>
+// ============================================================
+//  РУТЕР / РЕНДЕР
+// ============================================================
+function parseRoute(){
+  let h=(location.hash||'').replace(/^#\/?/,'').split('?')[0].replace(/\/+$/,'');
+  const parts=h.split('/').map(decodeURIComponent);
+  return {p0:parts[0]||'',p1:parts[1]||'',p2:parts[2]||''};
+}
+function pageFor(r){
+  switch(r.p0){
+    case '': return {html:pageHome(),nav:'',title:''};
+    case 'program': return {html:pageProgram(FORMATS.some(f=>f.id===r.p1)?r.p1:''),nav:'program',title:t('program')};
+    case 'event': return {html:pageEvent(r.p1,r.p2==='book'),nav:'program',title:(()=>{const e=(EVENTS||[]).find(x=>x.id===r.p1);return e?evTitle(e):t('program');})()};
+    case 'restaurant':
+      if(r.p1==='dinners')return {html:pageDinners(),nav:'restaurant',title:t('dinners')};
+      return {html:pageRestaurant(),nav:'restaurant',title:t('restaurant')};
+    case 'membership': return {html:pageMembership(),nav:'membership',title:t('membership')};
+    case 'about':
+      if(r.p1==='team')return {html:pageTeam(),nav:'about',title:t('team')};
+      if(r.p1==='rent')return {html:pageRent(),nav:'about',title:t('rent')};
+      return {html:pageAbout(),nav:'about',title:t('about')};
+    case 'college': return {html:pageCollege(),nav:'college',title:t('college')};
+    case 'app': return {html:pageApp(),nav:'app',title:t('app')};
+    case 'contacts': return {html:pageContacts(),nav:'contacts',title:t('contacts')};
+    case 'legal': return {html:pageLegal(r.p1),nav:'',title:t('legal')};
+    case 'join': return {html:pageJoin(),nav:'membership',title:L('Членство','Membership')};
+    default: return {html:pageHome(),nav:'',title:''};
+  }
+}
+let lastHash=null;
+function render(){
+  document.body.classList.remove('has-rfab'); try{ if(_rfabObs){_rfabObs.disconnect();_rfabObs=null;} }catch(e){}   // плаващият бутон е само на „Ресторант“
+  if(PUB===null)return;   // още не е заредено
+  const r=parseRoute(); const pg=pageFor(r);
+  stopSlider();
+  document.getElementById('hdr').innerHTML=header(pg.nav);
+  document.getElementById('mnav').innerHTML=mobileNav();
+  document.getElementById('page').innerHTML=pg.html;
+  document.getElementById('foot').innerHTML=footer();
+  document.title=(pg.title?pg.title+' — ':'')+'AC² · American College Arcus Club';
+  if(r.p0==='')startSlider();
+  mountCaptchas();
+  if(location.hash!==lastHash){window.scrollTo({top:0,behavior:'instant'});lastHash=location.hash;}
+  if(r.p2==='book'||r.p1==='reserve'){const el=document.getElementById(r.p2==='book'?'booking':'enquiry');if(el)setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),60);}
+  track('page_view',{page:'/'+[r.p0,r.p1].filter(Boolean).join('/')});
+}
+window.addEventListener('hashchange',()=>{closeMenu();render();});
+
+// ---------- Интро: кратка анимация с логото преди сайта (веднъж на посещение) ----------
+function showIntro(){
+  let seen=false; try{seen=sessionStorage.getItem('ac2_intro')==='1';}catch(e){}
+  // Без проверка за prefers-reduced-motion: Windows „Ефекти на анимация“ изкл. я включва и интрото изчезваше за всички с тази настройка.
+  // Видеото е 7 s с „Пропусни“ и докосване = пропускане — достатъчно.
+  const el=document.getElementById('intro');
+  if(seen||!on('general.show_intro')||location.hash.length>2){el.remove();return;}
+  if(window._introShown){el.remove();return;} window._introShown=true;
+  el.className='intro';
+  // Анимация от дизайнера (скок → плясък → лого), ~7 s; край на видеото или „Пропусни“ → сайтът.
+  // Без постер (постерът е логото → изглеждаше като „два пъти“); видеото се показва чак когато реално тръгне,
+  // а ако не тръгне до 5 s (бавна връзка, блокиран autoplay) — направо сайтът, без статично лого.
+  el.innerHTML=`<button class="skip" onclick="endIntro()">${t('skip')}</button><div class="logoarea"><video id="introv" autoplay muted playsinline preload="auto" style="opacity:0;transition:opacity .25s"><source src="media/intro.mp4?v=3" type="video/mp4"/></video></div>`;
+  try{sessionStorage.setItem('ac2_intro','1');}catch(e){}
+  const v=document.getElementById('introv');
+  let started=false, guard=setTimeout(()=>{ if(!started) endIntro(); },5000);   // 5 s — при бавна връзка 2.5 s не стигаха
+  v.addEventListener('playing',()=>{ if(started)return; started=true; clearTimeout(guard); v.style.opacity='1';
+    const dur=(isFinite(v.duration)&&v.duration>0)?v.duration:7; setTimeout(endIntro,Math.min(dur*1000+800,10000)); });
+  v.addEventListener('ended',()=>setTimeout(endIntro,350));
+  v.addEventListener('error',endIntro);
+  // (без 'stalled' — Chrome го пуска и при нормално теглене → интрото се затваряше веднага)
+  const p=v.play&&v.play(); if(p&&p.catch)p.catch(endIntro);   // ако autoplay е блокиран — направо сайтът
+  el.addEventListener('click',endIntro);   // докосване където и да е = пропускане (както в приложението)
+}
+function endIntro(){const el=document.getElementById('intro');if(!el||el.classList.contains('out'))return;el.classList.add('out');setTimeout(()=>el.remove(),750);}
+
+// ---------- Captcha (Cloudflare Turnstile) — по един widget на форма ----------
+const _ts={};
+function mountCaptchas(tries){
+  tries=tries||0;
+  const holders=[...document.querySelectorAll('.cap')]; if(!holders.length)return;
+  if(!CFG.TURNSTILE_SITE_KEY)return;
+  if(!window.turnstile){ if(tries<40)setTimeout(()=>mountCaptchas(tries+1),150); return; }
+  holders.forEach(h=>{
+    if(h.dataset.rendered==='1'&&h.querySelector('iframe'))return;
+    try{ if(_ts[h.id]!==undefined)turnstile.remove(_ts[h.id]); }catch(e){}
+    h.innerHTML='';
+    _ts[h.id]=turnstile.render(h,{sitekey:CFG.TURNSTILE_SITE_KEY,theme:'light',retry:'auto','refresh-expired':'auto',
+      'error-callback':()=>{try{turnstile.reset(_ts[h.id]);}catch(e){}return true;}});
+    h.dataset.rendered='1';
+  });
+}
+function captchaToken(id){
+  try{ if(_ts[id]!==undefined&&window.turnstile){const v=turnstile.getResponse(_ts[id]); if(v)return v;} }catch(e){}
+  try{ const i=document.querySelector('#'+id+' input[name="cf-turnstile-response"]'); if(i&&i.value)return i.value; }catch(e){}
+  return '';
+}
+function resetCaptcha(id){ try{ if(_ts[id]!==undefined)turnstile.reset(_ts[id]); }catch(e){} }
+const validPhone=v=>{const s=(v||'').trim(); if(!s)return true; if(!/^\+?[0-9 ()\-.]+$/.test(s))return false; const d=s.replace(/\D/g,''); return d.length>=7&&d.length<=15;};
+const validEmail=v=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((v||'').trim());
+
+// ---------- Форми ----------
+function setMsg(id,txt,ok){const m=document.getElementById(id);if(!m)return;m.textContent=txt||'';m.className='msg '+(txt?(ok?'ok':'err'):'');}
+async function submitContact(f){
+  const name=f.name.value.trim(), email=f.email.value.trim(), phone=f.phone.value.trim(), subject=f.subject.value.trim(), message=f.message.value.trim();
+  if(!name||!email||!message){setMsg('ct_msg',t('errFields'));return false;}
+  if(!validEmail(email)){setMsg('ct_msg',t('errEmail'));return false;}
+  if(!validPhone(phone)){setMsg('ct_msg',t('errPhone'));return false;}
+  if(!f.consent.checked){setMsg('ct_msg',t('errConsent'));return false;}
+  const tok=captchaToken('ct_captcha'); if(CFG.TURNSTILE_SITE_KEY&&!tok){setMsg('ct_msg',t('errCaptcha'));return false;}
+  const b=f.querySelector('button[type=submit]'); b.disabled=true; const old=b.textContent; b.textContent=t('sending'); setMsg('ct_msg','');
+  const r=await DB.publicForm('contact',{name,email,phone,subject,message,lang,page:location.hash,captcha_token:tok});
+  b.disabled=false; b.textContent=old;
+  if(r.error){ resetCaptcha('ct_captcha'); setMsg('ct_msg',r.error.captcha?t('errCaptcha'):(r.error.cooldown?L('Твърде много съобщения. Опитайте по-късно.','Too many messages. Try again later.'):(r.error.message||t('errGeneric')))); return false; }
+  f.reset(); resetCaptcha('ct_captcha'); setMsg('ct_msg',t('sent'),true); track('contact_submit',{}); return false;
+}
+async function submitNewsletter(f){
+  const email=f.email.value.trim();
+  if(!validEmail(email)){setMsg('nl_msg',t('errEmail'));return false;}
+  if(!f.consent.checked){setMsg('nl_msg',t('errConsent'));return false;}
+  const tok=captchaToken('nl_captcha'); if(CFG.TURNSTILE_SITE_KEY&&!tok){setMsg('nl_msg',t('errCaptcha'));return false;}
+  const b=f.querySelector('button[type=submit]'); b.disabled=true; const old=b.textContent; b.textContent=t('sending'); setMsg('nl_msg','');
+  const r=await DB.publicForm('newsletter',{email,lang,consent:true,source:'site',captcha_token:tok});
+  b.disabled=false; b.textContent=old;
+  if(r.error){ resetCaptcha('nl_captcha'); setMsg('nl_msg',r.error.captcha?t('errCaptcha'):(r.error.message||t('errGeneric'))); return false; }
+  f.reset(); resetCaptcha('nl_captcha'); setMsg('nl_msg',t('nlok'),true); track('newsletter_signup',{}); return false;
+}
+
+// ---------- Бисквитки + аналитика (GA4 / Meta Pixel) — само след съгласие ----------
+let consent=null; try{consent=localStorage.getItem('ac2_consent');}catch(e){}
+let analyticsLoaded=false;
+function cookieBanner(){
+  const el=document.getElementById('cookie');
+  if(consent||(!CFG.GA_ID&&!CFG.GTM_ID&&!CFG.META_PIXEL_ID)){el.classList.remove('show');return;}
+  el.innerHTML=`<p>${t('cookieText')} <a href="#/legal/cookies">${t('more')}</a></p><div class="acts"><button class="btn gilt sm" onclick="setConsent('necessary')">${t('onlyNeeded')}</button><button class="btn sm" onclick="setConsent('all')">${t('acceptAll')}</button></div>`;
+  el.classList.add('show');
+}
+function setConsent(v){consent=v;try{localStorage.setItem('ac2_consent',v);}catch(e){}cookieBanner();if(v==='all')loadAnalytics();}
+function resetConsent(){consent=null;try{localStorage.removeItem('ac2_consent');}catch(e){}cookieBanner();}
+function loadAnalytics(){
+  if(analyticsLoaded||consent!=='all')return; analyticsLoaded=true;
+  if(CFG.GTM_ID){
+    // Google Tag Manager — само след съгласие „Приемам всички“
+    window.dataLayer=window.dataLayer||[]; window.dataLayer.push({'gtm.start':Date.now(),event:'gtm.js'});
+    const g=document.createElement('script');g.async=true;g.src='https://www.googletagmanager.com/gtm.js?id='+encodeURIComponent(CFG.GTM_ID);document.head.appendChild(g);
+  }
+  if(CFG.GA_ID){
+    const s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(CFG.GA_ID);document.head.appendChild(s);
+    window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};gtag('js',new Date());gtag('config',CFG.GA_ID,{anonymize_ip:true,send_page_view:false});
+  }
+  if(CFG.META_PIXEL_ID){
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init',CFG.META_PIXEL_ID);
+  }
+  track('page_view',{page:location.hash.replace(/^#/,'')||'/'});
+}
+// събития за статистиката: page_view, ticket_click, reservation_click, newsletter_signup, contact_submit, app_store_click, apply_click
+function track(name,params){
+  if(consent!=='all'||!analyticsLoaded)return;
+  try{ if(window.gtag){ if(name==='page_view')gtag('event','page_view',{page_path:params.page,page_title:document.title}); else gtag('event',name,params||{}); } }catch(e){}
+  // за GTM: събитие в dataLayer (тригер „Custom Event“ с името на събитието; за страници — „page_view“ с page_path)
+  try{ if(CFG.GTM_ID&&window.dataLayer){ window.dataLayer.push(Object.assign({event:name},name==='page_view'?{page_path:'/'+(params&&params.page||'').replace(/^\/+/,''),page_title:document.title}:(params||{}))); } }catch(e){}
+  try{ if(window.fbq){ if(name==='page_view')fbq('track','PageView'); else fbq('trackCustom',name,params||{}); } }catch(e){}
+}
+function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2600);}
+
+// ---------- Старт ----------
+(async function init(){
+  document.documentElement.lang=lang;
+  PUB={};LAND={};EVENTS=[];      // празни, докато се зареди — интрото покрива паузата
+  readPayResult();
+  showIntro();
+  cookieBanner(); if(consent==='all')loadAnalytics();
+  try{ await loadAll(); }catch(e){}
+  render();
+  // при връщане в таба — освежаваме програмата (нови събития се появяват без презареждане)
+  // Съдържанието от админа (текстове, отметки, събития) се тегли наново при връщане в таба и при смяна на страница
+  // (не по-често от веднъж на 20 s), за да се виждат промените без презареждане.
+  let _lastSync=Date.now();
+  async function resync(force){
+    if(!force&&Date.now()-_lastSync<20000)return; _lastSync=Date.now();
+    try{ const before=JSON.stringify([PUB,EVENTS]); await loadAll();
+      // не пречертаваме, ако човек попълва форма или е отворена платежна форма — ще се види на следващата страница
+      const typing=[...document.querySelectorAll('input:not([type=hidden]),textarea')].some(f=>f.value&&f.value.trim()&&f.type!=='checkbox')||!!document.querySelector('#bk_pay iframe');
+      if(JSON.stringify([PUB,EVENTS])!==before&&!typing)render(); }catch(e){}
+  }
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible')resync(true); });
+  window.addEventListener('hashchange',()=>resync(false));
+})();
+</script>
+<script>if('serviceWorker' in navigator){
+  // регистрация + проверка за нова версия при връщане в таба; при нова версия — еднократно автоматично презареждане
+  const _had=!!navigator.serviceWorker.controller; let _swr=false, _swPending=false;   // при първо посещение (без стар worker) не презареждаме
+  // „зает“ = попълва се форма или е отворена страница с плащане/резервация → презареждането чака до следващата страница
+  const _busy=()=>{ if(/^#\/(join|book|event\/)/.test(location.hash))return true;
+    for(const f of document.querySelectorAll('input:not([type=hidden]),textarea')){ if(f.value&&f.value.trim()&&f.type!=='checkbox')return true; } return false; };
+  const _tryReload=()=>{ if(_swr)return; if(_busy()){_swPending=true;return;} _swr=true;location.reload(); };
+  // проверка за нова версия само когато не е заето (иначе нова версия не се тегли по средата на билет/форма)
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').then(reg=>{
+    const chk=()=>{ if(!_busy())reg.update().catch(()=>{}); };
+    document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible')chk(); });
+    setInterval(chk,30*60*1000);
+  }).catch(()=>{}));
+  // нова версия → презареждане САМО при следващата смяна на страница; нищо друго
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(_had)_swPending=true; });
+  window.addEventListener('hashchange',()=>{ if(_swPending)setTimeout(_tryReload,50); });
+}</script>
+<script src="datepicker.js?v=2" defer></script>
+</body>
+</html>
