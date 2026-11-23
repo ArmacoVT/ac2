@@ -2310,9 +2310,14 @@ async function sendAnn(){
     let res;
     if(a.audience==='all')res=await sendOne({audience:'all'});
     else if(a.audience==='specific')res=await sendOne({audience:'users',user_ids:a.user_ids});
-    else { let s=0,f=0; for(const m of a.memberships){const r=await sendOne({audience:m,log:false}); if(r&&r.data){s+=r.data.sent||0;f+=r.data.failed||0;}} res={data:{sent:s,failed:f}}; }
-    if(res&&res.error)toast('Новината е публикувана, но известието не тръгна: '+res.error.message);
-    else if(res&&res.data)toast(`Известие: изпратено до ${res.data.sent||0} устройства${res.data.failed?', неуспешни '+res.data.failed:''}${res.data.note?' · '+res.data.note:''}`);
+    else { let s=0,f=0,er=[]; for(const m of a.memberships){const r=await sendOne({audience:m,log:false}); if(r&&r.data){s+=r.data.sent||0;f+=r.data.failed||0;if(Array.isArray(r.data.errors))er=er.concat(r.data.errors);}} res={data:{sent:s,failed:f,errors:er}}; }
+    if(res&&res.error)toast('Новината е публикувана, но известието не тръгна: '+res.error.message,true);
+    else if(res&&res.data){
+      // причината за неуспех (от Apple/Google) – за да не се търси в конзолата
+      const why=(res.data.failed&&Array.isArray(res.data.errors))?[...new Set(res.data.errors)].slice(0,3).map(x=>String(x).slice(0,80)).join('; '):'';
+      toast(`Известие: изпратено до ${res.data.sent||0} устройства${res.data.failed?', неуспешни '+res.data.failed:''}${why?' · причина: '+why:''}${res.data.note?' · '+res.data.note:''}`,!!res.data.failed&&!res.data.sent);
+      if(why)console.warn('push errors',res.data.errors);
+    }
   }
   annAud='all';annTitleDraft='';annBodyDraft='';annMemPicked=[];annUserPicked=[];annUserFilter='';ANN=await DB.listAnnouncements();render();
 }
