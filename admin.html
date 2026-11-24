@@ -231,6 +231,7 @@ const PERM_DEFS=[
   {id:'messages',t:'Съобщения',d:'контактна форма и нюзлетър'},
   {id:'stats',t:'Статистика',d:'справки и графики'},
   {id:'audit',t:'Журнал',d:'кой какво е променил'},
+  {id:'featured',t:'Акцент на събития',d:'отметката „Акцент“ — събитието излиза най-горе в приложението и на сайта'},
   // „опасни“ права — отделни отметки (важат и в базата)
   {id:'res_delete',t:'⚠ Изтриване на резервации',d:'необратимо изтриване (не само отказ)',danger:true},
   {id:'refunds',t:'⚠ Връщане на пари',d:'refund по картата през Stripe',danger:true},
@@ -978,7 +979,7 @@ function eventsView(){
       <div><h3>${esc(e.title)} ${liveBadge}</h3>
         <div class="muted" style="margin-top:3px;">${esc(e.format)} · ${isoToBg(e.date)}${e.end_date?' – '+isoToBg(e.end_date):''} ${esc(e.time||'')} · ${esc(e.place||'')} · ${e.capacity||0} места · ${e.price>0?(e.price+' €/билет'):'безплатно'}</div>
         <div style="margin-top:6px;">${seatsInfo(e)} ${tableInfo(e)}</div>
-        <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)} ${(e.pub&&e.pub.members_only)?'<span class="pill">само членове</span>':'<span class="pill" style="border-color:#507044;color:#507044;">🌐 на сайта</span>'} ${(e.pub&&e.pub.guests)?'<span class="pill" style="border-color:#6b6b63;color:#6b6b63;">гости'+(e.pub.guest_from?' от '+isoToBg(e.pub.guest_from):'')+'</span>':''}</div></div>
+        <div style="margin-top:8px;">Видимо за: ${audLabel(e.aud)} ${(e.pub&&e.pub.members_only)?'<span class="pill">само членове</span>':'<span class="pill" style="border-color:#507044;color:#507044;">🌐 на сайта</span>'} ${(e.pub&&e.pub.featured)?'<span class="pill" style="border-color:#82303d;color:#82303d;">★ акцент</span>':''} ${(e.pub&&e.pub.guests)?'<span class="pill" style="border-color:#6b6b63;color:#6b6b63;">гости'+(e.pub.guest_from?' от '+isoToBg(e.pub.guest_from):'')+'</span>':''}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${liveBtn}
         <button class="btn ghost sm" onclick="editEvent('${e.id}')">Редактирай</button>
@@ -2730,6 +2731,8 @@ function pubEventBlock(e){
     <p class="muted" style="margin:2px 0 6px;font-size:12px;">Всяко събитие се показва на ac2.bg под своя формат (заглавие, дата, място, цена, снимка, описание) — освен ако е отметнато „само за членове". Гостите (нечленове) могат да купуват билети от сайта само ако е разрешено тук.</p>
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="f_pub_members_only" ${p.members_only?'checked':''} style="width:auto;"/> Само за членове — НЕ се показва на публичния сайт</label>
     <p class="muted" style="margin:4px 0 0;font-size:12px;">Дали гостите (нечленове) могат да резервират/купуват от сайта се отмята по-долу при „Видимо за" — чип „Гости", с дата „записване от" при вълните.</p>
+    ${can('featured')?`<label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:10px;"><input type="checkbox" id="f_pub_featured" ${p.featured?'checked':''} style="width:auto;"/> ★ Акцент — показва се най-горе в приложението и на сайта</label>
+    <p class="muted" style="margin:4px 0 0;font-size:12px;">Цветна лента над „Предстоящи“ със снимката, датата и „след колко дни“. Най-много 3 наведнъж (най-близките по дата); маха се сама след края на събитието. На сайта излиза само ако събитието не е „само за членове“.</p>`:`<input type="hidden" id="f_pub_featured" value="${p.featured?'1':''}"/>`}
     <div class="row2" style="margin-top:8px;"><div><label>Категория (етикет на картата)</label><select id="f_pub_cat">${PUB_CATS.map(c=>`<option value="${c[0]}" ${(p.category||'')===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select></div></div>
     <label style="margin-top:8px;">Заглавие на английски (по избор)</label><input id="f_pub_title_en" value="${esc(p.title_en||'')}"/>
     <label style="margin-top:8px;">Кратко описание на английски (по избор; за картата)</label><textarea id="f_pub_desc_en" rows="3">${esc(p.desc_en||'')}</textarea>
@@ -2750,12 +2753,13 @@ function grabPub(){
   const mo=document.getElementById('f_pub_members_only'), gf=document.getElementById('f_pub_gfrom');
   if(!mo)return null;
   const ch=g('f_cancel_h');
-  return {formats:[...document.querySelectorAll('#f_formats input[data-fmt]:checked')].map(c=>c.dataset.fmt).filter(f=>f!==g('f_format')),entry:(g('f_pub_entry')||'ticket'),fit:(document.getElementById('f_pub_fit')&&document.getElementById('f_pub_fit').checked)?'cover':'',table_after:(g('f_table_after')||'auto'),members_only:mo.checked,guests:!!draftGuests,guest_from:(draftGuests&&gf)?(gf.dataset.iso||''):'',cancel_hours:(ch===''?null:Math.max(0,parseInt(ch,10)||0)),slots:cleanSlots(),max_party:(()=>{const v=parseInt(g('f_max_party'),10);return v>0?Math.min(50,v):null;})(),category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
+  return {formats:[...document.querySelectorAll('#f_formats input[data-fmt]:checked')].map(c=>c.dataset.fmt).filter(f=>f!==g('f_format')),entry:(g('f_pub_entry')||'ticket'),fit:(document.getElementById('f_pub_fit')&&document.getElementById('f_pub_fit').checked)?'cover':'',table_after:(g('f_table_after')||'auto'),members_only:mo.checked,featured:(()=>{const f=document.getElementById('f_pub_featured');return !!(f&&(f.type==='checkbox'?f.checked:f.value==='1'));})(),guests:!!draftGuests,guest_from:(draftGuests&&gf)?(gf.dataset.iso||''):'',cancel_hours:(ch===''?null:Math.max(0,parseInt(ch,10)||0)),slots:cleanSlots(),max_party:(()=>{const v=parseInt(g('f_max_party'),10);return v>0?Math.min(50,v):null;})(),category:g('f_pub_cat'),title_en:g('f_pub_title_en'),desc_en:g('f_pub_desc_en'),
     long:bi('f_pub_long'),participants:bi('f_pub_part'),curator:bi('f_pub_curator'),authors:bi('f_pub_authors'),visit:bi('f_pub_visit'),ticket_url:g('f_pub_ticket'),gallery:draftPubGal.slice()};
 }
 function putPub(p){
   if(!p)return; const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   const mo=document.getElementById('f_pub_members_only'); if(mo)mo.checked=!!p.members_only;
+  const fe=document.getElementById('f_pub_featured'); if(fe&&fe.type==='checkbox')fe.checked=!!p.featured;
   const ft=document.getElementById('f_pub_fit'); if(ft)ft.checked=p.fit==='cover';
   document.querySelectorAll('#f_formats input[data-fmt]').forEach(c=>{c.checked=Array.isArray(p.formats)&&p.formats.includes(c.dataset.fmt);});
   const gf=document.getElementById('f_pub_gfrom'); if(gf){gf.dataset.iso=p.guest_from||'';gf.value=p.guest_from?isoToBg(p.guest_from):'';}

@@ -78,6 +78,16 @@
   .pframe.fit-cover img{object-fit:cover;} .pframe.fit-cover .bg{display:none;}
   .evvideo{width:100%;border-radius:12px;margin:10px 0 4px;display:block;background:#000;max-height:300px;}
   .sec-sub{color:var(--muted);font-size:13px;padding:0 20px 10px;}
+  /* Акцент — промотирани събития (pub.featured): цветна лента над „Предстоящи“ */
+  .featwrap{margin:18px 20px 0;display:flex;flex-direction:column;gap:10px;}
+  .featb{display:flex;align-items:stretch;background:var(--gold);color:var(--oncolor);border-radius:16px;overflow:hidden;cursor:pointer;min-height:96px;}
+  .featb .fth{width:92px;flex:none;background-size:cover;background-position:center;background-color:var(--gold-soft);}
+  .featb .ftx{flex:1;min-width:0;padding:14px;}
+  .featb h4{font-family:var(--serif);font-style:italic;font-size:17px;font-weight:600;line-height:1.25;margin:0;color:var(--oncolor);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .featb .fsub{font-size:12.5px;opacity:.85;margin-top:4px;}
+  .featb .fchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+  .fchip{background:var(--oncolor);color:var(--gold);font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap;}
+  .fchip.o{background:transparent;color:var(--oncolor);border:1px solid var(--oncolor);padding:1px 9px;}
   /* Предстоящи — програма (timeline) във вдълбано поле */
   .fcard.dim{opacity:.5;}
   .upbox{margin:0 20px;background:var(--bg);border-radius:16px;padding:16px 16px 8px;box-shadow:inset 5px 5px 11px #cfcfbb, inset -5px -5px 11px #f7f7ee;}
@@ -870,6 +880,27 @@ function topbar(title){
     </div></div>`;
 }
 
+// ---- Акцент: промотирани събития (отметка в админа → pub.featured). До 3, по дата; изчезват сами след края. ----
+function featChip(e){
+  const n=Math.round((new Date(e.date+'T00:00:00')-new Date(todayISO()+'T00:00:00'))/86400000);
+  if(n<0)return lang==='bg'?'Сега':'On now';
+  if(n===0)return lang==='bg'?'Днес':'Today';
+  if(n===1)return lang==='bg'?'Утре':'Tomorrow';
+  return lang==='bg'?('След '+n+' дни'):('In '+n+' days');
+}
+function featHtml(){
+  const list=EVENTS.filter(e=>e.pub&&e.pub.featured&&e.date&&canAccess(e)&&!e.archive_only&&!isPast(e)).sort((a,b)=>(evKey(a)<evKey(b)?-1:1)).slice(0,3);
+  if(!list.length)return '';
+  return `<div class="featwrap">${list.map(e=>{
+    const l=seatsLeft(e), mine=user&&hasBooking(e.id);
+    const seat=(mine||l===null)?'':(l<=0?(lang==='bg'?'Продадено':'Sold out'):(l<=10?(lang==='bg'?('Остават '+l+' места'):(l+' seats left')):''));
+    const when=[fmtDay(e.date),(e.time||'').slice(0,5)].filter(Boolean).join(' · ');
+    return `<div class="featb" onclick="go('format/${e.format}')">
+      ${e.image_url?`<div class="fth" style="background-image:url('${esc(e.image_url)}')"></div>`:''}
+      <div class="ftx"><h4>${esc(evT(e))}</h4><div class="fsub">${esc(when)}</div>
+        <div class="fchips"><span class="fchip">${featChip(e)}</span>${seat?`<span class="fchip o">${seat}</span>`:''}</div></div></div>`;
+  }).join('')}</div>`;
+}
 function upRow(e){
   const f=FORMATS.find(x=>x.id===e.format);
   const fl=f?f.t:(e.format||''); const col=f?f.c:'var(--gold)';
@@ -973,6 +1004,7 @@ function home(){
     ${greeting()}
     ${staffBar()}
     ${annHtml()}
+    ${featHtml()}
     ${upcomingHtml}
     ${forYouHtml}
     <div class="sec-title">${tr('formats')}</div><div class="sec-sub">${tr('formatsSub')}</div>
