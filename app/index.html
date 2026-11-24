@@ -3080,22 +3080,31 @@ async function doorStart(){
     // (20.11.2026) Преди: разчитане на ВСЕКИ кадър (до 60 пъти в секунда), по два опита на кадър → телефонът не смогваше,
     // екранът „забиваше“ и загряваше. Сега: ~7 пъти в секунда, един опит; а където телефонът има вграден четец на QR — той.
     let det=null; try{ if('BarcodeDetector' in window)det=new BarcodeDetector({formats:['qr_code']}); }catch(e){ det=null; }
-    let last=0, working=false;
+    let last=0, working=false, nTick=0;
     const got=txt=>{ if(txt&&txt!==_doorLast){_doorLast=txt;doorFound(txt);setTimeout(()=>{_doorLast='';},4000);} };
+    // (24.11.2026) Печатните членски карти са със СВЕТЪЛ код върху тъмен фон (златно върху зелено) и кодът е малък (~1 см).
+    // Затова редуваме: един кадър – нормален код (цялото поле), следващият – обърнати цветове върху увеличената среда на кадъра.
+    // Пак е по един опит на кадър, т.е. натоварването остава същото като след поправката от 20.11.
+    const qrPass=inv=>{
+      const s=Math.min(v.videoWidth,v.videoHeight), z=inv?0.6:1, c=s*z, sx=(v.videoWidth-c)/2, sy=(v.videoHeight-c)/2;
+      cx.drawImage(v,sx,sy,c,c,0,0,480,480);
+      const img=cx.getImageData(0,0,480,480);
+      // обръщаме цветовете сами: режимът 'onlyInvert' на jsQR е с грешка (хвърля изключение) в тази версия
+      if(inv){ const d=img.data; for(let i=0;i<d.length;i+=4){ d[i]=255-d[i]; d[i+1]=255-d[i+1]; d[i+2]=255-d[i+2]; } }
+      const code=window.jsQR&&jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
+      return (code&&code.data)||'';
+    };
     const tick=async ts=>{
       if(!document.getElementById('doorvid')){doorStop();return;}
       _doorRaf=requestAnimationFrame(tick);
       if(working||_doorBusy||document.hidden||v.readyState!==4||(ts||0)-last<140)return;
       last=ts||0; working=true;
       try{
-        if(det){ let r=null; try{ r=await det.detect(v); }catch(e){ det=null; } if(r&&r[0]&&r[0].rawValue){ got(r[0].rawValue); } }
-        if(!det){
-          const s=Math.min(v.videoWidth,v.videoHeight), sx=(v.videoWidth-s)/2, sy=(v.videoHeight-s)/2;
-          cx.drawImage(v,sx,sy,s,s,0,0,480,480);
-          const img=cx.getImageData(0,0,480,480);
-          const code=window.jsQR&&jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
-          if(code&&code.data)got(code.data);
-        }
+        const inv=(++nTick%2)===0; let hit='';
+        if(det){ let r=null; try{ r=await det.detect(v); }catch(e){ det=null; } if(r&&r[0]&&r[0].rawValue)hit=r[0].rawValue; }
+        // вграденият четец обикновено не чете обърнати кодове → на всеки втори кадър пробваме и тях
+        if(!hit&&(!det||inv))hit=qrPass(det?true:inv);
+        if(hit)got(hit);
       }catch(e){} finally{ working=false; }
     };
     _doorRaf=requestAnimationFrame(tick);
