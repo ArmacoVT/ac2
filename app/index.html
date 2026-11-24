@@ -3041,7 +3041,7 @@ function doorView(){
     <div style="position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:1/1;max-width:420px;margin:0 auto;">
       <video id="doorvid" playsinline muted autoplay style="width:100%;height:100%;object-fit:cover;display:block;"></video>
       <div style="position:absolute;inset:14%;border:2px solid rgba(235,235,214,.8);border-radius:14px;pointer-events:none;"></div>
-      <div id="doorhint" style="position:absolute;left:0;right:0;bottom:10px;text-align:center;color:#EBEBD6;font-size:12px;text-shadow:0 1px 3px #000;">${lang==='bg'?'Насочи към QR кода на картата':'Point at the card QR code'}</div>
+      <div id="doorhint" style="position:absolute;left:0;right:0;bottom:10px;text-align:center;color:#EBEBD6;font-size:12px;text-shadow:0 1px 3px #000;">${lang==='bg'?'Насочи към QR кода · печатна карта: на 15–20 см, кодът в средата':'Point at the QR code · printed card: 15–20 cm away, code centred'}</div>
     </div>
     <div style="display:flex;gap:8px;margin:12px 0;"><input id="doorq" placeholder="${lang==='bg'?'…или търси по име или телефон':'…or search by name or phone'}" style="flex:1;" oninput="doorSearch(this.value)"/></div>
     <div id="doorres"></div>
@@ -3073,10 +3073,14 @@ async function doorStart(){
   doorCountLoop();
   const v=document.getElementById('doorvid'); if(!v)return;
   try{
-    _doorStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:1280}}});
+    // (24.11.2026) 1920×1080 вместо 1280: кодът на печатната карта е ~1 см, а телефонът не фокусира по-близо от 15–20 см →
+    // при 1280 кодът излизаше твърде дребен за разчитане. Ако телефонът не поддържа толкова, сам дава най-близката по-ниска.
+    _doorStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}});
+    // непрекъснат автофокус, където го има (Android); другаде се пренебрегва
+    try{ const tr=_doorStream.getVideoTracks()[0], cp=tr.getCapabilities?tr.getCapabilities():{}; if(cp.focusMode&&cp.focusMode.indexOf('continuous')!==-1)await tr.applyConstraints({advanced:[{focusMode:'continuous'}]}); }catch(e){}
     v.srcObject=_doorStream; await v.play();
     const cv=document.createElement('canvas'), cx=cv.getContext('2d',{willReadFrequently:true});
-    cv.width=cv.height=480;
+    cv.width=cv.height=640;
     // (20.11.2026) Преди: разчитане на ВСЕКИ кадър (до 60 пъти в секунда), по два опита на кадър → телефонът не смогваше,
     // екранът „забиваше“ и загряваше. Сега: ~7 пъти в секунда, един опит; а където телефонът има вграден четец на QR — той.
     let det=null; try{ if('BarcodeDetector' in window)det=new BarcodeDetector({formats:['qr_code']}); }catch(e){ det=null; }
@@ -3086,9 +3090,11 @@ async function doorStart(){
     // Затова редуваме: един кадър – нормален код (цялото поле), следващият – обърнати цветове върху увеличената среда на кадъра.
     // Пак е по един опит на кадър, т.е. натоварването остава същото като след поправката от 20.11.
     const qrPass=inv=>{
-      const s=Math.min(v.videoWidth,v.videoHeight), z=inv?0.6:1, c=s*z, sx=(v.videoWidth-c)/2, sy=(v.videoHeight-c)/2;
-      cx.drawImage(v,sx,sy,c,c,0,0,480,480);
-      const img=cx.getImageData(0,0,480,480);
+      // обърнат код: вземаме средата на кадъра в реалната ѝ резолюция (без смаляване), за да не се губят детайли
+      // (нормален код: цялото поле, смалено до 480 – както досега; обърнат: средните 640 пиксела 1:1)
+      const s=Math.min(v.videoWidth,v.videoHeight), N=inv?640:480, c=inv?Math.min(s,640):s, sx=(v.videoWidth-c)/2, sy=(v.videoHeight-c)/2;
+      cx.drawImage(v,sx,sy,c,c,0,0,N,N);
+      const img=cx.getImageData(0,0,N,N);
       // обръщаме цветовете сами: режимът 'onlyInvert' на jsQR е с грешка (хвърля изключение) в тази версия
       if(inv){ const d=img.data; for(let i=0;i<d.length;i+=4){ d[i]=255-d[i]; d[i+1]=255-d[i+1]; d[i+2]=255-d[i+2]; } }
       const code=window.jsQR&&jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
