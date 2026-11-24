@@ -351,6 +351,9 @@ function formDirty(){
   }
   return false;
 }
+// курсорът е в поле за писане/избор? (отметка, радио-бутон или бутон НЕ се броят — след кликване фокусът остава върху тях
+// и панелът погрешно решаваше, че „се попълва нещо“ → светваше „Нови заявки — обнови“ след собствено действие, напр. тикчето за карта)
+function _typing(){ const a=document.activeElement; if(!a||!/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return false; const t=(a.type||'').toLowerCase(); return !(t==='checkbox'||t==='radio'||t==='button'||t==='submit'||t==='range'||t==='file'); }
 let _stamps=null;
 async function checkNew(baseline){
   let st; try{ st=await DB.latestStamps(); }catch(e){ return; }
@@ -359,7 +362,7 @@ async function checkNew(baseline){
   const changed=['reservations','applications','messages'].filter(k=>(st[k]||'')>(_stamps[k]||''));
   if(!changed.length)return;
   _stamps=st;
-  const editing=editId||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))||document.querySelector('#miModal,#qrModal,#wkModal,#coAddOv,#onsiteModal,.mdp-ov')||formDirty();
+  const editing=editId||_typing()||document.querySelector('#miModal,#qrModal,#wkModal,#coAddOv,#onsiteModal,.mdp-ov')||formDirty();
   const what=changed.map(k=>k==='reservations'?'резервация':k==='applications'?'кандидатура':'съобщение').join(', ');
   if(editing){ window._newData=true; const b=document.getElementById('newdataBtn'); if(b)b.style.display='inline-block'; toast('🔔 Нова '+what+' — натисни „Нови заявки — обнови“'); return; }
   await refresh(); if(tab==='messages'){try{MSGS=await DB.listContactMessages();}catch(e){}} softRender(); toast('🔔 Нова '+what);
@@ -368,7 +371,7 @@ async function checkNew(baseline){
 let _liveT=null, _liveSeen=false, _liveNeed={}, _liveLast=0;
 // начертаване без скок: пази мястото, до което е скролнато
 function softRender(){ const y=window.scrollY; render(); if(Math.abs(window.scrollY-y)>2)window.scrollTo(0,y); }
-const _liveBusy=()=>editId||(document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))||document.querySelector('#miModal,#qrModal,#wkModal,#coAddOv,#onsiteModal,#rpaidOv,.mdp-ov')||formDirty();
+const _liveBusy=()=>editId||_typing()||document.querySelector('#miModal,#qrModal,#wkModal,#coAddOv,#onsiteModal,#rpaidOv,.mdp-ov')||formDirty();
 // (20.11.2026) Преди: при ВСЯКА промяна в базата (вкл. всяко отбелязване на входа и всяко „прегледано“) админът презареждаше
 // всичко — събития, всички резервации, кандидатури, съобщения, плащания — и чертаеше цялата страница наново. По време на събитие
 // това ставаше през няколко секунди и панелът „забиваше“. Сега:
@@ -3145,6 +3148,7 @@ async function coAdd(cid,force){
 }
 // вътрешна отметка: физическата членска карта е изработена (вижда се само в админа)
 async function cardMark(id,on,box){
+  try{ if(box)box.blur(); }catch(e){}
   const {error}=await DB.setCardIssued(id,on);
   if(error){ if(box)box.checked=!on;
     alert(error.message==='need_sql'?'За тикчето трябва една стъпка в базата: Supabase → SQL Editor → пусни файла 2026-11-19-member-card.sql (добавя само една колона).':'Не се записа: '+error.message); return; }
