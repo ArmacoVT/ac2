@@ -205,20 +205,18 @@
   .two .ph .lg{width:34%;}
   .two.rev>*:first-child{order:2;}
   @media(max-width:820px){.two{grid-template-columns:1fr;gap:26px;}.two.rev>*:first-child{order:0;}}
-  /* Акцент — промотирани събития (pub.featured): цветни ленти под началния слайдер */
-  .featsec{padding:30px 0 4px;} .featsec .wrap{display:flex;flex-direction:column;gap:12px;}
-  .featb{display:flex;align-items:stretch;background:var(--wine);color:var(--beige);border-radius:16px;overflow:hidden;text-decoration:none;min-height:108px;}
-  .featb .fth{width:150px;flex:none;background-size:cover;background-position:center;background-color:var(--gold-soft);}
-  .featb .ftx{flex:1;min-width:0;padding:18px 22px;align-self:center;}
-  .featb h3{font-family:var(--serif);font-size:22px;font-weight:600;line-height:1.2;color:var(--beige);}
-  .featb .fsub{font-size:14px;opacity:.85;margin-top:5px;}
-  .featb .fchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;} .featb .fchips:empty{display:none;}
-  .fchip{background:var(--beige);color:var(--wine);font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px;white-space:nowrap;}
-  .fchip.o{background:transparent;color:var(--beige);border:1px solid var(--beige);padding:1px 10px;}
-  .fchip.when{display:none;}
-  .featb .fcd{width:112px;flex:none;background:rgba(0,0,0,.16);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--serif);text-align:center;padding:0 8px;}
-  .featb .fcd b{font-size:34px;line-height:1;font-weight:600;} .featb .fcd b.w{font-size:20px;} .featb .fcd span{font-size:13px;opacity:.85;margin-top:3px;}
-  @media(max-width:720px){ .featsec{padding:20px 0 0;} .featb{min-height:96px;} .featb .fcd{display:none;} .fchip.when{display:inline-block;} .featb .fth{width:92px;} .featb .ftx{padding:14px;} .featb h3{font-size:17px;line-height:1.25;} .featb .fsub{font-size:12.5px;} }
+  /* Акцент — промотирани събития (pub.featured): голяма снимка + бордо поле, между „Какво е AC²“ и програмата */
+  .featsec{padding:0 0 64px;} .featsec.top{padding-top:56px;} .featsec .wrap{display:flex;flex-direction:column;gap:18px;}
+  .featb{display:flex;align-items:stretch;border-radius:18px;overflow:hidden;text-decoration:none;min-height:300px;background:var(--wine);color:var(--beige);}
+  .featb .fth{flex:1.5;min-width:0;background-size:cover;background-position:center;background-color:var(--gold-soft);}
+  .featb .ftx{flex:1;min-width:0;padding:34px 38px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;}
+  .featb.noimg{min-height:0;} .featb.noimg .ftx{padding:40px 44px;}
+  .featb .fkick{font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.85;}
+  .featb h3{font-family:var(--serif);font-size:clamp(24px,2.6vw,34px);font-weight:600;line-height:1.15;color:var(--beige);margin-top:10px;}
+  .featb .fsub{font-size:15px;opacity:.9;margin-top:12px;line-height:1.5;}
+  .featb .fbtn{display:inline-block;background:var(--beige);color:var(--wine);font-size:14px;font-weight:600;padding:10px 22px;border-radius:999px;margin-top:20px;transition:transform .15s;}
+  .featb:hover .fbtn{transform:translateX(3px);}
+  @media(max-width:760px){ .featsec{padding:0 0 40px;} .featsec.top{padding-top:36px;} .featb{flex-direction:column;min-height:0;} .featb .fth{flex:none;height:200px;} .featb .ftx,.featb.noimg .ftx{padding:22px 22px 24px;} .featb .fsub{font-size:14px;margin-top:8px;} .featb .fbtn{margin-top:16px;} }
   .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;}
   .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;}
   .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;}
@@ -759,20 +757,21 @@ const subnav=(items,cur)=>`<div class="subnav">${items.map(i=>`<a href="#/${i[0]
 let slideTimer=null, slideIdx=0;
 // ---- Акцент: промотирани събития (отметка в админа → pub.featured). До 3, по дата; изчезват сами след края. ----
 // На сайта влизат само публичните (тези „само за членове“ изобщо не се зареждат тук).
-function featSection(){
+// Вид: голяма снимка (≈60%) + бордо поле с „след N дни“, заглавие, дата/място и бутон; на телефон — снимката отгоре.
+function featSection(top){
   const list=(EVENTS||[]).filter(e=>e.pub&&e.pub.featured&&e.date&&isUpcoming(e)).sort((a,b)=>evKey(a)<evKey(b)?-1:1).slice(0,3);
   if(!list.length)return '';
-  return `<section class="featsec"><div class="wrap">${list.map(e=>{
+  return `<section class="featsec${top?' top':''}"><div class="wrap">${list.map(e=>{
     const n=Math.round((new Date(e.date+'T00:00:00')-new Date(todayIso()+'T00:00:00'))/86400000);
-    const word=n<0?L('Сега','On now'):n===0?L('Днес','Today'):n===1?L('Утре','Tomorrow'):'';
-    const chip=word||L('След '+n+' дни','In '+n+' days');
+    const kick=n<0?L('Сега','On now'):n===0?L('Днес','Today'):n===1?L('Утре','Tomorrow'):L('След '+n+' дни','In '+n+' days');
     const l=seatsLeftPub(e);
-    const seat=l===null?'':(l<=0?L('Продадено','Sold out'):(l<=10?L('Остават '+l+' места',l+' seats left'):''));
-    return `<a class="featb" href="#/event/${esc(e.id)}" onclick="track('featured_click',{event_id:'${esc(e.id)}'})">
+    const seat=l===null?'':(l<=0?L('продадено','sold out'):(l<=10?L('остават '+l+' места',l+' seats left'):''));
+    const line2=[e.place?placeT(e.place):'',seat].filter(Boolean).join(' · ');
+    return `<a class="featb${e.image_url?'':' noimg'}" href="#/event/${esc(e.id)}" onclick="track('featured_click',{event_id:'${esc(e.id)}'})">
       ${e.image_url?`<div class="fth" style="background-image:url('${esc(e.image_url)}')"></div>`:''}
-      <div class="ftx"><h3>${esc(evTitle(e))}</h3><div class="fsub">${esc(evWhen(e,true))}${e.place?' · '+esc(placeT(e.place)):''}</div>
-        <div class="fchips"><span class="fchip when">${esc(chip)}</span>${seat?`<span class="fchip o">${esc(seat)}</span>`:''}</div></div>
-      <div class="fcd">${word?`<b class="w">${esc(word)}</b>`:`<b>${n}</b><span>${L('дни','days')}</span>`}</div></a>`;
+      <div class="ftx"><div class="fkick">${esc(kick)}</div><h3>${esc(evTitle(e))}</h3>
+        <div class="fsub">${esc(evWhen(e,true))}${line2?'<br>'+esc(line2):''}</div>
+        <span class="fbtn">${L('Виж събитието','View event')} →</span></div></a>`;
   }).join('')}</div></section>`;
 }
 function pageHome(){
@@ -792,13 +791,13 @@ function pageHome(){
       ${sl.length>1?`<div class="dots">${sl.map((s,i)=>`<button class="${i===0?'on':''}" onclick="goSlide(${i})" aria-label="${i+1}"></button>`).join('')}</div>`:''}
     </div>
 
-    ${featSection()}
-
     ${on('home.show.manifesto')?`<section class="sec manifesto"><div class="wrap">
       <div class="kicker">${esc(pT('home.manifesto.title'))}</div>
       <p>${esc(pT('home.manifesto.body'))}</p>
       <a class="btn ghost" href="#/about">${t('about')} →</a>
     </div></section>`:''}
+
+    ${featSection(!on('home.show.manifesto'))}
 
     ${on('home.show.season')?`<section class="sec dark"><div class="wrap">
       <div class="sechead"><div><div class="kicker">${t('program')}</div><h2>${esc(pT('home.season.title'))}</h2><div class="lead" style="margin-top:8px;">${esc(pT('home.season.body'))}</div></div>
