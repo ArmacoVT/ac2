@@ -553,6 +553,7 @@ function lT(path){ const v=dig(LAND,path), d=dig(SD,path); if(v&&typeof v==='obj
 async function loadAll(){
   const [p,l,ev,st]=await Promise.all([DB.getSiteContent('public'),DB.getSiteContent('landing'),DB.listPublicEvents().catch(()=>[]),(DB.publicEventSeats?DB.publicEventSeats():Promise.resolve({})).catch(()=>({}))]);
   PUB=p||{}; LAND=l||{}; EVENTS=ev||[]; SEATS=st||{};
+  try{ if(DB.hallSeats&&EVENTS.some(e=>evHalls(e).length))DB.hallSeats().then(h=>{HALLSEATS=h;}).catch(()=>{}); }catch(e){}
 }
 // Заети места (само бройки) → „Продадено“. Без данни (SQL функцията не е пусната) → null = не знаем, нищо не се крие.
 let SEATS={};
@@ -586,7 +587,7 @@ function evStartTs(dIso,time){ if(!dIso)return null; const p=dIso.split('-').map
 function slotClosed(e,time){ if(e.end_date&&e.end_date!==e.date){ const t=evStartTs(e.end_date,null); return t!=null&&Date.now()>t; } const t=evStartTs(e.date,time); return t!=null&&Date.now()>t; }
 function salesClosed(e){ const sl=evSlots(e); return sl.length?sl.every(x=>slotClosed(e,x.time)):slotClosed(e,e.time); }
 function isUpcoming(e){ return !isPast(e)&&!e.archive_only; }
-function fmtPrice(e){ if(e.pub&&e.pub.entry==='free')return L('Свободен вход','Free entry'); if(!(e.price>0))return t('free'); return (Math.round(e.price*100)/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv'); }
+function fmtPrice(e){ if(e.pub&&e.pub.entry==='free')return L('Свободен вход','Free entry'); if(!(e.price>0))return t('free'); { const hl=evHalls(e); if(hl.length){ const mn=Math.min(...hl.map(h=>h.price)), mx=Math.max(...hl.map(h=>h.price)); return (mx>mn?L('от ','from '):'')+(Math.round(mn*100)/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv'); } } return (Math.round(e.price*100)/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv'); }
 
 // ---------- Категории / направления ----------
 const CATS={exhibition:['Изложба','Exhibition'],theatre:['Театър','Theatre'],concert:['Концерт','Concert'],dance:['Танц','Dance'],performance:['Пърформанс','Performance'],discussion:['Дискусия','Discussion'],film:['Кино','Film'],dinner:['Тематична вечеря','Themed dinner'],other:['Събитие','Event']};
@@ -1085,25 +1086,39 @@ function pageApp(){
 
 // ---------- РЕЗЕРВАЦИЯ ОТ ГОСТ (нечлен) — на страницата на събитието ----------
 const evSlots=e=>(e&&e.pub&&Array.isArray(e.pub.slots))?e.pub.slots.filter(s=>s&&s.time):[];   // слотове (часове) с капацитет по слот
+// ---- (25.11.2026) ЗАЛИ и ДЕТСКИ ЦЕНИ — само ПЛАТЕНО събитие в ресторанта. Сметката тук е за показване; сървърът смята наново. ----
+// pub.halls=[{name,price,cap}] → цена на човек според залата; pub.kid_tiers=[{from,to,price}] → цена на дете по възраст.
+const evHalls=e=>(e&&isDinner(e)&&Number(e.price)>0&&e.pub&&Array.isArray(e.pub.halls))?e.pub.halls.filter(h=>h&&h.name&&Number(h.price)>0).map(h=>({name:String(h.name),price:Number(h.price),cap:Math.max(0,parseInt(h.cap,10)||0)})):[];
+const evKidTiers=e=>(e&&isDinner(e)&&Number(e.price)>0&&e.pub&&Array.isArray(e.pub.kid_tiers))?e.pub.kid_tiers.map(t=>({from:parseInt(t.from,10)||0,to:parseInt(t.to,10)||0,price:Math.max(0,Number(t.price)||0)})).filter(t=>t.to>=t.from):[];
+// дете: в група → цената ѝ; по-голямо от най-горната група или без избрана възраст → като възрастен; иначе безплатно
+function kidPrice(age,tiers,adult){ if(!tiers.length)return 0; if(age===''||age==null)return adult; const a=parseInt(age,10); if(isNaN(a))return adult; const t=tiers.find(x=>a>=x.from&&a<=x.to); if(t)return t.price; return a>Math.max(...tiers.map(x=>x.to))?adult:0; }
+const money=v=>(Math.round(v*100)/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv');
+const kidTiersText=tiers=>tiers.map(x=>(x.from===x.to?x.from:(x.from+'–'+x.to))+' '+L('г.','y')+' — '+(x.price>0?money(x.price):L('безплатно','free'))).join(' · ');
+let HALLSEATS=null;   // {event_id:{зала:заети}}; null = няма данни (не показваме „остават“)
+function hallLeft(e,h){ if(!h.cap||!HALLSEATS)return null; return Math.max(0,h.cap-((HALLSEATS[e.id]&&HALLSEATS[e.id][h.name])||0)); }
+function hallPick(b){ [...b.parentNode.children].forEach(c=>c.classList.remove('on')); b.classList.add('on'); const f=b.form||b.closest('form'); if(f){f.dataset.unit=b.dataset.price; bkTotal(f);} }
 // макс. места на резервация/билет: ресторант (AC² Table) 8, останалите 4; „Макс. места“ в събитието има предимство
 const maxParty=e=>{const v=parseInt(e&&e.pub&&e.pub.max_party,10);return v>0?Math.min(50,v):(isDinner(e)?50:4);};   // ресторант: без практически лимит (до 50); другите 4
 const bigAllowed=e=>isDinner(e)&&!(Number(e&&e.price)>0);   // „9+“: само безплатни събития в ресторанта
 function bookingBox(e){
   const td=todayIso(); const from=guestFrom(e);
   const paidBack=PAY_RESULT&&PAY_RESULT.event===e.id;
-  const unit=Number(e.price)||0;
+  const halls=evHalls(e), tiers=evKidTiers(e);
+  const hall0=halls.length?(halls.find(h=>{const l=hallLeft(e,h);return l===null||l>0;})||halls[0]):null;   // първата зала със свободни места
+  const unit=hall0?hall0.price:(Number(e.price)||0);
   let inner='';
   if(!guestOpen(e))inner=`<p class="body">${t('guestClosed')}</p>`;
   else if(salesClosed(e)&&!(paidBack&&PAY_RESULT.ok))inner=`<div class="msg" style="font-size:16px;border:1px solid var(--line);">${L('Продажбата на билети за това събитие е приключила.','Ticket sales for this event have closed.')}</div>`;
   else if(soldOutPub(e)&&!(paidBack&&PAY_RESULT.ok))inner=`<div class="msg" style="font-size:16px;border:1px solid var(--line);">${L('Продадено — всички места са заети.','Sold out — all seats are taken.')}</div>`;
   else if(from&&from>td)inner=`<p class="body">${t('opensOn')} <b>${esc(fmtD(from,true))}</b>.</p>`;
   else if(paidBack&&PAY_RESULT.ok)inner=`<div class="msg ok" style="font-size:16px;">${t('paid')}</div>`;
-  else inner=`<form class="form" id="bookForm" onsubmit="return false;" data-unit="${unit}">
+  else inner=`<form class="form" id="bookForm" onsubmit="return false;" data-unit="${unit}" data-tiers="${esc(JSON.stringify(tiers))}">
       ${paidBack&&!PAY_RESULT.ok?`<div class="msg err">${t('payFail')}</div>`:''}
       ${evSlots(e).length?`<div><label>${L('Час','Time')} *</label><div class="selrow" id="bk_slots">${(()=>{ const firstFree=evSlots(e).findIndex(s=>{const l=slotLeft(e,s.time);return !slotClosed(e,s.time)&&(l===null||l>0);}); return evSlots(e).map((s,i)=>{ const l=slotLeft(e,s.time), full=l!==null&&l<=0; if(slotClosed(e,s.time))return `<button type="button" class="achip" disabled style="opacity:.45;cursor:default;" title="${L('Продажбата приключи','Sales closed')}">${esc(s.time)} · ${L('приключи','closed')}</button>`; return full?`<button type="button" class="achip" disabled style="opacity:.45;cursor:default;text-decoration:line-through;" title="${L('Продадено','Sold out')}">${esc(s.time)} · ${L('продадено','sold out')}</button>`:`<button type="button" class="achip ${i===firstFree?'on':''}" data-slot="${esc(s.time)}" onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('on'));this.classList.add('on')">${esc(s.time)}</button>`; }).join(''); })()}</div></div>`:''}
+      ${halls.length?`<div><label>${L('Зала','Room')} *</label><div class="selrow" id="bk_halls">${halls.map(h=>{ const l=hallLeft(e,h), full=l!==null&&l<=0; return full?`<button type="button" class="achip" disabled style="opacity:.45;cursor:default;text-decoration:line-through;" title="${L('Няма свободни места','No seats left')}">${esc(h.name)} · ${L('изчерпана','full')}</button>`:`<button type="button" class="achip ${h===hall0?'on':''}" data-hall="${esc(h.name)}" data-price="${h.price}" onclick="hallPick(this)">${esc(h.name)} · ${esc(money(h.price))}${l!==null&&l<=10?' · '+L('остават '+l,l+' left'):''}</button>`; }).join('')}</div><div class="hint" style="margin:6px 0 0;">${L('Цената е на човек според избраната зала.','The price is per person for the selected room.')}</div></div>`:''}
       <div><label>${t('seats')}</label><div style="display:flex;align-items:center;gap:14px;">${(isDinner(e)&&unit>0)?`<input name="party" type="number" inputmode="numeric" min="1" max="${maxParty(e)}" value="1" style="width:110px;" oninput="bkTotal(this.form)"/>`:`<select name="party" class="sel" style="width:110px;" onchange="bkTotal(this.form);const b=document.getElementById('bk_big');if(b)b.style.display=this.value==='9+'?'block':'none'">${Array.from({length:bigAllowed(e)?Math.min(8,maxParty(e)):maxParty(e)},(_,i)=>`<option>${i+1}</option>`).join('')}${bigAllowed(e)?`<option value="9+">9+</option>`:''}</select>`}
-        ${unit>0?`<span style="font-family:var(--serif);font-size:22px;color:var(--cream);">= <b id="bk_total">${esc(fmtPrice(e))}</b></span>`:`<span class="hint" style="margin:0">${t('free')}</span>`}</div></div>
-      ${isDinner(e)?kidsBlock('bk_kids','bkTotal(this.form)',unit>0):''}
+        ${unit>0?`<span style="font-family:var(--serif);font-size:22px;color:var(--cream);">= <b id="bk_total">${esc(halls.length?money(unit):fmtPrice(e))}</b></span>`:`<span class="hint" style="margin:0">${t('free')}</span>`}</div></div>
+      ${isDinner(e)?kidsBlock('bk_kids','bkTotal(this.form)',unit>0,tiers):''}
       ${restManual(e)?restPayBlock():''}
       ${bigAllowed(e)?`<div id="bk_big" class="msg ok" style="display:none;">${L('За групи над 8 души екипът ще се свърже с вас по телефона, за да уточните детайлите.','For groups of more than 8 the team will call you to arrange the details.')}</div>`:''}
       <div><label>${t('name')} *</label><input name="name" required autocomplete="name"/></div>
@@ -1121,8 +1136,12 @@ function bookingBox(e){
 }
 function bkTotal(f){
   kidsLimit('bk_kids',f.party.value);
-  const unit=Number(f.dataset.unit)||0, n0=parseInt(f.party.value,10)||1, n=Math.max(1,n0-Math.min(kidsCount('bk_kids'),n0-1)); const el=document.getElementById('bk_total');   // децата не се таксуват
-  if(el)el.textContent=(Math.round(unit*n*100)/100).toLocaleString(lang==='bg'?'bg-BG':'en-GB')+' '+t('lv');
+  // възрастни × цената (на залата) + всяко дете по своята възрастова група (без групи — децата не се таксуват)
+  const unit=Number(f.dataset.unit)||0, n0=parseInt(f.party.value,10)||1, kids=Math.min(kidsCount('bk_kids'),n0-1);
+  let tiers=[]; try{tiers=JSON.parse(f.dataset.tiers||'[]');}catch(e){}
+  const box=document.getElementById('bk_kids'); const ages=box?[...box.querySelectorAll('[data-kage]')].map(x=>x.value).slice(0,kids):[];
+  let sum=unit*Math.max(1,n0-kids); for(let i=0;i<kids;i++)sum+=kidPrice(ages[i],tiers,unit);
+  const el=document.getElementById('bk_total'); if(el)el.textContent=money(sum);
 }
 let PAY_RESULT=null;   // резултат от връщането на Stripe (?redirect_status=…) — само при банки, които изискват пренасочване
 function readPayResult(){
@@ -1156,7 +1175,9 @@ async function submitTicket(f,eventId){
   const note=(f.note&&f.note.value||'').trim().slice(0,500);
   const kd=kidsRead('bk_kids',party,big); if(kd.err){b.disabled=false;b.textContent=old;setMsg('bk_msg',kd.err);return false;}
   const pmEl=document.querySelector('#bk_pm .achip.on'); const pay_method=pmEl?pmEl.dataset.pm:'';
-  const r=await DB.publicForm('ticket',{event_id:eventId,name,email,phone,party,big,kids:kd.kids,kid_ages:kd.kid_ages,slot,note,pay_method,lang,captcha_token:tok});
+  const hallEl=document.querySelector('#bk_halls .achip.on'); const hall=hallEl?hallEl.dataset.hall:'';
+  if(document.getElementById('bk_halls')&&!hall){b.disabled=false;b.textContent=old;setMsg('bk_msg',L('Изберете зала.','Choose a room.'));return false;}
+  const r=await DB.publicForm('ticket',{event_id:eventId,name,email,phone,party,big,kids:kd.kids,kid_ages:kd.kid_ages,slot,note,pay_method,hall,lang,captcha_token:tok});
   if(r.error){
     b.disabled=false;b.textContent=old; resetCaptcha('bk_captcha');
     // лимит по имейл (до 4 места общо за събитие, може на части): свиваме избора до оставащите и казваме колко
@@ -1224,24 +1245,30 @@ function restDoneHtml(d){
 // ---------- ДЕЦА (само ресторант): „от тях деца“ + възраст на всяко дете ----------
 // Децата заемат място (влизат в общия брой), но при платена вечеря не се таксуват онлайн (детско меню — на място).
 const KID_AGES=['0','1','2','3','4','5','6','7','8','9','10','11','12+'];
-function kidsBlock(id,onch,paid){
-  return `<div id="${id}" class="kidsbox"><label>${L('От тях деца','Of which children')}</label>
+function kidsBlock(id,onch,paid,tiers){
+  tiers=tiers||[]; const mx=tiers.length?Math.max(...tiers.map(x=>x.to)):0;
+  const hint=tiers.length?(L('Цена за деца: ','Children: ')+kidTiersText(tiers)+'. '+L('Над '+mx+' г. — като възрастен. Всяко дете заема място.','Over '+mx+' — adult price. Each child takes a seat.')):(paid?L('Децата заемат място, но не се таксуват онлайн. Ако има детско меню — плаща се на място.','Children take a seat but are not charged online. A children\'s menu, if any, is paid on site.'):L('Децата влизат в общия брой гости.','Children are included in the total number of guests.'));
+  return `<div id="${id}" class="kidsbox" data-onch="${esc(onch||'')}" data-maxage="${tiers.length?mx:''}"><label>${L('От тях деца','Of which children')}${tiers.length?' ('+L('до '+mx+' г.','up to '+mx)+')':''}</label>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;"><select class="sel" data-kids style="width:110px;" onchange="kidsDraw('${id}');${onch||''}"><option value="0">0</option></select>
-      <span class="hint" style="margin:0;flex:1;min-width:180px;">${paid?L('Децата заемат място, но не се таксуват онлайн. Ако има детско меню — плаща се на място.','Children take a seat but are not charged online. A children\'s menu, if any, is paid on site.'):L('Децата влизат в общия брой гости.','Children are included in the total number of guests.')}</span></div>
+      <span class="hint" style="margin:0;flex:1;min-width:180px;">${hint}</span></div>
     <div class="hint kidsone" style="margin:6px 0 0;">${L('За да добавите дете, първо увеличете общия брой — напр. 1 възрастен + 1 дете = 2.','To add a child, first increase the total — e.g. 1 adult + 1 child = 2.')}</div>
     <div class="kidsages" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div></div>`;
 }
 function kidsDraw(id){
   const box=document.getElementById(id); if(!box)return; const n=parseInt(box.querySelector('[data-kids]').value,10)||0; const wrap=box.querySelector('.kidsages');
   const old=[...wrap.querySelectorAll('select')].map(x=>x.value);
-  wrap.innerHTML=Array.from({length:n},(_,i)=>`<div style="min-width:120px;"><label style="font-size:12px;">${L('Дете','Child')} ${i+1} — ${L('възраст','age')}</label><select class="sel" data-kage>${KID_AGES.map(a=>`<option value="${a}" ${old[i]===a?'selected':''}>${a} ${L('г.','y')}</option>`).join('')}</select></div>`).join('');
+  // с детски цени: възрастите са 0…най-горната група и изборът е задължителен (от него зависи цената)
+  const mx=box.dataset.maxage, priced=mx!==''&&mx!=null; const list=priced?Array.from({length:(parseInt(mx,10)||0)+1},(_,i)=>String(i)):KID_AGES; const onch=box.dataset.onch||'';
+  wrap.innerHTML=Array.from({length:n},(_,i)=>`<div style="min-width:120px;"><label style="font-size:12px;">${L('Дете','Child')} ${i+1} — ${L('възраст','age')}${priced?' *':''}</label><select class="sel" data-kage ${priced?`onchange="${esc(onch)}"`:''}>${priced?`<option value="">${L('— изберете —','— choose —')}</option>`:''}${list.map(a=>`<option value="${a}" ${old[i]===a?'selected':''}>${a} ${L('г.','y')}</option>`).join('')}</select></div>`).join('');
 }
 // връща {kids, kid_ages} или {err} — трябва да остане поне един възрастен
 function kidsRead(id,total,big){
   const box=document.getElementById(id); if(!box||box.style.display==='none')return {kids:0,kid_ages:[]};
   const n=parseInt(box.querySelector('[data-kids]').value,10)||0; if(!n)return {kids:0,kid_ages:[]};
   if(!big&&n>=total)return {err:L('Децата са част от общия брой гости — трябва да има поне един възрастен. Увеличете броя гости.','Children are part of the total — there must be at least one adult. Increase the number of guests.')};
-  return {kids:n,kid_ages:[...box.querySelectorAll('[data-kage]')].map(x=>x.value)};
+  const ages=[...box.querySelectorAll('[data-kage]')].map(x=>x.value);
+  if(box.dataset.maxage!==''&&box.dataset.maxage!=null&&ages.some(a=>a===''))return {err:L('Изберете възраст за всяко дете — от нея зависи цената.','Choose an age for each child — the price depends on it.')};
+  return {kids:n,kid_ages:ages};
 }
 // при смяна на общия брой: децата могат да са най-много (общо − 1) — по-големите стойности се изключват
 function kidsLimit(id,partyVal){

@@ -561,6 +561,17 @@ const mapResRow = r => ({ id: r.id, user_id: r.user_id || null, event_id: r.even
       const m = {}; (data || []).forEach(r => { m[r.event_id] = r.taken || 0; });
       return m;
     },
+    // (25.11.2026) Заети места ПО ЗАЛА (само бройки) — за „остават N места“ при залите на платено събитие в ресторанта.
+    // Ако SQL функцията още я няма (2026-11-25-hall-seats.sql) → празно: залите работят, само не се показва колко места остават.
+    async hallSeats() {
+      if (!LIVE) return null;
+      try {
+        const { data, error } = await sb.rpc('event_hall_seats');
+        if (error || !data) return null;                       // null = не знаем (функцията липсва) → не показваме „остават“
+        const m = {}; data.forEach(r => { if (!r.hall) return; (m[r.event_id] = m[r.event_id] || {})[r.hall] = Number(r.taken) || 0; });
+        return m;
+      } catch (e) { return null; }
+    },
     // Публичен сайт: заети места по събитие и час (само бройки). Ако SQL функцията още я няма — празно (сайтът работи както преди).
     async publicEventSeats() {
       if (!LIVE) return {};
@@ -675,18 +686,18 @@ const mapResRow = r => ({ id: r.id, user_id: r.user_id || null, event_id: r.even
         return s;
       } catch (e) { return null; }
     },
-    async createPayment(event_id, kind, party, slot, big, note, kids, kid_ages, pay_method) {
+    async createPayment(event_id, kind, party, slot, big, note, kids, kid_ages, pay_method, hall) {
       if (!LIVE) return { error: { message: 'Налично след свързване на Supabase' } };
       const sess = await this.freshSession();
       if (!sess) return { error: { message: 'Сесията е изтекла — влезте отново.' } };
-      let { data, error } = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '', big: !!big, note: note || '', kids: kids || 0, kid_ages: kid_ages || [], pay_method: pay_method || '' } });
+      let { data, error } = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '', big: !!big, note: note || '', kids: kids || 0, kid_ages: kid_ages || [], pay_method: pay_method || '', hall: hall || '' } });
       if (error) {
         let msg = error.message;
         try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (e) {}
         // изтекъл токен точно в момента → подновяваме и опитваме още веднъж
         if (/not signed in|jwt|401/i.test(msg)) {
           try { await sb.auth.refreshSession(); } catch (e) {}
-          const again = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '', big: !!big, note: note || '', kids: kids || 0, kid_ages: kid_ages || [], pay_method: pay_method || '' } });
+          const again = await invokeFn('create-payment', { body: { event_id, kind, party: party || 1, slot: slot || '', big: !!big, note: note || '', kids: kids || 0, kid_ages: kid_ages || [], pay_method: pay_method || '', hall: hall || '' } });
           if (!again.error) { data = again.data; error = null; }
           else { try { const b = await again.error.context.json(); if (b && b.error) msg = b.error; } catch (e) {} }
         }
