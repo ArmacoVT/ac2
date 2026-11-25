@@ -1391,7 +1391,7 @@ function copyFrom(btn,msg){ try{navigator.clipboard.writeText(btn.dataset.copy||
 const KID_AGES=['0','1','2','3','4','5','6','7','8','9','10','11','12+'];
 function kidsBlock(id,onch,paid,tiers){
   const bg=lang==='bg'; tiers=tiers||[]; const mx=tiers.length?Math.max(...tiers.map(x=>x.to)):0;
-  const hint=tiers.length?((bg?'Цена за деца: ':'Children: ')+kidTiersText(tiers)+'. '+(bg?'Над '+mx+' г. — като възрастен. Всяко дете заема място.':'Over '+mx+' — adult price. Each child takes a seat.')):(paid?(bg?'Децата заемат място, но не се таксуват. Ако има детско меню — плаща се на място.':'Children take a seat but are not charged. A children\'s menu, if any, is paid on site.'):(bg?'Децата влизат в общия брой гости.':'Children are included in the total number of guests.'));
+  const hint=tiers.length?((bg?'Цена за деца: ':'Children: ')+kidTiersText(tiers)+'. '+(bg?'Над '+mx+' г. — като възрастен.':'Over '+mx+' — adult price.')):(paid?(bg?'Децата заемат място, но не се таксуват. Ако има детско меню — плаща се на място.':'Children take a seat but are not charged. A children\'s menu, if any, is paid on site.'):(bg?'Децата влизат в общия брой гости.':'Children are included in the total number of guests.'));
   return `<div id="${id}" class="kidsbox" data-onch="${onch||''}" data-maxage="${tiers.length?mx:''}" style="margin:6px 0 12px;">
     <div class="qrow" style="padding:8px 0;"><span>${bg?'От тях деца':'Of which children'}${tiers.length?' <small style="color:var(--muted);">· '+(bg?'до '+mx+' г.':'up to '+mx)+'</small>':''}</span><div class="qstep"><button type="button" onclick="kidsQty('${id}',-1)">−</button><b class="kn">0</b><button type="button" onclick="kidsQty('${id}',1)">+</button></div></div>
     <input type="hidden" class="kv" value="0"/>

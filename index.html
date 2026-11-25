@@ -1247,7 +1247,7 @@ function restDoneHtml(d){
 const KID_AGES=['0','1','2','3','4','5','6','7','8','9','10','11','12+'];
 function kidsBlock(id,onch,paid,tiers){
   tiers=tiers||[]; const mx=tiers.length?Math.max(...tiers.map(x=>x.to)):0;
-  const hint=tiers.length?(L('Цена за деца: ','Children: ')+kidTiersText(tiers)+'. '+L('Над '+mx+' г. — като възрастен. Всяко дете заема място.','Over '+mx+' — adult price. Each child takes a seat.')):(paid?L('Децата заемат място, но не се таксуват онлайн. Ако има детско меню — плаща се на място.','Children take a seat but are not charged online. A children\'s menu, if any, is paid on site.'):L('Децата влизат в общия брой гости.','Children are included in the total number of guests.'));
+  const hint=tiers.length?(L('Цена за деца: ','Children: ')+kidTiersText(tiers)+'. '+L('Над '+mx+' г. — като възрастен.','Over '+mx+' — adult price.')):(paid?L('Децата заемат място, но не се таксуват онлайн. Ако има детско меню — плаща се на място.','Children take a seat but are not charged online. A children\'s menu, if any, is paid on site.'):L('Децата влизат в общия брой гости.','Children are included in the total number of guests.'));
   return `<div id="${id}" class="kidsbox" data-onch="${esc(onch||'')}" data-maxage="${tiers.length?mx:''}"><label>${L('От тях деца','Of which children')}${tiers.length?' ('+L('до '+mx+' г.','up to '+mx)+')':''}</label>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;"><select class="sel" data-kids style="width:110px;" onchange="kidsDraw('${id}');${onch||''}"><option value="0">0</option></select>
       <span class="hint" style="margin:0;flex:1;min-width:180px;">${hint}</span></div>
