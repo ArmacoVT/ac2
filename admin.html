@@ -238,6 +238,7 @@ const PERM_DEFS=[
   {id:'walkin',t:'⚠ Билет на място',d:'продажба в брой / на ПОС от рецепцията',danger:true},
   {id:'events_delete',t:'⚠ Изтриване на събития',d:'заедно с резервациите към тях',danger:true},
   {id:'tables_layout',t:'⚠ Подреждане на залата',d:'добавя/мести/трие маси, брой столове, основен план',danger:true},
+  {id:'free_invite',t:'⚠ Безплатни покани',d:'кани нов член БЕЗ плащане — членството започва веднага за 1 година (иначе само администраторът)',danger:true},
   {id:'fees',t:'⚠ Членства и цени',d:'цени на членствата, покани за плащане, банкови преводи',danger:true},
   {id:'team',t:'⚠ Екип и права',d:'добавя/маха служители и права (дава се само от собственика)',danger:true,ownerOnly:true},
   {id:'money',t:'Суми и приходи (преглед)',d:'ЕДИНСТВЕНАТА отметка, която показва приходите в Статистика; + сумите в Excel експорта на събития и месечния отчет'},
@@ -2845,7 +2846,7 @@ function appsView(){
     if(a.type==='nomination'&&a.proposer_email)lines.push('Предложен от: '+esc(a.proposer_email));
     if(a.rules_accepted_at)lines.push('✓ Приел правилника: '+esc(new Date(a.rules_accepted_at).toLocaleString('bg-BG')));
     const acts=st==='new'
-      ? `${(role==='admin'||can('fees'))&&a.type!=='nomination'?`<button class="btn ok sm" onclick="mInviteFromApp('${a.id}')">💳 Одобри → код за плащане</button>`:''}${role==='admin'?`<button class="btn ghost sm" onclick="approveApp('${a.id}')">Одобри и покани (без плащане)</button>`:((can('fees')&&a.type!=='nomination')?'':`<div class="muted" style="font-size:12px;max-width:190px;line-height:1.35;">Одобряването${a.type==='nomination'?' на предложение':''} става ${a.type==='nomination'?'от администратор':'с код за плащане — нужно е право „Членства и цени“ (или администратор)'}.</div>`)}
+      ? `${(role==='admin'||can('fees'))&&a.type!=='nomination'?`<button class="btn ok sm" onclick="mInviteFromApp('${a.id}')">💳 Одобри → код за плащане</button>`:''}${can('free_invite')?`<button class="btn ghost sm" onclick="approveApp('${a.id}')">Одобри и покани (без плащане)</button>`:((can('fees')&&a.type!=='nomination')?'':`<div class="muted" style="font-size:12px;max-width:190px;line-height:1.35;">Одобряването${a.type==='nomination'?' на предложение':''} става ${a.type==='nomination'?'от администратор':'с код за плащане — нужно е право „Членства и цени“ (или администратор)'}.</div>`)}
          <button class="btn no sm" onclick="setApp('${a.id}','declined')">Откажи</button>
          <button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button>`
       : `<button class="btn ghost sm" onclick="delApp('${a.id}')">Изтрий</button>`;
@@ -2892,7 +2893,7 @@ function appMark(id,status){
   const ae=document.getElementById('appact_'+id);if(ae)ae.innerHTML=`<button class="btn ghost sm" onclick="delApp('${id}')">Изтрий</button>`;
 }
 async function approveApp(id){
-  if(role!=='admin'){alert('Покана без плащане може да изпрати само администратор. Използвайте „Одобри → код за плащане“.');return;}
+  if(!can('free_invite')){alert('Покана без плащане може да изпрати само администратор или служител с право „Безплатни покани“. Използвайте „Одобри → код за плащане“.');return;}
   const a=byId(APPS,id); const email=a.email||'', membership=a.membership||'guest', name=a.name||'', phone=a.phone||'';
   if(!email){alert('Кандидатурата няма имейл');return;}
   if(!confirm('Да поканя ли '+email+' като член ('+( (MEMBERS.find(m=>m.id===membership)||{t:membership}).t )+') БЕЗ ПЛАЩАНЕ? Членството започва веднага, за 1 година.'))return;
@@ -3284,7 +3285,7 @@ function membersView(){
   let memOpts=MEMBERS.map(m=>`<option value="${m.id}">${m.t}</option>`).join('');
   // (20.11.2026) покана БЕЗ плащане (членство веднага, за 1 година) — само администратор; сървърът отказва на останалите
   const inviteCard=!DB.live?`<div class="card"><h3>Покани член</h3><p class="muted" style="margin-top:6px;">Налично след свързване на Supabase и качване на функцията <code>invite-member</code> (виж ADMIN-README).</p></div>`
-    : role!=='admin' ? `<div class="card"><h3>Покани член</h3><p class="muted" style="margin-top:6px;">Нов член се приема с код за плащане: „Кандидатури“ → „Одобри → код за плащане“ или „Членства и цени“ → „Нова покана за плащане“. Покана без плащане може да изпрати само администратор.</p></div>`
+    : !can('free_invite') ? `<div class="card"><h3>Покани член</h3><p class="muted" style="margin-top:6px;">Нов член се приема с код за плащане: „Кандидатури“ → „Одобри → код за плащане“ или „Членства и цени“ → „Нова покана за плащане“. Покана без плащане може да изпрати само администратор.</p></div>`
     : `<div class="card" style="border-color:var(--gold-soft);">
         <h3>Покани член <span class="muted" style="font-weight:400;font-size:13px;">· без плащане</span></h3>
         <p class="muted" style="margin:6px 0 8px;">Изпраща имейл с покана; човекът сам си задава парола от линка. Членството започва веднага, без плащане.</p>
@@ -3327,7 +3328,7 @@ async function doReset(){
   document.getElementById('rp_email').value='';
 }
 async function doInvite(){
-  if(role!=='admin'){alert('Покана без плащане може да изпрати само администратор.');return;}
+  if(!can('free_invite')){alert('Покана без плащане може да изпрати само администратор или служител с право „Безплатни покани“.');return;}
   const email=document.getElementById('iv_email').value.trim();
   if(!email){alert('Въведи имейл');return;}
   const username=document.getElementById('iv_user').value.trim();
