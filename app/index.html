@@ -895,7 +895,7 @@ function featHtml(){
     const l=seatsLeft(e), mine=user&&hasBooking(e.id);
     const seat=(mine||l===null)?'':(l<=0?(lang==='bg'?'Продадено':'Sold out'):(l<=10?(lang==='bg'?('Остават '+l+' места'):(l+' seats left')):''));
     const when=[fmtDay(e.date),(e.time||'').slice(0,5)].filter(Boolean).join(' · ');
-    return `<div class="featb" onclick="go('format/${e.format}')">
+    return `<div class="featb" onclick="go('event/${e.id}')">
       ${e.image_url?`<div class="fth" style="background-image:url('${esc(e.image_url)}')"></div>`:''}
       <div class="ftx"><h4>${esc(evT(e))}</h4><div class="fsub">${esc(when)}</div>
         <div class="fchips"><span class="fchip">${featChip(e)}</span>${seat?`<span class="fchip o">${seat}</span>`:''}</div></div></div>`;
@@ -910,7 +910,7 @@ function upRow(e){
   const WD_BG=['нд','пн','вт','ср','чт','пт','сб'], WD_EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const dn=dt?dt.getDate():''; const dm=dt?(lang==='bg'?MON_BG:MON_EN)[dt.getMonth()]:''; const wd=dt?(lang==='bg'?WD_BG:WD_EN)[dt.getDay()]:'';
   const meta=[wd,e.time,placeT(e.place),fl].filter(Boolean).join(' · ');
-  return `<div class="uprow" onclick="go('format/${e.format}')">
+  return `<div class="uprow" onclick="go('event/${e.id}')">
     <div class="udt"><div class="d">${dn}</div><div class="mo">${esc(dm)}</div></div>
     <span class="upt" style="background:${col}"></span>
     <h4>${esc(evT(e))}</h4><div class="umt">${esc(meta)}</div></div>`;
