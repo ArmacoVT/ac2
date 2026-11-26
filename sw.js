@@ -8,7 +8,9 @@
 //   Supabase, видео/аудио, външни скриптове → без намеса (винаги по мрежата).
 // При нов CACHE: старите кешове се трият, новият worker поема веднага (skipWaiting + claim),
 // а страниците се презареждат сами, когато е безопасно (вж. края на index.html / app/index.html / admin.html).
-const CACHE = 'acac-v524';
+// При смяна на номера: смени същото число и в <script src="db.js?v=…"> / config.js?v=… в index.html, app/index.html, admin.html, tables.html
+// (иначе до 10 мин. след качване страницата е нова, а db.js — стар от кеша на GitHub Pages → „… is not a function“).
+const CACHE = 'acac-v525';
 const MEDIA = 'acac-media';   // снимки от Supabase Storage — отделен кеш, който НЕ се трие при нова версия
 const ASSETS = [
   './', './index.html', './landing.html', './t.html', './privacy.html', './delete-account.html', './cards/contour-tall.svg', './cards/contour-wide.svg', './app/index.html', './admin.html', './tables.html', './config.js', './db.js', './legal.js', './brand.js', './rules.html', './datepicker.js',
