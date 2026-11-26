@@ -437,10 +437,10 @@ const mapResRow = r => ({ id: r.id, user_id: r.user_id || null, event_id: r.even
       return { error };
     },
     // (26.11.2026) Членската карта в Apple Wallet: връща еднократен линк (5 мин.) към .pkpass файла — функция wallet-pass
-    // asBase64=true → самата карта (за плъгина в приложението); иначе линк за Safari
-    async walletLink(asBase64) {
+    // mode: true → самата карта за Apple (за плъгина в приложението); 'google' → линк „Запази в Google Wallet“; иначе линк за Safari
+    async walletLink(mode) {
       if (!LIVE) return { error: { message: 'Налично след свързване на Supabase' } };
-      const { data, error } = await invokeFn('wallet-pass', { body: asBase64 ? { base64: true } : {} });
+      const { data, error } = await invokeFn('wallet-pass', { body: mode === 'google' ? { google: true } : (mode ? { base64: true } : {}) });
       if (error) { let m = error.message; try { const b = await error.context.json(); if (b && b.error) m = b.error; } catch (e) {} return { error: { message: m } }; }
       if (data && data.error) return { error: { message: data.error } };
       return { error: null, url: data && data.url, base64: data && data.base64 };
