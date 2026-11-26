@@ -583,9 +583,9 @@
 <script src="../vendor/jsqr.js"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <!-- Stripe.js се зарежда едва при плащане (loadStripeJs) — иначе блокира показването на приложението -->
-<script src="../config.js?v=528"></script>
+<script src="../config.js?v=529"></script>
 <script src="../brand.js"></script>
-<script src="../db.js?v=528"></script>
+<script src="../db.js?v=529"></script>
 <script src="../legal.js"></script>
 <script>
 const T={
@@ -738,7 +738,7 @@ const MEMBERS=[
  {id:'club',t:'Club Member',seats:4,disc:5,tag:{bg:'Основната клубна категория',en:'The core club category'},
   d:{bg:'Основната членска категория — за хората, които желаят да бъдат активна част от клубния живот, неговата програма и общност.',en:'The core membership category — for those who wish to be an active part of club life, its programme and community.'},
   bn:{bg:['Достъп до клубната програма и събития','Покани за културни и гастрономически формати','Приоритет при резервации','5% членска преференция в AC² Table','Персонализирана Club Member карта'],en:['Access to the programme and events','Invitations to cultural and gastronomic formats','Priority for reservations','5% member preference at AC² Table','A personalised Club Member card']}},
- {id:'alumni',t:'Alumni Member',seats:3,disc:0,tag:{bg:'Връзка с училищната общност',en:'Link to the school community'},
+ {id:'alumni',t:'Alumni Member',seats:3,disc:5,discNote:{bg:'до 17:00 ч.',en:'until 17:00'},tag:{bg:'Връзка с училищната общност',en:'Link to the school community'},
   d:{bg:'Специална категория за хората с лична връзка към общността на Американски Колеж Аркус — възпитаници, родители, учители.',en:'A special category for those with a personal connection to the American College Arcus community.'},
   bn:{bg:['Достъп до избрани клубни събития','Покани за училищно-свързани събития','Участие в AC² Cinema и AC² Culture','Покани за общностни вечери','Персонализирана Alumni карта'],en:['Access to selected club events','Invitations to school-related events','Participation in AC² Cinema and Culture','Invitations to community evenings','A personalised Alumni card']}},
  {id:'corporate',t:'Corporate Member',seats:4,disc:7,tag:{bg:'Присъствие на партньори',en:'Presence for partners'},
@@ -2700,7 +2700,7 @@ function memberCard(){
     <div class="mc-lvl">${esc(lvl)}</div>
     <div class="mc-foot">
       <div class="mc-info">${until?`<div class="mc-lbl">${lang==='bg'?'Валидна до':'Valid until'}</div><div class="mc-val">${until}</div>`:''}
-        ${disc?`<div class="mc-lbl" style="margin-top:8px;">AC² Table</div><div class="mc-val">−${disc}%</div>`:''}</div>
+        ${disc?`<div class="mc-lbl" style="margin-top:8px;">AC² Table</div><div class="mc-val">−${disc}%${m&&m.discNote?` <span style="font-size:11px;opacity:.75;letter-spacing:.02em;">${esc(m.discNote[lang]||m.discNote.bg)}</span>`:''}</div>`:''}</div>
       <img class="mc-qr" src="${qr}" alt="QR" loading="lazy"/>
     </div></div>${walletBtn()}`;
 }
