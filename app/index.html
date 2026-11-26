@@ -583,9 +583,9 @@
 <script src="../vendor/jsqr.js"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <!-- Stripe.js се зарежда едва при плащане (loadStripeJs) — иначе блокира показването на приложението -->
-<script src="../config.js?v=525"></script>
+<script src="../config.js?v=526"></script>
 <script src="../brand.js"></script>
-<script src="../db.js?v=525"></script>
+<script src="../db.js?v=526"></script>
 <script src="../legal.js"></script>
 <script>
 const T={
@@ -2797,6 +2797,11 @@ async function cancelRes(id){
   try{RES=await DB.listReservations();}catch(e){}
   if(typeof dataSig!=='undefined')dataSig=''; if(typeof route==='function')route();
 }
+// (26.11.2026) „Маса след събитие“ е отделна резервация за РЕСТОРАНТА (event_id е празно, table_event_id сочи събитието).
+// Преди се показваше със заглавието, формата и мястото на самото събитие → двата билета изглеждаха еднакви.
+const isTableAfter=r=>!!r&&!r.event_id&&!!r.table_event_id;
+const tableAfterTitle=()=>lang==='bg'?'Маса в ресторанта':'Restaurant table';
+const tableAfterSub=ev=>ev?((lang==='bg'?'след „':'after “')+evT(ev)+(lang==='bg'?'“':'”')):'';
 function resCard(r,dim){
   const SL={requested:lang==='bg'?'чакаща':'pending',confirmed:lang==='bg'?'одобрена':'approved',declined:lang==='bg'?'отказана':'declined',cancelled:lang==='bg'?'отменена':'cancelled',pending_payment:lang==='bg'?'чака плащане':'awaiting payment'};
   const SC={confirmed:'#507044',declined:'#82303d',cancelled:'#82303d'};
@@ -2815,13 +2820,14 @@ function resCard(r,dim){
   const canCancel=resCancellable(r);
   const cancelBtn=canCancel?`<button onclick="event.stopPropagation();cancelRes('${r.id}')" style="margin-top:6px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;">${lang==='bg'?'Откажи резервацията':'Cancel reservation'}</button>`:((!['cancelled','declined'].includes(r.status)&&!dim&&resPaid(r)&&r.paid&&!canRefundTier())?`<div class="m" style="margin-top:6px;color:var(--muted);font-size:12px;">${lang==='bg'?'Билетът не подлежи на връщане.':'This ticket is non-refundable.'}</div>`:'');
   const swipe=canCancel?` data-swipecancel="${r.id}"`:'';
-  const fmtObj=ev?FORMATS.find(f=>f.id===ev.format):null;
+  const tAfter=isTableAfter(r);
+  const fmtObj=tAfter?FORMATS.find(f=>f.id==='table'):(ev?FORMATS.find(f=>f.id===ev.format):null);
   const col=fmtObj?fmtObj.c:'';
   const fmtName=fmtObj?fmtObj.t:(r.fmt||'');
-  const venue=ev?(ev.place||''):(r.place||'');
-  const heading=ev?esc(evT(ev)):esc(r.place||r.fmt||(lang==='bg'?'Резервация':'Reservation'));
-  const ctx=[fmtName,venue].filter(Boolean).join(' · ');
-  const ctxLine=ctx?`<div class="m" style="color:${col||'var(--gold-soft)'};margin-bottom:2px;font-weight:600;">${esc(ctx)}</div>`:'';
+  const venue=tAfter?(r.place||''):(ev?(ev.place||''):(r.place||''));
+  const heading=tAfter?esc(tableAfterTitle()):(ev?esc(evT(ev)):esc(r.place||r.fmt||(lang==='bg'?'Резервация':'Reservation')));
+  const ctx=[fmtName,(venue&&venue!==fmtName)?venue:''].filter(Boolean).join(' · ');
+  const ctxLine=(ctx?`<div class="m" style="color:${col||'var(--gold-soft)'};margin-bottom:2px;font-weight:600;">${esc(ctx)}</div>`:'')+((tAfter&&ev)?`<div class="m" style="color:var(--mid);margin-bottom:2px;">${esc(tableAfterSub(ev))}</div>`:'');
   const accent=(col&&!hl)?`border-left:3px solid ${col};`:'';
   // печат: статус → текст/цвят
   const off=['cancelled','declined'].includes(r.status);
@@ -3109,17 +3115,19 @@ function refreshTabbar(){try{tabbar(_activeTab);}catch(e){}}
 const fmtTicket=c=>{c=String(c||'').replace(/[^A-Za-z0-9]/g,'');return c?('AC2-'+c.slice(0,4)+'-'+c.slice(4)):'';};
 function ticketView(resId){
   const r=RES.find(x=>x.id===resId&&isMine(x)); if(!r)return topbar(lang==='bg'?'Билет':'Ticket')+`<div class="page"><div class="ev">${lang==='bg'?'Билетът не е намерен.':'Ticket not found.'}</div></div>`;
-  const ev=EVENTS.find(e=>e.id===(r.event_id||r.table_event_id)); const f=ev?FORMATS.find(x=>x.id===ev.format):null;
+  const ev=EVENTS.find(e=>e.id===(r.event_id||r.table_event_id)); const tAfter=isTableAfter(r);
+  const f=tAfter?FORMATS.find(x=>x.id==='table'):(ev?FORMATS.find(x=>x.id===ev.format):null);
   const off=['cancelled','declined'].includes(r.status);
   const st=r.refunded_at?['ref','↩ '+(lang==='bg'?'Възстановена':'Refunded')]:off?['no','✕ '+(r.status==='declined'?(lang==='bg'?'Отказан':'Declined'):(lang==='bg'?'Отменен':'Cancelled'))]:r.status==='confirmed'?['ok','✓ '+(r.paid?(lang==='bg'?'Платен билет':'Paid ticket'):(lang==='bg'?'Потвърден билет':'Confirmed ticket'))]:r.status==='pending_payment'?['wait','… '+(lang==='bg'?'Чака плащане':'Awaiting payment')]:['wait','… '+(lang==='bg'?'Изчаква одобрение':'Pending approval')];
   const qr=r.ticket_code?qrDataUri('AC2T:'+r.ticket_code,'#FFFFFF','#000000'):'';
   const maps=PUB&&PUB.general&&PUB.general.maps_link; const addr=pubContact().address;
-  const title=ev?evT(ev):(r.place||r.fmt||''); const d=r.date?euDate(r.date):'';
+  const title=tAfter?tableAfterTitle():(ev?evT(ev):(r.place||r.fmt||'')); const d=r.date?euDate(r.date):'';
+  const tkPlace=tAfter?(r.place||''):((ev&&ev.place)||r.place||'');
   return topbar(lang==='bg'?'Моят билет':'My ticket')+`<div class="page">
     <div class="ev tkv${off?' off':''}" style="text-align:center;padding:22px 18px;">
       <div class="rbadge-inline ${st[0]}">${st[1]}</div>
       <h3 style="font-size:20px;margin:10px 0 4px;">${esc(title)}</h3>
-      <div style="color:${f?f.c:'var(--gold)'};font-weight:600;font-size:13px;">${f?f.t:''}${(ev&&ev.place)||r.place?' · '+esc((ev&&ev.place)||r.place):''}</div>
+      <div style="color:${f?f.c:'var(--gold)'};font-weight:600;font-size:13px;">${f?f.t:''}${(tkPlace&&(!f||tkPlace!==f.t))?' · '+esc(tkPlace):''}</div>${(tAfter&&ev)?`<div class="m" style="margin-top:2px;">${esc(tableAfterSub(ev))}</div>`:''}
       <div class="m" style="margin-top:4px;">${d}${r.time?' · '+esc(r.time):''} · ${seatsTxt(r.party)}${r.paid?' · '+fmtPrice(r.paid_cents?r.paid_cents/100:(ev&&ev.price>0?ev.price*(r.party||1):0)):''}</div>
       ${addr?`<a href="${maps?esc(maps):'#'}" ${maps?'target="_blank" rel="noopener"':'onclick="return false"'} style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;color:var(--gold);font-size:12.5px;text-decoration:none;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.3 7-12a7 7 0 1 0-14 0c0 5.7 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg><span style="${maps?'text-decoration:underline;text-underline-offset:3px;':''}">${esc(addr)}</span>${maps?'<span>↗</span>':''}</a>`:''}
       ${qr?`<div style="background:#fff;border-radius:14px;padding:12px;width:216px;margin:18px auto 10px;"><img src="${qr}" alt="QR" style="display:block;width:192px;height:192px;"/></div>`:''}
@@ -3230,7 +3238,7 @@ async function doorTicket(code){
   let r; try{ r=await DB._doorTimed(DB.doorTicket(code)); }catch(e){ r={error:{message:'timeout'}}; } finally{ _doorBusy=false; }
   if(!box)return;
   if(r.error){box.innerHTML=`<div class="ev" style="border:1px solid #82303d;"><b style="color:#82303d;">${r.error.message==='not_found'?(lang==='bg'?'Няма такъв билет':'No such ticket'):doorErrTxt(r.error)}</b></div>`;return;}
-  const t=r.ticket, p=r.profile; const ev=EVENTS.find(e=>e.id===(t.event_id||t.table_event_id)); const title=ev?ev.title:(t.place||t.format||'');
+  const t=r.ticket, p=r.profile; const ev=EVENTS.find(e=>e.id===(t.event_id||t.table_event_id)); const title=isTableAfter(t)?((lang==='bg'?'Маса в ресторанта':'Restaurant table')+(ev?' · '+tableAfterSub(ev):'')):ev?ev.title:(t.place||t.format||'');
   const name=(p&&(p.full_name||p.username))||t.res_name||t.guest_name||''; const m=p?MEMBERS.find(x=>x.id===p.membership):null;
   const valid=t.status==='confirmed'; const already=!!t.checked_in_at; const today=t.date===todayISO();
   const col=valid&&!already?'#507044':(already?'#b5531e':'#82303d');
@@ -3256,7 +3264,7 @@ async function doorSearch(q){
   if(r&&r.error&&r.error.message==='timeout'){ box.innerHTML=`<div class="ev" style="margin-top:8px;">${doorErrTxt(r.error)}</div>`; return; }
   _doorFound={}; (r.tickets||[]).forEach(t=>{_doorFound[t.id]=t;});
   const bg=lang==='bg';
-  const tk=(r.tickets||[]).map(t=>{ const p=t.profile; const ev=EVENTS.find(e=>e.id===(t.event_id||t.table_event_id)); const title=ev?ev.title:(t.place||t.format||'');
+  const tk=(r.tickets||[]).map(t=>{ const p=t.profile; const ev=EVENTS.find(e=>e.id===(t.event_id||t.table_event_id)); const title=isTableAfter(t)?((lang==='bg'?'Маса в ресторанта':'Restaurant table')+(ev?' · '+tableAfterSub(ev):'')):ev?ev.title:(t.place||t.format||'');
     const name=(p&&(p.full_name||p.username))||t.res_name||t.guest_name||t.who||'';
     const who=p?((MEMBERS.find(x=>x.id===p.membership)||{}).t||(bg?'член':'member')):(bg?'гост':'guest');
     const ph=(p&&p.phone)||t.guest_phone||t.contact_phone||'';
@@ -3286,7 +3294,7 @@ async function doorShow(id){
   const active=!!p.membership&&p.membership!=='guest'&&(!p.membership_until||p.membership_until>=todayISO());
   const col=active?'#507044':'#82303d';
   const rows=(r.today||[]).map(x=>{
-    const ev=EVENTS.find(e=>e.id===(x.event_id||x.table_event_id)); const title=ev?ev.title:(x.place||x.format||'');
+    const ev=EVENTS.find(e=>e.id===(x.event_id||x.table_event_id)); const title=isTableAfter(x)?((lang==='bg'?'Маса в ресторанта':'Restaurant table')+(ev?' · '+tableAfterSub(ev):'')):ev?ev.title:(x.place||x.format||'');
     const st=x.checked_in_at?`<span style="color:#507044;font-weight:700;">✓ ${lang==='bg'?'Присъствал':'Checked in'} ${x.checked_in_at.slice(11,16)}</span>`:(x.status==='confirmed'?`<span style="color:#507044;">${lang==='bg'?'Потвърдена':'Confirmed'}${x.paid?' · '+(lang==='bg'?'платена':'paid'):''}</span>`:`<span style="color:#6b6b63;">${lang==='bg'?'Изчаква одобрение':'Pending'}</span>`);
     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line-soft);">
       <div><b>${esc(title)}</b><div style="font-size:12px;color:var(--mid);">${esc(x.time||'')} · ${seatsTxt(x.party_size)} · ${st}</div></div>
