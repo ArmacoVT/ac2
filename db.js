@@ -436,6 +436,14 @@ const mapResRow = r => ({ id: r.id, user_id: r.user_id || null, event_id: r.even
       const { error } = await sb.from('push_tokens').delete().eq('token', token);
       return { error };
     },
+    // (26.11.2026) Членската карта в Apple Wallet: връща еднократен линк (5 мин.) към .pkpass файла — функция wallet-pass
+    async walletLink() {
+      if (!LIVE) return { error: { message: 'Налично след свързване на Supabase' } };
+      const { data, error } = await invokeFn('wallet-pass', { body: {} });
+      if (error) { let m = error.message; try { const b = await error.context.json(); if (b && b.error) m = b.error; } catch (e) {} return { error: { message: m } }; }
+      if (data && data.error) return { error: { message: data.error } };
+      return { error: null, url: data && data.url };
+    },
     async sendPush(o) {
       if (!LIVE) return { error: { message: 'demo' } };
       const { data, error } = await invokeFn('send-push', { body: o });

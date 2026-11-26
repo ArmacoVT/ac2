@@ -2702,7 +2702,27 @@ function memberCard(){
       <div class="mc-info">${until?`<div class="mc-lbl">${lang==='bg'?'Валидна до':'Valid until'}</div><div class="mc-val">${until}</div>`:''}
         ${disc?`<div class="mc-lbl" style="margin-top:8px;">AC² Table</div><div class="mc-val">−${disc}%</div>`:''}</div>
       <img class="mc-qr" src="${qr}" alt="QR" loading="lazy"/>
-    </div></div>`;
+    </div></div>${walletBtn()}`;
+}
+// ---- (26.11.2026) Членската карта в Apple Wallet — същият QR код („AC2:<id>“), чете се от скенера на входа ----
+// Бутонът се показва само на устройства на Apple и при активно членство. Натискане → сървърът дава еднократен линк →
+// отваря се в Safari, който показва „Добави“ за Apple Wallet. (Файлът се издава от функцията wallet-pass.)
+function appleDevice(){ try{ const C=window.Capacitor; if(C&&C.isNativePlatform&&C.isNativePlatform())return (C.getPlatform&&C.getPlatform())==='ios'; }catch(e){} const u=navigator.userAgent||''; return /iPhone|iPad|iPod/.test(u)||(/Macintosh/.test(u)&&/Safari/.test(u)&&!/Chrome|Chromium|Edg\//.test(u)); }
+function walletBtn(){
+  if(!DB.live||!appleDevice()||!user||!membershipActive()||!user.membership||user.membership==='guest')return '';
+  return `<button type="button" onclick="addToWallet(this)" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin:12px 0 0;padding:13px 16px;border:none;border-radius:14px;background:#000;color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/><path d="M15.5 14.5h2"/></svg>
+    <span>${lang==='bg'?'Добави в Apple Wallet':'Add to Apple Wallet'}</span></button>`;
+}
+async function addToWallet(btn){
+  const lbl=btn.querySelector('span'), old=lbl?lbl.textContent:''; btn.disabled=true; if(lbl)lbl.textContent=lang==='bg'?'Момент…':'One moment…';
+  let r; try{ r=await DB.walletLink(); }catch(e){ r={error:{message:String(e&&e.message||e)}}; }
+  btn.disabled=false; if(lbl)lbl.textContent=old;
+  if(!r||r.error||!r.url){ toast((lang==='bg'?'Картата не се издаде: ':'Could not issue the card: ')+((r&&r.error&&r.error.message)||'')); return; }
+  try{hap('success');}catch(e){}
+  // в приложението: линк към друг адрес се отваря от системата в Safari; в браузъра: направо сваля картата
+  let native=false; try{ native=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()); }catch(e){}
+  if(native){ const w=window.open(r.url,'_blank'); if(!w)location.href=r.url; } else location.href=r.url;
 }
 // любими формати (персонализация)
 function favSection(){
