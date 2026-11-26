@@ -583,9 +583,9 @@
 <script src="../vendor/jsqr.js"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <!-- Stripe.js се зарежда едва при плащане (loadStripeJs) — иначе блокира показването на приложението -->
-<script src="../config.js?v=527"></script>
+<script src="../config.js?v=528"></script>
 <script src="../brand.js"></script>
-<script src="../db.js?v=527"></script>
+<script src="../db.js?v=528"></script>
 <script src="../legal.js"></script>
 <script>
 const T={
@@ -2743,6 +2743,7 @@ async function addToWallet(btn){
       try{ await WP.addToWallet({base64:r.base64}); done(); try{hap('success');}catch(e){} return; }
       catch(e){ const m=String((e&&e.message)||e||'');
         // плъгинът липсва в тази версия → през Safari (по-долу); отказ от човека или друга грешка → спираме тук, без да отваряме Safari
+        if(/already added|"code"\s*:\s*100/i.test(m)){ done(); toast(lang==='bg'?'Картата вече е добавена в Apple Wallet.':'The card is already in Apple Wallet.'); return; }   // плъгинът отказва втори път същата карта
         if(!/implement|unavailable/i.test(m)){ done(); if(m&&!/cancel|отказ/i.test(m))toast((lang==='bg'?'Картата не се добави: ':'Could not add the card: ')+m); return; } }
     } else if(r&&r.error&&!/base64/i.test(r.error.message||'')){ done(); toast(errTxt(r)); return; }
   }
